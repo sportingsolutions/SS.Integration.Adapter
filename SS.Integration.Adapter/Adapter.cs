@@ -38,31 +38,20 @@ namespace SS.Integration.Adapter
 
     public class Adapter
     {
+        private readonly static object _sync = new object();
         private readonly ILog _logger = LogManager.GetLogger(typeof(Adapter).ToString());
-
         private readonly ConcurrentDictionary<string, IListener> _listeners;
-
         private readonly ISettings _settings;
-
         private readonly IServiceFacade _udapiServiceFacade;
-
         private readonly IAdapterPlugin _platformConnector;
-
         private readonly IEventState _eventState;
-
-        private List<string> _sports;
-
+        private readonly List<string> _sports;
         private readonly Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState, IObjectProvider<IDictionary<string, MarketState>>, int, IListener> _createListener;
-
-        private Timer _trigger;
-
         private readonly IObjectProvider<IDictionary<string, MarketState>> _marketStateObjectStore;
-
         private readonly BlockingCollection<IResourceFacade> _resourceCreationQueue;
         private readonly HashSet<string> _currentlyProcessedFixtures;
-        private readonly static object _sync = new object();
-
         private readonly IStatsHandle _Stats;
+        private Timer _trigger;
 
         public Adapter(ISettings settings,
                        IServiceFacade udapiServiceFacade,
@@ -78,9 +67,7 @@ namespace SS.Integration.Adapter
             _resourceCreationQueue = new BlockingCollection<IResourceFacade>(new ConcurrentQueue<IResourceFacade>());
             _currentlyProcessedFixtures = new HashSet<string>();
 
-            // REFACTOR!
-            //_marketStateObjectStore = new BinaryStoreProvider<IDictionary<string, MarketState>>(_settings.MarketFiltersDirectory,_settings.FilePathFormat);
-            //
+            
             _marketStateObjectStore = new CachedObjectStoreWithPersistance<IDictionary<string, MarketState>>(
                 new BinaryStoreProvider<IDictionary<string, MarketState>>(_settings.MarketFiltersDirectory, "FilteredMarkets-{0}.bin"),
                 "MarketFilters",
@@ -111,7 +98,6 @@ namespace SS.Integration.Adapter
                 {
                     Task.Factory.StartNew(CreateFixture);
                 }
-
 
                 foreach (var sport in _udapiServiceFacade.GetSports())
                 {
@@ -193,14 +179,9 @@ namespace SS.Integration.Adapter
 
                 GetStatistics();
 
-                var parallelOptions = new ParallelOptions
-                    {
-                        MaxDegreeOfParallelism = Environment.ProcessorCount
-                    };
+                var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
 
-                Parallel.ForEach(
-                    _sports,
-                    parallelOptions, ProcessSport);
+                Parallel.ForEach(_sports, parallelOptions, ProcessSport);
 
                 _logger.DebugFormat("Fixture creation queueSize={0}", _resourceCreationQueue.Count);
             }
@@ -306,7 +287,8 @@ namespace SS.Integration.Adapter
                 _logger.InfoFormat("Cannot find sport={0} in UDAPI....", sport);
                 return;
             }
-            else if (resources.Count == 0)
+            
+            if (resources.Count == 0)
             {
                 _logger.InfoFormat("There are currently no fixtures for sport={0} in UDAPI", sport);
             }
@@ -433,9 +415,8 @@ namespace SS.Integration.Adapter
                                                    _marketStateObjectStore, lastSequenceNumber);
 
                     _Stats.AddValue(AdapterKeys.STREAMS, resource.Id);
-                    listener.Start();
-
-                    _listeners.TryAdd(resource.Id, listener);
+                    if(listener.Start())
+                        _listeners.TryAdd(resource.Id, listener);
                 }
                 catch (Exception ex)
                 {

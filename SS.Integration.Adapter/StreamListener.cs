@@ -134,39 +134,39 @@ namespace SS.Integration.Adapter
         /// </summary>
         public bool IsFixtureSetup { get; private set; }
 
-        public void Start()
+        public bool Start()
         {
             if (!IsErrored)
             {
-                _logger.InfoFormat("Starting Listener for sport={0} {1}", _sportName, _resource.ToString());
+                _logger.InfoFormat("Starting Listener for sport={0} {1}", _sportName, _resource);
             }
             else
             {
-                _logger.InfoFormat("Re-starting Listener for sport={0} {1} because it failed in previous attempt", _sportName, _resource.ToString());
+                _logger.InfoFormat("Re-starting Listener for sport={0} {1} because it failed in previous attempt", _sportName, _resource);
             }
 
             if (_currentSequence > 0)
             {
-                _logger.InfoFormat("{0} starts streaming with sequence={1}", _resource.ToString(), _currentSequence);
+                _logger.InfoFormat("{0} starts streaming with sequence={1}", _resource, _currentSequence);
             }
 
-            SetupListener();
+            return SetupListener();
         }
 
-        private void SetupListener()
+        private bool SetupListener()
         {
             if (_resource == null)
             {
                 _logger.WarnFormat("Listener for sport={0} cannot listen as resource (fixture) is null", _sportName);
                 _Stats.AddMessage(GlobalKeys.CAUSE, "Fixture is null").SetValue(StreamListenerKeys.STATUS, "Error");
                 IsErrored = true;
-                return;
+                return false;
             }
 
             if (_processingTask != null)
             {
                 _logger.InfoFormat("Processing task is already created. No action will be taken to refresh it. {0}", _fixtureSnapshot);
-                return;
+                return false;
             }
 
             try
@@ -199,7 +199,7 @@ namespace SS.Integration.Adapter
                 // state is required for fixture deletion
                 _eventState.UpdateFixtureState(_resource.Sport, _resource.Id, -1, _resource.MatchStatus);
 
-                return;
+                return false;
             }
             catch (Exception ex)
             {
@@ -209,7 +209,7 @@ namespace SS.Integration.Adapter
                 _Stats.AddMessage(GlobalKeys.CAUSE, ex).SetValue(StreamListenerKeys.STATUS, "Error");
                 _logger.Error(string.Format("Error processing snapshot for {0}", _resource.ToString()), ex);
 
-                return;
+                return false;
             }
 
             _processingTask = Task.Factory.StartNew(StreamSetup, TaskCreationOptions.LongRunning);
@@ -221,6 +221,8 @@ namespace SS.Integration.Adapter
                     _Stats.AddMessage(GlobalKeys.CAUSE, t.Exception).SetValue(StreamListenerKeys.STATUS, "Error");
                 },
                 TaskContinuationOptions.OnlyOnFaulted);
+
+            return true;
         }
 
         private void StreamSetup()

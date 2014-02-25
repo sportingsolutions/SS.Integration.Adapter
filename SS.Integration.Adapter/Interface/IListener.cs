@@ -27,7 +27,7 @@ namespace SS.Integration.Adapter.Interface
 
         bool IsFixtureSetup { get; }
 
-        void Start();
+        bool Start();
 
         void StartStreaming();
 
