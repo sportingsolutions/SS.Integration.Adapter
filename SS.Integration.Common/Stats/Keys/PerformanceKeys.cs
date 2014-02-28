@@ -22,8 +22,8 @@ namespace SS.Integration.Common.Stats.Keys
         public static readonly string FIXTURE_CREATION_PROCESSING_TIME = "PERF_FIXTURE_INSERT_TIME";
         public static readonly string FIXTURE_UPDATE_PROCESSING_TIME = "PERF_FIXTURE_UPDATE_TIME";
         public static readonly string NUMBER_OF_REQUEST_ERRORS = "PERF_SUBMIT_ERROR";
-        public static readonly string NUMBEER_OF_REQUESTS = "PERF_N_SUBMIT";
-        public static readonly string TOTAL_CHUNK_REQUESTS_PROCESSING_TIME = "PERF_TOT_CHUNK_REQ_TIME";
+        public static readonly string NUMBER_OF_REQUESTS = "PERF_N_SUBMIT";
+        public static readonly string TOTAL_CHUNK_REQUESTS = "PERF_N_SUBMIT_CHUNKS";
         public static readonly string TOTAL_REQUEST_PROCESSING_TIME = "PERF_TOT_REQ_TIME";
     }
 }
