@@ -42,7 +42,7 @@ namespace SS.Integration.Adapter.Model
 
                 if (notInCache && item != null)
                 {
-                    SetObject(id,item);
+                    base.SetObject(id,item);
                 }
 
                 return item;
