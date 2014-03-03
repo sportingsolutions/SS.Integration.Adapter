@@ -17,10 +17,14 @@ using System.Collections.Generic;
 using Ninject.Modules;
 using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Mappings;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
+using SS.Integration.Adapter.Plugin.Model;
+using SS.Integration.Adapter.Plugin.Model.Interface;
 using SS.Integration.Adapter.UdapiClient;
 using SS.Integration.Adapter.UdapiClient.Model;
+using System.Configuration;
 
 namespace SS.Integration.Adapter.WindowsService
 {
@@ -31,6 +35,23 @@ namespace SS.Integration.Adapter.WindowsService
             Bind<ISettings>().To<Settings>().InSingletonScope();
             Bind<IReconnectStrategy>().To<DefaultReconnectStrategy>().InSingletonScope();
             Bind<IServiceFacade>().To<UdapiServiceFacade>();
+
+            var mappingUpdaterSetting = ConfigurationManager.GetSection("mappingUpdater") as MappingUpdaterConfiguration;
+            Type mappingUpdaterFactoryType = Type.GetType(mappingUpdaterSetting.MappingUpdaterFactoryClass);
+            if (mappingUpdaterFactoryType == null)
+                throw new ApplicationException(
+                    string.Format(
+                        "Couldn't load MappingUpdaterFactory type of: {0}",
+                        mappingUpdaterSetting.MappingUpdaterFactoryClass));
+
+            IMappingUpdaterFactory mappingUpdaterFactInstance = (IMappingUpdaterFactory)Activator.CreateInstance(mappingUpdaterFactoryType);
+            mappingUpdaterFactInstance.Configuration = mappingUpdaterSetting;
+            IMappingUpdater mappingUpdater = mappingUpdaterFactInstance.GetMappingUpdater();
+
+            Bind<IMappingUpdater>().ToConstant(mappingUpdater);
+
+            IMappingsCollectionProvider mapCollProvider = new DefaultMappingsCollectionProvider(mappingUpdater);
+            Bind<IMappingsCollectionProvider>().ToConstant(mapCollProvider);
 
             // Factory method for creation of listener instances.
             var factoryMethod =
