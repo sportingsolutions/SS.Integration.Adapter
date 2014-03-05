@@ -26,16 +26,14 @@ namespace SS.Integration.Common.StatsAnalyser.Buckets.Properties
 
         internal override void SetValue(Message message, bool newmessage)
         {
-            Message prev = null;
             lock (this)
             {
-                prev = _CurrentValue;
                 _CurrentValue = message;
             }
 
             HasChangedSinceLastNofitication = true;
             LastChange = DateTime.Now;
-            AddHistoryItem(prev, newmessage);
+            AddHistoryItem(message, newmessage);
             NotifyObservers();
         }
 

@@ -124,7 +124,11 @@ namespace SS.Integration.Common.StatsAnalyser.Buckets.Properties
             {
                 int count = _History.Count;
                 int index = _History.IndexOf(lastseenmessage);
-                if (index < count - 1)
+                if (index == -1)
+                {
+                    copy.AddRange(_History);
+                }
+                else if (index < count - 1)
                 {
                     copy.AddRange(_History.GetRange(index + 1, _History.Count - index + 1));
                 }
