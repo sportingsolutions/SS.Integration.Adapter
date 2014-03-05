@@ -13,6 +13,8 @@
 //limitations under the License.
 
 
+using System;
+
 namespace SS.Integration.Common.StatsAnalyser.Buckets.Properties
 {
     public class SingleValueProperty : Property
@@ -32,6 +34,7 @@ namespace SS.Integration.Common.StatsAnalyser.Buckets.Properties
             }
 
             HasChangedSinceLastNofitication = true;
+            LastChange = DateTime.Now;
             AddHistoryItem(prev, newmessage);
             NotifyObservers();
         }
