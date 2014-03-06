@@ -183,6 +183,7 @@ namespace SS.Integration.Common.StatsAnalyser
                 unprocesseddata = currentvalue.Substring(index + MESSAGE_SEPARATOR.Length).Replace("\n", "").Replace("\r", "").Trim();
 
                 ProduceData(_DataBuilder.ToString());
+                _DataBuilder.Clear();
             }
             else
             {

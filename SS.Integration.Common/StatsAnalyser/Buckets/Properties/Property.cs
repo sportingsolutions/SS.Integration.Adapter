@@ -130,7 +130,7 @@ namespace SS.Integration.Common.StatsAnalyser.Buckets.Properties
                 }
                 else if (index < count - 1)
                 {
-                    copy.AddRange(_History.GetRange(index + 1, _History.Count - index + 1));
+                    copy.AddRange(_History.GetRange(index + 1, _History.Count - index - 1));
                 }
             }
 
