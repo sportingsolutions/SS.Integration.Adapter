@@ -94,9 +94,6 @@
     <Compile Include="UdapiClient\UdapiSessionContainer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="mappingUpdater.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />
