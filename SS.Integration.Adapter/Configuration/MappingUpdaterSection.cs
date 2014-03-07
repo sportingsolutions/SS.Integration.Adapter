@@ -16,22 +16,31 @@ namespace SS.Integration.Adapter.Configuration
         {
             var doc = XDocument.Parse(section.OuterXml);
             MappingUpdaterConfiguration result = new MappingUpdaterConfiguration();
-            if (doc.Element("mappingUpdater").Element("google") != null)
-            {
-                GoogleDocSettings googleSettings = new GoogleDocSettings();
-                SetProperties(googleSettings,
-                              doc.Element("mappingUpdater")
-                                 .Element("google")
-                                 .Elements()
-                                 .ToDictionary(x => x.Attribute("key").Value, v => v.Attribute("value").Value,
-                                               StringComparer.InvariantCultureIgnoreCase));
-                result.SerializerSettings = googleSettings;
-            }
             SetProperties(result,
                               doc.Element("mappingUpdater")
                                 .Element("generalConfig")
                                 .Elements()
                                 .ToDictionary(x => x.Attribute("key").Value, v => v.Attribute("value").Value, StringComparer.InvariantCultureIgnoreCase));
+
+            if (!String.IsNullOrEmpty(result.SerializerSettingsSection) && !String.IsNullOrEmpty(result.SerializerSettingsClass))
+            {
+                if (doc.Element("mappingUpdater").Element(result.SerializerSettingsSection) != null)
+                {
+                    Type serializerSettingsType =Type.GetType(result.SerializerSettingsClass);
+                    if (serializerSettingsType != null)
+                    {
+                        IConfigSerializerSettings configSerializerSettings = (IConfigSerializerSettings) Activator.CreateInstance(serializerSettingsType);
+                        SetProperties(configSerializerSettings,
+                                      doc.Element("mappingUpdater")
+                                         .Element(result.SerializerSettingsSection)
+                                         .Elements()
+                                         .ToDictionary(x => x.Attribute("key").Value, v => v.Attribute("value").Value,
+                                                       StringComparer.InvariantCultureIgnoreCase));
+                        result.SerializerSettings = configSerializerSettings;
+                    }
+                }
+            }
+
             return result; 
         }
 

@@ -22,5 +22,7 @@ namespace SS.Integration.Adapter.Plugin.Model
         public string FileNameOrReferenceToDeserialize { get; set; }
         public string MappingUpdaterFactoryClass { get; set; }
         public int CheckForUpdatesInterval { get; set; }
+        public string SerializerSettingsSection { get; set; }
+        public string SerializerSettingsClass { get; set; }
     }
 }
