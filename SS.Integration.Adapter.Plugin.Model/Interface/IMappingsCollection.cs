@@ -17,5 +17,6 @@ namespace SS.Integration.Adapter.Plugin.Model.Interface
     public interface IMappingsCollection
     {
         Mapping this[string key] { get; }
+        int Count { get; }
     }
 }

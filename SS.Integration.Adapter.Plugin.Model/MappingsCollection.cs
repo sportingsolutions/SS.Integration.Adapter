@@ -58,6 +58,16 @@ namespace SS.Integration.Adapter.Plugin.Model
             }
         }
 
+        public int Count
+        {
+            get
+            {
+                if (this.Collection == null)
+                    return 0;
+                return this.Collection.Count;
+            }
+        }
+
 
         #endregion
 
