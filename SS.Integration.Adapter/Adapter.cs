@@ -177,13 +177,12 @@ namespace SS.Integration.Adapter
             {
                 _logger.DebugFormat("Timer is querying API for fixtures");
 
-                GetStatistics();
-
                 var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
 
                 Parallel.ForEach(_sports, parallelOptions, ProcessSport);
 
-                _logger.DebugFormat("Fixture creation queueSize={0}", _resourceCreationQueue.Count);
+                GetStatistics();
+
             }
             catch (Exception ex)
             {
