@@ -47,6 +47,7 @@ namespace SS.Integration.Adapter.Plugin.Model
         public string ScorecastTemplateName { get; set; }
 
         public double PriceLimit { get; set; }
+        public bool IsPrimaryMarket { get; set; }
     } 
 
 }

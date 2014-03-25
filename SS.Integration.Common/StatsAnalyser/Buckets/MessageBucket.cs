@@ -54,10 +54,11 @@ namespace SS.Integration.Common.StatsAnalyser.Buckets
         public MessageBucket(string source)
         {
             Source = source;
-            _Properties = new Dictionary<string, Property>();            
+            _Properties = new Dictionary<string, Property>();
             _Observers = new List<IObserver<MessageBucket>>();
             _AreNotificationsSuspended = false;
             _HasChangedSinceLastNofication = false;
+            LastChange = DateTime.Now;
         }
 
         public string Source { get; private set; }
@@ -69,6 +70,8 @@ namespace SS.Integration.Common.StatsAnalyser.Buckets
                 return _Properties.Values;
             }
         }
+
+        public DateTime LastChange { get; private set; }
 
         public Property ConfigureProperty(string key, MessageBucketPropertyType messageBucketType = MessageBucketPropertyType.SINGLE_VALUE)
         {
@@ -146,6 +149,7 @@ namespace SS.Integration.Common.StatsAnalyser.Buckets
 
             property.SetValue(message, newmessage);
             _HasChangedSinceLastNofication = true;
+            LastChange = DateTime.Now;
             NotifyObservers();
         }
 

@@ -261,6 +261,7 @@ namespace SS.Integration.Adapter.Tests
 
             var countDown = new CountdownEvent(2);
             listener.Setup(f => f.Start()).Callback(() => countDown.Signal());
+            listener.Setup(f => f.Start()).Returns(true);
             listener.Setup(f => f.Stop()).Callback(() => countDown.Signal());
             
             var adapter = new Adapter(
@@ -431,6 +432,7 @@ namespace SS.Integration.Adapter.Tests
             listener.Setup(f => f.Start()).Callback(() =>
                 are.Set()
                 );
+            listener.Setup(f => f.Start()).Returns(true);
 
             // First Iteration
             adapter.ProcessSport("Football");
@@ -486,6 +488,7 @@ namespace SS.Integration.Adapter.Tests
             listener.Setup(f => f.Start()).Callback(() =>
                 are.Set()
                 );
+            listener.Setup(f => f.Start()).Returns(true);
 
             // First Iteration
             adapter.ProcessSport("Football");
