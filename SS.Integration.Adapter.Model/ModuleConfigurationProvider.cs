@@ -41,10 +41,11 @@ namespace SS.Integration.Adapter.Model
         private static Configuration ReadInternal(Assembly assembly, string filename)
         {
             var filepath = Path.Combine(Path.GetDirectoryName(assembly.Location), filename);
-            var filemap = new ExeConfigurationFileMap { ExeConfigFilename = filepath };
-
-            var conf = ConfigurationManager.OpenMappedExeConfiguration(filemap, ConfigurationUserLevel.None);
-            return conf;
+            
+            var fileMap = new ExeConfigurationFileMap {ExeConfigFilename = File.Exists(filepath) ? filepath : filename};
+            var configuration = ConfigurationManager.OpenMappedExeConfiguration(fileMap, ConfigurationUserLevel.None);
+            
+            return configuration;
         }
     }
 }
