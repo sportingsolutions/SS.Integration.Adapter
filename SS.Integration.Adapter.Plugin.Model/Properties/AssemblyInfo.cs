@@ -19,7 +19,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("SS.Integration.Adapter.Plugin.Model")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Set of classes to help built/define mappings")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyProduct("SS.Integration.Adapter")]
 [assembly: AssemblyCompany("Sporting Solutions")]

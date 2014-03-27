@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <package>
   <metadata>
-    <id>$id$</id>
-    <description>$description$</description>
+    <id>SS.Integration.Common</id>
+    <description>Common set of functionalities for SPIN Adapter and its plugins</description>
     <version>$version$</version>
-    <authors>$author$</authors>
-    <owners>$author$</owners>
+    <authors>Sporting Solutions</authors>
+    <owners>Sporting Solutions</owners>
     <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
     <projectUrl>http://www.sportingsolutions.com</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>

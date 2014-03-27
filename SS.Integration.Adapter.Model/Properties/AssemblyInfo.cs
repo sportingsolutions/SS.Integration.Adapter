@@ -19,7 +19,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("SS.Integration.Adapter.Model")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Adapter's model classes")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyProduct("SS.Integration.Adapter")]
 [assembly: AssemblyCompany("Sporting Solutions")]

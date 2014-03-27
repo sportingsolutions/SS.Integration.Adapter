@@ -19,7 +19,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("SS.Integration.Adapter.Plugin.Logger")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Default Sporting Solution Integration Adapter's plug-in")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyProduct("SS.Integration.Adapter")]
 [assembly: AssemblyCompany("Sporting Solutions")]
