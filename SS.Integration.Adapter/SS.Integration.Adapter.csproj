@@ -60,9 +60,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\CommonAssemblyInfo.cs">
-      <Link>Properties\CommonAssemblyInfo.cs</Link>
-    </Compile>
     <Compile Include="Adapter.cs" />
     <Compile Include="Configuration\Settings.cs" />
     <Compile Include="Configuration\SportConfiguration.cs" />

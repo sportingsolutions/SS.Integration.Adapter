@@ -21,6 +21,14 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("SS.Integration.Adapter")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
+[assembly: AssemblyProduct("SS.Integration.Adapter")]
+[assembly: AssemblyCompany("Sporting Solutions")]
+[assembly: AssemblyCopyright("Copyright (c) Sporting Solutions 2014")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
+
 
 // Setting ComVisible to false makes the types in this assembly not visible 
 // to COM components.  If you need to access a type in this assembly from 

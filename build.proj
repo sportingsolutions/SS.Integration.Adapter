@@ -95,7 +95,7 @@
     <Message Text="Building ZIP $(Configuration) $(Platform) $(ServiceEnvironment) Completed" />
   </Target>
 
-  <Target Name="BuildCompile" DependsOnTargets="Version;Clean;Compile;PrepareForZip;BuildZip">
+  <Target Name="BuildCompile" DependsOnTargets="Clean;Compile;PrepareForZip;BuildZip">
   </Target>
 
 </Project>
