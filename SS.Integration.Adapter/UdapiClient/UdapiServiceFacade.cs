@@ -57,7 +57,7 @@ namespace SS.Integration.Adapter.UdapiClient
             }
             catch (Exception)
             {
-                _logger.Error("Unable to connect to the GTP-UDAPI. Check the Evenue adapter is running ok.");
+                _logger.Error("Unable to connect to the GTP-UDAPI");
                 throw;
             }
         }

@@ -14,9 +14,9 @@
 
 using System.Reflection;
 
-[assembly: AssemblyProduct("SportingSolutions.Connect.Adapter")]
+[assembly: AssemblyProduct("SS.Integration.Adapter")]
 [assembly: AssemblyCompany("Sporting Solutions Ltd.")]
-[assembly: AssemblyCopyright("Copyright (c) Sporting Solutions Ltd. 2013")]
+[assembly: AssemblyCopyright("Copyright (c) Sporting Solutions Ltd. 2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: AssemblyVersion("0.1.0.0")]

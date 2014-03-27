@@ -13,14 +13,13 @@
 //limitations under the License.
 
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("SS.Integration.Adapter.WindowsService")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Adapter for integrating GTP with Customer's trading platform")]
 [assembly: AssemblyConfiguration("")]
 //[assembly: AssemblyCompany("Sporting Solutions Ltd.")]
 //[assembly: AssemblyProduct("SS.Integration.Adapter.WindowsService")]

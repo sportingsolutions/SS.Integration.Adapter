@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>SS.Integration.Adapter</id>
+    <description>Adapter for integrating GTP with Customer's trading platform</description>
+    <version>1.0.0.0</version>
+    <authors>Sporting Solutions</authors>
+    <owners>Sporting Solutions</owners>
+    <licenseUrl>http://www.sportingsolutions.com</licenseUrl>
+    <projectUrl>http://www.sportingsolutions.com</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <copyright>Sporting Solutions</copyright>
+  </metadata>
+  <files>
+    <file src="bin\Release\**\*.*" exclude="**\*.pdb;**\*.xml" />
+  </files>
+</package>
