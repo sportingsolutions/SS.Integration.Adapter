@@ -5,7 +5,7 @@
     <SolutionFileName>$(MSBuildProjectDirectory)\SS.Integration.Adapter.sln</SolutionFileName>
 		<BuildDir Condition=" '$(BuildDir)' == ''">BuildOutput</BuildDir>
     <!--Default Configuration-->
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">Any CPU</Platform>
     <ServiceEnvironment Condition=" '$(ServiceEnvironment)' == '' ">Integration</ServiceEnvironment>
 
@@ -63,39 +63,62 @@
     <Exec Command="del *.msi" />
     <Exec Command="del *.wixpdb" />
     <Exec Command="del *.nupkg" />
-	<RemoveDir Directories="$(BuildDir)" />
   </Target>
 
   <Target Name="Compile">
     <Message Text="Compile $(Configuration) $(Platform) $(ServiceEnvironment)" />
     <MSBuild Projects="$(SolutionFileName)" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(Platform);ServiceEnvironment=$(ServiceEnvironment)" />
   </Target>
+
+	<Target Name="CleanFolder">
+		<RemoveDir Directories="$(BuildDir)" />
+	</Target>
   
-  <Target Name="PrepareForZip">
+  <Target Name="PrepareArtifact" DependsOnTargets="CleanFolder">
     <ItemGroup>
 	    <Library 
-		    Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*" 
-		    Exclude="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.pdb;$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.json;$(MSBuildProjectDirectory)\SS.Integration.Adapter\bin\$(Configuration)\*.vshost*;" 
+		    Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.dll;
+								 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.exe;" 
+		    Exclude="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.pdb;
+								 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.json;
+								 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.vshost.*"
 		/>		
-		<Plugin Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\SS.Integration.Adapter.Plugin.Logger.dll" />
 	  </ItemGroup>
 
-    <Message Text="Preparing ZIP $(Configuration) $(Platform) $(ServiceEnvironment)" />
+    <Message Text="Preparing artifact for $(Configuration) started " />
 	  <Copy SourceFiles="@(Library)" DestinationFolder="$(BuildDir)"/>
-	  <Copy SourceFiles="@(Plugin)" DestinationFolder="$(BuildDir)"/>
-    <Message Text="Preparing ZIP $(Configuration) $(Platform) $(ServiceEnvironment) Completed" />
+    <Message Text="Preparing artifict for $(Configuration) completed" />
   </Target>
-  
-  <Target Name="BuildZip" >
-    <Message Text="Building ZIP $(Configuration) $(Platform) $(ServiceEnvironment)" />
+
+	<Target Name="PrepareForZip" DependsOnTargets="CleanFolder">
+		<ItemGroup>
+			<Library
+		    Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*"
+		    Exclude="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.pdb;
+								 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.json;
+								 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.vshost*;
+								 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.xml*;"
+			/>
+			<Plugin Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\SS.Integration.Adapter.Plugin.Logger.dll;
+										   $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\log4net.config" />
+		</ItemGroup>
+
+		<Message Text="Preparing ZIP file for $(Configuration) started " />
+		<Copy SourceFiles="@(Library)" DestinationFolder="$(BuildDir)"/>
+		<Copy SourceFiles="@(Plugin)" DestinationFolder="$(BuildDir)"/>
+		<Message Text="Preparing ZIP file for $(Configuration) completed" />
+	</Target>
+
+	<Target Name="BuildZip" >
+    <Message Text="Building ZIP file" />
     <ItemGroup>
       <ZipFiles Include="$(BuildDir)\**\*.*" Exclude="*.zip" />
     </ItemGroup>
     <MSBuild.ExtensionPack.Compression.DNZip TaskAction="Create" CompressFiles="@(ZipFiles)" ZipFileName="$(BuildDir)\SS.Integration.Adapter-$(MaxAssemblyVersion).zip" RemoveRoot="$(BuildDir)"/>
-    <Message Text="Building ZIP $(Configuration) $(Platform) $(ServiceEnvironment) Completed" />
+    <Message Text="Building ZIP completed" />
   </Target>
 
-  <Target Name="BuildCompile" DependsOnTargets="Clean;Compile;PrepareForZip;BuildZip">
-  </Target>
+	<Target Name="BuildArtifact" DependsOnTargets="PrepareArtifact;BuildZip" />
+	<Target Name="BuildCompile" DependsOnTargets="Clean;Compile;PrepareForZip;BuildZip" />
 
 </Project>
