@@ -8,54 +8,12 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">Any CPU</Platform>
     <ServiceEnvironment Condition=" '$(ServiceEnvironment)' == '' ">Integration</ServiceEnvironment>
-
-    <!--Services-->
-    <AdapterWindowsServiceName>SS.Integration.Adapter.WindowsService</AdapterWindowsServiceName>
-    <SplitVersion>$(BUILD_NUMBER.Split('.'))</SplitVersion>
   </PropertyGroup>
 
   <!--MSBuild-->
   <Import Project="$(MSBuildExtensionsPath)\ExtensionPack\4.0\MSBuild.ExtensionPack.tasks"/>
   <Import Project="$(MSBuildExtensionsPath)\MSBuildCommunityTasks\MSBuild.Community.Tasks.Targets"/>
   <UsingTask TaskName="TransformXml" AssemblyFile="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\Web\Microsoft.Web.Publishing.Tasks.dll"/>
-
-  <Target Name="Version">
-    <Message Text="$(SplitVersion)" />
-    <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetItem" InputItems1="$(SplitVersion)" Position="0">
-      <Output TaskParameter="OutputItems" ItemName="major"/>
-    </MSBuild.ExtensionPack.Framework.MsBuildHelper>
-    <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetItem" InputItems1="$(SplitVersion)" Position="1">
-      <Output TaskParameter="OutputItems" ItemName="minor"/>
-    </MSBuild.ExtensionPack.Framework.MsBuildHelper>
-    <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetItem" InputItems1="$(SplitVersion)" Position="2">
-      <Output TaskParameter="OutputItems" ItemName="build"/>
-    </MSBuild.ExtensionPack.Framework.MsBuildHelper>
-    <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetItem" InputItems1="$(SplitVersion)" Position="3">
-      <Output TaskParameter="OutputItems" ItemName="revision"/>
-    </MSBuild.ExtensionPack.Framework.MsBuildHelper>
-    
-    <PropertyGroup>
-     <MajorVersion>%(major.Identity)</MajorVersion>
-      <MinorVersion>%(minor.Identity)</MinorVersion>
-      <BuildVersion>%(build.Identity)</BuildVersion>
-      <RevisionNumber>%(revision.Identity)</RevisionNumber>
-    </PropertyGroup>
-    <!--Version the CommonAssemblyInfo.cs file-->
-    <MSBuild.ExtensionPack.Framework.AssemblyInfo AssemblyInfoFiles="$(MSBuildProjectDirectory)\CommonAssemblyInfo.cs"
-                                                  AssemblyFileMajorVersion="$(MajorVersion)"
-                                                  AssemblyFileMinorVersion="$(MinorVersion)"
-                                                  AssemblyFileBuildNumber="$(BuildVersion)"
-                                                  AssemblyFileRevision="$(RevisionNumber)"
-                                                  AssemblyMajorVersion="$(MajorVersion)"
-                                                  AssemblyMinorVersion="$(MinorVersion)"
-                                                  AssemblyBuildNumber="$(BuildVersion)"
-                                                  AssemblyRevision="$(RevisionNumber)"
-                                                  AssemblyFileVersion="$(MajorVersion).$(MinorVersion).$(BuildVersion).$(RevisionNumber)"
-                                                  AssemblyVersion="$(MajorVersion).$(MinorVersion).$(BuildVersion).$(RevisionNumber)">
-      <Output TaskParameter="MaxAssemblyVersion" PropertyName="MaxAssemblyVersion" />
-    </MSBuild.ExtensionPack.Framework.AssemblyInfo>
-    <Message Text="----current version---: '$(MaxAssemblyVersion)'" />
-  </Target>
 
   <Target Name="Clean">
     <Message Text="Clean $(Configuration) $(Platform) $(ServiceEnvironment)" />
@@ -114,7 +72,7 @@
     <ItemGroup>
       <ZipFiles Include="$(BuildDir)\**\*.*" Exclude="*.zip" />
     </ItemGroup>
-    <MSBuild.ExtensionPack.Compression.DNZip TaskAction="Create" CompressFiles="@(ZipFiles)" ZipFileName="$(BuildDir)\SS.Integration.Adapter-$(MaxAssemblyVersion).zip" RemoveRoot="$(BuildDir)"/>
+    <MSBuild.ExtensionPack.Compression.DNZip TaskAction="Create" CompressFiles="@(ZipFiles)" ZipFileName="$(BuildDir)\SS.Integration.Adapter-$(BUILD_NUMBER).zip" RemoveRoot="$(BuildDir)"/>
     <Message Text="Building ZIP completed" />
   </Target>
 
