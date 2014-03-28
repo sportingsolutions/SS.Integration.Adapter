@@ -11,7 +11,7 @@
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<copyright>Copyright (c) SPIN Services Ltd. 2014</copyright>
 		<dependencies>
-			<dependency id="SS.Integration.Adapter.Model" version="$version$" />
+			<dependency id="SS.Integration.Adapter.Model" version="[$version$]" />
 		</dependencies>
 	</metadata>
 	<files>

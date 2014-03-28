@@ -12,6 +12,6 @@
     <copyright>Copyright (c) SPIN Services Ltd. 2014</copyright>
   </metadata>
   <files>
-    <file src="bin\Release\**\*.*" exclude="**\*.pdb;**\*.xml" />
+    <file src="bin\Release\**\*.*" exclude="**\*.pdb;**\*.xml;**\*.config;**\*.vshost.*" target="lib\net45" />
   </files>
 </package>
