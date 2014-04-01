@@ -51,7 +51,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject />
+    <StartupObject>SS.Integration.Adapter.WindowsService.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="log4net">
