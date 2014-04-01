@@ -41,29 +41,40 @@
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.json;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.vshost.*"
 			/>
+			<DefaultPlugin
+				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\SS.Integration.Adapter.Plugin.Logger.dll;
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\log4net.config"
+			/>
+			<Licence Include="$(MSBuildProjectDirectory)\LICENCE.txt" />
 		</ItemGroup>
 
 		<Message Text="Preparing artifact for $(Configuration) started " />
-		<Copy SourceFiles="@(Library)" DestinationFolder="$(BuildDir)"/>
+		<Copy SourceFiles="@(Library)"       DestinationFolder="$(BuildDir)"/>
+		<Copy SourceFiles="@(DefaultPlugin)" DestinationFolder="$(BuildDir)"/>
+		<Copy SourceFiles="@(Licence)"       DestinationFolder="$(BuildDir)"/>
 		<Message Text="Preparing artifict for $(Configuration) completed" />
 	</Target>
 
 	<Target Name="PrepareForZip" DependsOnTargets="CleanFolder">
 		<ItemGroup>
 			<Library
-		    Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*"
-		    Exclude="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.pdb;
-					 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.json;
-					 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.vshost*;
-					 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.xml*;"
+				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*"
+				Exclude="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.pdb;
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.json;
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.vshost*;
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.xml*;"
 			/>
-			<Plugin Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\SS.Integration.Adapter.Plugin.Logger.dll;
-							 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\log4net.config" />
+			<DefaultPlugin
+				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\SS.Integration.Adapter.Plugin.Logger.dll;
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\log4net.config" 
+			/>
+			<Licence Include="$(MSBuildProjectDirectory)\LICENCE.txt" />
 		</ItemGroup>
 
 		<Message Text="Preparing ZIP file for $(Configuration) started " />
-		<Copy SourceFiles="@(Library)" DestinationFolder="$(BuildDir)"/>
-		<Copy SourceFiles="@(Plugin)" DestinationFolder="$(BuildDir)"/>
+		<Copy SourceFiles="@(Library)"       DestinationFolder="$(BuildDir)"/>
+		<Copy SourceFiles="@(DefaultPlugin)" DestinationFolder="$(BuildDir)"/>
+		<Copy SourceFiles="@(Licence)"       DestinationFolder="$(BuildDir)"/>
 		<Message Text="Preparing ZIP file for $(Configuration) completed" />
 	</Target>
 

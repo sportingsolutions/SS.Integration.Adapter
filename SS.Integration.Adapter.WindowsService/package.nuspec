@@ -12,7 +12,9 @@
 		<copyright>Copyright (c) SPIN Services Ltd. 2014</copyright>
 	</metadata>
 	<files>
-		<file src="bin\Release\**\*.*" exclude="**\*.pdb;**\*.xml;**\*.vshost.*" target="lib\net45" />		
+		<file src="bin\Release\**\*.*" exclude="**\*.pdb;**\*.xml;**\*.vshost.*" target="lib\net45" />
+		<file src="..\SS.Integration.Adapter.Plugin.Logger\bin\Release\SS.Integration.Adapter.Plugin.Logger.dll"  target="lib\net45" />
+		<file src="..\SS.Integration.Adapter.Plugin.Logger\bin\Release\log4net.config"  target="lib\net45" />
 		<file src="..\LICENCE.txt" target="lib\net45" />
 	</files>
 </package>
