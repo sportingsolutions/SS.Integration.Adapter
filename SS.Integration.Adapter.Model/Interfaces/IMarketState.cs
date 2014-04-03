@@ -29,6 +29,8 @@ namespace SS.Integration.Adapter.Model.Interfaces
 
         bool IsResulted { get; }
 
+        string Line { get; }
+
         /// <summary>
         /// True if the market has been active at least once 
         /// during the fixture lifetime

@@ -87,10 +87,10 @@ namespace SS.Integration.Adapter.MarketRules
         {
             var market = new Market { Id = MarketState.Id };
 
-            /*if (MarketState.Line != null)
+            if (MarketState.Line != null)
             {
                 market.Tags.Add("line", MarketState.Line);
-            }*/
+            }
 
             foreach (var seln in MarketState.Selections)
                 market.Selections.Add(new Selection { Id = seln.Id, Status = SelectionStatus.Void, Price = 0 });
