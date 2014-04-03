@@ -20,10 +20,8 @@ using System.Reflection;
 using System.ServiceProcess;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
-using SS.Integration.Adapter.UdapiClient.Model;
 using log4net;
 using Ninject;
-using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Adapter.ProcessState;
@@ -142,9 +140,8 @@ namespace SS.Integration.Adapter.WindowsService
             var service = _iocContainer.Get<IServiceFacade>();
 
             var listenerFactoryMethod =
-                _iocContainer.Get<Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState,IObjectProvider<IDictionary<string,MarketState>>,  int, IListener>>();
+                _iocContainer.Get<Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState,IObjectProvider<IMarketStateCollection>,  int, IListener>>();
             var eventState = EventState.Create(new FileStoreProvider(), settings);
-            var marketFilterObjectProvider = new BinaryStoreProvider<IDictionary<string, MarketState>>();
 
             _adapter = new Adapter(settings, service, connector, eventState, listenerFactoryMethod);
 

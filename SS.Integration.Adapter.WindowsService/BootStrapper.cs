@@ -13,14 +13,12 @@
 //limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using Ninject.Modules;
 using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Adapter.UdapiClient;
-using SS.Integration.Adapter.UdapiClient.Model;
 
 namespace SS.Integration.Adapter.WindowsService
 {
@@ -34,11 +32,11 @@ namespace SS.Integration.Adapter.WindowsService
 
             // Factory method for creation of listener instances.
             var factoryMethod =
-                new Func<string, IResourceFacade, Fixture, IAdapterPlugin,IEventState,IObjectProvider<IDictionary<string,MarketState>>, int, IListener>(
+                new Func<string, IResourceFacade, Fixture, IAdapterPlugin,IEventState,IObjectProvider<IMarketStateCollection>, int, IListener>(
                     (sport, resource, fixtureSnapshot, connector, eventState,marketFilterObjectProvider, lastSequence) 
                         => new StreamListener(sport, resource, fixtureSnapshot, connector, eventState, marketFilterObjectProvider, lastSequence));
 
-            Bind<Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState,IObjectProvider<IDictionary<string,MarketState>>, int, IListener>>().ToConstant(factoryMethod);
+            Bind<Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState,IObjectProvider<IMarketStateCollection>, int, IListener>>().ToConstant(factoryMethod);
         }
     }
 }

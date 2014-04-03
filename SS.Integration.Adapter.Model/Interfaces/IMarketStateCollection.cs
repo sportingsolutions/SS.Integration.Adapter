@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -12,29 +12,17 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
 using System.Collections.Generic;
 
 namespace SS.Integration.Adapter.Model.Interfaces
 {
-    public interface IAdapterPlugin
+    public interface IMarketStateCollection
     {
-        void Initialise();
 
-        void ProcessSnapshot(Fixture fixture, bool hasEpochChanged = false);
+        bool HasMarket(string MarketId);
 
-        void ProcessStreamUpdate(Fixture fixture, bool hasEpochChanged = false);
+        IMarketState this[string MarketId] { get; set; }
 
-        void ProcessMatchStatus(Fixture fixture);
-
-        void ProcessFixtureDeletion(Fixture fixture);
-
-        void UnSuspend(Fixture fixture);
-
-        void Suspend(string fixtureId);
-        
-        void Dispose();
-
-        IEnumerable<IMarketRule> MarketRules { get; }
+        IEnumerable<string> Markets { get; } 
     }
 }

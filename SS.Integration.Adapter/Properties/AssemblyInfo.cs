@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 
@@ -37,3 +38,4 @@ using System.Runtime.InteropServices;
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("2af6a12c-8698-4c11-a1e6-bc338c0cf346")]
+[assembly: InternalsVisibleTo("SS.Integration.Adapter.Tests")]

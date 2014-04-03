@@ -16,8 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
-using SS.Integration.Adapter.UdapiClient;
-using SS.Integration.Adapter.UdapiClient.Model;
+using SS.Integration.Adapter.MarketRules;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Events;
@@ -44,14 +43,12 @@ namespace SS.Integration.Adapter
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListener).ToString());
 
         private readonly string _sportName;
-
         private readonly IResourceFacade _resource;
-
         private readonly Fixture _fixtureSnapshot;
-
         private readonly IAdapterPlugin _platformConnector;
-
         private readonly IEventState _eventState;
+        private readonly IStatsHandle _Stats;
+        private readonly MarketsRulesManager _marketsRuleManager;
 
         private int _currentSequence = -1;
         private int _lastSequenceProcessedInSnapshot = -1;
@@ -67,14 +64,13 @@ namespace SS.Integration.Adapter
         /// true if has successfuly established connection to stream server
         /// </summary>
         private bool _isStreamConnected;
-
-        private readonly MarketsFilter _marketsFilter;
         private Task _processingTask;
         private Task _sequenceSynchroniser;
-        private IStatsHandle _Stats;
+        
 
 
-        public StreamListener(string sportName, IResourceFacade resource, Fixture fixtureSnapshot, IAdapterPlugin platformConnector, IEventState eventState, IObjectProvider<IDictionary<string, MarketState>> marketFiltersStorageProvider, int currentSequence = -1)
+        public StreamListener(string sportName, IResourceFacade resource, Fixture fixtureSnapshot, IAdapterPlugin platformConnector, IEventState eventState, 
+            IObjectProvider<IMarketStateCollection> marketStateProvider, int currentSequence = -1)
         {
             _logger.InfoFormat("Instantiating StreamListener for {0} with sequence={1}", fixtureSnapshot, currentSequence);
             if (fixtureSnapshot == null)
@@ -105,7 +101,17 @@ namespace SS.Integration.Adapter
                 ||
                 int.Parse(fixtureSnapshot.MatchStatus) == (int)MatchStatus.Ready);
 
-            _marketsFilter = new MarketsFilter(fixtureSnapshot, marketFiltersStorageProvider);
+
+
+            List<IMarketRule> rules = new List<IMarketRule> 
+            { 
+                InactiveMarketsFilteringRule.Instance,
+                VoidUnSettledMarket.Instance
+            };
+
+            rules.AddRange(platformConnector.MarketRules);
+
+            _marketsRuleManager = new MarketsRulesManager(fixtureSnapshot, marketStateProvider, rules);
 
             _Stats = StatsManager.Instance["StreamListener"].GetHandle(fixtureSnapshot.Id);
             _Stats.SetValue(StreamListenerKeys.FIXTURE, fixtureSnapshot.Id);
@@ -192,7 +198,7 @@ namespace SS.Integration.Adapter
             }
             catch (FixtureIgnoredException)
             {
-                _logger.WarnFormat("Fixture {0} will be ignored.", _resource.ToString());
+                _logger.WarnFormat("Fixture {0} will be ignored.", _resource);
                 _Stats.SetValue(StreamListenerKeys.STATUS, "Fixture Ignored");
                 IsIgnored = true;
 
@@ -207,7 +213,7 @@ namespace SS.Integration.Adapter
                 SuspendMarkets();
 
                 _Stats.AddMessage(GlobalKeys.CAUSE, ex).SetValue(StreamListenerKeys.STATUS, "Error");
-                _logger.Error(string.Format("Error processing snapshot for {0}", _resource.ToString()), ex);
+                _logger.Error(string.Format("Error processing snapshot for {0}", _resource), ex);
 
                 return false;
             }
@@ -279,10 +285,10 @@ namespace SS.Integration.Adapter
             }
             catch (Exception ex)
             {
-                _logger.Error(string.Format("{0} Error trying to process snapshot when connecting to stream", _resource.ToString()), ex);
+                _logger.Error(string.Format("{0} Error trying to process snapshot when connecting to stream", _resource), ex);
                 IsErrored = true;
                 _Stats.AddMessage(GlobalKeys.CAUSE, ex).SetValue(StreamListenerKeys.STATUS, "Error");
-                _marketsFilter.RollbackChanges();
+                _marketsRuleManager.RollbackChanges();
             }
         }
 
@@ -330,7 +336,7 @@ namespace SS.Integration.Adapter
                 _platformConnector.Suspend(_resource.Id);
                 if (!fixtureLevelOnly)
                 {
-                    var suspendedSnapshot = _marketsFilter.GenerateAllMarketsSuspenssion(_resource.Id);
+                    var suspendedSnapshot = _marketsRuleManager.GenerateAllMarketsSuspenssion();
                     _platformConnector.ProcessStreamUpdate(suspendedSnapshot);
                 }
 
@@ -358,7 +364,6 @@ namespace SS.Integration.Adapter
             _logger.DebugFormat("Sequence synchornisation is complete for {0}", _fixtureSnapshot);
         }
 
-        
         public void ResourceOnStreamEvent(object sender, StreamEventArgs streamEventArgs)
         {
             try
@@ -397,7 +402,7 @@ namespace SS.Integration.Adapter
 
                 if (epochValid)
                 {
-                    _marketsFilter.FilterInactiveMarkets(fixtureDelta);
+                    _marketsRuleManager.ApplyRules(fixtureDelta);
                     _platformConnector.ProcessStreamUpdate(fixtureDelta, hasEpochChanged);
 
                     _Stats.IncrementValue(StreamListenerKeys.UPDATE_PROCESSED);
@@ -419,7 +424,7 @@ namespace SS.Integration.Adapter
             catch (AggregateException ex)
             {
                 IsErrored = true;
-                _marketsFilter.RollbackChanges();
+                _marketsRuleManager.RollbackChanges();
                 foreach (var innerException in ex.InnerExceptions)
                 {
                     _logger.Error(string.Format("Error processing update that arrived for {0}", _resource),
@@ -433,7 +438,7 @@ namespace SS.Integration.Adapter
             {
                 IsErrored = true;
                 _Stats.AddMessage(GlobalKeys.CAUSE, ex).SetValue(StreamListenerKeys.STATUS, "Error");
-                _marketsFilter.RollbackChanges();
+                _marketsRuleManager.RollbackChanges();
                 _logger.Error(string.Format("Error processing update that arrived for {0}", _resource), ex);
             }
             finally
@@ -476,7 +481,7 @@ namespace SS.Integration.Adapter
                 catch (Exception ex)
                 {
                     _logger.Error(string.Format("{0} Error trying to process snapshot when reconnecting", _resource), ex);
-                    _marketsFilter.RollbackChanges();
+                    _marketsRuleManager.RollbackChanges();
                 }
             }
         }
@@ -501,12 +506,15 @@ namespace SS.Integration.Adapter
 
             if (comparisonResult == 1)
             {
-                _logger.InfoFormat("{0} sequence={1} is less than currentSequence={2} in {3}", _resource, fixtureDelta.Sequence, _currentSequence, fixtureDelta);
+                _logger.InfoFormat("{0} sequence={1} is less than currentSequence={2} in {3}", 
+                    _resource, fixtureDelta.Sequence, _currentSequence, fixtureDelta);
                 return false;
             }
-            else if (comparisonResult == -1)
+            
+            if (comparisonResult == -1)
             {
-                _logger.WarnFormat("{0} sequence={1} is more than one greater that currentSequence={2} in {3} ", _resource, fixtureDelta.Sequence, _currentSequence, fixtureDelta);
+                _logger.WarnFormat("{0} sequence={1} is more than one greater that currentSequence={2} in {3} ", 
+                    _resource, fixtureDelta.Sequence, _currentSequence, fixtureDelta);
                 return false;
             }
 
@@ -562,7 +570,7 @@ namespace SS.Integration.Adapter
                     this.RetrieveAndProcessSnapshot(hasEpochChanged);
                     _platformConnector.ProcessFixtureDeletion(fixtureDelta);
                     this.IsFixtureEnded = true;
-                    _marketsFilter.Clear();
+                    _marketsRuleManager.Clear();
                 }
 
                 Stop();
@@ -582,7 +590,7 @@ namespace SS.Integration.Adapter
             _logger.InfoFormat(
                 "{0} has been deleted from the GTP Fixture Factroy. Suspending all markets and stopping the stream.", _resource);
 
-            SuspendMarkets(fixtureLevelOnly: false);
+            SuspendMarkets(false);
 
             //reset event state
             _eventState.UpdateFixtureState(_sportName, fixtureDelta.Id, -1, GetMatchStatusFromSnapshot(fixtureDelta));
@@ -614,7 +622,7 @@ namespace SS.Integration.Adapter
 
             if (snapshot != null)
             {
-                _marketsFilter.FilterInactiveMarkets(snapshot);
+                _marketsRuleManager.ApplyRules(snapshot);
 
                 _logger.DebugFormat("Sending snapshot {0} with ",snapshot);
 
@@ -654,10 +662,7 @@ namespace SS.Integration.Adapter
 
             var snapshot = RetrieveSnapshot();
 
-            if (snapshot.IsMatchOver)
-                _marketsFilter.VoidUnsettled(snapshot);
-
-            _marketsFilter.FilterInactiveMarkets(snapshot);
+            _marketsRuleManager.ApplyRules(snapshot);
 
             _logger.DebugFormat("Sending snapshot to plugin for {0}", _resource);
             _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
@@ -667,7 +672,7 @@ namespace SS.Integration.Adapter
 
         private void UpdateState(Fixture snapshot, bool isSnapshot = false)
         {
-            _marketsFilter.CommitChanges();
+            _marketsRuleManager.CommitChanges();
             _eventState.UpdateFixtureState(_resource.Sport, _resource.Id, snapshot.Sequence, GetMatchStatusFromSnapshot(snapshot));
 
             if (isSnapshot)

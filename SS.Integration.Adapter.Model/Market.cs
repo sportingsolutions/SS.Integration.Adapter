@@ -58,7 +58,7 @@ namespace SS.Integration.Adapter.Model
                 if (Selections.All(x => string.IsNullOrEmpty(x.Status)))
                     return null;
 
-                return Selections.Any(x => x.Status == "1");
+                return Selections.Any(x => x.Status == SelectionStatus.InPlay);
             }
         }
         
@@ -98,7 +98,8 @@ namespace SS.Integration.Adapter.Model
                 //If this market contains ANY selection that is settled and has a price of 1.00
                 //then this is a resulted market
                 // OR all selections are void
-                return this.Selections.Any(x => x.Status == "2" && x.Price == 1.00) || this.Selections.All(x => x.Status == "3");
+                return this.Selections.Any(x => x.Status == SelectionStatus.Settled && x.Price == 1.00) || 
+                       this.Selections.All(x => x.Status == SelectionStatus.Void);
             }
         }
 
@@ -106,7 +107,7 @@ namespace SS.Integration.Adapter.Model
         {
             get
             {
-                return this.Selections.All(s => s.Status == "0");
+                return this.Selections.All(s => s.Status == SelectionStatus.Pending);
             }
         }
 

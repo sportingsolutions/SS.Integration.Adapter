@@ -36,12 +36,6 @@ namespace SS.Integration.Adapter.Model
         public string Status { get; set; }
 
         public bool? Tradable { get; set; }
-        
-        //TODO: If you need this property make it serializable otherwise adapter won't work properly
-        //public Result Result { get; set; }
-
-        //TODO: If you need this property make it serializable otherwise adapter won't work properly
-        //public Result PlaceResult { get; set; }
 
         public string Name
         {
@@ -71,14 +65,16 @@ namespace SS.Integration.Adapter.Model
         {
             get
             {
-                if (string.IsNullOrEmpty(Status)) return null;
-                return Status == "1";
+                if (string.IsNullOrEmpty(Status)) 
+                    return null;
+
+                return Status == SelectionStatus.InPlay;
             }
             set
             {
-                if (!value.Value)
+                if (value == null || !value.Value)
                 {
-                    Status = "0";
+                    Status = SelectionStatus.Pending;
                 }
                 else
                 {
