@@ -128,6 +128,19 @@ namespace SS.Integration.Adapter.MarketRules.Model
             }
         }
 
+        public ISelectionState this[string SelectionId]
+        {
+            get
+            {
+                return !HasSelection(SelectionId) ? null : _SelectionStates[SelectionId];
+            }
+        }
+
+        public bool HasSelection(string SelectionId)
+        {
+            return _SelectionStates.ContainsKey(SelectionId);
+        }
+
         public bool HasTag(string TagKey)
         {
             return _Tags.ContainsKey(TagKey);

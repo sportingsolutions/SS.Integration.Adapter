@@ -37,39 +37,16 @@ namespace SS.Integration.Adapter.MarketRules
 
         public string Name { get { return NAME; } }
 
-        public void Apply(Fixture Fixture, IMarketStateCollection State)
-        {
-            _Logger.DebugFormat("Filtering inactive markets for {0}", Fixture);
-
-            
-            RemoveInactiveMarketsFromFixture(Fixture, State);
-
-            foreach (var market in Fixture.Markets)
-            {
-                IMarketState marketstate = null;
-                if (State.HasMarket(market.Id))
-                {
-                    marketstate = State[market.Id];
-                    marketstate.Update(market);
-                }
-                else
-                {
-                    marketstate = new MarketState(market);
-                }
-
-                State[market.Id] = marketstate;
-            }
-
-        }
-
         /// <summary>
         /// Remove markets from snapshot/update when: 
         /// current market state is inactive AND the previous state was inactive too (with no change in status or name)
         /// 
         /// NB: If there is a change in market's name or status then will not be removed
         /// </summary>
-        private void RemoveInactiveMarketsFromFixture(Fixture Fixture, IMarketStateCollection State)
+        public void Apply(Fixture Fixture, IMarketStateCollection State)
         {
+            _Logger.DebugFormat("Filtering inactive markets for {0}", Fixture);
+
 
             var inactiveMarkets = Fixture.Markets.Where(m => State.HasMarket(m.Id) && !State[m.Id].IsActive);
 
@@ -86,6 +63,8 @@ namespace SS.Integration.Adapter.MarketRules
                     _Logger.InfoFormat("{0} has been removed from {1} due rule={2}", market, Fixture, Name);
                 }
             }
+
+            State.Update(Fixture);
         }
     }
 }

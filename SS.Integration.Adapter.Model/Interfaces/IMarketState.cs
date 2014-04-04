@@ -29,6 +29,8 @@ namespace SS.Integration.Adapter.Model.Interfaces
 
         bool IsResulted { get; }
 
+        bool IsPending { get; }
+
         string Line { get; }
 
         /// <summary>
@@ -40,6 +42,10 @@ namespace SS.Integration.Adapter.Model.Interfaces
         IEnumerable<string> TagKeys { get; }
 
         IEnumerable<ISelectionState> Selections { get; }
+
+        ISelectionState this[string SelectionId] { get; }
+
+        bool HasSelection(string SelectionId);
 
         string GetTagValue(string TagKey);
 

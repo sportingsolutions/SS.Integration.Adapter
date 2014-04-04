@@ -21,7 +21,7 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.MarketRules
 {
-    class VoidUnSettledMarket : IMarketRule
+    internal class VoidUnSettledMarket : IMarketRule
     {
         private const string NAME = "VoidUnSettled_Markets";
         private static readonly ILog _Logger = LogManager.GetLogger(typeof(VoidUnSettledMarket));

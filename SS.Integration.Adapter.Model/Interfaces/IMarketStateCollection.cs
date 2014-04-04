@@ -23,6 +23,8 @@ namespace SS.Integration.Adapter.Model.Interfaces
 
         IMarketState this[string MarketId] { get; set; }
 
-        IEnumerable<string> Markets { get; } 
+        IEnumerable<string> Markets { get; }
+
+        void Update(Fixture Fixture);
     }
 }
