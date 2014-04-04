@@ -297,7 +297,7 @@ namespace SS.Integration.Adapter
 
                 _logger.DebugFormat("Received {0} fixtures to process in sport={1}", resources.Count, sport);
 
-                var po = new ParallelOptions() { MaxDegreeOfParallelism = processingFactor == 0 ? 1 : processingFactor };
+                var po = new ParallelOptions { MaxDegreeOfParallelism = processingFactor == 0 ? 1 : processingFactor };
 
                 if (resources.Count > 1)
                 {
@@ -364,7 +364,7 @@ namespace SS.Integration.Adapter
             var fixtureState = _eventState.GetFixtureState(resource.Id);
             if (resource.IsMatchOver && (fixtureState == null || fixtureState.MatchStatus == resource.MatchStatus))
             {
-                _logger.DebugFormat("{0} has finished. Will not process", resource.ToString());
+                _logger.DebugFormat("{0} has finished. Will not process", resource);
                 return;
             }
 
@@ -467,7 +467,7 @@ namespace SS.Integration.Adapter
 
         private void StopListenerIfFixtureEnded(string sport, IResourceFacade resource)
         {
-            _logger.DebugFormat("{0} is currently being processed", resource.ToString());
+            _logger.DebugFormat("{0} is currently being processed", resource);
 
             var listener = _listeners[resource.Id];
 
@@ -481,7 +481,7 @@ namespace SS.Integration.Adapter
                     return;
                 }
 
-                _logger.InfoFormat("{0} is over.", resource.ToString());
+                _logger.InfoFormat("{0} is over.", resource);
                 
                 if (RemoveAndStopListener(resource.Id))
                 {
@@ -489,13 +489,13 @@ namespace SS.Integration.Adapter
                 }
                 else
                 {
-                    _logger.WarnFormat("Couldn't remove listener for matchOver fixture {0}", resource.ToString());
+                    _logger.WarnFormat("Couldn't remove listener for matchOver fixture {0}", resource);
                 }
             }
 
             if (listener.IsFixtureSetup && (resource.Content.MatchStatus != (int)MatchStatus.Setup && resource.Content.MatchStatus != (int)MatchStatus.Ready))
             {
-                _logger.InfoFormat("{0} is no longer in Setup stage so the listener is now connecting to streaming server", resource.ToString());
+                _logger.InfoFormat("{0} is no longer in Setup stage so the listener is now connecting to streaming server", resource);
 
                 listener.StartStreaming();
             }
@@ -503,10 +503,9 @@ namespace SS.Integration.Adapter
 
         private Fixture GetSnapshot(IResourceFacade resource)
         {
-            _logger.InfoFormat("Get UDAPI Snapshot for {0}", resource.ToString());
-
+            _logger.InfoFormat("Get UDAPI Snapshot for {0}", resource);
             var snapshot = resource.GetSnapshot();
-            var fixtureSnapshot = snapshot.FromJson<Fixture>();
+            var fixtureSnapshot = FixtureJsonHelper.GetFromJson(snapshot);
 
             if (string.IsNullOrEmpty(fixtureSnapshot.Id))
             {
@@ -514,7 +513,7 @@ namespace SS.Integration.Adapter
                 throw exception;
             }
 
-            _logger.InfoFormat("Successfully retrieved UDAPI Snapshot for {0}", fixtureSnapshot.ToString());
+            _logger.InfoFormat("Successfully retrieved UDAPI Snapshot for {0}", fixtureSnapshot);
 
             return fixtureSnapshot;
         }
@@ -531,7 +530,7 @@ namespace SS.Integration.Adapter
 
             _logger.InfoFormat("Sporting Solutions Adapter version {0} using Sporting Solutions SDK version {1}", e, s);
 
-            _Stats.SetValue(AdapterKeys.HOST_NAME, System.Environment.MachineName);
+            _Stats.SetValue(AdapterKeys.HOST_NAME, Environment.MachineName);
             _Stats.SetValue(AdapterKeys.START_TIME, DateTime.Now.ToUniversalTime().ToString());
         }
     }

@@ -49,6 +49,7 @@
   <ItemGroup>
     <Compile Include="Extensions\IDictionaryExtension.cs" />
     <Compile Include="Extensions\IEnumerableExtensions.cs" />
+    <Compile Include="FixtureDateTimeJsonConverter.cs" />
     <Compile Include="IncrementPerformanceCounter.cs" />
     <Compile Include="PerformanceCounterBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

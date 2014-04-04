@@ -63,6 +63,7 @@
     <Compile Include="Adapter.cs" />
     <Compile Include="Configuration\Settings.cs" />
     <Compile Include="Configuration\SportConfiguration.cs" />
+    <Compile Include="FixtureJsonHelper.cs" />
     <Compile Include="Interface\IEventState.cs" />
     <Compile Include="Interface\IListener.cs" />
     <Compile Include="Interface\IReconnectStrategy.cs" />

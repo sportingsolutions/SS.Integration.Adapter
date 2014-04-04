@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -12,19 +12,18 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+
 using Newtonsoft.Json;
+using SS.Integration.Adapter.Model;
 using SS.Integration.Common;
 
 namespace SS.Integration.Adapter
 {
-    public class StreamMessage
+    public class FixtureJsonHelper
     {
-        public string Relation { get; set; }
-        public object Content { get; set; }
-
-        public T GetContent<T>()
+        public static Fixture GetFromJson(string content)
         {
-            return JsonConvert.DeserializeObject<T>(Content.ToString(), FixtureDateTimeJsonConverter.Instance);
+            return JsonConvert.DeserializeObject<Fixture>(content, FixtureDateTimeJsonConverter.Instance);
         }
     }
 }

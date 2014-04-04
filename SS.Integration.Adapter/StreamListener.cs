@@ -643,7 +643,7 @@ namespace SS.Integration.Adapter
                 return null;
             }
 
-            var snapshot = snapshotJson.FromJson<Fixture>();
+            var snapshot = FixtureJsonHelper.GetFromJson(snapshotJson);
 
             return snapshot;
         }
