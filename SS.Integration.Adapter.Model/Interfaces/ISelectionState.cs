@@ -28,11 +28,19 @@ namespace SS.Integration.Adapter.Model.Interfaces
 
         double? Price { get; }
 
+        #region Tags
+
         IEnumerable<string> TagKeys { get; }
 
-        object GetTagValue(string TagKey);
+        string GetTagValue(string TagKey);
 
-        void Update(Selection Selection);
+        int TagsCount { get; }
+
+        bool HasTag(string TagKey);
+
+        #endregion
+
+        void Update(Selection Selection, bool fullSnapshot);
 
         bool IsEqualTo(Selection Selection);
 

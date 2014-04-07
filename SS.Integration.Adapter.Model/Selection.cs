@@ -20,16 +20,14 @@ namespace SS.Integration.Adapter.Model
     [Serializable]
     public class Selection
     {
+        private readonly Dictionary<string, string> _Tags;
+
         public Selection()
         {
-            Tags = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase);
+            _Tags = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
         }
 
         public string Id { get; set; }
-
-        public Dictionary<string, object> Tags { get; private set; }
-
-        public string DisplayPrice { get; set; }
 
         public double? Price { get; set; }
 
@@ -41,15 +39,7 @@ namespace SS.Integration.Adapter.Model
         {
             get
             {
-                if (Tags != null && Tags.ContainsKey("name"))
-                    return Tags["name"].ToString();
-
-                return null;
-            }
-            set
-            {
-                if (Tags != null)
-                    Tags["name"] = value;
+                return GetTagValue("name");
             }
         }
 
@@ -68,7 +58,7 @@ namespace SS.Integration.Adapter.Model
                 if (string.IsNullOrEmpty(Status)) 
                     return null;
 
-                return Status == SelectionStatus.InPlay;
+                return Status == SelectionStatus.Active;
             }
             set
             {
@@ -78,10 +68,59 @@ namespace SS.Integration.Adapter.Model
                 }
                 else
                 {
-                    Status = "1";
+                    Status = SelectionStatus.Active;
                 }
             }
         }
+
+        #region Tags
+
+        public IEnumerable<string> TagKeys
+        {
+            get
+            {
+                return _Tags.Keys;
+            }
+        }
+
+        public bool HasTag(string tagKey)
+        {
+            return !string.IsNullOrEmpty(tagKey) && _Tags.ContainsKey(tagKey);
+        }
+
+        public void AddOrUpdateTagValue(string tagKey, string tagValue)
+        {
+            if (string.IsNullOrEmpty(tagKey))
+                return;
+
+            _Tags[tagKey] = tagValue;
+        }
+
+        public string GetTagValue(string tagKey)
+        {
+            return HasTag(tagKey) ? _Tags[tagKey] : null;
+        }
+
+        public int TagsCount
+        {
+            get
+            {
+                return _Tags.Count;
+            }
+        }
+
+        /// <summary>
+        /// Deprecated, use the API interface to deal with tags
+        /// </summary>
+        public Dictionary<string, string> Tags
+        {
+            get
+            {
+                return _Tags;
+            }
+        }
+
+        #endregion
 
         public override string ToString()
         {

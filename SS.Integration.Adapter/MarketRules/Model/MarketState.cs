@@ -41,62 +41,74 @@ namespace SS.Integration.Adapter.MarketRules.Model
             this.Id = Id;
         }
 
-        public MarketState(Market market)
+        public MarketState(Market market, bool fullSnapshot)
             : this(market.Id)
         {
-            this.Update(market);                
+            this.Update(market, fullSnapshot);                
         }
 
         public string Id { get; private set; }
 
-        public string Name { get; private set; }
-
-        public string Line { get; private set; }
+        public string Name { get { return GetTagValue("name"); } }
 
         public bool IsActive
         {
-            get { return _SelectionStates.Any(s => s.Value.Status == SelectionStatus.InPlay); }
+            get 
+            { 
+                return _SelectionStates.Any(s => s.Value.Status == SelectionStatus.Active); 
+            }
         }
-
-        public bool IsPending { get; private set; }
-
-        public bool IsResulted { get; private set; }
 
         public bool IsSuspended
         {
             get
             {
                 return
-                    _SelectionStates.All(s => s.Value.Status != SelectionStatus.InPlay) ||
-                    _SelectionStates.Where(s => s.Value.Status == SelectionStatus.InPlay && s.Value.Tradability.HasValue).All(s => !s.Value.Tradability.Value);
+                    _SelectionStates.Where(s => s.Value.Status == SelectionStatus.Active && s.Value.Tradability.HasValue).All(s => !s.Value.Tradability.Value);
             }
+        }
+
+        public bool IsPending
+        {
+            get
+            {
+                return _SelectionStates.All(s => s.Value.Status == SelectionStatus.Pending);
+            }
+        }
+
+        public bool IsResulted 
+        { 
+            get 
+            {
+                return this.Selections.Any(x => x.Status == SelectionStatus.Settled && x.Price == 1.00) || 
+                       this.Selections.All(x => x.Status == SelectionStatus.Void);
+            } 
         }
 
         public bool HasBeenActive { get; set; }
         
-        public void Update(Market Market)
+        public void Update(Market Market, bool fullSnapshot)
         {
-            MergeSelectionStates(Market);
+            MergeSelectionStates(Market, fullSnapshot);
 
-            if (Market.Tags != null)
+            if (fullSnapshot)
             {
                 _Tags = new Dictionary<string, string>();
-                foreach (var key in Market.Tags.Keys)
-                    _Tags.Add(key, Market.Tags[key]);
-
-                // update name only if we have tags
-                Name = Market.Name;
+                foreach (var key in Market.TagKeys)
+                    _Tags.Add(key, Market.GetTagValue(key));
             }
-
-            this.Line = GetTagValue("line") ?? Line;
-            this.IsPending = Market.IsPending;
-            this.IsResulted = Market.IsResulted;
 
             if (!HasBeenActive && IsActive)
                 HasBeenActive = true;
+
+
+            Market.IsPending = IsPending;
+            Market.IsActive = IsActive;
+            Market.IsResulted = IsResulted;
+            Market.IsSuspended = IsSuspended;
         }
 
-        private void MergeSelectionStates(Market Market)
+        private void MergeSelectionStates(Market Market, bool fullSnapshot)
         {
             if (Market.Selections == null)
                 return;
@@ -104,13 +116,15 @@ namespace SS.Integration.Adapter.MarketRules.Model
             foreach (var selection in Market.Selections)
             {
                 if (_SelectionStates.ContainsKey(selection.Id))
-                    _SelectionStates[selection.Id].Update(selection);
+                    _SelectionStates[selection.Id].Update(selection, fullSnapshot);
                 else
                 {
-                    _SelectionStates[selection.Id] = new SelectionState(selection);
+                    _SelectionStates[selection.Id] = new SelectionState(selection, fullSnapshot);
                 }
             }
         }
+
+        #region Tags
 
         public IEnumerable<string> TagKeys
         {
@@ -119,6 +133,25 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 return _Tags.Keys;
             }
         }
+
+        public bool HasTag(string TagKey)
+        {
+            return _Tags.ContainsKey(TagKey);
+        }
+
+        public string GetTagValue(string TagKey)
+        {
+            return _Tags.ContainsKey(TagKey) ? _Tags[TagKey] : null;
+        }
+
+        public int TagsCount
+        {
+            get { return _Tags.Count; }
+        }
+
+        #endregion
+
+        #region Selections
 
         public IEnumerable<ISelectionState> Selections
         {
@@ -141,15 +174,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
             return _SelectionStates.ContainsKey(SelectionId);
         }
 
-        public bool HasTag(string TagKey)
-        {
-            return _Tags.ContainsKey(TagKey);
-        }
 
-        public string GetTagValue(string TagKey)
-        {
-            return _Tags.ContainsKey(TagKey) ? _Tags[TagKey] : null;
-        }
+        #endregion
 
         public bool IsEqualTo(Market NewMarket)
         {
@@ -159,10 +185,10 @@ namespace SS.Integration.Adapter.MarketRules.Model
             if (NewMarket.Id != this.Id)
                 throw new Exception("Cannot compare two markets with different Ids");
 
-            if (NewMarket.Name != null && NewMarket.Name != this.Name) 
+            if (NewMarket.Name != this.Name) 
                 return false;
 
-            var currentMarketState = new MarketState(NewMarket);
+            var currentMarketState = new MarketState(NewMarket, false);
 
             var isStatusEqual = this.IsPending == currentMarketState.IsPending &&
                                 this.IsResulted == currentMarketState.IsResulted &&
@@ -171,9 +197,9 @@ namespace SS.Integration.Adapter.MarketRules.Model
             
             if (isStatusEqual)
             {
-                if (Line != null && currentMarketState.Line != null)
+                if (this.HasTag("line") && currentMarketState.HasTag("line"))
                 {
-                    isStatusEqual = Line == currentMarketState.Line;
+                    isStatusEqual = string.Equals(this.GetTagValue("line"), currentMarketState.GetTagValue("line"));
                 }
 
                 isStatusEqual = isStatusEqual && NewMarket.Selections.All(s => _SelectionStates.ContainsKey(s.Id) && _SelectionStates[s.Id].IsEqualTo(s));
@@ -187,10 +213,6 @@ namespace SS.Integration.Adapter.MarketRules.Model
             MarketState clone = new MarketState
             {
                 Id = this.Id,
-                IsPending = this.IsPending,
-                IsResulted = this.IsResulted,
-                Line = this.Line,
-                Name = this.Name,
                 HasBeenActive = this.HasBeenActive
             };
 

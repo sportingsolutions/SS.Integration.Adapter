@@ -15,7 +15,6 @@
 
 using System.Linq;
 using log4net;
-using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 
@@ -43,17 +42,17 @@ namespace SS.Integration.Adapter.MarketRules
         /// 
         /// NB: If there is a change in market's name or status then will not be removed
         /// </summary>
-        public void Apply(Fixture Fixture, IMarketStateCollection State)
+        public void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState)
         {
             _Logger.DebugFormat("Filtering inactive markets for {0}", Fixture);
 
 
-            var inactiveMarkets = Fixture.Markets.Where(m => State.HasMarket(m.Id) && !State[m.Id].IsActive);
+            var inactiveMarkets = Fixture.Markets.Where(m => !m.IsActive && OldState.HasMarket(m.Id) && !OldState[m.Id].IsActive);
 
             foreach (var market in inactiveMarkets.ToList())
             {
 
-                var marketState = State[market.Id];
+                var marketState = OldState[market.Id];
 
                 // Only remove market from snapshot/delta if it is not active AND values like name and status have not changed
                 if (marketState.IsEqualTo(market))
@@ -63,8 +62,6 @@ namespace SS.Integration.Adapter.MarketRules
                     _Logger.InfoFormat("{0} has been removed from {1} due rule={2}", market, Fixture, Name);
                 }
             }
-
-            State.Update(Fixture);
         }
     }
 }

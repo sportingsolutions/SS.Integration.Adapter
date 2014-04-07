@@ -14,7 +14,6 @@
 
 
 using System.Collections.Generic;
-using System.Linq;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 
@@ -48,35 +47,34 @@ namespace SS.Integration.Adapter.MarketRules
                 ExcludeMarketType(type);
         }
 
-        public void Apply(Fixture Fixture, IMarketStateCollection State)
+        public void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState)
         {
             foreach (var mkt in Fixture.Markets)
             {
                 if (_ExcludedMarketType.Contains(mkt.Type))
                     continue;
 
-                var mkt_state = State[mkt.Id];
+                // get the value from the old state
+                var mkt_state = OldState[mkt.Id];
 
                 // here we are trying to filter market that passed from 
                 // a pending state to an active state for the first time.
-                if (mkt.IsActive.HasValue && mkt.IsActive.Value && mkt_state.IsPending && !mkt_state.HasBeenActive)
+                if (mkt.IsActive && mkt_state.IsPending && !mkt_state.HasBeenActive)
                 {
                     GetTags(mkt, mkt_state);
                 }
             }
 
-            State.Update(Fixture);
         }
 
         private static void GetTags(Market Market, IMarketState State)
         {
-
-            if (Market.Tags.Any())
+            if (State.TagsCount == 0)
                 return;
 
             foreach (var key in State.TagKeys)
             {
-                Market.Tags.Add(key, State.GetTagValue(key));
+                Market.AddOrUpdateTagValue(key, State.GetTagValue(key));
             }
 
             foreach (var seln in Market.Selections)
@@ -85,7 +83,7 @@ namespace SS.Integration.Adapter.MarketRules
 
                 foreach (var key in seln_state.TagKeys)
                 {
-                    seln.Tags.Add(key, seln_state.GetTagValue(key));
+                    seln.AddOrUpdateTagValue(key, seln_state.GetTagValue(key));                    
                 }
             }
         }

@@ -23,15 +23,23 @@ namespace SS.Integration.Adapter.Model.Interfaces
 
         string Name { get; }
 
+        /// <summary>
+        /// Returns true if the market is in a "Suspended" state.
+        /// 
+        /// This property only makes sense if IsActive is true as 
+        /// a "Suspended" state doesn't have any meaning when the market
+        /// is not active.
+        /// </summary>
         bool IsSuspended { get; }
 
+        /// <summary>
+        /// Returns true if the market is active.
+        /// </summary>
         bool IsActive { get; }
 
         bool IsResulted { get; }
 
         bool IsPending { get; }
-
-        string Line { get; }
 
         /// <summary>
         /// True if the market has been active at least once 
@@ -39,7 +47,7 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// </summary>
         bool HasBeenActive { get; }
 
-        IEnumerable<string> TagKeys { get; }
+        #region Selections 
 
         IEnumerable<ISelectionState> Selections { get; }
 
@@ -47,9 +55,21 @@ namespace SS.Integration.Adapter.Model.Interfaces
 
         bool HasSelection(string SelectionId);
 
+        #endregion
+
+        #region Tags
+
+        IEnumerable<string> TagKeys { get; }
+
         string GetTagValue(string TagKey);
 
-        void Update(Market Market);
+        bool HasTag(string TagKey);
+
+        int TagsCount { get; }
+
+        #endregion
+
+        void Update(Market Market, bool fullSnapshot);
 
         bool IsEqualTo(Market Market);
 

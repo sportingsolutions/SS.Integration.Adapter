@@ -25,6 +25,6 @@ namespace SS.Integration.Adapter.Model.Interfaces
 
         IEnumerable<string> Markets { get; }
 
-        void Update(Fixture Fixture);
+        void Update(Fixture Fixture, bool fullSnapshot);
     }
 }

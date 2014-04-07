@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
@@ -46,20 +47,7 @@ namespace SS.Integration.Adapter.MarketRules
             _StateProvider = StateProvider;
 
             var state = _StateProvider.GetObject(_FixtureId) ?? new MarketStateCollection();
-
-            foreach (var market in fixture.Markets)
-            {
-                if (state.HasMarket(market.Id))
-                    state[market.Id].Update(market);
-                else
-                {
-                    var marketState = new MarketState(market);
-                    state[marketState.Id] = marketState;
-                }
-
-                market.IsSuspended = state[market.Id].IsSuspended;
-            }
-
+            state.Update(fixture, true);
             _StateProvider.SetObject(_FixtureId, state);
 
             _logger.DebugFormat("Market filters initiated successfully for {0}", fixture);
@@ -74,7 +62,6 @@ namespace SS.Integration.Adapter.MarketRules
 
                 _StateProvider.SetObject(_FixtureId, _CurrentTransaction);
                 _CurrentTransaction = null;
-
             }
         }
 
@@ -86,16 +73,15 @@ namespace SS.Integration.Adapter.MarketRules
             }
         }
 
-        private IMarketStateCollection BeginTransaction()
+        private IMarketStateCollection BeginTransaction(IMarketStateCollection OldState, Fixture Fixture)
         {
-            var clone = new MarketStateCollection();
-            var state = _StateProvider.GetObject(_FixtureId);
-
-            foreach (var mkt_id in state.Markets)
-            {
-                clone[mkt_id] = state[mkt_id].Clone();
-            }
-            
+           
+            // get a new market state by cloning the previous one
+            // and then updating it with the new info coming within
+            // the snapshot
+            var clone = new MarketStateCollection(OldState);
+            clone.Update(Fixture, Fixture.Tags != null && Fixture.Tags.Any());
+               
             lock (this)
             {
                 _CurrentTransaction = clone;
@@ -115,7 +101,8 @@ namespace SS.Integration.Adapter.MarketRules
                     "You cannot pass in fixtureId=" + Fixture.Id);
             }
 
-            var state = BeginTransaction();
+            var oldstate = _StateProvider.GetObject(Fixture.Id);
+            var newstate = BeginTransaction(oldstate, Fixture);
 
             foreach (var rule in _Rules)
             {
@@ -123,16 +110,16 @@ namespace SS.Integration.Adapter.MarketRules
                     continue;
 
                 _logger.DebugFormat("Filtering markets with rule={0}", rule.Name);
-                rule.Apply(Fixture, state);
+                rule.Apply(Fixture, oldstate, newstate);
                 _logger.DebugFormat("Filtering market with rule={0} completed", rule.Name);
             }
         }
 
         private static Market CreateSuspendedMarket(IMarketState marketState)
         {
-            var market = new Market { Id = marketState.Id, IsSuspended = true };
+            var market = new Market (marketState.Id) { IsSuspended = true };
             foreach (var seln in marketState.Selections)
-                market.Selections.Add(new Selection { Id = seln.Id, Tradable = false });
+                market.AddSelection(new Selection { Id = seln.Id, Tradable = false });
 
             return market;
         }

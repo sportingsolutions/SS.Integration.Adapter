@@ -22,21 +22,21 @@ namespace SS.Integration.Adapter.MarketRules.Model
     [Serializable]
     public class SelectionState : ISelectionState
     {
-        private Dictionary<string, object> _Tags;
+        private Dictionary<string, string> _Tags;
 
         /// <summary>
         /// DO NOT USE - this constructor is for copying object only
         /// </summary>
         public SelectionState() 
         {
-            _Tags = new Dictionary<string, object>();
+            _Tags = new Dictionary<string, string>();
         }
 
-        public SelectionState(Selection selection)
+        public SelectionState(Selection selection, bool fullSnapshot)
             : this()
         {
             Id = selection.Id;
-            Update(selection);
+            Update(selection, fullSnapshot);
         }
 
         public string Id { get; private set; }
@@ -49,18 +49,18 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public string Status { get; private set; }
 
-        public void Update(Selection Selection)
+        public void Update(Selection Selection, bool fullSnapshot)
         {
             Price = Selection.Price;
             Status = Selection.Status;
             Tradability = Selection.Tradable;
 
-            if (Selection.Tags != null)
+            if (fullSnapshot)
             {
-                _Tags = new Dictionary<string, object>();
+                _Tags = new Dictionary<string, string>();
 
-                foreach (var key in Selection.Tags.Keys)
-                    _Tags.Add(key, Selection.Tags[key]);
+                foreach (var key in Selection.TagKeys)
+                    _Tags.Add(key, Selection.GetTagValue(key));
 
                 Name = Selection.Name;
             }
@@ -77,15 +77,29 @@ namespace SS.Integration.Adapter.MarketRules.Model
                    && this.Status == Selection.Status;
         }
 
+        #region Tags
+
         public IEnumerable<string> TagKeys
         {
             get { return _Tags.Keys; }
         }
 
-        public object GetTagValue(string TagKey)
+        public string GetTagValue(string TagKey)
         {
             return _Tags.ContainsKey(TagKey) ? _Tags[TagKey] : null;
         }
+
+        public int TagsCount
+        {
+            get { return _Tags.Count; }
+        }
+
+        public bool HasTag(string TagKey)
+        {
+            return !string.IsNullOrEmpty(TagKey) && _Tags.ContainsKey(TagKey);
+        }
+
+        #endregion
 
         public ISelectionState Clone()
         {
@@ -99,12 +113,10 @@ namespace SS.Integration.Adapter.MarketRules.Model
             };
 
             foreach (var key in this.TagKeys)
-            {
-                // not a problem not cloning the tag's value
                 clone._Tags.Add(key, this.GetTagValue(key));
-            }
 
             return clone;
         }
+
     }
 }

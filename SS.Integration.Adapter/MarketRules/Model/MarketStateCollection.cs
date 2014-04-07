@@ -14,6 +14,15 @@ namespace SS.Integration.Adapter.MarketRules.Model
             _States = new Dictionary<string, IMarketState>();
         }
 
+        public MarketStateCollection(IMarketStateCollection collection) 
+            : this()
+        {
+            foreach (var mkt_id in collection.Markets)
+            {
+                this[mkt_id] = collection[mkt_id].Clone();
+            }
+        }
+
         public bool HasMarket(string MarketId)
         {
             return _States.ContainsKey(MarketId);
@@ -39,22 +48,21 @@ namespace SS.Integration.Adapter.MarketRules.Model
             get { return _States.Keys; }
         }
 
-        public void Update(Fixture Fixture)
+        public void Update(Fixture Fixture, bool fullSnapshot)
         {
             foreach (var market in Fixture.Markets)
             {
-                IMarketState marketstate = null;
+                IMarketState mkt_state = null;
                 if (HasMarket(market.Id))
                 {
-                    marketstate = this[market.Id];
-                    marketstate.Update(market);
+                    mkt_state = this[market.Id];
+                    mkt_state.Update(market, fullSnapshot);
                 }
                 else
                 {
-                    marketstate = new MarketState(market);
+                    mkt_state = new MarketState(market, fullSnapshot);
+                    this[market.Id] = mkt_state;
                 }
-
-                this[market.Id] = marketstate;
             }
         }
     }
