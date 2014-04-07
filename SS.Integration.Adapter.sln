@@ -13,9 +13,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{B4C9F6
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.WindowsService", "SS.Integration.Adapter.WindowsService\SS.Integration.Adapter.WindowsService.csproj", "{83ADA2B6-1947-43C9-B4E4-5F7474A663D2}"
-	ProjectSection(ProjectDependencies) = postProject
-		{BF7E4403-53DA-43C9-868A-C7510584D207} = {BF7E4403-53DA-43C9-868A-C7510584D207}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Model", "SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj", "{29461692-6DE2-47FA-ACC4-ECAAE9462AE3}"
 EndProject
