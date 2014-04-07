@@ -70,6 +70,7 @@
     <Compile Include="Interface\IServiceFacade.cs" />
     <Compile Include="Interface\ISettings.cs" />
     <Compile Include="Interface\IStoreProvider.cs" />
+    <Compile Include="MarketRules\Model\MarketRuleProcessingContext.cs" />
     <Compile Include="MarketRules\PendingMarketFilteringRule.cs" />
     <Compile Include="MarketRules\VoidUnSettledMarket.cs" />
     <Compile Include="ProcessState\BinaryStoreProvider.cs" />

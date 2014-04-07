@@ -47,19 +47,23 @@ namespace SS.Integration.Adapter.MarketRules
                 ExcludeMarketType(type);
         }
 
-        public void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState)
+        public void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState, IMarketRuleProcessingContext Context)
         {
             foreach (var mkt in Fixture.Markets)
             {
+
                 if (_ExcludedMarketType.Contains(mkt.Type))
+                {
+                    Context.SetAsUnRemovable(mkt);
                     continue;
+                }
 
                 // get the value from the old state
                 var mkt_state = OldState[mkt.Id];
 
                 // here we are trying to filter market that passed from 
                 // a pending state to an active state for the first time.
-                if (mkt.IsActive && mkt_state.IsPending && !mkt_state.HasBeenActive)
+                if (mkt.IsActive && (mkt_state != null && mkt_state.IsPending && !mkt_state.HasBeenActive))
                 {
                     GetTags(mkt, mkt_state);
                 }

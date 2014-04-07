@@ -14,10 +14,15 @@
 
 namespace SS.Integration.Adapter.Model.Interfaces
 {
-    public interface IMarketRule
+    public interface IMarketRuleProcessingContext
     {
-        string Name { get; }
+        bool CanBeRemoved(Market Market);
 
-        void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState, IMarketRuleProcessingContext Context);
+        bool CanBeEdited(Market Market);
+
+        void SetAsUnEditable(Market Market);
+
+        void SetAsUnRemovable(Market Market);
+
     }
 }

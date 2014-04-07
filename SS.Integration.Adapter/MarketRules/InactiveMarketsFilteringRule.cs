@@ -42,7 +42,7 @@ namespace SS.Integration.Adapter.MarketRules
         /// 
         /// NB: If there is a change in market's name or status then will not be removed
         /// </summary>
-        public void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState)
+        public void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState, IMarketRuleProcessingContext Context)
         {
             _Logger.DebugFormat("Filtering inactive markets for {0}", Fixture);
 
@@ -55,7 +55,7 @@ namespace SS.Integration.Adapter.MarketRules
                 var marketState = OldState[market.Id];
 
                 // Only remove market from snapshot/delta if it is not active AND values like name and status have not changed
-                if (marketState.IsEqualTo(market))
+                if (Context.CanBeRemoved(market) && marketState.IsEqualTo(market))
                 {
                     Fixture.Markets.Remove(market);
 

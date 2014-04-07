@@ -104,13 +104,15 @@ namespace SS.Integration.Adapter.MarketRules
             var oldstate = _StateProvider.GetObject(Fixture.Id);
             var newstate = BeginTransaction(oldstate, Fixture);
 
+            var context = new MarketRuleProcessingContext();
+
             foreach (var rule in _Rules)
             {
                 if(rule == null)
                     continue;
 
                 _logger.DebugFormat("Filtering markets with rule={0}", rule.Name);
-                rule.Apply(Fixture, oldstate, newstate);
+                rule.Apply(Fixture, oldstate, newstate, context);
                 _logger.DebugFormat("Filtering market with rule={0} completed", rule.Name);
             }
         }

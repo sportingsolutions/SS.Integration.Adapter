@@ -372,8 +372,6 @@ namespace SS.Integration.Adapter.Tests
             // in a pending state (that never haven't been active before)
             // will be removed from the snapshot through the PendingMarketFilteringRule
 
-            SetUpSnapshotAndMarkets();
-
             // market1 and market2 are in pending state, while market3 is active
             _market1.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
             _market2.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
@@ -395,6 +393,96 @@ namespace SS.Integration.Adapter.Tests
             _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeFalse();   // market1 should have been removed
             _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeFalse();   // market2 should have been removed
             _snapshot.Markets.Exists(m => m.Id == _market3.Object.Id).Should().BeTrue();      // market3 should be there
+        }
+
+        [Test]
+        public void RemovePendingMarketsWithExcludeListTest()
+        {
+            // here I want to test that all the markets
+            // in a pending state (that never haven't been active before)
+            // will be removed from the snapshot through the PendingMarketFilteringRule
+            // I also add a list of market type that the rule should not touch
+
+            // market1 and market2 are in pending state, while market3 is active
+            _market1.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
+            _market2.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
+            _market3.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Active, true));
+
+            _market1.Object.AddOrUpdateTagValue("type", "do_not_touch");
+
+            var rule = new PendingMarketFilteringRule();
+            rule.ExcludeMarketType("do_not_touch");
+
+            List<IMarketRule> rules = new List<IMarketRule> { 
+                rule,
+                InactiveMarketsFilteringRule.Instance,
+                VoidUnSettledMarket.Instance, 
+            };
+
+
+            var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+
+            filteredMarkets.ApplyRules(_snapshot);
+
+
+            _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeTrue();   // market1 has not been touched by InactiveMarketsFilteringRule
+            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeFalse();  // market2 should have been removed
+            _snapshot.Markets.Exists(m => m.Id == _market3.Object.Id).Should().BeTrue();   // market3 should be there
+        }
+
+        [Test]
+        public void RemovePendingMarketsWithExcludeListAndInactiveFilterTest()
+        {
+            // here I want to test that all the markets
+            // in a pending state (that never haven't been active before)
+            // will be removed from the snapshot through the PendingMarketFilteringRule
+            // I also add a list of market type that the rule should not touch
+
+            // market1 and market2 are in pending state, while market3 is active
+            _market1.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
+            _market2.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
+            _market3.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Active, true));
+
+            _market1.Object.AddOrUpdateTagValue("type", "do_not_touch");
+            _market1.Object.AddOrUpdateTagValue("extra_tag", "just_to_check_that_tags_are_correctly_passed");
+
+            var rule = new PendingMarketFilteringRule();
+            rule.ExcludeMarketType("do_not_touch");
+
+            List<IMarketRule> rules = new List<IMarketRule> { 
+                rule,
+                InactiveMarketsFilteringRule.Instance,
+                VoidUnSettledMarket.Instance, 
+            };
+
+
+            var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+
+            filteredMarkets.ApplyRules(_snapshot);
+            filteredMarkets.CommitChanges();
+
+            // market1 should not be touched by InactiveMarketsFilteringRule as PendingMarketFilterRule
+            // should add it to the list of the "un-removable" markets
+            _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeTrue();   
+            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeFalse();  // market2 should have been removed
+            _snapshot.Markets.Exists(m => m.Id == _market3.Object.Id).Should().BeTrue();   // market3 should be there
+
+            // market 1 and market 2 are now active. As market2 was removed, PendingMarketFiltering rule
+            // should add all the tags back to the market
+            _market1.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Active, true));
+            _market2.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Active, true));
+            _market3.Setup(x => x.Selections).Returns(GetSettledSelections());
+            _snapshot.Markets.Add(_market2.Object);
+
+            filteredMarkets.ApplyRules(_snapshot);
+            filteredMarkets.CommitChanges();
+
+            _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeTrue();   
+            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeTrue();  
+            _snapshot.Markets.Exists(m => m.Id == _market3.Object.Id).Should().BeTrue(); 
+
+            _market1.Object.HasTag("extra_tag").Should().BeTrue();
+            _market1.Object.GetTagValue("extra_tag").Should().BeEquivalentTo("just_to_check_that_tags_are_correctly_passed");
         }
 
         [Test]

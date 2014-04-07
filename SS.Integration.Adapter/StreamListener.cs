@@ -77,7 +77,7 @@ namespace SS.Integration.Adapter
             {
                 _logger.WarnFormat("Snapshot passed to streamlistener for fixtureId={0} was null, stream listener will not be created!", resource.Id);
                 throw new ArgumentException(
-                    "Snapshot passed to streamlistener for fixtureId={0} was null, stream listener will not be created!");
+                    "Snapshot passed to streamlistener for fixtureId=" + resource.Id + " was null, stream listener will not be created!");
             }
 
             _sportName = sportName;
@@ -110,6 +110,7 @@ namespace SS.Integration.Adapter
             };
 
             rules.AddRange(platformConnector.MarketRules);
+            rules.Reverse();
 
             _marketsRuleManager = new MarketsRulesManager(fixtureSnapshot, marketStateProvider, rules);
 
