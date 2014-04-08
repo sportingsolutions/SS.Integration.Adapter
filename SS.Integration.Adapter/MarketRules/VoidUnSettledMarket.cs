@@ -99,7 +99,7 @@ namespace SS.Integration.Adapter.MarketRules
             }
 
             foreach (var seln in MarketState.Selections)
-                market.AddSelection(new Selection { Id = seln.Id, Status = SelectionStatus.Void, Price = 0 });
+                market.Selections.Add(new Selection { Id = seln.Id, Status = SelectionStatus.Void, Price = 0 });
 
             return market;
         }

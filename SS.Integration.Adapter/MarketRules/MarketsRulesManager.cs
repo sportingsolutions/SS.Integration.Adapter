@@ -121,7 +121,7 @@ namespace SS.Integration.Adapter.MarketRules
         {
             var market = new Market (marketState.Id) { IsSuspended = true };
             foreach (var seln in marketState.Selections)
-                market.AddSelection(new Selection { Id = seln.Id, Tradable = false });
+                market.Selections.Add(new Selection { Id = seln.Id, Tradable = false });
 
             return market;
         }

@@ -21,10 +21,12 @@ namespace SS.Integration.Adapter.Model
     public class Selection
     {
         private readonly Dictionary<string, string> _Tags;
+        private string _OverridenName;
 
         public Selection()
         {
             _Tags = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+            _OverridenName = null;
         }
 
         public string Id { get; set; }
@@ -39,7 +41,12 @@ namespace SS.Integration.Adapter.Model
         {
             get
             {
-                return GetTagValue("name");
+                return string.IsNullOrEmpty(_OverridenName) ? GetTagValue("name") : _OverridenName;
+            }
+            set
+            {
+                if (!string.IsNullOrEmpty(value))
+                    _OverridenName = value;
             }
         }
 

@@ -51,7 +51,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
-        public virtual string Id { get; set; }
+        public string Id { get; set; }
 
         public Rule4[] Rule4s { get; set; }
 
@@ -76,19 +76,7 @@ namespace SS.Integration.Adapter.Model
 
         public bool IsPending { get; set; }
 
-        #region Selections
-
-        public virtual IEnumerable<Selection> Selections { get; private set; }
-
-        public void AddSelection(Selection selection)
-        {
-            if (selection == null)
-                return;
-
-            ((List<Selection>)Selections).Add(selection);
-        }
-
-        #endregion
+        public virtual List<Selection> Selections { get; private set; }
 
         #region Tags
 
@@ -123,6 +111,17 @@ namespace SS.Integration.Adapter.Model
             get
             {
                 return _Tags.Count;
+            }
+        }
+
+        /// <summary>
+        /// Deprecated, use the API interface to deal with tags
+        /// </summary>
+        public Dictionary<string, string> Tags
+        {
+            get
+            {
+                return _Tags;
             }
         }
 

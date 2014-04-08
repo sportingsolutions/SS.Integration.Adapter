@@ -77,21 +77,21 @@ namespace SS.Integration.Adapter.Tests
             // Initial Active Market
             _market1.SetupAllProperties();
             _market1.Setup(m => m.Selections).Returns(GetSelections(true, false));
-            _market1.Setup(m => m.Id).Returns("One");
+            _market1.Object.Id = "One";
             _market1.Object.AddOrUpdateTagValue("name", "One");
 
             // Initial Inactive (pending) Market
 
             _market2.SetupAllProperties();
             _market2.Setup(m => m.Selections).Returns(GetSelections(false, false));
-            _market2.Setup(m => m.Id).Returns("Two");
+            _market2.Object.Id = "Two";
             _market2.Object.AddOrUpdateTagValue("name", "Two");
 
 
             // Initial Active Market
             _market3.SetupAllProperties();
             _market3.Setup(m => m.Selections).Returns(GetSelections(true, false));
-            _market3.Setup(m => m.Id).Returns("Three");
+            _market3.Object.Id = "Three";
             _market3.Object.AddOrUpdateTagValue("name", "Three");
 
             _snapshot.Markets.Add(_market1.Object);
