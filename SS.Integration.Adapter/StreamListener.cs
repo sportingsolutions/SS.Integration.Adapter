@@ -180,12 +180,12 @@ namespace SS.Integration.Adapter
             {
                 _logger.InfoFormat("Processing snapshot for first time for {0}", _resource);
 
-                if (_eventState.GetCurrentSequence(_sportName, _resource.Id) == -1)
+                int sequence_number = _eventState.GetCurrentSequence(_sportName, _resource.Id);
+
+                if (sequence_number == -1 || _currentSequence != sequence_number)
                 {
                     _platformConnector.ProcessSnapshot(_fixtureSnapshot);
                 }
-                else if (_currentSequence != _eventState.GetCurrentSequence(_sportName, _resource.Id))
-                    _platformConnector.ProcessSnapshot(_fixtureSnapshot);
                 else
                 {
                     //sequence didn't change

@@ -5,6 +5,7 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.MarketRules.Model
 {
+    [Serializable]
     internal class MarketStateCollection : IMarketStateCollection
     {
         private readonly Dictionary<string, IMarketState> _States;
