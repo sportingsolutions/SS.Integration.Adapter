@@ -21,17 +21,25 @@ namespace SS.Integration.Adapter.Model
     [Serializable]
     public class Market
     {
+        private readonly Dictionary<string, string> _Tags;
+
+        public Market(string Id)
+            : this()
+        {
+            this.Id = Id;
+        }
+
         public Market()
         {
-            Tags = new Dictionary<string, string>();
+            _Tags = new Dictionary<string, string>();
             Selections = new List<Selection>();
         }
 
-        public virtual string Name
+        public string Name
         {
             get
             {
-                return Tags != null && Tags.ContainsKey("name") ? Tags["name"] : null;
+                return GetTagValue("name");
             }
         }
 
@@ -39,76 +47,85 @@ namespace SS.Integration.Adapter.Model
         {
             get
             {
-                return Tags != null && Tags.ContainsKey("type") ? Tags["type"] : null;
+                return  GetTagValue("type");
             }
         }
 
-        public virtual string Id { get; set; }
-
-        public Dictionary<string, string> Tags { get; private set; }
-
-        public virtual List<Selection> Selections { get; private set; }
+        public string Id { get; set; }
 
         public Rule4[] Rule4s { get; set; }
 
-        public virtual bool? IsActive
+        public bool IsOverUnder
         {
             get
             {
-                if (Selections.All(x => string.IsNullOrEmpty(x.Status)))
-                    return null;
-
-                return Selections.Any(x => x.Status == "1");
+                return Selections.Any(s => s.HasTag("identifier") && string.Equals(s.GetTagValue("identifier"), "over", StringComparison.OrdinalIgnoreCase));
             }
         }
-        
-        //Don't delete this property unless you can delete all state on customer Production. 
-        public bool CanBeInserted
+
+        public bool IsTradedInPlay
         {
-            get { return true; }
+            get { return HasTag("traded_in_play") && bool.Parse(GetTagValue("traded_in_play")); }
         }
 
-        internal bool HasTag(string tagName)
+        public bool IsActive { get; set; }
+
+        public bool IsSuspended { get; set; }
+
+        public bool IsResulted { get; set; }
+
+        public bool IsPending { get; set; }
+
+        public virtual List<Selection> Selections { get; private set; }
+
+        #region Tags
+
+        public bool HasTag(string tagKey)
         {
-            return Tags != null && Tags.ContainsKey(tagName);
+            return !string.IsNullOrEmpty(tagKey) && _Tags.ContainsKey(tagKey);
         }
 
-        public virtual bool IsOverUnder
+        public string GetTagValue(string tagName)
+        {
+            return HasTag(tagName) ? _Tags[tagName] : null;
+        }
+
+        public void AddOrUpdateTagValue(string tagName, string tagValue)
+        {
+            if (string.IsNullOrEmpty(tagName))
+                return;
+
+            _Tags[tagName] = tagValue;
+        }
+
+        public IEnumerable<string> TagKeys
         {
             get
             {
-                return
-                    this.Selections != null &&
-                    this.Selections.Any(
-                        x => x.Tags.ContainsKey("identifier") && x.Tags["identifier"].ToString() == "over");
+                return _Tags.Keys;
             }
         }
 
-        public virtual bool IsTradedInPlay
-        {
-            get { return HasTag("traded_in_play") && bool.Parse(Tags["traded_in_play"]); }
-        }
-
-        public virtual bool IsSuspended { get; set; }
-
-        public virtual bool IsResulted
+        public int TagsCount
         {
             get
             {
-                //If this market contains ANY selection that is settled and has a price of 1.00
-                //then this is a resulted market
-                // OR all selections are void
-                return this.Selections.Any(x => x.Status == "2" && x.Price == 1.00) || this.Selections.All(x => x.Status == "3");
+                return _Tags.Count;
             }
         }
 
-        public virtual bool IsPending
+        /// <summary>
+        /// Deprecated, use the API interface to deal with tags
+        /// </summary>
+        public Dictionary<string, string> Tags
         {
             get
             {
-                return this.Selections.All(s => s.Status == "0");
+                return _Tags;
             }
         }
+
+        #endregion
 
         public override string ToString()
         {

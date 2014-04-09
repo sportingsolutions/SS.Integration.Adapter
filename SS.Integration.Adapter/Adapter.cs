@@ -20,8 +20,8 @@ using System.Threading;
 using System.Linq;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.ProcessState;
-using SS.Integration.Adapter.UdapiClient.Model;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Extensions;
 using SportingSolutions.Udapi.Sdk.Interfaces;
@@ -46,8 +46,8 @@ namespace SS.Integration.Adapter
         private readonly IAdapterPlugin _platformConnector;
         private readonly IEventState _eventState;
         private readonly List<string> _sports;
-        private readonly Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState, IObjectProvider<IDictionary<string, MarketState>>, int, IListener> _createListener;
-        private readonly IObjectProvider<IDictionary<string, MarketState>> _marketStateObjectStore;
+        private readonly Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState, IObjectProvider<IMarketStateCollection>, int, IListener> _createListener;
+        private readonly IObjectProvider<IMarketStateCollection> _marketStateObjectStore;
         private readonly BlockingCollection<IResourceFacade> _resourceCreationQueue;
         private readonly HashSet<string> _currentlyProcessedFixtures;
         private readonly IStatsHandle _Stats;
@@ -57,7 +57,7 @@ namespace SS.Integration.Adapter
                        IServiceFacade udapiServiceFacade,
                        IAdapterPlugin platformConnector,
                        IEventState eventState,
-                       Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState, IObjectProvider<IDictionary<string, MarketState>>, int, IListener> listenerFactory)
+                       Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState, IObjectProvider<IMarketStateCollection>, int, IListener> listenerFactory)
         {
             _settings = settings;
             _udapiServiceFacade = udapiServiceFacade;
@@ -68,8 +68,8 @@ namespace SS.Integration.Adapter
             _currentlyProcessedFixtures = new HashSet<string>();
 
             
-            _marketStateObjectStore = new CachedObjectStoreWithPersistance<IDictionary<string, MarketState>>(
-                new BinaryStoreProvider<IDictionary<string, MarketState>>(_settings.MarketFiltersDirectory, "FilteredMarkets-{0}.bin"),
+            _marketStateObjectStore = new CachedObjectStoreWithPersistance<IMarketStateCollection>(
+                new BinaryStoreProvider<IMarketStateCollection>(_settings.MarketFiltersDirectory, "FilteredMarkets-{0}.bin"),
                 "MarketFilters",
                 settings.CacheExpiryInMins * 60
                 );

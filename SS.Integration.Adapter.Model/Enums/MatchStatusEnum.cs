@@ -21,8 +21,13 @@ namespace SS.Integration.Adapter.Model.Enums
         Setup = 10,
         Ready = 20,
         Prematch = 30,
+        ShowPrices = 35,
+        MatchOverUnConfirmed = 45,
+        MatchOverConfirmedResults = 47,
         InRunning = 40,
         MatchOver = 50,
+        Stopped = 80,
+        Abandoned = 90,
         Paused = 99
     }
 }

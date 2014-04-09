@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -12,14 +12,17 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-
-namespace SS.Integration.Adapter.Model
+namespace SS.Integration.Adapter.Model.Interfaces
 {
-    public class SelectionStatus
+    public interface IMarketRuleProcessingContext
     {
-        public const string Pending         = "0";
-        public const string Active          = "1";
-        public const string Settled         = "2";
-        public const string Void            = "3";
+        bool CanBeRemoved(Market Market);
+
+        bool CanBeEdited(Market Market);
+
+        void SetAsUnEditable(Market Market);
+
+        void SetAsUnRemovable(Market Market);
+
     }
 }
