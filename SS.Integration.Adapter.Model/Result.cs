@@ -16,47 +16,12 @@ using System;
 
 namespace SS.Integration.Adapter.Model
 {
-    public class Result : IEquatable<Result>
+    [Serializable]
+    public class Result
     {
         public int WinParticipants { get; set; }
         public int StakeParticipants { get; set; }
         public int WinPlaces { get; set; }
-        public int StakePlaces { get; set; }
-
-        public bool Equals(Result other)
-        {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return WinParticipants == other.WinParticipants && StakeParticipants == other.StakeParticipants && WinPlaces == other.WinPlaces && StakePlaces == other.StakePlaces;
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                var hashCode = WinParticipants.GetHashCode();
-                hashCode = (hashCode * 397) ^ StakeParticipants.GetHashCode();
-                hashCode = (hashCode * 397) ^ WinPlaces.GetHashCode();
-                hashCode = (hashCode * 397) ^ StakePlaces.GetHashCode();
-                return hashCode;
-            }
-        }
-
-        public static bool operator ==(Result left, Result right)
-        {
-            return Equals(left, right);
-        }
-
-        public static bool operator !=(Result left, Result right)
-        {
-            return !Equals(left, right);
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            return obj.GetType() == GetType() && Equals((Result)obj);
-        }        
+        public int StakePlaces { get; set; }        
     }
 }

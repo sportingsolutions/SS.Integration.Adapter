@@ -37,11 +37,9 @@ namespace SS.Integration.Adapter.Model
 
         public bool? Tradable { get; set; }
         
-        //TODO: If you need this property make it serializable otherwise adapter won't work properly
-        //public Result Result { get; set; }
+        public Result Result { get; set; }
 
-        //TODO: If you need this property make it serializable otherwise adapter won't work properly
-        //public Result PlaceResult { get; set; }
+        public Result PlaceResult { get; set; }
 
         public string Name
         {
