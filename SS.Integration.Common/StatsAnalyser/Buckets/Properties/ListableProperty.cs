@@ -12,6 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using SS.Integration.Common.Stats.Keys;
@@ -36,6 +37,7 @@ namespace SS.Integration.Common.StatsAnalyser.Buckets.Properties
                 if (_Values.TryAdd(message.Value, message))
                 {
                     HasChangedSinceLastNofitication = true;
+                    LastChange = DateTime.Now;
                     NotifyObservers();
                 }
             }
@@ -46,6 +48,7 @@ namespace SS.Integration.Common.StatsAnalyser.Buckets.Properties
                 {
                     HasChangedSinceLastNofitication = true;
                     AddHistoryItem(message, newmessage);
+                    LastChange = DateTime.Now;
                     NotifyObservers();
                 }
             }

@@ -49,9 +49,7 @@ namespace SS.Integration.Common.StatsAnalyser
 
         public string GetMessage(string messagekey)
         {
-            if (HasMesssage(messagekey))
-                return Data.M[messagekey];
-            return "";
+            return HasMesssage(messagekey) ? Data.M[messagekey] : "";
         }
 
         public IEnumerable<string> MessageKeys

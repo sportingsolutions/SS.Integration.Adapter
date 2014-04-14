@@ -58,11 +58,14 @@ namespace SS.Integration.Common.StatsAnalyser.Buckets.Properties
             HistoryType = MessageBucketPropertyHistoryType.NONE;
             NumberOfHistoryItems = DEFAULT_HISTORY_SIZE;
             _AreNotificationsSuspended = false;
+            LastChange = DateTime.Now;
         }
 
         public MessageBucket Bucket { get; private set; }
 
         protected bool HasChangedSinceLastNofitication { get; set; }
+
+        public DateTime LastChange { get; protected set; }
 
         public MessageBucketPropertyHistoryType HistoryType { get; private set; }
 
@@ -101,12 +104,11 @@ namespace SS.Integration.Common.StatsAnalyser.Buckets.Properties
                 lock (this)
                 {
                     _History.Add(message);
-                    if (_History.Count > NumberOfHistoryItems)
+                    int count = _History.Count;
+                    while (count > NumberOfHistoryItems)
                     {
-                        while (_History.Count > NumberOfHistoryItems)
-                        {
-                            _History.RemoveAt(0);
-                        }
+                        _History.RemoveAt(0);
+                        count--;
                     }
                 }
             }
@@ -120,11 +122,15 @@ namespace SS.Integration.Common.StatsAnalyser.Buckets.Properties
             List<Message> copy = new List<Message>();
             lock (this)
             {
+                int count = _History.Count;
                 int index = _History.IndexOf(lastseenmessage);
-
-                for (int i = index + 1; i < _History.Count; i++)
+                if (index == -1)
                 {
-                    copy.Add(_History[i]);
+                    copy.AddRange(_History);
+                }
+                else if (index < count - 1)
+                {
+                    copy.AddRange(_History.GetRange(index + 1, _History.Count - index - 1));
                 }
             }
 

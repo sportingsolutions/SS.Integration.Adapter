@@ -71,12 +71,15 @@ namespace SS.Integration.Common.StatsAnalyser
                 _Watcher = null;
             }
 
-            _Watcher = new FileSystemWatcher(DirectoryPath) {EnableRaisingEvents = false};
+            _Watcher = new FileSystemWatcher(DirectoryPath) 
+            {
+                EnableRaisingEvents = true,
+                IncludeSubdirectories = false,
+                NotifyFilter = NotifyFilters.FileName
+            };
+
             _Watcher.Created += Watcher_Created;
             _Watcher.Error += Watcher_Error;
-            _Watcher.IncludeSubdirectories = false;
-            _Watcher.NotifyFilter = NotifyFilters.FileName;
-            _Watcher.EnableRaisingEvents = true;
         }
 
         private void LoadData()
@@ -180,6 +183,7 @@ namespace SS.Integration.Common.StatsAnalyser
                 unprocesseddata = currentvalue.Substring(index + MESSAGE_SEPARATOR.Length).Replace("\n", "").Replace("\r", "").Trim();
 
                 ProduceData(_DataBuilder.ToString());
+                _DataBuilder.Clear();
             }
             else
             {
@@ -247,12 +251,11 @@ namespace SS.Integration.Common.StatsAnalyser
             bool ok = true;
             Filepath = _CurrentLogFile;
 
-            // if _CurrentLogFile 
             if (string.IsNullOrEmpty(_CurrentLogFile))
             {
                 lock (this)
                 {
-                    while (string.IsNullOrEmpty(_NextLogFile))
+                    while (string.IsNullOrEmpty(_NextLogFile) && ok)
                     {
                         Monitor.Wait(this, DEFAULT_REFRESH_PERIOD);
                         ok = !IsShuttingDown;
@@ -299,6 +302,8 @@ namespace SS.Integration.Common.StatsAnalyser
 
                 if (_CurrentFileStream != null)
                     _CurrentFileStream.Close();
+
+                Monitor.Pulse(this);
             }
 
             if(_MainThread != null)

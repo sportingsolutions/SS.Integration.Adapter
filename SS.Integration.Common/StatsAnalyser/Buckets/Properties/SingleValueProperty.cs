@@ -13,6 +13,8 @@
 //limitations under the License.
 
 
+using System;
+
 namespace SS.Integration.Common.StatsAnalyser.Buckets.Properties
 {
     public class SingleValueProperty : Property
@@ -24,15 +26,14 @@ namespace SS.Integration.Common.StatsAnalyser.Buckets.Properties
 
         internal override void SetValue(Message message, bool newmessage)
         {
-            Message prev = null;
             lock (this)
             {
-                prev = _CurrentValue;
                 _CurrentValue = message;
             }
 
             HasChangedSinceLastNofitication = true;
-            AddHistoryItem(prev, newmessage);
+            LastChange = DateTime.Now;
+            AddHistoryItem(message, newmessage);
             NotifyObservers();
         }
 
