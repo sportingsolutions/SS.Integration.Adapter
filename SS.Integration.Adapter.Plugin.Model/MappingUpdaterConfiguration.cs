@@ -20,6 +20,8 @@ namespace SS.Integration.Adapter.Plugin.Model
     {
         public IConfigSerializerSettings SerializerSettings { get; set; }
         public string FileNameOrReferenceToDeserialize { get; set; }
+        public string CompanyName { get; set; }
+        public string Enviroment { get; set; }
         public string MappingUpdaterFactoryClass { get; set; }
         public int CheckForUpdatesInterval { get; set; }
         public string SerializerSettingsSection { get; set; }

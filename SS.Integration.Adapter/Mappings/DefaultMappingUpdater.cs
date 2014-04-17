@@ -8,12 +8,17 @@ using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Adapter.Plugin.Model;
 using SS.Integration.Adapter.Plugin.Model.Interface;
 using SS.Integration.Common.ConfigSerializer;
+
 using log4net;
 
 namespace SS.Integration.Adapter.Mappings
 {
     public class DefaultMappingUpdater : IMappingUpdater
     {
+
+
+
+
         private const string _cachedFileId = "Mappings";
 
         public ISportConfigSerializer Serializer { get; set; }
@@ -23,27 +28,25 @@ namespace SS.Integration.Adapter.Mappings
 
         private ILog _logger = LogManager.GetLogger(typeof(DefaultMappingUpdater));
 
+        private string[] _sportsList;
+        private string[] SportsList
+        {
+            get
+            {
+                if (_sportsList == null)
+                    _sportsList = this.Serializer.GetSportsList("");
+                return _sportsList;
+            }
+
+        }
+
+
 
         private int _checkForUpdatesInterval = 60000;
         public int CheckForUpdatesInterval
         {
             get { return _checkForUpdatesInterval; }
             set { _checkForUpdatesInterval = value; }
-        }
-
-        private string CompetitionFileName
-        {
-            get { return FileNameOrReference + "-Competitions"; }
-        }
-
-        private string SelectionsFileName
-        {
-            get { return FileNameOrReference + "-Selections"; }
-        }
-
-        private string MarketsFileName
-        {
-            get { return FileNameOrReference + "-Markets"; }
         }
 
         private Timer _trigger;
@@ -126,39 +129,19 @@ namespace SS.Integration.Adapter.Mappings
 
         protected virtual Mapping LoadMappings(string sport)
         {
-            _logger.DebugFormat("loading selection mappings for {0}", sport);
-            List<SelectionMappingWithName> allSelectionMappings =
-                this.Serializer.Deserialize<SelectionMappingWithName>(this.SelectionsFileName, sport);
-            _logger.DebugFormat("selection mappings for {0} successfully loaded.", sport);
-
             Mapping mapping = new Mapping();
 
             mapping.Sport = sport;
             _logger.DebugFormat("loading competition mappings for {0}", sport);
-            mapping.CompetitionMappings = this.Serializer.Deserialize<CompetitionMapping>(this.CompetitionFileName,
+
+            mapping.CompetitionMappings = this.Serializer.Deserialize<CompetitionMapping>(MappingCategory.CompetitionMapping.ToString(),
                                                                                           sport);
             _logger.DebugFormat("competition mappings for {0} successfully loaded.", sport);
 
             _logger.DebugFormat("loading market mappings for {0}", sport);
-            List<MarketMappingWithSelectionMapping> tempList =
-                this.Serializer.Deserialize<MarketMappingWithSelectionMapping>(this.MarketsFileName, sport);
 
-            if (tempList != null)
-            {
-                mapping.MarketsMapping = tempList.Select(mm =>
-                    {
-                        if (allSelectionMappings != null)
-                        {
-                            mm.SelectionMappings =
-                                allSelectionMappings
-                                    .Where(sm => sm.MappingName == mm.SelectionMappingName)
-                                    .Select(sm => (SelectionMapping) sm).ToList();
-                        }
-                        return (MarketMapping) mm;
-                    }).ToList();
-            }
-
-
+            mapping.MarketsMapping = this.Serializer.Deserialize<MarketMapping>(MappingCategory.MarketMapping.ToString(),
+                                                                                sport);
 
             _logger.DebugFormat("market mappings for {0} successfully loaded.", sport);
 
@@ -169,7 +152,7 @@ namespace SS.Integration.Adapter.Mappings
         {
             List<Mapping> newMappings = new List<Mapping>();
 
-            foreach (string sport in this.Serializer.GetSportsList(this.CompetitionFileName))
+            foreach (string sport in this.SportsList)
             {
                 newMappings.Add(LoadMappings(sport));
             }
@@ -191,11 +174,11 @@ namespace SS.Integration.Adapter.Mappings
             {
                 List<Mapping> newMappings = new List<Mapping>();
 
-                foreach (string sport in this.Serializer.GetSportsList(this.CompetitionFileName))
+                foreach (string sport in this.SportsList)
                 {
                     _logger.DebugFormat("checking for updates sport={0}",sport);
 
-                    if (Serializer.IsUpdateNeeded(CompetitionFileName,sport))
+                    if (Serializer.IsUpdateNeeded(MappingCategory.CompetitionMapping.ToString(),sport))
                     {
                         _logger.DebugFormat("new update found for sport={0}",sport);
                         Mapping singleMap = LoadMappings(sport);

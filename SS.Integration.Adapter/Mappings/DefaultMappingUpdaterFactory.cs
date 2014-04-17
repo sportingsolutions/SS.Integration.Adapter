@@ -17,8 +17,7 @@ namespace SS.Integration.Adapter.Mappings
 
         public IMappingUpdater GetMappingUpdater()
         {
-            var configSerializer = new GoogleDocConfigSerializer();
-            configSerializer.Settings = (GoogleDocSettings)this.Configuration.SerializerSettings;
+            var configSerializer = new ProxyServiceConfigSerializer((ProxyServiceSettings)this.Configuration.SerializerSettings);
             var mappingUpdater = new DefaultMappingUpdater();
             mappingUpdater.Serializer = configSerializer;
             mappingUpdater.CheckForUpdatesInterval = this.Configuration.CheckForUpdatesInterval;

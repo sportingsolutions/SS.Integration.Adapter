@@ -1,8 +1,8 @@
 ﻿﻿using System;
 using System.Collections.Generic;
-using SS.Integration.Adapter.Plugin.Model.Interface;
+﻿using SS.Integration.Adapter.Plugin.Model;
+﻿using SS.Integration.Adapter.Plugin.Model.Interface;
 using SS.Integration.Common.ConfigSerializer;
-using SS.Integration.Adapter.Plugin.Model;
 
 namespace SS.Integration.Adapter.Mappings
 {
