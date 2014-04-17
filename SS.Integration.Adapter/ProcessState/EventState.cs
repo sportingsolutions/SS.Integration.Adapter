@@ -30,7 +30,6 @@ namespace SS.Integration.Adapter.ProcessState
     public class EventState : IEventState
     {
         private readonly IStoreProvider _storeProvider;
-
         private static readonly ILog _logger = LogManager.GetLogger(typeof(EventState).ToString());
 
         private EventState(IStoreProvider storeProvider)
