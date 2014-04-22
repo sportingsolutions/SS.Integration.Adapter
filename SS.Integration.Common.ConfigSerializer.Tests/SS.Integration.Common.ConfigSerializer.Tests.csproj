@@ -44,24 +44,27 @@
     <Reference Include="Google.GData.Spreadsheets, Version=2.2.0.0, Culture=neutral, PublicKeyToken=3f77feb76ff0d9a1, processorArchitecture=MSIL">
       <HintPath>..\packages\Google.GData.Spreadsheets.2.2.0.0\lib\Google.GData.Spreadsheets.dll</HintPath>
     </Reference>
-    <Reference Include="log4net">
-      <HintPath>..\packages\SS.Integration.Mapping.ProxyService.Client.1.1.18.0\lib\net45\bin\Release\log4net.dll</HintPath>
+    <Reference Include="log4net, Version=1.2.10.0, Culture=neutral, PublicKeyToken=1b44e1d426115821, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\SS.Integration.Mapping.ProxyService.Client.1.1.20.0\lib\net45\bin\Release\log4net.dll</HintPath>
     </Reference>
     <Reference Include="Moq">
       <HintPath>..\packages\Moq.4.2.1312.1622\lib\net40\Moq.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=4.0.8.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\SS.Integration.Mapping.ProxyService.Client.1.1.18.0\lib\net45\bin\Release\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\packages\SS.Integration.Mapping.ProxyService.Client.1.1.20.0\lib\net45\bin\Release\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="nunit.framework">
       <HintPath>..\packages\NUnit.2.6.3\lib\nunit.framework.dll</HintPath>
     </Reference>
-    <Reference Include="SS.Integration.Mapping.ProxyService.Client">
-      <HintPath>..\packages\SS.Integration.Mapping.ProxyService.Client.1.1.18.0\lib\net45\obj\Release\SS.Integration.Mapping.ProxyService.Client.dll</HintPath>
+    <Reference Include="SS.Integration.Mapping.ProxyService.Client, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\SS.Integration.Mapping.ProxyService.Client.1.1.20.0\lib\net45\obj\Release\SS.Integration.Mapping.ProxyService.Client.dll</HintPath>
     </Reference>
-    <Reference Include="SS.Integration.Mapping.ProxyService.Model">
-      <HintPath>..\packages\SS.Integration.Mapping.ProxyService.Client.1.1.18.0\lib\net45\bin\Release\SS.Integration.Mapping.ProxyService.Model.dll</HintPath>
+    <Reference Include="SS.Integration.Mapping.ProxyService.Model, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\SS.Integration.Mapping.ProxyService.Model.1.1.20.0\lib\net45\obj\Release\SS.Integration.Mapping.ProxyService.Model.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
