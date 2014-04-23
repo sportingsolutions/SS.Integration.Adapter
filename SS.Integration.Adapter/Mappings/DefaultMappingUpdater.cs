@@ -115,18 +115,6 @@ namespace SS.Integration.Adapter.Mappings
                 _trigger.Dispose();
         }
 
-        [Serializable]
-        public class MarketMappingWithSelectionMapping : MarketMapping
-        {
-            public string SelectionMappingName { get; set; }
-        }
-
-        [Serializable]
-        public class SelectionMappingWithName : SelectionMapping
-        {
-            public string MappingName { get; set; }
-        }
-
         protected virtual Mapping LoadMappings(string sport)
         {
             Mapping mapping = new Mapping();
