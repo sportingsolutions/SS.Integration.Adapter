@@ -20,40 +20,33 @@ namespace SS.Integration.Adapter.Model
     [Serializable]
     public class Selection
     {
+        private readonly Dictionary<string, string> _Tags;
+        private string _OverridenName;
+
         public Selection()
         {
-            Tags = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase);
+            _Tags = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+            _OverridenName = null;
         }
 
         public string Id { get; set; }
-
-        public Dictionary<string, object> Tags { get; private set; }
-
-        public string DisplayPrice { get; set; }
 
         public double? Price { get; set; }
 
         public string Status { get; set; }
 
         public bool? Tradable { get; set; }
-        
-        public Result Result { get; set; }
-
-        public Result PlaceResult { get; set; }
 
         public string Name
         {
             get
             {
-                if (Tags != null && Tags.ContainsKey("name"))
-                    return Tags["name"].ToString();
-
-                return null;
+                return string.IsNullOrEmpty(_OverridenName) ? GetTagValue("name") : _OverridenName;
             }
             set
             {
-                if (Tags != null)
-                    Tags["name"] = value;
+                if (!string.IsNullOrEmpty(value))
+                    _OverridenName = value;
             }
         }
 
@@ -69,21 +62,72 @@ namespace SS.Integration.Adapter.Model
         {
             get
             {
-                if (string.IsNullOrEmpty(Status)) return null;
-                return Status == "1";
+                if (string.IsNullOrEmpty(Status)) 
+                    return null;
+
+                return Status == SelectionStatus.Active;
             }
             set
             {
-                if (!value.Value)
+                if (value == null || !value.Value)
                 {
-                    Status = "0";
+                    Status = SelectionStatus.Pending;
                 }
                 else
                 {
-                    Status = "1";
+                    Status = SelectionStatus.Active;
                 }
             }
         }
+
+        #region Tags
+
+        public IEnumerable<string> TagKeys
+        {
+            get
+            {
+                return _Tags.Keys;
+            }
+        }
+
+        public bool HasTag(string tagKey)
+        {
+            return !string.IsNullOrEmpty(tagKey) && _Tags.ContainsKey(tagKey);
+        }
+
+        public void AddOrUpdateTagValue(string tagKey, string tagValue)
+        {
+            if (string.IsNullOrEmpty(tagKey))
+                return;
+
+            _Tags[tagKey] = tagValue;
+        }
+
+        public string GetTagValue(string tagKey)
+        {
+            return HasTag(tagKey) ? _Tags[tagKey] : null;
+        }
+
+        public int TagsCount
+        {
+            get
+            {
+                return _Tags.Count;
+            }
+        }
+
+        /// <summary>
+        /// Deprecated, use the API interface to deal with tags
+        /// </summary>
+        public Dictionary<string, string> Tags
+        {
+            get
+            {
+                return _Tags;
+            }
+        }
+
+        #endregion
 
         public override string ToString()
         {

@@ -12,7 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Configuration;
+using System.Collections.Generic;
 using log4net;
 using System.ComponentModel.Composition;
 using SS.Integration.Adapter.Model;
@@ -32,27 +32,27 @@ namespace SS.Integration.Adapter.Plugin.Logger
             _Logger.Info("Logger Plugin initialised");
         }
 
-        public void ProcessSnapshot(Model.Fixture fixture, bool hasEpochChanged = false)
+        public void ProcessSnapshot(Fixture fixture, bool hasEpochChanged = false)
         {
             _Logger.InfoFormat("Received snapshot for {0} (hasEpochChanged={1})", fixture, hasEpochChanged);
         }
 
-        public void ProcessStreamUpdate(Model.Fixture fixture, bool hasEpochChanged = false)
+        public void ProcessStreamUpdate(Fixture fixture, bool hasEpochChanged = false)
         {
             _Logger.InfoFormat("Received delta snapshot for {0} (hasEpochChanged={1})", fixture, hasEpochChanged);
         }
 
-        public void ProcessMatchStatus(Model.Fixture fixture)
+        public void ProcessMatchStatus(Fixture fixture)
         {
             _Logger.InfoFormat("Request for processing Match Statuf of {0} received", fixture);
         }
 
-        public void ProcessFixtureDeletion(Model.Fixture fixture)
+        public void ProcessFixtureDeletion(Fixture fixture)
         {
             _Logger.InfoFormat("Request for delete {0} received", fixture);
         }
 
-        public void UnSuspend(Model.Fixture fixture)
+        public void UnSuspend(Fixture fixture)
         {
             _Logger.InfoFormat("Request for un-suspend {0} received", fixture);
         }
@@ -67,5 +67,9 @@ namespace SS.Integration.Adapter.Plugin.Logger
             _Logger.Info("Request for disposing Logger plugin received");
         }
 
+        public IEnumerable<IMarketRule> MarketRules
+        {
+            get { return new List<IMarketRule>(); }
+        }
     }
 }

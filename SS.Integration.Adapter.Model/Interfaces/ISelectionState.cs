@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -12,30 +12,38 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-
-using System;
 using System.Collections.Generic;
 
 namespace SS.Integration.Adapter.Model.Interfaces
 {
-    public interface IAdapterPlugin
+    public interface ISelectionState
     {
-        void Initialise();
+        string Id { get; }
 
-        void ProcessSnapshot(Fixture fixture, bool hasEpochChanged = false);
+        string Status { get; }
 
-        void ProcessStreamUpdate(Fixture fixture, bool hasEpochChanged = false);
+        string Name { get; }
 
-        void ProcessMatchStatus(Fixture fixture);
+        bool? Tradability { get; }
 
-        void ProcessFixtureDeletion(Fixture fixture);
+        double? Price { get; }
 
-        void UnSuspend(Fixture fixture);
+        #region Tags
 
-        void Suspend(string fixtureId);
-        
-        void Dispose();
+        IEnumerable<string> TagKeys { get; }
 
-        IEnumerable<IMarketRule> MarketRules { get; }
+        string GetTagValue(string TagKey);
+
+        int TagsCount { get; }
+
+        bool HasTag(string TagKey);
+
+        #endregion
+
+        void Update(Selection Selection, bool fullSnapshot);
+
+        bool IsEqualTo(Selection Selection);
+
+        ISelectionState Clone();
     }
 }
