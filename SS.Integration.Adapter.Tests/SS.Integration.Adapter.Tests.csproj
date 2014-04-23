@@ -66,6 +66,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdapterTests.cs" />
+    <Compile Include="DefaultMappingUpdaterTests.cs" />
     <Compile Include="EventStateTests.cs" />
     <Compile Include="MarketsFilterTests.cs" />
     <Compile Include="StreamListenerTests.cs" />
