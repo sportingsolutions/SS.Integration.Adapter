@@ -52,14 +52,10 @@ namespace SS.Integration.Common.ConfigSerializer
                 throw new ArgumentNullException("Settings", "Settings cannot be null");
         }
 
-        #endregion
-
-        #region Implementation
-
-        public MappingType GetFromMappingCategory(string mappingCategoryDescription)
+        private MappingType GetFromMappingCategory(string mappingCategoryDescription)
         {
             MappingCategory cat;
-            bool found = Enum.TryParse(mappingCategoryDescription,true,out cat);
+            bool found = Enum.TryParse(mappingCategoryDescription, true, out cat);
 
             if (!found)
             {
@@ -76,6 +72,10 @@ namespace SS.Integration.Common.ConfigSerializer
                     throw new ArgumentException("category not recognized");
             }
         }
+
+        #endregion
+
+        #region Implementation
 
 
         public List<T> Deserialize<T>(string fileNameOrReference) where T : class, new()
