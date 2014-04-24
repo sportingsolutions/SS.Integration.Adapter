@@ -12,12 +12,17 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Reflection;
+namespace SS.Integration.Adapter.Model.Interfaces
+{
+    public interface IMarketRuleProcessingContext
+    {
+        bool CanBeRemoved(Market Market);
 
-[assembly: AssemblyProduct("SportingSolutions.Connect.Adapter")]
-[assembly: AssemblyCompany("Sporting Solutions Ltd.")]
-[assembly: AssemblyCopyright("Copyright (c) Sporting Solutions Ltd. 2013")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("0.1.0.0")]
-[assembly: AssemblyFileVersion("0.1.0.0")]
+        bool CanBeEdited(Market Market);
+
+        void SetAsUnEditable(Market Market);
+
+        void SetAsUnRemovable(Market Market);
+
+    }
+}

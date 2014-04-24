@@ -65,6 +65,15 @@ namespace SS.Integration.Common.Stats.Interface
         void SetValue(string key, object value);
 
         /// <summary>
+        /// As SetValue but may throws exception
+        /// that have to be handled by the caller.
+        /// Usefull on batches.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        void SetValueUnsafe(string key, object value);
+
+        /// <summary>
         /// Allows to add a message before writing the item
         /// </summary>
         /// <param name="messagekey">A key to identify the message type</param>

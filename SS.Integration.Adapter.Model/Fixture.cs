@@ -132,5 +132,6 @@ namespace SS.Integration.Adapter.Model
 
             return string.Format(format, Id,Sequence);
         }
+
     }
 }

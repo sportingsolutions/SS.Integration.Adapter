@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using Newtonsoft.Json;
+using SS.Integration.Common;
 
 namespace SS.Integration.Adapter
 {
@@ -23,7 +24,7 @@ namespace SS.Integration.Adapter
 
         public T GetContent<T>()
         {
-            return JsonConvert.DeserializeObject<T>(Content.ToString());
+            return JsonConvert.DeserializeObject<T>(Content.ToString(), FixtureDateTimeJsonConverter.Instance);
         }
     }
 }

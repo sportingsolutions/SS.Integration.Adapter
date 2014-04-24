@@ -35,9 +35,7 @@ namespace SS.Integration.Adapter.Tests
         {
             _mockObjProv = new Mock<IObjectProvider<List<Mapping>>>();
             _mockSportConfSer = new Mock<ISportConfigSerializer>();
-            _mapUpd  = new DefaultMappingUpdater();
-            _mapUpd.CachedObjectProvider = _mockObjProv.Object;
-            _mapUpd.Serializer = _mockSportConfSer.Object;
+            _mapUpd = new DefaultMappingUpdater(_mockSportConfSer.Object, _mockObjProv.Object);
             _mockSportConfSer.Setup(cs => cs.GetSportsList(It.IsAny<string>())).Returns(_sports);
         }
 

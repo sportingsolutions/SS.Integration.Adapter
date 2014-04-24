@@ -21,10 +21,8 @@ using System.ServiceProcess;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Plugin.Model.Interface;
-using SS.Integration.Adapter.UdapiClient.Model;
 using log4net;
 using Ninject;
-using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Adapter.ProcessState;
@@ -34,12 +32,11 @@ namespace SS.Integration.Adapter.WindowsService
     public partial class AdapterService : ServiceBase
     {
         private readonly ILog _logger = LogManager.GetLogger(typeof(AdapterService).ToString());
-        private static Task _adapterWorkerThread; 
-
+        private static Task _adapterWorkerThread;
+        private readonly StandardKernel _iocContainer;
         private Adapter _adapter;
 
-        private readonly StandardKernel _iocContainer;
-
+        
         [Import]
         public IAdapterPlugin PlatformConnector { get; set; }
 
@@ -48,7 +45,6 @@ namespace SS.Integration.Adapter.WindowsService
             InitializeComponent();
 
             TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;    
-
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
 
             _iocContainer = new StandardKernel(new BootStrapper());
@@ -72,8 +68,6 @@ namespace SS.Integration.Adapter.WindowsService
             {
                 _logger.Fatal("Adapter received unobserved exception from TaskScheduler: ", unobservedTaskExceptionEventArgs.Exception);
             }
-            
-            
         }
 
         private void Compose()
@@ -146,9 +140,8 @@ namespace SS.Integration.Adapter.WindowsService
             var service = _iocContainer.Get<IServiceFacade>();
 
             var listenerFactoryMethod =
-                _iocContainer.Get<Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState,IObjectProvider<IDictionary<string,MarketState>>,  int, IListener>>();
+                _iocContainer.Get<Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState,IObjectProvider<IMarketStateCollection>,  int, IListener>>();
             var eventState = EventState.Create(new FileStoreProvider(), settings);
-            var marketFilterObjectProvider = new BinaryStoreProvider<IDictionary<string, MarketState>>();
 
             var mappingUpdater = _iocContainer.Get<IMappingUpdater>();
 
@@ -156,7 +149,7 @@ namespace SS.Integration.Adapter.WindowsService
 
             _adapter.Start();
 
-            _logger.Info("Adapter has started.");
+            _logger.Info("Adapter has started");
         }
 
         protected override void OnStop()
@@ -165,7 +158,7 @@ namespace SS.Integration.Adapter.WindowsService
 
             if (PlatformConnector != null)
             {
-                _logger.Info("Stopping Plugin's HeartBeat");
+                _logger.Info("Disposing Plugin");
 
                 PlatformConnector.Dispose();
             }
@@ -175,7 +168,7 @@ namespace SS.Integration.Adapter.WindowsService
             _adapterWorkerThread.ContinueWith(task => _logger.InfoFormat("Adapter successfully stopped"));
         }
 
-        void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             _logger.Fatal("Unhandled Exception, stopping service", (Exception)e.ExceptionObject);
 

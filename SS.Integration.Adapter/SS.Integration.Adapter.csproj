@@ -64,13 +64,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\CommonAssemblyInfo.cs">
-      <Link>Properties\CommonAssemblyInfo.cs</Link>
-    </Compile>
     <Compile Include="Adapter.cs" />
     <Compile Include="Configuration\MappingUpdaterSection.cs" />
     <Compile Include="Configuration\Settings.cs" />
     <Compile Include="Configuration\SportConfiguration.cs" />
+    <Compile Include="FixtureJsonHelper.cs" />
     <Compile Include="Interface\IEventState.cs" />
     <Compile Include="Interface\IListener.cs" />
     <Compile Include="Interface\IReconnectStrategy.cs" />
@@ -83,14 +81,19 @@
     <Compile Include="Mappings\DefaultMappingUpdaterFactory.cs" />
     <Compile Include="Mappings\DummyMappingUpdater.cs" />
     <Compile Include="Mappings\DummyMappingUpdaterFactory.cs" />
+    <Compile Include="MarketRules\Model\MarketRuleProcessingContext.cs" />
+    <Compile Include="MarketRules\PendingMarketFilteringRule.cs" />
+    <Compile Include="MarketRules\VoidUnSettledMarket.cs" />
     <Compile Include="ProcessState\BinaryStoreProvider.cs" />
     <Compile Include="ProcessState\EventState.cs" />
     <Compile Include="ProcessState\FileStoreProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StreamMessage.cs" />
-    <Compile Include="UdapiClient\MarketsFilter.cs" />
-    <Compile Include="UdapiClient\Model\MarketState.cs" />
-    <Compile Include="UdapiClient\Model\SelectionState.cs" />
+    <Compile Include="MarketRules\InactiveMarketsFilteringRule.cs" />
+    <Compile Include="MarketRules\MarketsRulesManager.cs" />
+    <Compile Include="MarketRules\Model\MarketState.cs" />
+    <Compile Include="MarketRules\Model\MarketStateCollection.cs" />
+    <Compile Include="MarketRules\Model\SelectionState.cs" />
     <Compile Include="StreamListener.cs" />
     <Compile Include="DefaultReconnectStrategy.cs" />
     <Compile Include="UdapiClient\UdapiResourceFacade.cs" />

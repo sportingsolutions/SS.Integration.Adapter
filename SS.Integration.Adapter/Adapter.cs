@@ -21,8 +21,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Plugin.Model.Interface;
+using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.ProcessState;
-using SS.Integration.Adapter.UdapiClient.Model;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Extensions;
 using SportingSolutions.Udapi.Sdk.Interfaces;
@@ -48,8 +48,8 @@ namespace SS.Integration.Adapter
         private readonly IEventState _eventState;
         private readonly List<string> _sports;
         private readonly IMappingUpdater _mappingUpdater;
-        private readonly Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState, IObjectProvider<IDictionary<string, MarketState>>, int, IListener> _createListener;
-        private readonly IObjectProvider<IDictionary<string, MarketState>> _marketStateObjectStore;
+        private readonly Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState, IObjectProvider<IMarketStateCollection>, int, IListener> _createListener;
+        private readonly IObjectProvider<IMarketStateCollection> _marketStateObjectStore;
         private readonly BlockingCollection<IResourceFacade> _resourceCreationQueue;
         private readonly HashSet<string> _currentlyProcessedFixtures;
         private readonly IStatsHandle _Stats;
@@ -60,7 +60,7 @@ namespace SS.Integration.Adapter
                        IAdapterPlugin platformConnector,
                        IEventState eventState,
                        IMappingUpdater mappingUpdater,
-                       Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState, IObjectProvider<IDictionary<string, MarketState>>, int, IListener> listenerFactory)
+                       Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState, IObjectProvider<IMarketStateCollection>, int, IListener> listenerFactory)
         {
             _settings = settings;
             _udapiServiceFacade = udapiServiceFacade;
@@ -72,8 +72,8 @@ namespace SS.Integration.Adapter
             _currentlyProcessedFixtures = new HashSet<string>();
 
             
-            _marketStateObjectStore = new CachedObjectStoreWithPersistance<IDictionary<string, MarketState>>(
-                new BinaryStoreProvider<IDictionary<string, MarketState>>(_settings.MarketFiltersDirectory, "FilteredMarkets-{0}.bin"),
+            _marketStateObjectStore = new CachedObjectStoreWithPersistance<IMarketStateCollection>(
+                new BinaryStoreProvider<IMarketStateCollection>(_settings.MarketFiltersDirectory, "FilteredMarkets-{0}.bin"),
                 "MarketFilters",
                 settings.CacheExpiryInMins * 60
                 );
@@ -302,7 +302,7 @@ namespace SS.Integration.Adapter
 
                 _logger.DebugFormat("Received {0} fixtures to process in sport={1}", resources.Count, sport);
 
-                var po = new ParallelOptions() { MaxDegreeOfParallelism = processingFactor == 0 ? 1 : processingFactor };
+                var po = new ParallelOptions { MaxDegreeOfParallelism = processingFactor == 0 ? 1 : processingFactor };
 
                 if (resources.Count > 1)
                 {
@@ -369,7 +369,7 @@ namespace SS.Integration.Adapter
             var fixtureState = _eventState.GetFixtureState(resource.Id);
             if (resource.IsMatchOver && (fixtureState == null || fixtureState.MatchStatus == resource.MatchStatus))
             {
-                _logger.DebugFormat("{0} has finished. Will not process", resource.ToString());
+                _logger.DebugFormat("{0} has finished. Will not process", resource);
                 return;
             }
 
@@ -472,7 +472,7 @@ namespace SS.Integration.Adapter
 
         private void StopListenerIfFixtureEnded(string sport, IResourceFacade resource)
         {
-            _logger.DebugFormat("{0} is currently being processed", resource.ToString());
+            _logger.DebugFormat("{0} is currently being processed", resource);
 
             var listener = _listeners[resource.Id];
 
@@ -486,7 +486,7 @@ namespace SS.Integration.Adapter
                     return;
                 }
 
-                _logger.InfoFormat("{0} is over.", resource.ToString());
+                _logger.InfoFormat("{0} is over.", resource);
                 
                 if (RemoveAndStopListener(resource.Id))
                 {
@@ -494,13 +494,13 @@ namespace SS.Integration.Adapter
                 }
                 else
                 {
-                    _logger.WarnFormat("Couldn't remove listener for matchOver fixture {0}", resource.ToString());
+                    _logger.WarnFormat("Couldn't remove listener for matchOver fixture {0}", resource);
                 }
             }
 
             if (listener.IsFixtureSetup && (resource.Content.MatchStatus != (int)MatchStatus.Setup && resource.Content.MatchStatus != (int)MatchStatus.Ready))
             {
-                _logger.InfoFormat("{0} is no longer in Setup stage so the listener is now connecting to streaming server", resource.ToString());
+                _logger.InfoFormat("{0} is no longer in Setup stage so the listener is now connecting to streaming server", resource);
 
                 listener.StartStreaming();
             }
@@ -508,10 +508,9 @@ namespace SS.Integration.Adapter
 
         private Fixture GetSnapshot(IResourceFacade resource)
         {
-            _logger.InfoFormat("Get UDAPI Snapshot for {0}", resource.ToString());
-
+            _logger.InfoFormat("Get UDAPI Snapshot for {0}", resource);
             var snapshot = resource.GetSnapshot();
-            var fixtureSnapshot = snapshot.FromJson<Fixture>();
+            var fixtureSnapshot = FixtureJsonHelper.GetFromJson(snapshot);
 
             if (string.IsNullOrEmpty(fixtureSnapshot.Id))
             {
@@ -519,7 +518,7 @@ namespace SS.Integration.Adapter
                 throw exception;
             }
 
-            _logger.InfoFormat("Successfully retrieved UDAPI Snapshot for {0}", fixtureSnapshot.ToString());
+            _logger.InfoFormat("Successfully retrieved UDAPI Snapshot for {0}", fixtureSnapshot);
 
             return fixtureSnapshot;
         }
@@ -536,7 +535,7 @@ namespace SS.Integration.Adapter
 
             _logger.InfoFormat("Sporting Solutions Adapter version {0} using Sporting Solutions SDK version {1}", e, s);
 
-            _Stats.SetValue(AdapterKeys.HOST_NAME, System.Environment.MachineName);
+            _Stats.SetValue(AdapterKeys.HOST_NAME, Environment.MachineName);
             _Stats.SetValue(AdapterKeys.START_TIME, DateTime.Now.ToUniversalTime().ToString());
         }
     }

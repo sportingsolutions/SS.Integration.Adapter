@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package>
+	<metadata>
+		<id>SS.Integration.Adapter</id>
+		<description>Adapter for integrating GTP with Customer's trading platform</description>
+		<version>$version$</version>
+		<authors>Sporting Solutions</authors>
+		<owners>Sporting Solutions</owners>
+		<licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+		<projectUrl>http://www.sportingsolutions.com</projectUrl>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<copyright>Copyright (c) SPIN Services Ltd. 2014</copyright>
+	</metadata>
+	<files>
+		<file src="bin\Release\**\*.*" exclude="**\*.pdb;**\*.xml;**\*.vshost.*;**\*.config" target="lib\net45" />
+		<file src="..\SS.Integration.Adapter.Plugin.Logger\bin\Release\SS.Integration.Adapter.Plugin.Logger.dll"  target="lib\net45" />
+		<file src="..\SS.Integration.Adapter.Plugin.Logger\bin\Release\log4net.config"  target="lib\net45" />
+		<file src="..\LICENCE.txt" target="lib\net45" />
+	</files>
+</package>

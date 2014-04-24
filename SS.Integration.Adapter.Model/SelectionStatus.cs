@@ -18,7 +18,7 @@ namespace SS.Integration.Adapter.Model
     public class SelectionStatus
     {
         public const string Pending         = "0";
-        public const string InPlay          = "1";
+        public const string Active          = "1";
         public const string Settled         = "2";
         public const string Void            = "3";
     }
