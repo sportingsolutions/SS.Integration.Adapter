@@ -29,15 +29,10 @@ namespace SS.Integration.Adapter.Mappings
     public class DefaultMappingUpdater : IMappingUpdater
     {
 
-
-
-
         private const string _cachedFileId = "Mappings";
 
         public ISportConfigSerializer Serializer { get; set; }
         public IObjectProvider<List<Mapping>> CachedObjectProvider { get; set; }
-
-        public string FileNameOrReference { get; set; }
 
         private ILog _logger = LogManager.GetLogger(typeof(DefaultMappingUpdater));
 
@@ -52,7 +47,6 @@ namespace SS.Integration.Adapter.Mappings
             }
 
         }
-
 
 
         private int _checkForUpdatesInterval = 60000;
@@ -76,6 +70,14 @@ namespace SS.Integration.Adapter.Mappings
                 return _observers;
             }
 
+        }
+
+
+        public DefaultMappingUpdater(ISportConfigSerializer serializer,
+                                          IObjectProvider<List<Mapping>> cachedObjectProvider)
+        {
+            this.Serializer = serializer;
+            this.CachedObjectProvider = cachedObjectProvider;
         }
 
         private void ReplaceSingleMappingsInCache(List<Mapping> newMapping)
@@ -151,14 +153,24 @@ namespace SS.Integration.Adapter.Mappings
 
         public IEnumerable<Mapping> LoadMappings()
         {
+
             List<Mapping> newMappings = new List<Mapping>();
 
             foreach (string sport in this.SportsList)
             {
-                newMappings.Add(LoadMappings(sport));
+                try
+                {
+                    Mapping singleMapping = LoadMappings(sport);
+                    newMappings.Add(singleMapping);
+                }
+                catch (Exception ex)
+                {
+                    _logger.ErrorFormat("error while loading mappings for {0}: {1}", sport, ex);
+                }
+                
             }
 
-            this.CachedObjectProvider.SetObject(_cachedFileId,newMappings);
+            ReplaceSingleMappingsInCache(newMappings);
 
             return newMappings;
         }
@@ -166,16 +178,30 @@ namespace SS.Integration.Adapter.Mappings
         public void NotifySubscribers(IEnumerable<Mapping> mappings)
         {
             foreach (IObserver<IEnumerable<Mapping>> observer in this.Observers)
-                observer.OnNext(mappings);
+            {
+                try
+                {
+                    observer.OnNext(mappings);
+                }
+                catch (Exception ex)
+                {
+                    _logger.ErrorFormat("error while passing the mappings to the subscriber {0} : {1}", observer, ex);
+                    observer.OnError(ex);
+                }
+                
+            }
+
+
         }
 
         public void CheckForUpdates()
         {
-            try
-            {
-                List<Mapping> newMappings = new List<Mapping>();
 
-                foreach (string sport in this.SportsList)
+            List<Mapping> newMappings = new List<Mapping>();
+
+            foreach (string sport in this.SportsList)
+            {
+                try
                 {
                     _logger.DebugFormat("checking for updates sport={0}",sport);
 
@@ -191,29 +217,37 @@ namespace SS.Integration.Adapter.Mappings
                         _logger.DebugFormat("no updates found for sport={0}", sport);
                     }
                 }
-
-                if (newMappings.Count() == 0)
+                catch (Exception ex)
                 {
-                    _logger.DebugFormat("no updates found across all sports.");
+                    _logger.ErrorFormat("error while retrieving mappings for {0}: {1}",sport, ex);
                 }
-                else
-                {
-                    string sportsNames = string.Join(",", newMappings.Select(it => it.Sport));
+            }
 
+            if (newMappings.Count() == 0)
+            {
+                _logger.DebugFormat("no updates found across all sports.");
+            }
+            else
+            {
+                string sportsNames = string.Join(",", newMappings.Select(it => it.Sport));
+
+                try
+                {
                     _logger.DebugFormat("save mappings for {0} to cache", sportsNames);
                     ReplaceSingleMappingsInCache(newMappings);
                     _logger.DebugFormat("mappings for {0} saved to cache", sportsNames);
-
-                    _logger.DebugFormat("notification to subscribers");
-                    NotifySubscribers(newMappings);
-                    _logger.DebugFormat("subscribers notified"); 
+                }
+                catch (Exception ex)
+                {
+                    _logger.ErrorFormat("error while saving mappings to cache : {0}",  ex);
                 }
 
-            }
-            catch (Exception ex)
-            {
-                _logger.ErrorFormat("error: {0}", ex);
+                _logger.DebugFormat("notification to subscribers");
+                NotifySubscribers(newMappings);
+                _logger.DebugFormat("subscribers notified");
+
             }
         }
+
     }
 }

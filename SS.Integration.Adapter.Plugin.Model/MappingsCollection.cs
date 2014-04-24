@@ -75,12 +75,12 @@ namespace SS.Integration.Adapter.Plugin.Model
 
         public void OnCompleted()
         {
-            throw new NotImplementedException();
+            //do nothing
         }
 
         public void OnError(Exception error)
         {
-            throw new NotImplementedException();
+            //do nothing
         }
 
         public void OnNext(IEnumerable<Mapping> value)

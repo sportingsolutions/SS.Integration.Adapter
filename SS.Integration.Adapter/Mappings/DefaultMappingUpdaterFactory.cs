@@ -28,15 +28,11 @@ namespace SS.Integration.Adapter.Mappings
         public IMappingUpdater GetMappingUpdater()
         {
             var configSerializer = new ProxyServiceConfigSerializer((ProxyServiceSettings)this.Configuration.SerializerSettings);
-            var mappingUpdater = new DefaultMappingUpdater();
-            mappingUpdater.Serializer = configSerializer;
+            var cachedObjectProvider = new BinaryStoreProvider<List<Mapping>>("CachedMappings", "{0}.bin");
+            var mappingUpdater = new DefaultMappingUpdater(configSerializer,cachedObjectProvider);
             mappingUpdater.CheckForUpdatesInterval = this.Configuration.CheckForUpdatesInterval;
-            mappingUpdater.CachedObjectProvider =
-                new BinaryStoreProvider<List<Mapping>>("CachedMappings", "{0}.bin");
-            mappingUpdater.FileNameOrReference = this.Configuration.FileNameOrReferenceToDeserialize;
             return mappingUpdater;
         }
-
 
     }
 }

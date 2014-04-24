@@ -14,11 +14,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using SS.Integration.Mapping.ProxyService.Client;
 using SS.Integration.Mapping.ProxyService.Model;
 
 namespace SS.Integration.Common.ConfigSerializer
 {
+
     public class ProxyServiceConfigSerializer : ISportConfigSerializer
     {
 
@@ -44,6 +46,8 @@ namespace SS.Integration.Common.ConfigSerializer
             this.Client = new ProxyServiceClient(settings.ReadMappingServiceUrl, 
                                                  settings.CheckUpdateServiceUrl,
                                                  settings.SportListServiceUrl);
+
+            
         }
 
         #endregion
@@ -65,7 +69,7 @@ namespace SS.Integration.Common.ConfigSerializer
 
             if (!found)
             {
-                throw new ArgumentException("category not recognized");
+                throw new ArgumentException(String.Format("category \"{0}\"not recognized",mappingCategoryDescription));
             }
 
             switch (cat)
@@ -87,7 +91,6 @@ namespace SS.Integration.Common.ConfigSerializer
         public List<T> Deserialize<T>(string fileNameOrReference) where T : class, new()
         {
             SettingsAndClientCheck();
-
             var request = new MappingReadRequest()
                 {
                     Company = this.Settings.Company,
@@ -101,9 +104,7 @@ namespace SS.Integration.Common.ConfigSerializer
         public List<T> Deserialize<T>(string fileNameOrReference, string sportName)
             where T : class,new()
         {
-
             SettingsAndClientCheck();
-
             var request = new MappingReadRequest()
             {
                 Company = this.Settings.Company,
@@ -127,7 +128,6 @@ namespace SS.Integration.Common.ConfigSerializer
         public bool IsUpdateNeeded(string fileNameOrReference)
         {
             SettingsAndClientCheck();
-
             var request = new MappingCheckUpdateRequest()
             {
                 Company = this.Settings.Company,
@@ -139,9 +139,7 @@ namespace SS.Integration.Common.ConfigSerializer
 
         public bool IsUpdateNeeded(string fileNameOrReference,string sportName)
         {
-
             SettingsAndClientCheck();
-
             var request = new MappingCheckUpdateRequest()
             {
                 Company = this.Settings.Company,
@@ -156,7 +154,6 @@ namespace SS.Integration.Common.ConfigSerializer
         public string[] GetSportsList(string fileNameOrReference)
         {
             SettingsAndClientCheck();
-
             var request = new MappingRequest()
             {
                 Company = this.Settings.Company,

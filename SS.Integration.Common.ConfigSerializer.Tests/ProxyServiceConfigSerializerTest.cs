@@ -32,6 +32,7 @@ namespace SS.Integration.Common.ConfigSerializer.Tests
         private string _company = "TestCompany";
         private string _enviroment = "UnitTests";
         private string _sport = "Basketball";
+
         private ProxyServiceConfigSerializer _serializer =
             new ProxyServiceConfigSerializer();
 

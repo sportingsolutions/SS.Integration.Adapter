@@ -20,7 +20,6 @@ namespace SS.Integration.Adapter.Plugin.Model.Interface
 {
     public interface IMappingUpdater : IDisposable
     {
-        string FileNameOrReference { get; set; }
         ISportConfigSerializer Serializer { get; set; }
         List<IObserver<IEnumerable<Mapping>>> Observers { get; }
         IEnumerable<Mapping> LoadMappings();
