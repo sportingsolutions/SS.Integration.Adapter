@@ -38,6 +38,7 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Common.ConfigSerializer", "SS.Integration.Common.ConfigSerializer\SS.Integration.Common.ConfigSerializer.csproj", "{1C527842-E5A0-4E7A-A475-EFE1F8F892A2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Common.ConfigSerializer.Tests", "SS.Integration.Common.ConfigSerializer.Tests\SS.Integration.Common.ConfigSerializer.Tests.csproj", "{0FB6DEC1-EDC8-44D1-8211-1EEB102288AB}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Specs", "SS.Integration.Adapter.Specs\SS.Integration.Adapter.Specs.csproj", "{FFDE838C-859F-4BCE-B791-53B8697175D1}"
 EndProject
 Global
