@@ -47,9 +47,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\CommonAssemblyInfo.cs">
-      <Link>Properties\CommonAssemblyInfo.cs</Link>
-    </Compile>
     <Compile Include="CachedObjectStore.cs" />
     <Compile Include="CachedObjectStoreWithPersistance.cs" />
     <Compile Include="Enums\EpochChangeReasonEnum.cs" />
