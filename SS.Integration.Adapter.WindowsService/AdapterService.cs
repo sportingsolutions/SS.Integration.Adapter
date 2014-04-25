@@ -20,6 +20,7 @@ using System.Reflection;
 using System.ServiceProcess;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Plugin.Model.Interface;
 using log4net;
 using Ninject;
 using SS.Integration.Adapter.Model;
@@ -47,6 +48,7 @@ namespace SS.Integration.Adapter.WindowsService
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
 
             _iocContainer = new StandardKernel(new BootStrapper());
+            _iocContainer.Settings.InjectNonPublic = true;
 
             Compose();
         }
@@ -129,6 +131,8 @@ namespace SS.Integration.Adapter.WindowsService
                 return;
             }
 
+            _iocContainer.Inject(PlatformConnector);
+
             var connector = PlatformConnector;
             connector.Initialise();
 
@@ -139,7 +143,9 @@ namespace SS.Integration.Adapter.WindowsService
                 _iocContainer.Get<Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState,IObjectProvider<IMarketStateCollection>,  int, IListener>>();
             var eventState = EventState.Create(new FileStoreProvider(), settings);
 
-            _adapter = new Adapter(settings, service, connector, eventState, listenerFactoryMethod);
+            var mappingUpdater = _iocContainer.Get<IMappingUpdater>();
+
+            _adapter = new Adapter(settings, service, connector, eventState, mappingUpdater, listenerFactoryMethod);
 
             _adapter.Start();
 

@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -12,21 +12,11 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
-using System.Collections.Generic;
-
-namespace SS.Integration.Adapter.Plugin.Model
+namespace SS.Integration.Adapter.Plugin.Model.Interface
 {
-
-    [Serializable]
-    public class Mapping
+    public interface IMappingsCollection
     {
-        public string Sport { get; set; }
-
-        public string Code { get; set; }
-
-        public IEnumerable<CompetitionMapping> CompetitionMappings { get; set; }
-
-        public IEnumerable<MarketMapping> MarketsMapping { get; set; }
+        Mapping this[string key] { get; }
+        int Count { get; }
     }
 }

@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -12,21 +12,19 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
-using System.Collections.Generic;
 
-namespace SS.Integration.Adapter.Plugin.Model
+using SS.Integration.Adapter.Plugin.Model.Interface;
+using SS.Integration.Adapter.Plugin.Model;
+
+namespace SS.Integration.Adapter.Mappings
 {
-
-    [Serializable]
-    public class Mapping
+    public class DummyMappingUpdaterFactory : IMappingUpdaterFactory
     {
-        public string Sport { get; set; }
+        public MappingUpdaterConfiguration Configuration { get; set; }
 
-        public string Code { get; set; }
-
-        public IEnumerable<CompetitionMapping> CompetitionMappings { get; set; }
-
-        public IEnumerable<MarketMapping> MarketsMapping { get; set; }
+        public IMappingUpdater GetMappingUpdater()
+        {
+            return new DummyMappingUpdater();
+        }
     }
 }

@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -12,21 +12,15 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
 using System.Collections.Generic;
 
-namespace SS.Integration.Adapter.Plugin.Model
+namespace SS.Integration.Common.ConfigSerializer
 {
-
-    [Serializable]
-    public class Mapping
+    public interface ISportConfigSerializer : IConfigSerializer
     {
-        public string Sport { get; set; }
-
-        public string Code { get; set; }
-
-        public IEnumerable<CompetitionMapping> CompetitionMappings { get; set; }
-
-        public IEnumerable<MarketMapping> MarketsMapping { get; set; }
+        List<T> Deserialize<T>(string fileNameOrReference, string sportName) where T : class,new();
+        void Serialize<T>(List<T> settings, string fileNameOrReference, string sportName);
+        bool IsUpdateNeeded(string fileNameOrReference, string sportName);
+        string[] GetSportsList(string fileNameOrReference);
     }
 }

@@ -20,6 +20,7 @@ using System.Threading;
 using System.Linq;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Plugin.Model.Interface;
 using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.ProcessState;
 using log4net;
@@ -46,6 +47,7 @@ namespace SS.Integration.Adapter
         private readonly IAdapterPlugin _platformConnector;
         private readonly IEventState _eventState;
         private readonly List<string> _sports;
+        private readonly IMappingUpdater _mappingUpdater;
         private readonly Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState, IObjectProvider<IMarketStateCollection>, int, IListener> _createListener;
         private readonly IObjectProvider<IMarketStateCollection> _marketStateObjectStore;
         private readonly BlockingCollection<IResourceFacade> _resourceCreationQueue;
@@ -57,6 +59,7 @@ namespace SS.Integration.Adapter
                        IServiceFacade udapiServiceFacade,
                        IAdapterPlugin platformConnector,
                        IEventState eventState,
+                       IMappingUpdater mappingUpdater,
                        Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState, IObjectProvider<IMarketStateCollection>, int, IListener> listenerFactory)
         {
             _settings = settings;
@@ -64,6 +67,7 @@ namespace SS.Integration.Adapter
             _platformConnector = platformConnector;
             _eventState = eventState;
             _createListener = listenerFactory;
+            _mappingUpdater = mappingUpdater;
             _resourceCreationQueue = new BlockingCollection<IResourceFacade>(new ConcurrentQueue<IResourceFacade>());
             _currentlyProcessedFixtures = new HashSet<string>();
 
@@ -141,6 +145,7 @@ namespace SS.Integration.Adapter
                 }
 
                 _eventState.WriteToFile();
+                _mappingUpdater.Dispose();
             }
 
             if (_platformConnector != null)

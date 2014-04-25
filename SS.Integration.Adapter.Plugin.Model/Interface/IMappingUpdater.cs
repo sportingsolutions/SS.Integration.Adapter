@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -14,19 +14,16 @@
 
 using System;
 using System.Collections.Generic;
+using SS.Integration.Common.ConfigSerializer;
 
-namespace SS.Integration.Adapter.Plugin.Model
+namespace SS.Integration.Adapter.Plugin.Model.Interface
 {
-
-    [Serializable]
-    public class Mapping
+    public interface IMappingUpdater : IDisposable
     {
-        public string Sport { get; set; }
-
-        public string Code { get; set; }
-
-        public IEnumerable<CompetitionMapping> CompetitionMappings { get; set; }
-
-        public IEnumerable<MarketMapping> MarketsMapping { get; set; }
+        ISportConfigSerializer Serializer { get; set; }
+        List<IObserver<IEnumerable<Mapping>>> Observers { get; }
+        IEnumerable<Mapping> LoadMappings();
+        void NotifySubscribers(IEnumerable<Mapping> mappings);
+        void Initialize();
     }
 }
