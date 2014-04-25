@@ -12,14 +12,11 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using NUnit.Framework;
 using System.Threading;
 using Moq;
 using SS.Integration.Adapter.Interface;
-using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
@@ -39,7 +36,6 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
             var eventState = new Mock<IEventState>();
-            var marketStateObjectStore = new Mock<IObjectProvider<IDictionary<string, MarketState>>>();
             var mappingUpdater = new Mock<IMappingUpdater>();
 
             settings.Setup(s => s.FixtureCheckerFrequency).Returns(10000);
@@ -198,12 +194,12 @@ namespace SS.Integration.Adapter.Tests
             fixtureOne.Setup(f => f.Id).Returns("1");
             fixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetSnapshotJson());
             fixtureOne.Setup(f => f.Content)
-                      .Returns(new Summary() { Id = "1", Date = "23/05/2012", StartTime = "10:20", MatchStatus = 1});
+                      .Returns(new Summary { Id = "1", Date = "23/05/2012", StartTime = "10:20", MatchStatus = 1});
 
             fixtureTwo.Setup(f => f.Id).Returns("2");
             fixtureTwo.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetSnapshotJson());
             fixtureTwo.Setup(f => f.Content)
-                      .Returns(new Summary()
+                      .Returns(new Summary
                           {
                               Id = "2", Date = "23/05/2012", StartTime = "13:20", MatchStatus = 1
                           });
@@ -258,11 +254,11 @@ namespace SS.Integration.Adapter.Tests
             fixtureOne.Setup(f => f.Id).Returns("1");
             fixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetSnapshotJson());
             fixtureOne.Setup(f => f.Content)
-                      .Returns(new Summary() { Date = "23/05/2012", StartTime = "10:20", MatchStatus = 50 });
+                      .Returns(new Summary { Date = "23/05/2012", StartTime = "10:20", MatchStatus = 50 });
             fixtureTwo.Setup(f => f.Id).Returns("2");
             fixtureTwo.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetSnapshotJson());
             fixtureTwo.Setup(f => f.Content)
-                      .Returns(new Summary() { Date = "24/05/2012", StartTime = "11:20", MatchStatus = 50});
+                      .Returns(new Summary { Date = "24/05/2012", StartTime = "11:20", MatchStatus = 50});
 
             settings.Setup(s => s.FixtureCreationConcurrency).Returns(2);
             service.Setup(s => s.GetResources(It.IsAny<string>()))
@@ -320,7 +316,7 @@ namespace SS.Integration.Adapter.Tests
          
             service.Setup(s => s.GetResources("Football")).Returns(new List<IResourceFacade> { footballFixtureOne.Object });
             eventState.Setup(es => es.GetFixtureState(It.IsAny<string>()))
-                      .Returns(new FixtureState()
+                      .Returns(new FixtureState
                           {
                               Id = footballFixtureOne.Object.Id,
                               MatchStatus = MatchStatus.InRunning,

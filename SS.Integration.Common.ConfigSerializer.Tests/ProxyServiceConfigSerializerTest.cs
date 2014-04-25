@@ -12,14 +12,8 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Google.GData.Client;
-using Google.GData.Spreadsheets;
 using Moq;
 using NUnit.Framework;
-using SS.Integration.Adapter.Plugin.Model;
 using SS.Integration.Mapping.ProxyService.Client;
 using SS.Integration.Mapping.ProxyService.Model;
 
@@ -29,12 +23,11 @@ namespace SS.Integration.Common.ConfigSerializer.Tests
     class ProxyServiceConfigSerializerTest
     {
 
-        private string _company = "TestCompany";
-        private string _enviroment = "UnitTests";
-        private string _sport = "Basketball";
+        private readonly string _company = "TestCompany";
+        private readonly string _enviroment = "UnitTests";
+        private readonly string _sport = "Basketball";
 
-        private ProxyServiceConfigSerializer _serializer =
-            new ProxyServiceConfigSerializer();
+        private readonly ProxyServiceConfigSerializer _serializer = new ProxyServiceConfigSerializer();
 
        
         [Test]
@@ -42,7 +35,7 @@ namespace SS.Integration.Common.ConfigSerializer.Tests
         {
              Mock<IProxyServiceClient> clientMock = new Mock<IProxyServiceClient>();
             _serializer.Client = clientMock.Object;
-            _serializer.Settings = new ProxyServiceSettings()
+            _serializer.Settings = new ProxyServiceSettings
                 {
                     Company = _company,
                     Enviroment = _enviroment,
@@ -80,7 +73,7 @@ namespace SS.Integration.Common.ConfigSerializer.Tests
         {
             Mock<IProxyServiceClient> clientMock = new Mock<IProxyServiceClient>();
             _serializer.Client = clientMock.Object;
-            _serializer.Settings = new ProxyServiceSettings()
+            _serializer.Settings = new ProxyServiceSettings
                 {
                     Company = _company,
                     Enviroment = _enviroment,
@@ -119,7 +112,7 @@ namespace SS.Integration.Common.ConfigSerializer.Tests
          {
              Mock<IProxyServiceClient> clientMock = new Mock<IProxyServiceClient>();
              _serializer.Client = clientMock.Object;
-             _serializer.Settings = new ProxyServiceSettings()
+             _serializer.Settings = new ProxyServiceSettings
              {
                  Company = _company,
                  Enviroment = _enviroment,
