@@ -43,7 +43,8 @@
 			/>
 			<DefaultPlugin
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\SS.Integration.Adapter.Plugin.Logger.dll;
-						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\log4net.config"
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\log4net.config;
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\mappingUpdater.config"
 			/>
 			<Licence Include="$(MSBuildProjectDirectory)\LICENCE.txt" />
 		</ItemGroup>
