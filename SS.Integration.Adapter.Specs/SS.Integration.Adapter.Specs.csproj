@@ -64,7 +64,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
     <None Include="MarketFilters.feature">
       <Generator>SpecFlowSingleFileGenerator</Generator>
       <LastGenOutput>MarketFilters.feature.cs</LastGenOutput>
