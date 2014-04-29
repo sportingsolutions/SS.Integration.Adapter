@@ -16,15 +16,19 @@ using System.Collections.Generic;
 
 namespace SS.Integration.Adapter.Model.Interfaces
 {
+    /// <summary>
+    /// A IMarketStateCollection is a container for IMarketState objects.
+    /// Its purpose is to model the markets' states by updating them
+    /// using information coming from subsequents snapshots
+    /// </summary>
     public interface IMarketStateCollection
     {
-
         bool HasMarket(string MarketId);
 
-        IMarketState this[string MarketId] { get; set; }
+        IMarketState this[string MarketId] { get; }
 
         IEnumerable<string> Markets { get; }
 
-        void Update(Fixture Fixture, bool fullSnapshot);
+        int MarketCount { get; }
     }
 }

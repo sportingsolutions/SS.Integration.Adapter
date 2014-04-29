@@ -1,28 +1,57 @@
-﻿using System;
+﻿//Copyright 2014 Spin Services Limited
+
+//Licensed under the Apache License, Version 2.0 (the "License");
+//you may not use this file except in compliance with the License.
+//You may obtain a copy of the License at
+
+//    http://www.apache.org/licenses/LICENSE-2.0
+
+//Unless required by applicable law or agreed to in writing, software
+//distributed under the License is distributed on an "AS IS" BASIS,
+//WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//See the License for the specific language governing permissions and
+//limitations under the License.
+
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.MarketRules.Model
 {
     [Serializable]
-    internal class MarketStateCollection : IMarketStateCollection
+    internal class MarketStateCollection : IUpdatableMarketStateCollection
     {
-        private readonly Dictionary<string, IMarketState> _States;
+        private readonly Dictionary<string, IUpdatableMarketState> _States;
 
         public MarketStateCollection()
         {
-            _States = new Dictionary<string, IMarketState>();
+            _States = new Dictionary<string, IUpdatableMarketState>();
         }
 
-        public MarketStateCollection(IMarketStateCollection collection) 
+        public MarketStateCollection(IUpdatableMarketStateCollection collection) 
             : this()
         {
+            
+            // this is just for creating the nodes
             foreach (var mkt_id in collection.Markets)
             {
-                this[mkt_id] = collection[mkt_id].Clone();
+                _States[mkt_id] = null;
             }
+
+            ParallelOptions options = new ParallelOptions {MaxDegreeOfParallelism = Environment.ProcessorCount};
+
+            // fill the nodes, as they are already created, there is no race-condition here
+            Parallel.ForEach(collection.Markets, options, x =>
+                {
+                    _States[x] = ((IUpdatableMarketState)collection[x]).Clone();
+                }
+            );
         }
+
+        #region IMarketStateCollection
 
         public bool HasMarket(string MarketId)
         {
@@ -38,16 +67,21 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
                 return HasMarket(MarketId) ? _States[MarketId] : null;
             }
-            set
-            {
-                _States[MarketId] = value;
-            }
         }
 
         public IEnumerable<string> Markets
         {
             get { return _States.Keys; }
         }
+
+        public int MarketCount
+        {
+            get { return _States.Count; }
+        }
+
+        #endregion
+
+        #region IUpdatableMarketStateCollection
 
         public void Update(Fixture Fixture, bool fullSnapshot)
         {
@@ -66,5 +100,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 }
             }
         }
+
+        #endregion
     }
 }

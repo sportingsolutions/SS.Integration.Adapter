@@ -47,14 +47,16 @@ namespace SS.Integration.Adapter.MarketRules
                 ExcludeMarketType(type);
         }
 
-        public void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState, IMarketRuleProcessingContext Context)
+        public void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState, out IMarketRuleResultIntent Result)
         {
+            Result = new MarketRuleResultIntent();
+
             foreach (var mkt in Fixture.Markets)
             {
 
                 if (_ExcludedMarketType.Contains(mkt.Type))
                 {
-                    Context.SetAsUnRemovable(mkt);
+                    ((MarketRuleResultIntent)Result).MarkAsUnRemovable(mkt);
                     continue;
                 }
 

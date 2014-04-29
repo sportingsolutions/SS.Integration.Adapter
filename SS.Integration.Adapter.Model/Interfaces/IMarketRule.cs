@@ -18,6 +18,6 @@ namespace SS.Integration.Adapter.Model.Interfaces
     {
         string Name { get; }
 
-        void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState, IMarketRuleProcessingContext Context);
+        void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState, out IMarketRuleResultIntent Result);
     }
 }

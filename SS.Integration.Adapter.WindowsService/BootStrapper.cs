@@ -17,6 +17,7 @@ using Ninject.Modules;
 using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Mappings;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Adapter.Plugin.Model;
@@ -53,7 +54,7 @@ namespace SS.Integration.Adapter.WindowsService
 
             // Factory method for creation of listener instances.
             var factoryMethod =
-                new Func<string, IResourceFacade, Fixture, IAdapterPlugin,IEventState,IObjectProvider<IMarketStateCollection>, int, IListener>(
+                new Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState, IObjectProvider<IUpdatableMarketStateCollection>, int, IListener>(
                     (sport, resource, fixtureSnapshot, connector, eventState,marketFilterObjectProvider, lastSequence) 
                         => new StreamListener(sport, resource, fixtureSnapshot, connector, eventState, marketFilterObjectProvider, lastSequence));
 

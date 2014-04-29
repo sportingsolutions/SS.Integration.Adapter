@@ -21,6 +21,7 @@ using SportingSolutions.Udapi.Sdk.Interfaces;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Events;
 using SportingSolutions.Udapi.Sdk.Extensions;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Exceptions;
@@ -69,8 +70,8 @@ namespace SS.Integration.Adapter
         
 
 
-        public StreamListener(string sportName, IResourceFacade resource, Fixture fixtureSnapshot, IAdapterPlugin platformConnector, IEventState eventState, 
-            IObjectProvider<IMarketStateCollection> marketStateProvider, int currentSequence = -1)
+        public StreamListener(string sportName, IResourceFacade resource, Fixture fixtureSnapshot, IAdapterPlugin platformConnector, IEventState eventState,
+            IObjectProvider<IUpdatableMarketStateCollection> marketStateProvider, int currentSequence = -1)
         {
             _logger.InfoFormat("Instantiating StreamListener for {0} with sequence={1}", fixtureSnapshot, currentSequence);
             if (fixtureSnapshot == null)
@@ -110,7 +111,6 @@ namespace SS.Integration.Adapter
             };
 
             rules.AddRange(platformConnector.MarketRules);
-            rules.Reverse();
 
             _marketsRuleManager = new MarketsRulesManager(fixtureSnapshot, marketStateProvider, rules);
 

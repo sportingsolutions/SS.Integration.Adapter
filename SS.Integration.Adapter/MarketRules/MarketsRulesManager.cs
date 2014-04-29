@@ -15,6 +15,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
@@ -23,24 +25,21 @@ using log4net;
 
 namespace SS.Integration.Adapter.MarketRules
 {
-    /// <summary>
-    /// Not Thread-Safe class
-    /// Keeps the list of inactive markets for a specific fixture so they can be filtered out 
-    /// in order to avoid updating inactive mappings more than once
-    /// </summary>
+   
     public class MarketsRulesManager
     {        
         private readonly ILog _logger = LogManager.GetLogger(typeof(MarketsRulesManager).ToString());
 
         private readonly string _FixtureId;
-        private readonly IObjectProvider<IMarketStateCollection> _StateProvider;
+        private readonly IObjectProvider<IUpdatableMarketStateCollection> _StateProvider;
         private readonly IEnumerable<IMarketRule> _Rules;
-        private IMarketStateCollection _CurrentTransaction;
-        
+        private IUpdatableMarketStateCollection _CurrentTransaction;
 
-        public MarketsRulesManager(Fixture fixture, IObjectProvider<IMarketStateCollection> StateProvider, IEnumerable<IMarketRule> FilteringRules)
+
+        internal MarketsRulesManager(Fixture fixture, IObjectProvider<IUpdatableMarketStateCollection> StateProvider, IEnumerable<IMarketRule> FilteringRules)
         {
-            _logger.DebugFormat("Initiating market filters for {0}", fixture);
+            _logger.DebugFormat("Initiating market rule manager for {0}", fixture);
+            
             _FixtureId = fixture.Id;
             _Rules = FilteringRules;
 
@@ -50,7 +49,7 @@ namespace SS.Integration.Adapter.MarketRules
             state.Update(fixture, true);
             _StateProvider.SetObject(_FixtureId, state);
 
-            _logger.DebugFormat("Market filters initiated successfully for {0}", fixture);
+            _logger.DebugFormat("Market rule manager initiated successfully for {0}", fixture);
         }
 
         public void CommitChanges()
@@ -73,7 +72,7 @@ namespace SS.Integration.Adapter.MarketRules
             }
         }
 
-        private IMarketStateCollection BeginTransaction(IMarketStateCollection OldState, Fixture Fixture)
+        private IMarketStateCollection BeginTransaction(IUpdatableMarketStateCollection OldState, Fixture Fixture)
         {
            
             // get a new market state by cloning the previous one
@@ -97,24 +96,29 @@ namespace SS.Integration.Adapter.MarketRules
 
             if (Fixture.Id != _FixtureId)
             {
-                throw new ArgumentException("MarketFilter has been created for fixtureId=" + _FixtureId + ". " +
-                    "You cannot pass in fixtureId=" + Fixture.Id);
+                throw new ArgumentException("MarketsRulesManager has been created for fixtureId=" + _FixtureId + 
+                    " You cannot pass in fixtureId=" + Fixture.Id);
             }
 
             var oldstate = _StateProvider.GetObject(Fixture.Id);
             var newstate = BeginTransaction(oldstate, Fixture);
 
-            var context = new MarketRuleProcessingContext();
+            ParallelOptions options = new ParallelOptions {MaxDegreeOfParallelism = Environment.ProcessorCount};
 
-            foreach (var rule in _Rules)
-            {
-                if(rule == null)
-                    continue;
+            // we create a temp dictionary so we can apply the rules in parallel without accessing (writing to) any 
+            // shared variables
+            Dictionary<IMarketRule, IMarketRuleResultIntent> tmp = new Dictionary<IMarketRule,IMarketRuleResultIntent>();
+            foreach(var rule in _Rules)
+                tmp[rule] = null;
 
-                _logger.DebugFormat("Filtering markets with rule={0}", rule.Name);
-                rule.Apply(Fixture, oldstate, newstate, context);
-                _logger.DebugFormat("Filtering market with rule={0} completed", rule.Name);
-            }
+            Parallel.ForEach(tmp.Keys, options, rule =>
+                {
+                    _logger.DebugFormat("Filtering markets with rule={0}", rule.Name);
+                    var result = tmp[rule];
+                    rule.Apply(Fixture, oldstate, newstate, out result);
+                    _logger.DebugFormat("Filtering market with rule={0} completed", rule.Name);
+                }
+            );
         }
 
         private static Market CreateSuspendedMarket(IMarketState marketState)

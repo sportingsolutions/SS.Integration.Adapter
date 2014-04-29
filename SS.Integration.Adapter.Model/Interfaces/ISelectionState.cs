@@ -16,34 +16,81 @@ using System.Collections.Generic;
 
 namespace SS.Integration.Adapter.Model.Interfaces
 {
+    /// <summary>
+    /// An ISelectionState represent the state of a selection.
+    /// 
+    /// At every snapshot (delta or full) the state of a selection
+    /// is update. This allows the IMarketState to infer properties.
+    /// </summary>
     public interface ISelectionState
     {
+        /// <summary>
+        /// The selection's Id
+        /// </summary>
         string Id { get; }
 
+        /// <summary>
+        /// The selection's status.
+        /// 
+        /// See SelectionStatus for a list of possibile values.
+        /// </summary>
         string Status { get; }
 
+        /// <summary>
+        /// Selection's name
+        /// </summary>
         string Name { get; }
 
+        /// <summary>
+        /// Returns the selection's tradability.
+        /// </summary>
         bool? Tradability { get; }
 
+        /// <summary>
+        /// Returns the selection's price
+        /// </summary>
         double? Price { get; }
 
         #region Tags
 
+        /// <summary>
+        /// Lists all the tags that a selection has had
+        /// during its lifetime
+        /// </summary>
         IEnumerable<string> TagKeys { get; }
 
+        /// <summary>
+        /// Get the value associated to the
+        /// given tag key. 
+        /// 
+        /// It returns null if the tag key
+        /// does not exist
+        /// </summary>
+        /// <param name="TagKey"></param>
+        /// <returns></returns>
         string GetTagValue(string TagKey);
 
+        /// <summary>
+        /// Returns the number of tag associated
+        /// to this selection state.
+        /// </summary>
         int TagsCount { get; }
 
+        /// <summary>
+        /// True if the given tag key exists
+        /// </summary>
+        /// <param name="TagKey"></param>
+        /// <returns></returns>
         bool HasTag(string TagKey);
 
         #endregion
 
-        void Update(Selection Selection, bool fullSnapshot);
-
-        bool IsEqualTo(Selection Selection);
-
-        ISelectionState Clone();
+        /// <summary>
+        /// Determines if the given selection state
+        /// is equal to the current object
+        /// </summary>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        bool IsEqualTo(ISelectionState state);
     }
 }
