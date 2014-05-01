@@ -26,14 +26,11 @@ namespace SS.Integration.Adapter.UdapiClient
 {
     public class UdapiServiceFacade : IServiceFacade
     {
-        private readonly ISettings _settings;
+        private readonly ILog _logger = LogManager.GetLogger(typeof(UdapiServiceFacade));
 
         private readonly SessionContainer _sessionContainer;
-
+        private readonly ISettings _settings;
         private IService _service;
-
-        private readonly ILog _logger = LogManager.GetLogger(typeof(UdapiServiceFacade).ToString());
-
         private readonly IReconnectStrategy _reconnectStrategy;
 
         public UdapiServiceFacade(IReconnectStrategy reconnectStrategy, ISettings settings)
@@ -64,11 +61,14 @@ namespace SS.Integration.Adapter.UdapiClient
 
         public IEnumerable<IFeature> GetSports()
         {
-            return _service.GetFeatures();
+            return _service == null ? null : _service.GetFeatures();
         }
 
         public List<IResourceFacade> GetResources(string featureName)
         {
+            if (_service == null)
+                return null;
+
             var resourceFacade = new List<IResourceFacade>();
 
             var udapiFeature = _service.GetFeature(featureName);
@@ -84,6 +84,9 @@ namespace SS.Integration.Adapter.UdapiClient
 
         public IResourceFacade GetResource(string featureName, string resourceName)
         {
+            if (_service == null)
+                return null;
+
             IResourceFacade resource = null;
 
             var feature = _service.GetFeature(featureName);

@@ -13,7 +13,6 @@
 //limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Reflection;
@@ -23,9 +22,7 @@ using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Plugin.Model.Interface;
 using log4net;
 using Ninject;
-using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Adapter.ProcessState;
 
 namespace SS.Integration.Adapter.WindowsService
 {
@@ -139,13 +136,9 @@ namespace SS.Integration.Adapter.WindowsService
             var settings = _iocContainer.Get<ISettings>();
             var service = _iocContainer.Get<IServiceFacade>();
 
-            var listenerFactoryMethod =
-                _iocContainer.Get<Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState,IObjectProvider<IMarketStateCollection>,  int, IListener>>();
-            var eventState = EventState.Create(new FileStoreProvider(), settings);
-
             var mappingUpdater = _iocContainer.Get<IMappingUpdater>();
 
-            _adapter = new Adapter(settings, service, connector, eventState, mappingUpdater, listenerFactoryMethod);
+            _adapter = new Adapter(settings, service, connector, mappingUpdater);
 
             _adapter.Start();
 

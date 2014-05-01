@@ -24,10 +24,10 @@ namespace SS.Integration.Adapter.UdapiClient
 {
     public class UdapiResourceFacade : IResourceFacade, IStreamStatistics
     {
+        private readonly ILog _logger = LogManager.GetLogger(typeof(UdapiResourceFacade));
+
         public event EventHandler StreamConnected;
-
         public event EventHandler StreamDisconnected;
-
         public event EventHandler<StreamEventArgs> StreamEvent;
 
         private readonly IResource _udapiResource;
@@ -38,9 +38,8 @@ namespace SS.Integration.Adapter.UdapiClient
         private readonly int _echoDelay;
         private readonly int _echoInterval;
 
-        private readonly ILog _logger = LogManager.GetLogger(typeof(UdapiResourceFacade).ToString());
-
-        public UdapiResourceFacade(IResource udapiResource, string featureName, IReconnectStrategy reconnectStrategy,int echoDelay,int echoInterval)
+       
+        public UdapiResourceFacade(IResource udapiResource, string featureName, IReconnectStrategy reconnectStrategy, int echoDelay, int echoInterval)
         {
             _udapiResource = udapiResource;
             _featureName = featureName;

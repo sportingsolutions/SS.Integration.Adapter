@@ -17,14 +17,49 @@ namespace SS.Integration.Common.Stats.Keys
 {
     public class StreamListenerKeys
     {
+        /// <summary>
+        /// Stream status
+        /// </summary>
         public static readonly string STATUS = "STREAM_STATUS";
+        
+        /// <summary>
+        /// Last seen sequence
+        /// </summary>
         public static readonly string LAST_SEQUENCE = "STREAM_LAST_SEQUENCE";
+
+        /// <summary>
+        /// Last invalid sequence number received
+        /// </summary>
         public static readonly string LAST_INVALID_SEQUENCE = "STREAM_LAST_INVALID_SEQUENCE";
+
+        /// <summary>
+        /// Fixture's Id
+        /// </summary>
         public static readonly string FIXTURE = "STREAM_FIXTURE";
+
+        /// <summary>
+        /// Connected events received
+        /// </summary>
         public static readonly string RESTARTED = "STREAM_RESTARTED";
+
+        /// <summary>
+        /// Snapshot retrieved count
+        /// </summary>
         public static readonly string SNAPSHOT_RETRIEVED = "STREAM_SNAPSHOTS";
+
+        /// <summary>
+        /// Number of updates processed
+        /// </summary>
         public static readonly string UPDATE_PROCESSED = "STREAM_UPDATE";
+
+        /// <summary>
+        /// Number of invalid sequence received
+        /// </summary>
         public static readonly string INVALID_SEQUENCE = "STREAM_INVALID_SEQUENCE";
+
+        /// <summary>
+        /// Number of invalid epoch received
+        /// </summary>
         public static readonly string INVALID_EPOCH = "STREAM_INVALID_EPOCH";
     }
 }

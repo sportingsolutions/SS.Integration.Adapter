@@ -27,14 +27,16 @@ namespace SS.Integration.Adapter.Interface
 
         bool IsFixtureSetup { get; }
 
-        bool Start();
+        bool IsStreaming { get; }
 
-        void StartStreaming();
+        void Start();
 
         void Stop();
 
+        void UpdateResourceState(IResourceFacade resource);
+
         void SuspendMarkets(bool fixtureLevelOnly = true);
 
-        bool CheckStreamHealth(int maxPeriodWithoutMessage,int currentSequence = -1);
+        bool CheckStreamHealth(int maxPeriodWithoutMessage, int currentSequence = -1);
     }
 }

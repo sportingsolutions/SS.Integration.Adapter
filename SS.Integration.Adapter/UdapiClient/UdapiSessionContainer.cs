@@ -21,14 +21,11 @@ namespace SS.Integration.Adapter.UdapiClient
 {
     public class SessionContainer
     {
+        private readonly ILog _logger = LogManager.GetLogger(typeof(SessionContainer));
+
         private static volatile ISession _theSession;
-
         private static readonly object SyncRoot = new Object();
-
-        private readonly ILog _logger = LogManager.GetLogger(typeof(SessionContainer).ToString());
-
         private readonly ICredentials _credentials;
-
         private readonly Uri _url;
 
         public SessionContainer(ICredentials credentials, Uri url)
@@ -37,6 +34,15 @@ namespace SS.Integration.Adapter.UdapiClient
             _url = url;
         }
 
+
+        /// <summary>
+        /// Returns a UDAPI session or throws
+        /// an exception if it cannot connect
+        /// to the service.
+        /// 
+        /// The session object is valid
+        /// until ReleaseSession() is called
+        /// </summary>
         public ISession Session
         {
             get
@@ -58,6 +64,12 @@ namespace SS.Integration.Adapter.UdapiClient
             }
         }
 
+        /// <summary>
+        /// Allows to release the current session.
+        /// When the property Session is called,
+        /// a new session will be established with
+        /// the remote service
+        /// </summary>
         public void ReleaseSession()
         {
             lock (SyncRoot)
