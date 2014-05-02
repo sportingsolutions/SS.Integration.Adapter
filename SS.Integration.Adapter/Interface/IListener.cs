@@ -19,13 +19,9 @@ namespace SS.Integration.Adapter.Interface
     {
         bool IsFixtureEnded { get; }
 
-        bool IsErrored { get; }
-
         bool IsIgnored { get; }
 
         bool IsFixtureDeleted { get; }
-
-        bool IsFixtureSetup { get; }
 
         bool IsStreaming { get; }
 

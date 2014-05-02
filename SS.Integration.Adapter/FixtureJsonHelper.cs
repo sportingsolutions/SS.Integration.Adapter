@@ -25,5 +25,10 @@ namespace SS.Integration.Adapter
         {
             return JsonConvert.DeserializeObject<Fixture>(content, FixtureDateTimeJsonConverter.Instance);
         }
+
+        public static string ToJson(Fixture fixture)
+        {
+            return JsonConvert.SerializeObject(fixture);
+        }
     }
 }

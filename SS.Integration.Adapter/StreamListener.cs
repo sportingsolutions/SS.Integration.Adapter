@@ -101,31 +101,15 @@ namespace SS.Integration.Adapter
         /// Returns true if the match is over and the fixture is ended.
         /// When the fixture is ended the listener will not pass any updates.
         /// 
+        /// This property is set when a snapshot says that the fixture
+        /// is over. The streaming stops when such a snapshot arrives.
+        /// 
         /// Thread-safe property
         /// </summary>
         public bool IsFixtureEnded 
         { 
             [MethodImpl(MethodImplOptions.Synchronized)]
             get; 
-            [MethodImpl(MethodImplOptions.Synchronized)]
-            private set; 
-        }
-
-        /// <summary>
-        /// Returns true if the current state of the listener
-        /// is errored. In this case, if we are streaming
-        /// (IsStreaming is true) then at the next update
-        /// a snapshot will be acquired and processed instead
-        /// of a delta snapshot. If the listener is not
-        /// connected to the streaming server, then
-        /// the listener for the resource must be re-created.
-        /// 
-        /// /// Thread-safe property
-        /// </summary>
-        public bool IsErrored 
-        {
-            [MethodImpl(MethodImplOptions.Synchronized)]
-            get;
             [MethodImpl(MethodImplOptions.Synchronized)]
             private set; 
         }
@@ -164,6 +148,10 @@ namespace SS.Integration.Adapter
         /// Returns true if the fixture is not ready to receive
         /// updates. When IsFixtureSetup is true, the listener
         /// cannot be connected to the streaming server.
+        /// 
+        /// Use UpdateResourceState() to update the
+        /// resource's state and start the streaming
+        /// if necessary
         /// 
         /// Thread-safe property
         /// </summary>
@@ -218,11 +206,50 @@ namespace SS.Integration.Adapter
         }
 
         /// <summary>
+        /// Returns true if the current state of the listener
+        /// is errored. In this case, if we are streaming
+        /// (IsStreaming is true) then at the next update
+        /// a snapshot will be acquired and processed instead
+        /// of a delta snapshot. 
+        /// 
+        /// Please note that this indicates only that 
+        /// an error occured while streaming.
+        /// 
+        /// Thread-safe property
+        /// </summary>
+        private bool IsErrored
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get;
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            set;
+        }
+
+        /// <summary>
         /// Starts the listener. 
         /// </summary>
         public void Start()
         {
             StartStreaming();
+        }
+
+        public void Stop()
+        {
+            _logger.InfoFormat("Stopping Listener for {0} sport={1}", _resource, _resource.Sport);
+
+            CloseProcessUpdatesBarrier();
+
+            if (IsErrored)
+                SuspendMarkets();
+
+            _resource.StreamConnected -= ResourceOnStreamConnected;
+            _resource.StreamDisconnected -= ResourceOnStreamDisconnected;
+            _resource.StreamEvent -= ResourceOnStreamEvent;
+
+            if (IsStreaming)
+            {
+                _resource.StopStreaming();
+            }
         }
 
         public void UpdateResourceState(IResourceFacade resource)
@@ -231,6 +258,36 @@ namespace SS.Integration.Adapter
                               resource.MatchStatus == MatchStatus.Ready);
 
             StartStreaming();
+        }
+
+        public void SuspendMarkets(bool fixtureLevelOnly = true)
+        {
+            if (_marketsRuleManager == null)
+                return;
+
+            _logger.InfoFormat("Suspending Markets for {0} with fixtureLevelOnly={1}", _resource, fixtureLevelOnly);
+
+            try
+            {
+                _platformConnector.Suspend(_resource.Id);
+                if (!fixtureLevelOnly)
+                {
+                    var suspendedSnapshot = _marketsRuleManager.GenerateAllMarketsSuspenssion();
+                    _platformConnector.ProcessStreamUpdate(suspendedSnapshot);
+                }
+
+            }
+            catch (AggregateException ex)
+            {
+                foreach (var innerException in ex.InnerExceptions)
+                {
+                    _logger.Error(string.Format("Error while suspending markets for {0}", _resource), innerException);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(string.Format("Error while suspending markets for {0}", _resource), ex);
+            }
         }
 
         private void SetupListener()
@@ -243,7 +300,7 @@ namespace SS.Integration.Adapter
         private void StartStreaming()
         {
             // do not start streaming twice
-            if (IsStreaming && !IsErrored)
+            if (IsStreaming)
                 return;
 
             if (IsFixtureEnded)
@@ -272,6 +329,7 @@ namespace SS.Integration.Adapter
 
         private void ConnectToStreamServer()
         {
+            // prevent multiple connect requests to be processed
             if (IsConnecting)
             {
                 _logger.DebugFormat("Listener for {0} is already trying to connect - skipping request to connect to the streming server", _resource);
@@ -303,58 +361,11 @@ namespace SS.Integration.Adapter
             }
             catch (Exception ex)
             {
-                IsErrored = true;
+                IsConnecting = false;
+                IsStreaming = false;
+
                 _Stats.AddMessage(GlobalKeys.CAUSE, ex).SetValue(StreamListenerKeys.STATUS, "Error");
                 _logger.Error(string.Format("An error has occured when trying to connect to stream server for {0}", _resource), ex);
-            }
-        }
-
-        public void Stop()
-        {
-            _logger.InfoFormat("Stopping Listener for {0} sport={1}", _resource, _resource.Sport);
-
-            CloseProcessUpdatesBarrier();
-
-            if (IsErrored)
-                SuspendMarkets();
-
-            _resource.StreamConnected -= ResourceOnStreamConnected;
-            _resource.StreamDisconnected -= ResourceOnStreamDisconnected;
-            _resource.StreamEvent -= ResourceOnStreamEvent;
-
-            if (IsStreaming)
-            {
-                _resource.StopStreaming();
-            }
-        }
-
-        public void SuspendMarkets(bool fixtureLevelOnly = true)
-        {            
-            if (_marketsRuleManager == null)
-                return;
-
-            _logger.InfoFormat("Suspending Markets for {0} with fixtureLevelOnly={1}", _resource, fixtureLevelOnly);
-
-            try
-            {
-                _platformConnector.Suspend(_resource.Id);
-                if (!fixtureLevelOnly)
-                {
-                    var suspendedSnapshot = _marketsRuleManager.GenerateAllMarketsSuspenssion();
-                    _platformConnector.ProcessStreamUpdate(suspendedSnapshot);
-                }
-
-            }
-            catch (AggregateException ex)
-            {
-                foreach (var innerException in ex.InnerExceptions)
-                {
-                    _logger.Error(string.Format("Error while suspending markets for {0}", _resource), innerException);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(string.Format("Error while suspending markets for {0}", _resource), ex);
             }
         }
 
@@ -530,9 +541,12 @@ namespace SS.Integration.Adapter
         {
             IsStreaming = false;
 
+            // if a disconnect event is raised due a failed attempt to connect 
+            // (in other words, when we didn't receive a connect event)
+            IsConnecting = false;
+
             if (!this.IsFixtureEnded)
             {
-                IsErrored = true;
 
                 _logger.WarnFormat("Stream disconnected for {0}, suspending markets, will try reconnect soon", _resource);
                 _Stats.AddMessage(GlobalKeys.CAUSE, "Stream disconnected").SetValue(StreamListenerKeys.STATUS, "Error");
@@ -576,7 +590,7 @@ namespace SS.Integration.Adapter
                 return false;
             }
             
-            if (fixtureDelta.Sequence > _currentSequence)
+            if (fixtureDelta.Sequence - _currentSequence > 1)
             {
                 _logger.WarnFormat("equence={0} is more than one greater that currentSequence={1} in {2} ", 
                     fixtureDelta.Sequence, _currentSequence, fixtureDelta);
@@ -737,8 +751,6 @@ namespace SS.Integration.Adapter
                 {
                     _logger.Error(string.Format("There has been an aggregate error while trying to process snapshot {0}", snapshot), innerException);
                 }
-
-                
             }
             catch (Exception e)
             {
@@ -793,27 +805,11 @@ namespace SS.Integration.Adapter
 
         public bool CheckStreamHealth(int maxPeriodWithoutMessage, int receivedSequence = -1)
         {
-            if (IsFixtureSetup || !IsStreaming || IsFixtureDeleted)
+            if (IsFixtureSetup || IsFixtureDeleted)
             {
                 // Stream has not yet started as fixture is Setup/Ready
                 return true;
             }
-
-            /*var shouldProcessSnapshot = (_sequenceSynchroniser == null || _sequenceSynchroniser.IsCompleted)
-                && _currentSequence != -1
-                && _currentSequence < receivedSequence
-                && _lastSequenceProcessedInSnapshot < receivedSequence;
-
-            if (shouldProcessSnapshot && !IsFixtureDeleted && !IsErrored && !_isUpdateBeingProcessed)
-            {
-                _logger.WarnFormat("Received sequence different from expected sequence {0} receivedSequence={1} currentSequence={2}", _fixtureSnapshot, receivedSequence, _currentSequence);
-                if (_sequenceSynchroniser == null || _sequenceSynchroniser.IsCompleted)
-                    _sequenceSynchroniser = Task.Factory.StartNew(() => SuspendAndReprocessSnapshot());
-                else
-                {
-                    _logger.DebugFormat("The sequence synchroniser is already running for fixture {0}", _fixtureSnapshot);
-                }
-            }*/
 
             var streamStatistics = _resource as IStreamStatistics;
 
@@ -826,7 +822,6 @@ namespace SS.Integration.Adapter
             var timespan = DateTime.UtcNow - streamStatistics.LastMessageReceived;
             if (timespan.TotalMilliseconds >= maxPeriodWithoutMessage)
             {
-                IsErrored = true;
                 _logger.WarnFormat("Stream for {0} has not received a message in span={1}, suspending markets, will try to reconnect soon", _resource.Id, timespan.TotalSeconds);
                 SuspendMarkets();
                 return false;

@@ -466,8 +466,7 @@ namespace SS.Integration.Adapter
             var listener = _listeners[resource.Id];
             var maxPeriodWithoutMessage = Settings.EchoInterval * 3;
 
-            // first check for IsErrored as it may have already suspended all markets
-            if (listener.IsErrored || !listener.CheckStreamHealth(maxPeriodWithoutMessage, resource.Content != null ? resource.Content.Sequence : -1))
+            if (!listener.CheckStreamHealth(maxPeriodWithoutMessage, resource.Content != null ? resource.Content.Sequence : -1))
             {
                 RemoveAndStopListener(resource.Id);
                 _logger.WarnFormat("Removed resource for {0}, it will be recreated from scratch during next resource pull from API", resource);
