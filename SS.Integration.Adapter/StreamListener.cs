@@ -53,6 +53,7 @@ namespace SS.Integration.Adapter
         private int _currentSequence;
         private int _currentEpoch;
         private int _lastSequenceProcessedInSnapshot;
+        private bool _hasRecoveredFromError;
 
         public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IObjectProvider<IMarketStateCollection> stateProvider)
         {
@@ -74,7 +75,7 @@ namespace SS.Integration.Adapter
             _currentSequence = resource.Content.Sequence;
             _lastSequenceProcessedInSnapshot = -1;
             _currentEpoch = -1;
-
+            _hasRecoveredFromError = true;
 
             IsStreaming = false;
             IsConnecting = false;
@@ -218,6 +219,9 @@ namespace SS.Integration.Adapter
             StartStreaming();
         }
 
+        /// <summary>
+        /// Stops the streaming
+        /// </summary>
         public void Stop()
         {
             _logger.InfoFormat("Stopping Listener for {0} sport={1}", _resource, _resource.Sport);
@@ -225,12 +229,12 @@ namespace SS.Integration.Adapter
             if (IsErrored)
                 SuspendMarkets();
 
-            _resource.StreamConnected -= ResourceOnStreamConnected;
-            _resource.StreamDisconnected -= ResourceOnStreamDisconnected;
-            _resource.StreamEvent -= ResourceOnStreamEvent;
-
             if (IsStreaming)
             {
+                _resource.StreamConnected -= ResourceOnStreamConnected;
+                _resource.StreamDisconnected -= ResourceOnStreamDisconnected;
+                _resource.StreamEvent -= ResourceOnStreamEvent;
+
                 _resource.StopStreaming();
             }
         }
@@ -348,24 +352,45 @@ namespace SS.Integration.Adapter
             }
         }
 
-        private bool CheckErrorStateOnUpdates()
-        {
-            if (IsErrored)
-            {
-                IsErrored = false;
-
-                SuspendAndReprocessSnapshot();
-
-                return true;
-            }
-
-            return false;
-        }
-
         private void SetErrorState()
         {
+            // the idea is that when we encounter an error
+            // we immediately suspend the fixture and get
+            // a new full snapshot to process.
+            //
+            // However, processing the new snapshot
+            // might introduce a new error (and this
+            // method is called again). For not
+            // entering a useless loop, first thing we do
+            // when we enter this method is checking
+            // if IsError = true. If it is so, it means
+            // that a new error was raised while processing
+            // the snapshot that was acquired to try to solve
+            // a previous error (got it? )
+            //
+            // If IsError = false, then we grab and process
+            // a new snapshot. After this, due the fact
+            // that processing the snapshot can raise a new 
+            // error, we set IsError to !_hasRecoveredFromError
+            // that is false only if a second call to 
+            // SetErrorState was made
+
+            if (IsErrored)
+            {
+                _hasRecoveredFromError = false;
+
+                // make sure markets are suspended
+                SuspendMarkets(); 
+                _logger.ErrorFormat("Streming for {0} is still in an error state even after trying to recover with a full snapshot", _resource);
+                return;
+            }
+
+            _logger.InfoFormat("Streaming for {0} entered the error state - going to acquire a new snapshot", _resource);
+
+            _hasRecoveredFromError = true;
             IsErrored = true;
-            SuspendMarkets();
+            SuspendAndReprocessSnapshot();
+            IsErrored = !_hasRecoveredFromError;
         }
 
         internal void ResourceOnStreamEvent(object sender, StreamEventArgs streamEventArgs)
@@ -377,15 +402,24 @@ namespace SS.Integration.Adapter
             try
             {
              
-                // grab a snapshot and return if there was an error
-                if (CheckErrorStateOnUpdates())
-                    return;
-
-
                 var deltaMessage = streamEventArgs.Update.FromJson<StreamMessage>();
                 var fixtureDelta = deltaMessage.GetContent<Fixture>();
 
                 _logger.InfoFormat("{0} streaming update arrived", fixtureDelta);
+
+                // if there was an error from which we haven't recovered yet
+                // it might be that with a new sequence, we might recover.
+                // So in this case, ignore the update and grab a new 
+                // snapshot.
+                if (IsErrored)
+                {
+                    _logger.InfoFormat("Streaming was in an error state for {0} - skipping update and grabbing a new snapshot", _resource);
+                    IsErrored = false;
+                    RetrieveAndProcessSnapshot();
+                    return;
+                }
+
+                
 
                 if (!IsSequenceValid(fixtureDelta))
                 {
@@ -398,8 +432,7 @@ namespace SS.Integration.Adapter
                     // THIS should never happen!!
                     if (fixtureDelta.Sequence <= _lastSequenceProcessedInSnapshot)
                     {
-                        _logger.FatalFormat(
-                            "Stream update {0} will be ignored because snapshot with higher sequence={1} was already processed",
+                        _logger.FatalFormat("Stream update {0} will be ignored because snapshot with higher sequence={1} was already processed",
                             fixtureDelta, _lastSequenceProcessedInSnapshot);
                         return;
                     }
@@ -739,7 +772,8 @@ namespace SS.Integration.Adapter
             var timespan = DateTime.UtcNow - streamStatistics.LastMessageReceived;
             if (timespan.TotalMilliseconds >= maxPeriodWithoutMessage)
             {
-                _logger.WarnFormat("Stream for {0} has not received a message in span={1}, suspending markets, will try to reconnect soon", _resource.Id, timespan.TotalSeconds);
+                _logger.WarnFormat("Stream for {0} has not received a message in span={1}, suspending markets, will try to reconnect soon", 
+                    _resource.Id, timespan.TotalSeconds);
                 SuspendMarkets();
                 return false;
             }
