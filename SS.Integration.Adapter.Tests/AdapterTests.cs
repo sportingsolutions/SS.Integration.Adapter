@@ -19,11 +19,11 @@ using NUnit.Framework;
 using System.Threading;
 using Moq;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Adapter.UdapiClient.Model;
-using SportingSolutions.Udapi.Sdk;
+using SS.Integration.Adapter.Plugin.Model.Interface;
 
 namespace SS.Integration.Adapter.Tests
 {
@@ -39,7 +39,8 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
             var eventState = new Mock<IEventState>();
-            var marketStateObjectStore = new Mock<IObjectProvider<IDictionary<string, MarketState>>>(); 
+            var marketStateObjectStore = new Mock<IObjectProvider<IDictionary<string, MarketState>>>();
+            var mappingUpdater = new Mock<IMappingUpdater>();
 
             settings.Setup(s => s.FixtureCheckerFrequency).Returns(10000);
             settings.Setup(s => s.SuspendAllMarketsOnShutdown).Returns(false);
@@ -50,6 +51,7 @@ namespace SS.Integration.Adapter.Tests
                 service.Object,
                 connector.Object,
                 eventState.Object,
+                mappingUpdater.Object,
                 (s, facade, arg3, arg4, arg5,m, arg6) => listener.Object);
 
             adapter.Start();
@@ -74,6 +76,7 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
             var eventState = new Mock<IEventState>();
+            var mappingUpdater = new Mock<IMappingUpdater>();
 
             settings.Setup(s => s.FixtureCheckerFrequency).Returns(10000);
             settings.Setup(s => s.SuspendAllMarketsOnShutdown).Returns(true);
@@ -84,6 +87,7 @@ namespace SS.Integration.Adapter.Tests
                 service.Object,
                 connector.Object,
                 eventState.Object,
+                mappingUpdater.Object,
                 (s, facade, arg3, arg4, arg5,m, arg6) => listener.Object);
 
             foreach (var sport in this.Sports(ListOfSports.GiveMeFew))
@@ -132,6 +136,7 @@ namespace SS.Integration.Adapter.Tests
             var footballFixtureOne = new Mock<IResourceFacade>();
             var footballfixtureTwo = new Mock<IResourceFacade>();
             var tennisFixtureOne = new Mock<IResourceFacade>();
+            var mappingUpdater = new Mock<IMappingUpdater>();
 
             footballFixtureOne.Setup(f => f.Id).Returns("1");
             footballFixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetRawStreamMessage());
@@ -149,6 +154,7 @@ namespace SS.Integration.Adapter.Tests
                 service.Object,
                 connector.Object,
                 eventState.Object,
+                mappingUpdater.Object,
                 (s, facade, arg3, arg4, arg5,m, arg6) => listener.Object);
 
 
@@ -184,6 +190,7 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
             var eventState = new Mock<IEventState>();
+            var mappingUpdater = new Mock<IMappingUpdater>();
 
             var fixtureOne = new Mock<IResourceFacade>();
             var fixtureTwo = new Mock<IResourceFacade>();
@@ -210,7 +217,8 @@ namespace SS.Integration.Adapter.Tests
                 settings.Object,
                 service.Object,
                 connector.Object,
-                eventState.Object,                
+                eventState.Object,  
+                mappingUpdater.Object,
                 (s, facade, arg3, arg4, arg5,m, arg6) => listener.Object);
 
             adapter.Start();
@@ -240,6 +248,7 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
             var eventState = new Mock<IEventState>();
+            var mappingUpdater = new Mock<IMappingUpdater>();
 
             listener.Setup(l => l.IsFixtureEnded).Returns(true);
 
@@ -269,6 +278,7 @@ namespace SS.Integration.Adapter.Tests
                 service.Object,
                 connector.Object,
                 eventState.Object,
+                mappingUpdater.Object,
                 (s, facade, arg3, arg4, arg5,m, arg6) => listener.Object);
 
             adapter.Start();
@@ -298,6 +308,7 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
             var eventState = new Mock<IEventState>();
+            var mappingUpdater = new Mock<IMappingUpdater>();
             var footballFixtureOne = new Mock<IResourceFacade>();
             
             footballFixtureOne.Setup(f => f.Id).Returns("1");
@@ -322,7 +333,8 @@ namespace SS.Integration.Adapter.Tests
                 settings.Object,
                 service.Object,
                 connector.Object,
-                eventState.Object,                
+                eventState.Object,    
+                mappingUpdater.Object,
                 (s, facade, arg3, arg4, arg5, m, arg6) => listener.Object);
 
             adapter.AddSport("Football");
@@ -354,6 +366,7 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
             var eventState = new Mock<IEventState>();
+            var mappingUpdater = new Mock<IMappingUpdater>();
 
             listener.Setup(l => l.IsFixtureEnded).Returns(false);
             listener.Setup(l => l.IsErrored).Returns(true);
@@ -373,6 +386,7 @@ namespace SS.Integration.Adapter.Tests
                 service.Object,
                 connector.Object,
                 eventState.Object,
+                mappingUpdater.Object,
                 (s, facade, arg3, arg4, arg5,m, arg6) => listener.Object);
 
             adapter.Start();
@@ -403,6 +417,7 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
             var eventState = new Mock<IEventState>();
+            var mappingUpdater = new Mock<IMappingUpdater>();
 
             eventState.Setup(es => es.GetFixtures("Football")).Returns(() => new List<string> {"1"});
 
@@ -424,6 +439,7 @@ namespace SS.Integration.Adapter.Tests
                 service.Object,
                 connector.Object,
                 eventState.Object,
+                mappingUpdater.Object,
                 (s, facade, arg3, arg4, arg5, m, arg6) => listener.Object);
 
             adapter.Start();
@@ -461,6 +477,7 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
             var eventState = new Mock<IEventState>();
+            var mappingUpdater = new Mock<IMappingUpdater>();
 
             listener.Setup(l => l.IsFixtureEnded).Returns(false);
             listener.Setup(l => l.IsErrored).Returns(false);
@@ -480,6 +497,7 @@ namespace SS.Integration.Adapter.Tests
                 service.Object,
                 connector.Object,
                 eventState.Object,
+                mappingUpdater.Object,
                 (s, facade, arg3, arg4, arg5, m, arg6) => listener.Object);
 
             adapter.Start();

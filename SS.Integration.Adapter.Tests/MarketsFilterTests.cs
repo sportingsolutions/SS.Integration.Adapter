@@ -18,10 +18,11 @@ using System.Linq;
 using FluentAssertions;
 using Moq;
 using NUnit.Framework;
+using SS.Integration.Adapter.MarketRules;
+using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
+using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Adapter.UdapiClient;
-using SS.Integration.Adapter.UdapiClient.Model;
 
 namespace SS.Integration.Adapter.Tests
 {
@@ -36,8 +37,8 @@ namespace SS.Integration.Adapter.Tests
 
         private Mock<Market> _market3;
 
-        private IObjectProvider<IDictionary<string, MarketState>> _objectProvider;
-        private IDictionary<string, MarketState> _marketStorage = new Dictionary<string, MarketState>();
+        private IObjectProvider<IMarketStateCollection> _objectProvider;
+        private IMarketStateCollection _marketStorage = new MarketStateCollection();
             
             
         [SetUp]
@@ -45,14 +46,14 @@ namespace SS.Integration.Adapter.Tests
         {
             SetUpSnapshotAndMarkets();
 
-            var objectProviderMock = new Mock<IObjectProvider<IDictionary<string, MarketState>>>();
-            
-            var returnDictionary = new Func<IDictionary<string, MarketState>>(() => _marketStorage);
+            var objectProviderMock = new Mock<IObjectProvider<IMarketStateCollection>>();
+
+            var returnDictionary = new Func<IMarketStateCollection>(() => _marketStorage);
             objectProviderMock.Setup(x => x.GetObject(It.IsAny<string>())).Returns(returnDictionary);
             
             // if there's a better way of assigning parameter let me know
-            objectProviderMock.Setup(x => x.SetObject(It.IsAny<string>(), It.IsAny<Dictionary<string, MarketState>>()))
-                              .Callback<string, IDictionary<string, MarketState>>((s, newState) => _marketStorage = newState);
+            objectProviderMock.Setup(x => x.SetObject(It.IsAny<string>(), It.IsAny<IMarketStateCollection>()))
+                              .Callback<string, IMarketStateCollection>((s, newState) => _marketStorage = newState);
 
             _objectProvider = objectProviderMock.Object;
         }
@@ -60,43 +61,38 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void TestMockSetup()
         {
-            _marketStorage["123"] = new MarketState() {Id = "123"};
+            _marketStorage["123"] = new MarketState ("123");
             _objectProvider.SetObject("Test999",_marketStorage);
             var test = _objectProvider.GetObject("Test999");
-            test.ContainsKey("123").Should().BeTrue();
+            test.HasMarket("123").Should().BeTrue();
         }
 
-        private void SetUpSnapshotAndMarkets()
+        private void SetUpSnapshotAndMarkets(MatchStatus status = MatchStatus.InRunning)
         {
-            _snapshot = new Fixture {Id = "123"};
+            _snapshot = new Fixture {Id = "123", MatchStatus = ((int) status).ToString()};
             _market1 = new Mock<Market>();
             _market2 = new Mock<Market>();
             _market3 = new Mock<Market>();
 
             // Initial Active Market
-            //_market1.Setup(m => m.IsActive).Returns(true);
-
             _market1.SetupAllProperties();
             _market1.Setup(m => m.Selections).Returns(GetSelections(true, false));
-            _market1.Setup(m => m.Id).Returns("One");
-            _market1.Setup(m => m.Name).Returns("One");
+            _market1.Object.Id = "One";
+            _market1.Object.AddOrUpdateTagValue("name", "One");
 
             // Initial Inactive (pending) Market
-            //_market2.Setup(m => m.IsActive).Returns(false);
 
             _market2.SetupAllProperties();
             _market2.Setup(m => m.Selections).Returns(GetSelections(false, false));
-            _market2.Setup(m => m.IsPending).Returns(true);
-            _market2.Setup(m => m.Id).Returns("Two");
-            _market2.Setup(m => m.Name).Returns("Two");
+            _market2.Object.Id = "Two";
+            _market2.Object.AddOrUpdateTagValue("name", "Two");
 
 
             // Initial Active Market
-            //_market3.Setup(m => m.IsActive).Returns(true);
             _market3.SetupAllProperties();
             _market3.Setup(m => m.Selections).Returns(GetSelections(true, false));
-            _market3.Setup(m => m.Id).Returns("Three");
-            _market3.Setup(m => m.Name).Returns("Three");
+            _market3.Object.Id = "Three";
+            _market3.Object.AddOrUpdateTagValue("name", "Three");
 
             _snapshot.Markets.Add(_market1.Object);
             _snapshot.Markets.Add(_market2.Object);
@@ -107,10 +103,13 @@ namespace SS.Integration.Adapter.Tests
         public void ShouldRemoveInactiveMarketsFromSnapshot()
         {
             // 1) Filter is created with initial snapshot
-            var filteredMarkets = new MarketsFilter(_snapshot,_objectProvider);
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
+            var filteredMarkets = new MarketsRulesManager(_snapshot,_objectProvider, rules);
+
+            _snapshot.MatchStatus = "40";
 
             // 2) Markets are already created and first update arrives
-            filteredMarkets.FilterInactiveMarkets(_snapshot);
+            filteredMarkets.ApplyRules(_snapshot);
 
             _snapshot.Markets.Should().Contain(_market1.Object);
             _snapshot.Markets.Should().NotContain(_market2.Object);
@@ -120,11 +119,13 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void ShouldRemoveInactiveMarketsFromMultipleUpdates()
         {
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var filteredMarkets = new MarketsFilter(_snapshot,_objectProvider);
+            var filteredMarkets = new MarketsRulesManager(_snapshot,_objectProvider, rules);
+
 
             // 2) Markets are already created and first update arrives
-            filteredMarkets.FilterInactiveMarkets(_snapshot);
+            filteredMarkets.ApplyRules(_snapshot);
             filteredMarkets.CommitChanges();
 
             _snapshot.Markets.Should().Contain(_market1.Object);
@@ -134,9 +135,8 @@ namespace SS.Integration.Adapter.Tests
             // 3) New update arrives but market1 is inactive this time
             SetUpSnapshotAndMarkets();
             _market1.Setup(s => s.Selections).Returns(GetSelections(false, false));
-            _market1.Setup(m => m.IsPending).Returns(true);
 
-            filteredMarkets.FilterInactiveMarkets(_snapshot);
+            filteredMarkets.ApplyRules(_snapshot);
             filteredMarkets.CommitChanges();
 
             _snapshot.Markets.Should().Contain(m=> AreIdsEqual(m,_market1));     // market1 will update with its new status of pending
@@ -146,9 +146,8 @@ namespace SS.Integration.Adapter.Tests
             // 4) New update arrives with no changes (market1 is still inactive)
             SetUpSnapshotAndMarkets(); 
             _market1.Setup(s => s.Selections).Returns(GetSelections(false, false));
-            _market1.Setup(m => m.IsPending).Returns(true);
 
-            filteredMarkets.FilterInactiveMarkets(_snapshot);
+            filteredMarkets.ApplyRules(_snapshot);
             filteredMarkets.CommitChanges();
 
             _snapshot.Markets.Should().NotContain(m=> AreIdsEqual(m,_market1));  // market1 will not update as it was inactive before and still inactive
@@ -164,14 +163,14 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void ShouldNotRemoveInactiveMarketsWhenNameChanges()
         {
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var filteredMarkets = new MarketsFilter(_snapshot,_objectProvider);
+            var filteredMarkets = new MarketsRulesManager(_snapshot,_objectProvider, rules);
 
             // 2) Markets are already created and first update arrives with a change in name for inactive market2
-            SetUpSnapshotAndMarkets();
-            _market2.Setup(m => m.Name).Returns("Market Two with new name");
+            _market2.Object.AddOrUpdateTagValue("name", "Market Two with new name");
 
-            filteredMarkets.FilterInactiveMarkets(_snapshot);
+            filteredMarkets.ApplyRules(_snapshot);
 
             _snapshot.Markets.Should().Contain(_market1.Object);   // market1 updates as is active
             _snapshot.Markets.Should().Contain(_market2.Object);   // market2 updates as its name changed even though is still inactive
@@ -181,15 +180,12 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void ShouldNotRemoveInactiveMarketsWhenStatusChanges()
         {
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var filteredMarkets = new MarketsFilter(_snapshot,_objectProvider);
+            var filteredMarkets = new MarketsRulesManager(_snapshot,_objectProvider, rules);
 
-            // 2) Markets are already created and first update arrives with a change in status for inactive market2
-            SetUpSnapshotAndMarkets();
-            _market2.Setup(m => m.IsPending).Returns(false);
-            _market2.Setup(m => m.IsSuspended).Returns(true);     // now this market is suspended (still inactive)
-
-            filteredMarkets.FilterInactiveMarkets(_snapshot);
+            _market2.Setup(x => x.Selections).Returns(GetSelections(true, true));
+            filteredMarkets.ApplyRules(_snapshot);
 
 
             _snapshot.Markets.Should().Contain(_market1.Object);   // market1 updates as is active
@@ -200,15 +196,13 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void ShouldNotRemoveInactiveMarketsWhenGetsActive()
         {
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var filteredMarkets = new MarketsFilter(_snapshot,_objectProvider);
+            var filteredMarkets = new MarketsRulesManager(_snapshot,_objectProvider, rules);
 
-            // 2) Markets are already created and first update arrives with a change in status for inactive market2
-            SetUpSnapshotAndMarkets();
-            _market2.Setup(m => m.IsPending).Returns(false);
-            _market2.Setup(m => m.IsActive).Returns(true);     
+            _market2.Setup(x => x.Selections).Returns(GetSelections(true, false));    
 
-            filteredMarkets.FilterInactiveMarkets(_snapshot);
+            filteredMarkets.ApplyRules(_snapshot);
             
             _snapshot.Markets.Should().Contain(_market1.Object);   // market1 updates as is active
             _snapshot.Markets.Should().Contain(_market2.Object);   // market2 updates as is now active
@@ -218,11 +212,13 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void MarketNameChangedShouldNotRemove()
         {
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var filteredMarkets = new MarketsFilter(_snapshot,_objectProvider);
-
-            _market2.Setup(x => x.Name).Returns("NewName");
-            filteredMarkets.FilterInactiveMarkets(_snapshot);
+            var filteredMarkets = new MarketsRulesManager(_snapshot,_objectProvider, rules);
+            _snapshot.MatchStatus = "40";
+            _market2.Object.AddOrUpdateTagValue("name", "newName");
+            //_market2.Setup(x => x.Name).Returns("NewName");
+            filteredMarkets.ApplyRules(_snapshot);
 
             _snapshot.Markets.Should().Contain(_market2.Object);
         }
@@ -230,22 +226,19 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void AutoVoidForUnsettledMarkets()
         {
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var marketsFilter = new MarketsFilter(_snapshot, _objectProvider);
-            marketsFilter.FilterInactiveMarkets(_snapshot);
+            var marketsFilter = new MarketsRulesManager(_snapshot, _objectProvider, rules);
 
             _snapshot.MatchStatus = "50";
             _snapshot.Markets.RemoveAll(m => m.Id == _market2.Object.Id);
 
             _market1.Setup(x => x.Selections).Returns(GetSettledSelections());
-            _market3.Setup(x => x.Selections).Returns(GetSelections("3", false));
+            _market3.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Void, false));
 
-            marketsFilter.FilterInactiveMarkets(_snapshot);
-
-            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeFalse();
+            marketsFilter.ApplyRules(_snapshot);
 
             marketsFilter.CommitChanges();
-            marketsFilter.VoidUnsettled(_snapshot);
 
             _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeTrue();
             var marketVoided = _snapshot.Markets.First(m => m.Id == _market2.Object.Id);
@@ -256,22 +249,24 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void AutoVoidForUnsettledMarketsShouldNotAffectUnsettledFixtures()
         {
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var marketsFilter = new MarketsFilter(_snapshot, _objectProvider);
-            marketsFilter.FilterInactiveMarkets(_snapshot);
-
+            var marketsFilter = new MarketsRulesManager(_snapshot, _objectProvider, rules);
             _snapshot.MatchStatus = "10";
+
+            marketsFilter.ApplyRules(_snapshot);
+
             _snapshot.Markets.RemoveAll(m => m.Id == _market2.Object.Id);
 
             _market1.Setup(x => x.Selections).Returns(GetSettledSelections());
             _market3.Setup(x => x.Selections).Returns(GetSelections("3", false));
 
-            marketsFilter.FilterInactiveMarkets(_snapshot);
+            marketsFilter.ApplyRules(_snapshot);
 
             _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeFalse();
 
 
-            marketsFilter.VoidUnsettled(_snapshot);
+            marketsFilter.ApplyRules(_snapshot);
 
             _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeFalse();
         }
@@ -279,26 +274,27 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void AutoVoidingIgnoresPreviouslyRemovedSettledMarkets()
         {
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var marketsFilter = new MarketsFilter(_snapshot, _objectProvider);
-
-            _market1.Setup(x => x.Selections).Returns(GetSettledSelections());
-            _market1.Setup(x => x.IsResulted).Returns(true);
-            marketsFilter.FilterInactiveMarkets(_snapshot);
-            marketsFilter.CommitChanges();
+            var marketsFilter = new MarketsRulesManager(_snapshot, _objectProvider, rules);
 
             _snapshot.MatchStatus = "50";
-            _snapshot.Markets.RemoveAll(m => m.Id == _market2.Object.Id);
+            _market1.Setup(x => x.Selections).Returns(GetSettledSelections());
             
-            _market3.Setup(x => x.Selections).Returns(GetSelections("3", false));
-            _market3.Setup(x => x.IsResulted).Returns(true);
-
-            marketsFilter.FilterInactiveMarkets(_snapshot);
+            marketsFilter.ApplyRules(_snapshot);
             marketsFilter.CommitChanges();
 
-            _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeFalse();
+            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeTrue();
+            _snapshot.Markets.First(m => m.Id == _market2.Object.Id).IsResulted.Should().BeTrue();
+            _snapshot.Markets.RemoveAll(m => m.Id == _market2.Object.Id);
+            
+            _market3.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Void, false));
 
-            marketsFilter.VoidUnsettled(_snapshot);
+            marketsFilter.ApplyRules(_snapshot);
+            marketsFilter.CommitChanges();
+
+
+            marketsFilter.ApplyRules(_snapshot);
 
             _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeFalse();
         }
@@ -307,38 +303,33 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void AutoVoidingEverythingThatWasntVoided()
         {
-            // 1) Filter is created with initial snapshot
-            var marketsFilter = new MarketsFilter(_snapshot, _objectProvider);
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
 
-            //_snapshot.Markets.First(x => x.Id == _market3.Object.Id).IsActive.Should().BeTrue();
+            // 1) Filter is created with initial snapshot
+            var marketsFilter = new MarketsRulesManager(_snapshot, _objectProvider, rules);
 
             _market1.Setup(x => x.Selections).Returns(GetSettledSelections());
-            _market1.Setup(x => x.IsResulted).Returns(true);
             
-            marketsFilter.FilterInactiveMarkets(_snapshot);
+            marketsFilter.ApplyRules(_snapshot);
             marketsFilter.CommitChanges();
-            _snapshot.MatchStatus = "50";
 
-            var market3Selections = GetSelections("0", false);
-
-            _market2.Setup(x=> x.IsResulted)
-                .Returns(() => _market2.Object.Selections.All(s => s.Status == "3" || s.Status == "2"));
-
-            _market3.Setup(x => x.Selections).Returns(market3Selections);
-            _market3.Setup(x => x.IsResulted)
-                    .Returns(() => _market3.Object.Selections.All(s => s.Status == "3" || s.Status == "2"));
-
-            marketsFilter.FilterInactiveMarkets(_snapshot);
-            _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeFalse();
+            _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeTrue();
+            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeFalse();
             _snapshot.Markets.Exists(m => m.Id == _market3.Object.Id).Should().BeTrue();
-            
+
+
+            _snapshot.MatchStatus = "50";
+            _market3.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
+
+
+            marketsFilter.ApplyRules(_snapshot);
             marketsFilter.CommitChanges();
-            marketsFilter.VoidUnsettled(_snapshot);
+            
+            _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeFalse();
+            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeTrue();
+            _snapshot.Markets.Exists(m => m.Id == _market3.Object.Id).Should().BeTrue();
 
             _snapshot.Markets.First(m => m.Id == _market2.Object.Id).IsResulted.Should().BeTrue();
-            _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeFalse();
-
-            _snapshot.Markets.First(m => m.Id == _market3.Object.Id).Should().NotBeNull();
             
             //market 3 was previously active so it shouldn't be voided
             _snapshot.Markets.First(m => m.Id == _market3.Object.Id).IsResulted.Should().BeFalse();
@@ -347,24 +338,193 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void SuspendAllMarketsTest()
         {
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var marketsFilter = new MarketsFilter(_snapshot, _objectProvider);
+            var marketsFilter = new MarketsRulesManager(_snapshot, _objectProvider, rules);
             _market1.Setup(x => x.Selections).Returns(GetSelections(true, false));
             _market2.Setup(x => x.Selections).Returns(GetSelections(true, false));
             _market3.Setup(x => x.Selections).Returns(GetSelections(true, false));
 
-            marketsFilter.FilterInactiveMarkets(_snapshot);
+            marketsFilter.ApplyRules(_snapshot);
 
             _snapshot.Markets.Count.Should().Be(3);
-            _snapshot.Markets.All(
-                x => x.Selections.TrueForAll(s => s.Tradable.HasValue && s.Tradable.Value)).Should().BeTrue();
+            foreach (var mkt in _snapshot.Markets)
+            {
+                mkt.Selections.All(y => y.Tradable.HasValue && y.Tradable.Value).Should().BeTrue();
+            }
 
-            var snapshotWithAllMarketsSuspended = marketsFilter.GenerateAllMarketsSuspenssion(_snapshot.Id);
+            var snapshotWithAllMarketsSuspended = marketsFilter.GenerateAllMarketsSuspenssion();
 
             snapshotWithAllMarketsSuspended.Markets.Count.Should().Be(3);
-            snapshotWithAllMarketsSuspended.Markets.All(m => m.IsSuspended);
-            snapshotWithAllMarketsSuspended.Markets.All(
-                x => x.Selections.TrueForAll(s => s.Tradable.HasValue && !s.Tradable.Value)).Should().BeTrue();
+            snapshotWithAllMarketsSuspended.Markets.All(m => m.IsSuspended).Should().BeTrue();
+
+            foreach (var mkt in snapshotWithAllMarketsSuspended.Markets)
+            {
+                mkt.Selections.All(x => x.Tradable.HasValue && !x.Tradable.Value).Should().BeTrue();
+            }
+        }
+
+
+        [Test]
+        public void RemovePendingMarketsTest()
+        {
+            // here I want to test that all the markets
+            // in a pending state (that never haven't been active before)
+            // will be removed from the snapshot through the PendingMarketFilteringRule
+
+            // market1 and market2 are in pending state, while market3 is active
+            _market1.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
+            _market2.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
+            _market3.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Active, true));
+
+            List<IMarketRule> rules = new List<IMarketRule> { 
+                VoidUnSettledMarket.Instance, 
+                InactiveMarketsFilteringRule.Instance,
+                new PendingMarketFilteringRule()
+            };
+
+
+            var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+
+            
+            filteredMarkets.ApplyRules(_snapshot);
+
+
+            _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeFalse();   // market1 should have been removed
+            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeFalse();   // market2 should have been removed
+            _snapshot.Markets.Exists(m => m.Id == _market3.Object.Id).Should().BeTrue();      // market3 should be there
+        }
+
+        [Test]
+        public void RemovePendingMarketsWithExcludeListTest()
+        {
+            // here I want to test that all the markets
+            // in a pending state (that never haven't been active before)
+            // will be removed from the snapshot through the PendingMarketFilteringRule
+            // I also add a list of market type that the rule should not touch
+
+            // market1 and market2 are in pending state, while market3 is active
+            _market1.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
+            _market2.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
+            _market3.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Active, true));
+
+            _market1.Object.AddOrUpdateTagValue("type", "do_not_touch");
+
+            var rule = new PendingMarketFilteringRule();
+            rule.ExcludeMarketType("do_not_touch");
+
+            List<IMarketRule> rules = new List<IMarketRule> { 
+                rule,
+                InactiveMarketsFilteringRule.Instance,
+                VoidUnSettledMarket.Instance, 
+            };
+
+
+            var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+
+            filteredMarkets.ApplyRules(_snapshot);
+
+
+            _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeTrue();   // market1 has not been touched by InactiveMarketsFilteringRule
+            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeFalse();  // market2 should have been removed
+            _snapshot.Markets.Exists(m => m.Id == _market3.Object.Id).Should().BeTrue();   // market3 should be there
+        }
+
+        [Test]
+        public void RemovePendingMarketsWithExcludeListAndInactiveFilterTest()
+        {
+            // here I want to test that all the markets
+            // in a pending state (that never haven't been active before)
+            // will be removed from the snapshot through the PendingMarketFilteringRule
+            // I also add a list of market type that the rule should not touch
+
+            // market1 and market2 are in pending state, while market3 is active
+            _market1.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
+            _market2.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
+            _market3.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Active, true));
+
+            _market1.Object.AddOrUpdateTagValue("type", "do_not_touch");
+            _market1.Object.AddOrUpdateTagValue("extra_tag", "just_to_check_that_tags_are_correctly_passed");
+
+            var rule = new PendingMarketFilteringRule();
+            rule.ExcludeMarketType("do_not_touch");
+
+            List<IMarketRule> rules = new List<IMarketRule> { 
+                rule,
+                InactiveMarketsFilteringRule.Instance,
+                VoidUnSettledMarket.Instance, 
+            };
+
+
+            var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+
+            filteredMarkets.ApplyRules(_snapshot);
+            filteredMarkets.CommitChanges();
+
+            // market1 should not be touched by InactiveMarketsFilteringRule as PendingMarketFilterRule
+            // should add it to the list of the "un-removable" markets
+            _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeTrue();   
+            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeFalse();  // market2 should have been removed
+            _snapshot.Markets.Exists(m => m.Id == _market3.Object.Id).Should().BeTrue();   // market3 should be there
+
+            // market 1 and market 2 are now active. As market2 was removed, PendingMarketFiltering rule
+            // should add all the tags back to the market
+            _market1.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Active, true));
+            _market2.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Active, true));
+            _market3.Setup(x => x.Selections).Returns(GetSettledSelections());
+            _snapshot.Markets.Add(_market2.Object);
+
+            filteredMarkets.ApplyRules(_snapshot);
+            filteredMarkets.CommitChanges();
+
+            _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeTrue();   
+            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeTrue();  
+            _snapshot.Markets.Exists(m => m.Id == _market3.Object.Id).Should().BeTrue(); 
+
+            _market1.Object.HasTag("extra_tag").Should().BeTrue();
+            _market1.Object.GetTagValue("extra_tag").Should().BeEquivalentTo("just_to_check_that_tags_are_correctly_passed");
+        }
+
+        [Test]
+        public void KeepPendingMarkets()
+        {
+            // here I want to test that all the markets
+            // in a pending state (that they haven't been actived before)
+            // will be removed from the snapshot through the PendingMarketFilteringRule
+
+            List<IMarketRule> rules = new List<IMarketRule> { 
+                VoidUnSettledMarket.Instance, 
+                InactiveMarketsFilteringRule.Instance,
+                new PendingMarketFilteringRule()
+            };
+
+  
+            _market1.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
+            _market2.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
+            _market3.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Active, true));
+
+            var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+
+
+            filteredMarkets.ApplyRules(_snapshot);
+            filteredMarkets.CommitChanges();
+
+            _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeFalse();   // market1 should have been removed
+            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeFalse();   // market2 should have been removed
+            _snapshot.Markets.Exists(m => m.Id == _market3.Object.Id).Should().BeTrue();   // market3 should be there
+
+            _market1.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Active, false));
+            _market2.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Active, false));
+
+            _snapshot.Markets.Add(_market1.Object);
+            _snapshot.Markets.Add(_market2.Object);
+
+            filteredMarkets.ApplyRules(_snapshot);
+            filteredMarkets.CommitChanges();
+
+            _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeTrue();   // market1 should have been removed
+            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeTrue();   // market2 should have been removed
+            _snapshot.Markets.Exists(m => m.Id == _market3.Object.Id).Should().BeTrue();   // market3 should be there
         }
 
         /*[Test]
@@ -418,7 +578,7 @@ namespace SS.Integration.Adapter.Tests
 
         private List<Selection> GetSettledSelections()
         {
-            var selections = GetSelections("2", true);
+            var selections = GetSelections(SelectionStatus.Settled, true);
             selections[1].Price = 1;
 
             return selections;
@@ -428,9 +588,9 @@ namespace SS.Integration.Adapter.Tests
         {
             var selections = new List<Selection>
                 {
-                    new Selection() {Id = "1", Tradable = !isSuspended, Status = status },
-                    new Selection() {Id = "2", Tradable = !isSuspended, Status = status },
-                    new Selection() {Id = "3", Tradable = !isSuspended, Status = status }
+                    new Selection {Id = "1", Tradable = !isSuspended, Status = status },
+                    new Selection {Id = "2", Tradable = !isSuspended, Status = status },
+                    new Selection {Id = "3", Tradable = !isSuspended, Status = status }
                 };
 
             return selections;
@@ -438,7 +598,7 @@ namespace SS.Integration.Adapter.Tests
 
         private List<Selection> GetSelections(bool isActive, bool isSuspended)
         {
-            return GetSelections(isActive ? "1" : "0", isSuspended);
+            return GetSelections(isActive ? SelectionStatus.Active : SelectionStatus.Pending, isSuspended);
         }
     }
 }

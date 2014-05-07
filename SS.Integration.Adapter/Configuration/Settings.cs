@@ -20,56 +20,66 @@ namespace SS.Integration.Adapter.Configuration
 {
     public class Settings : ISettings
     {
+        private const int DEFAULT_FIXTURE_CHECK_FREQUENCY_VALUE = 60000;        
+        private const int DEFAULT_FIXTURE_CREATION_CONCURRENCY_VALUE = 20;
+        private const int DEFAULT_STARTING_RETRY_DELAY_VALUE = 500;
+        private const int DEFAULT_MAX_RETRY_DELAY_VALUE = 65000;
+        private const int DEFAULT_MAX_RETRY_ATTEMPT_VALUE = 3;
+        private const int DEFAULT_ECHO_INTERVAL_VALUE = 10000;
+        private const int DEFAULT_ECHO_DELAY_VALUE = 3000;
+        private const bool DEFAULT_SUSPEND_ALL_MARKETS_ON_SHUTDOWN_VALUE = true;
+        private const int DEFAULT_HEARTBEAT_INTERVAL_VALUE = 60;
+        private const string DEFAULT_EVENT_STATE_FILE_PATH_VALUE = @"C:\eventState.json";
+        private const string DEFAULT_MARKET_STATE_MANAGER_DIRECTORY = @"MarketsState";
+        private const int DEFAULT_CACHE_EXPIRY_MINUTES_VALUE = 15;
+
+
         public Settings()
         {
             User = ConfigurationManager.AppSettings["user"];
             Password = ConfigurationManager.AppSettings["password"];
             Url = ConfigurationManager.AppSettings["url"];
 
-            var value = ConfigurationManager.AppSettings["newFixtureCheckerFrequency"];
-            FixtureCheckerFrequency = value == "" ? 60000 : Convert.ToInt32(value);
 
-            value = ConfigurationManager.AppSettings["validateStreams"];
-            ValidateStreams = value == "true";
+            var value = ConfigurationManager.AppSettings["newFixtureCheckerFrequency"];
+            FixtureCheckerFrequency = string.IsNullOrEmpty(value) ? DEFAULT_FIXTURE_CHECK_FREQUENCY_VALUE : Convert.ToInt32(value);
 
             value = ConfigurationManager.AppSettings["fixtureCreationConcurrency"];
-            FixtureCreationConcurrency = value == "" ? 20 : Convert.ToInt32(value);
+            FixtureCreationConcurrency = string.IsNullOrEmpty(value) ? DEFAULT_FIXTURE_CREATION_CONCURRENCY_VALUE : Convert.ToInt32(value);
 
             value = ConfigurationManager.AppSettings["startingRetryDelay"];
-            StartingRetryDelay = value == "" ? 500 : Convert.ToInt32(value);
+            StartingRetryDelay = string.IsNullOrEmpty(value) ? DEFAULT_STARTING_RETRY_DELAY_VALUE : Convert.ToInt32(value);
 
             value = ConfigurationManager.AppSettings["maxRetryDelay"];
-            MaxRetryDelay = value == "" ? 65000 : Convert.ToInt32(value);
+            MaxRetryDelay = string.IsNullOrEmpty(value) ? DEFAULT_MAX_RETRY_DELAY_VALUE : Convert.ToInt32(value);
 
             value = ConfigurationManager.AppSettings["maxRetryAttempts"];
-            MaxRetryAttempts = value == "" ? 3 : Convert.ToInt32(value);
+            MaxRetryAttempts = string.IsNullOrEmpty(value) ? DEFAULT_MAX_RETRY_ATTEMPT_VALUE : Convert.ToInt32(value);
 
             value = ConfigurationManager.AppSettings["echoInterval"];
-            EchoInterval = value == "" ? 10000 : Convert.ToInt32(value);
+            EchoInterval = string.IsNullOrEmpty(value) ? DEFAULT_ECHO_INTERVAL_VALUE : Convert.ToInt32(value);
 
             value = ConfigurationManager.AppSettings["echoDelay"];
-            EchoDelay = value == "" ? 3000 : Convert.ToInt32(value);
+            EchoDelay = string.IsNullOrEmpty(value) ? DEFAULT_ECHO_DELAY_VALUE: Convert.ToInt32(value);
 
             value = ConfigurationManager.AppSettings["suspendAllOnShutdown"];
-            SuspendAllMarketsOnShutdown = value != "" && Convert.ToBoolean(value);
+            SuspendAllMarketsOnShutdown = string.IsNullOrEmpty(value) ? DEFAULT_SUSPEND_ALL_MARKETS_ON_SHUTDOWN_VALUE : string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
 
             value = ConfigurationManager.AppSettings["heartBeatIntervalSeconds"];
-            HeartBeatIntervalSeconds = value == "" ? 60 : Convert.ToInt32(value);
+            HeartBeatIntervalSeconds = string.IsNullOrEmpty(value) ? DEFAULT_HEARTBEAT_INTERVAL_VALUE : Convert.ToInt32(value);
 
             value = ConfigurationManager.AppSettings["eventStateFilePath"];
-            EventStateFilePath = string.IsNullOrEmpty(value) ? @"C:\eventState.json" : Convert.ToString(value);
+            EventStateFilePath = string.IsNullOrEmpty(value) ? DEFAULT_EVENT_STATE_FILE_PATH_VALUE : Convert.ToString(value);
 
             value = ConfigurationManager.AppSettings["marketFiltersDirectory"];
-            MarketFiltersDirectory = string.IsNullOrEmpty(value) ? @"MarketsState" : Convert.ToString(value);
-
-            value = ConfigurationManager.AppSettings["numberOfListenersCreatedAtTime"];
-            NumberOfListenersCreatedAtTime = value == "" ? 0 : Convert.ToInt32(value);
+            MarketFiltersDirectory = string.IsNullOrEmpty(value) ? DEFAULT_MARKET_STATE_MANAGER_DIRECTORY : Convert.ToString(value);
 
             value = ConfigurationManager.AppSettings["cacheExpiryInMins"];
-            CacheExpiryInMins = value == "" ? 15 : Convert.ToInt32(value);
+            CacheExpiryInMins = string.IsNullOrEmpty(value) ? DEFAULT_CACHE_EXPIRY_MINUTES_VALUE : Convert.ToInt32(value);
         }
 
         public string MarketFiltersDirectory { get; private set; }
+
         public int CacheExpiryInMins { get; private set; }
 
         public string User { get; private set; }
@@ -79,8 +89,6 @@ namespace SS.Integration.Adapter.Configuration
         public string Url { get; private set; }
 
         public int FixtureCheckerFrequency { get; private set; }
-
-        public bool ValidateStreams { get; private set; }
 
         public int StartingRetryDelay { get; private set; }
 
@@ -97,8 +105,6 @@ namespace SS.Integration.Adapter.Configuration
         public int HeartBeatIntervalSeconds { get; private set; }
 
         public string EventStateFilePath { get; private set; }
-
-        public int NumberOfListenersCreatedAtTime { get; set; }
 
         public int FixtureCreationConcurrency { get; set; }
     }

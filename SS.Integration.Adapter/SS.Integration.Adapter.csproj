@@ -36,6 +36,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\log4net.1.2.10\lib\2.0\log4net.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Newtonsoft.Json.5.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.5.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -61,8 +65,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Adapter.cs" />
+    <Compile Include="Configuration\MappingUpdaterSection.cs" />
     <Compile Include="Configuration\Settings.cs" />
     <Compile Include="Configuration\SportConfiguration.cs" />
+    <Compile Include="FixtureJsonHelper.cs" />
     <Compile Include="Interface\IEventState.cs" />
     <Compile Include="Interface\IListener.cs" />
     <Compile Include="Interface\IReconnectStrategy.cs" />
@@ -70,14 +76,24 @@
     <Compile Include="Interface\IServiceFacade.cs" />
     <Compile Include="Interface\ISettings.cs" />
     <Compile Include="Interface\IStoreProvider.cs" />
+    <Compile Include="Mappings\DefaultMappingsCollectionProvider.cs" />
+    <Compile Include="Mappings\DefaultMappingUpdater.cs" />
+    <Compile Include="Mappings\DefaultMappingUpdaterFactory.cs" />
+    <Compile Include="Mappings\DummyMappingUpdater.cs" />
+    <Compile Include="Mappings\DummyMappingUpdaterFactory.cs" />
+    <Compile Include="MarketRules\Model\MarketRuleProcessingContext.cs" />
+    <Compile Include="MarketRules\PendingMarketFilteringRule.cs" />
+    <Compile Include="MarketRules\VoidUnSettledMarket.cs" />
     <Compile Include="ProcessState\BinaryStoreProvider.cs" />
     <Compile Include="ProcessState\EventState.cs" />
     <Compile Include="ProcessState\FileStoreProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StreamMessage.cs" />
-    <Compile Include="UdapiClient\MarketsFilter.cs" />
-    <Compile Include="UdapiClient\Model\MarketState.cs" />
-    <Compile Include="UdapiClient\Model\SelectionState.cs" />
+    <Compile Include="MarketRules\InactiveMarketsFilteringRule.cs" />
+    <Compile Include="MarketRules\MarketsRulesManager.cs" />
+    <Compile Include="MarketRules\Model\MarketState.cs" />
+    <Compile Include="MarketRules\Model\MarketStateCollection.cs" />
+    <Compile Include="MarketRules\Model\SelectionState.cs" />
     <Compile Include="StreamListener.cs" />
     <Compile Include="DefaultReconnectStrategy.cs" />
     <Compile Include="UdapiClient\UdapiResourceFacade.cs" />
@@ -91,6 +107,14 @@
     <ProjectReference Include="..\SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj">
       <Project>{29461692-6DE2-47FA-ACC4-ECAAE9462AE3}</Project>
       <Name>SS.Integration.Adapter.Model</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Adapter.Plugin.Model\SS.Integration.Adapter.Plugin.Model.csproj">
+      <Project>{b622855c-9331-4792-9fbf-339f737db982}</Project>
+      <Name>SS.Integration.Adapter.Plugin.Model</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Common.ConfigSerializer\SS.Integration.Common.ConfigSerializer.csproj">
+      <Project>{1c527842-e5a0-4e7a-a475-efe1f8f892a2}</Project>
+      <Name>SS.Integration.Common.ConfigSerializer</Name>
     </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Common\SS.Integration.Common.csproj">
       <Project>{756c25c1-9ff6-4299-8825-eeea5565ac58}</Project>

@@ -18,9 +18,13 @@ namespace SS.Integration.Adapter.Model.Interfaces
     public interface IObjectProvider<T>
     {
         T GetObject(string id);
+
         void SetObject(string id,T item);
+
         bool Remove(string id);
+
         void Clear(string id = null);
+
         void Flush();
     }
 }

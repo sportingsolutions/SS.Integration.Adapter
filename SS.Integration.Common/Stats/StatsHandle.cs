@@ -51,6 +51,19 @@ namespace SS.Integration.Common.Stats
             }
         }
 
+
+        public void SetValueUnsafe(string key, object value)
+        {
+            if (string.IsNullOrEmpty(key))
+                return;
+
+            if (value == null)
+                value = "";
+
+            _Logger.Write(_Id, key, value.ToString(), _Messages);
+            _Messages.Clear();
+        }
+
         public IStatsHandle AddMessage(string messagekey, object value)
         {
             if (messagekey == null)
