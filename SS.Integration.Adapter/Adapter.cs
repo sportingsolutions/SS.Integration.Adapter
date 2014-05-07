@@ -365,7 +365,7 @@ namespace SS.Integration.Adapter
                 else if(listener.IsIgnored) 
                 {
                     _logger.DebugFormat("{0} is marked as ignored", resource);
-                    return;
+                    RemoveAndStopListener(resource.Id);
                 }
                 else 
                 {
@@ -378,6 +378,9 @@ namespace SS.Integration.Adapter
                         _listeners[resource.Id].UpdateResourceState(resource);
                         return;
                     }
+
+                    _logger.WarnFormat("Removed resource for {0}, it will be recreated from scratch during next resource pull from API", resource);
+                    RemoveAndStopListener(resource.Id);
                 }
             }
 
@@ -466,14 +469,7 @@ namespace SS.Integration.Adapter
             var listener = _listeners[resource.Id];
             var maxPeriodWithoutMessage = Settings.EchoInterval * 3;
 
-            if (!listener.CheckStreamHealth(maxPeriodWithoutMessage, resource.Content != null ? resource.Content.Sequence : -1))
-            {
-                RemoveAndStopListener(resource.Id);
-                _logger.WarnFormat("Removed resource for {0}, it will be recreated from scratch during next resource pull from API", resource);
-                return false;                
-            }
-
-            return true;
+            return listener.CheckStreamHealth(maxPeriodWithoutMessage, resource.Content.Sequence);
         }
 
         /// <summary>

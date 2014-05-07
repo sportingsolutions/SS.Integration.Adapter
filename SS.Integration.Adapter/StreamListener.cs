@@ -15,7 +15,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.MarketRules;
@@ -79,7 +78,6 @@ namespace SS.Integration.Adapter
 
             IsStreaming = false;
             IsConnecting = false;
-            AllowsUpdates = false;
 
             IsErrored = false;
             IsIgnored = false;
@@ -193,19 +191,6 @@ namespace SS.Integration.Adapter
         }
 
         /// <summary>
-        /// If false, no updates can be processed.
-        /// This is used to enforce synchronization
-        /// while processing updates and snapshots
-        /// 
-        /// This is NOT a thred-safe property
-        /// </summary>
-        private bool AllowsUpdates
-        {            
-            get;            
-            set;
-        }
-
-        /// <summary>
         /// Returns true if the current state of the listener
         /// is errored. In this case, if we are streaming
         /// (IsStreaming is true) then at the next update
@@ -237,8 +222,6 @@ namespace SS.Integration.Adapter
         {
             _logger.InfoFormat("Stopping Listener for {0} sport={1}", _resource, _resource.Sport);
 
-            CloseProcessUpdatesBarrier();
-
             if (IsErrored)
                 SuspendMarkets();
 
@@ -262,9 +245,6 @@ namespace SS.Integration.Adapter
 
         public void SuspendMarkets(bool fixtureLevelOnly = true)
         {
-            if (_marketsRuleManager == null)
-                return;
-
             _logger.InfoFormat("Suspending Markets for {0} with fixtureLevelOnly={1}", _resource, fixtureLevelOnly);
 
             try
@@ -272,6 +252,13 @@ namespace SS.Integration.Adapter
                 _platformConnector.Suspend(_resource.Id);
                 if (!fixtureLevelOnly)
                 {
+                    if (_marketsRuleManager == null)
+                    {
+                        _logger.WarnFormat("Cannot perform a full suspension of {0} as no state information is currently available", _resource);
+                        return;
+                    }
+
+
                     var suspendedSnapshot = _marketsRuleManager.GenerateAllMarketsSuspenssion();
                     _platformConnector.ProcessStreamUpdate(suspendedSnapshot);
                 }
@@ -299,19 +286,7 @@ namespace SS.Integration.Adapter
 
         private void StartStreaming()
         {
-            // do not start streaming twice
-            if (IsStreaming)
-                return;
-
-            if (IsFixtureEnded)
-            {
-                _logger.DebugFormat("Listener will not start for {0} as it is marked as ended", _resource);
-                return;
-            }
-
-            IsErrored = false;
-            IsStreaming = false;
-
+  
             // Only start streaming if fixture is not Setup/Ready
             if (!IsFixtureSetup)
             {
@@ -329,33 +304,37 @@ namespace SS.Integration.Adapter
 
         private void ConnectToStreamServer()
         {
-            // prevent multiple connect requests to be processed
-            if (IsConnecting)
+            // even if each property used within this block is thread-safe
+            // we need to use a lock block because we want to do a check-set operation
+            lock (this)
             {
-                _logger.DebugFormat("Listener for {0} is already trying to connect - skipping request to connect to the streming server", _resource);
-                return;
+                if (IsFixtureEnded)
+                {
+                    _logger.DebugFormat("Listener will not start for {0} as it is marked as ended", _resource);
+                    return;
+                }
+
+                // do not start streaming twice
+                if (IsStreaming || IsConnecting)
+                    return;
+
+                IsErrored = false;
+                IsStreaming = false;
+                IsConnecting = true;
             }
 
             try
             {
 
                 // The current UDAPI SDK, before consuming events from the queue raises
-                // a "connected" event. We can then be sure that no updates are pushed
-                // before our "connected" event handler terminates. In other words
-                // the connected event handler doesn't create race conditions 
-                // with th "stream" event handler. However, for not relying
-                // on the internal details of the SDK (that can be changed at any time)
-                // we put a synchronization mechanism enforcing the completition of
-                // the "connected" event handler executing any updates via 
-                // the "stream" event handler.
+                // a "connected" event. We are sure that no updates are pushed
+                // before our "connected" event handler terminates because 
+                // updates are pushed using the same thread from the SDK.
+                //
+                // If the SDK's threading model changes, this 
+                // class must be revisited
 
                 _logger.DebugFormat("Starting streaming for {0}", _resource);
-                
-                IsConnecting = true;
-
-                // enforce updates to wait 
-                CloseProcessUpdatesBarrier();
-                
                 _resource.StartStreaming();
                 _logger.DebugFormat("Streaming started for {0}", _resource);
             }
@@ -366,58 +345,6 @@ namespace SS.Integration.Adapter
 
                 _Stats.AddMessage(GlobalKeys.CAUSE, ex).SetValue(StreamListenerKeys.STATUS, "Error");
                 _logger.Error(string.Format("An error has occured when trying to connect to stream server for {0}", _resource), ex);
-            }
-        }
-
-        /// <summary>
-        /// Check if an update can be processed.
-        /// If it cannot be processed the calling
-        /// thread waits until the barrier will
-        /// be opened
-        /// </summary>
-        private void HitProcessUpdatesBarrier()
-        {
-            lock (this)
-            {
-                while (!AllowsUpdates)
-                {
-                    Monitor.Wait(this);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Open the updates barrier. In other words
-        /// updates can be processed. All the waiting
-        /// threads are waked up. 
-        /// 
-        /// Please note that no threads ordering
-        /// is enfored when the barrier is opened
-        /// </summary>
-        private void OpenProcessUpdatesBarrier()
-        {
-            lock (this)
-            {
-                AllowsUpdates = true;
-                Monitor.PulseAll(this);
-            }
-        }
-
-        /// <summary>
-        /// A call to this method allows all the updates
-        /// to wait until OpenProcessUpdatesBarrier()
-        /// is called.
-        /// 
-        /// Pay attention that if multiple threads
-        /// are waiting on the barrier, when this is opened
-        /// no threads ordering is enforced. 
-        /// 
-        /// </summary>
-        private void CloseProcessUpdatesBarrier()
-        {
-            lock (this)
-            {
-                AllowsUpdates = false;
             }
         }
 
@@ -435,13 +362,21 @@ namespace SS.Integration.Adapter
             return false;
         }
 
-        public void ResourceOnStreamEvent(object sender, StreamEventArgs streamEventArgs)
+        private void SetErrorState()
         {
+            IsErrored = true;
+            SuspendMarkets();
+        }
+
+        internal void ResourceOnStreamEvent(object sender, StreamEventArgs streamEventArgs)
+        {
+            // Note that we can have only one update at time
+            // as the current SDK's threading model calls this 
+            // method using always the same thread (per object basis)
+
             try
             {
-                // hit the barrier to enforce synchronization
-                HitProcessUpdatesBarrier();
-                
+             
                 // grab a snapshot and return if there was an error
                 if (CheckErrorStateOnUpdates())
                     return;
@@ -520,7 +455,6 @@ namespace SS.Integration.Adapter
             }
             catch (AggregateException ex)
             {
-                IsErrored = true;
                 foreach (var innerException in ex.InnerExceptions)
                 {
                     _logger.Error(string.Format("Error processing update that arrived for {0}", _resource), innerException);
@@ -528,20 +462,21 @@ namespace SS.Integration.Adapter
                 }
 
                 _Stats.SetValue(StreamListenerKeys.STATUS, "Error");
+                SetErrorState();
             }
             catch (Exception ex)
             {
-                IsErrored = true;
                 _Stats.AddMessage(GlobalKeys.CAUSE, ex).SetValue(StreamListenerKeys.STATUS, "Error");
                 _logger.Error(string.Format("Error processing update that arrived for {0}", _resource), ex);
+                SetErrorState();
             }
         }
 
-        public void ResourceOnStreamDisconnected(object sender, EventArgs eventArgs)
+        internal void ResourceOnStreamDisconnected(object sender, EventArgs eventArgs)
         {
             IsStreaming = false;
 
-            // if a disconnect event is raised due a failed attempt to connect 
+            // for when a disconnect event is raised due a failed attempt to connect 
             // (in other words, when we didn't receive a connect event)
             IsConnecting = false;
 
@@ -560,7 +495,7 @@ namespace SS.Integration.Adapter
             }
         }
 
-        public void ResourceOnStreamConnected(object sender, EventArgs eventArgs)
+        internal void ResourceOnStreamConnected(object sender, EventArgs eventArgs)
         {
             IsStreaming = true;
             IsConnecting = false;
@@ -569,16 +504,7 @@ namespace SS.Integration.Adapter
             _Stats.SetValue(StreamListenerKeys.STATUS, "Connected");
             _Stats.IncrementValue(StreamListenerKeys.RESTARTED);
 
-            try
-            {
-                RetrieveAndProcessSnapshotIfNeeded();
-            }
-            finally
-            {
-                // first snapshot is processed....if no error
-                // was raised, allows updates to be processed
-                OpenProcessUpdatesBarrier();
-            }
+            RetrieveAndProcessSnapshotIfNeeded();
         }
 
         private bool IsSequenceValid(Fixture fixtureDelta)
@@ -609,7 +535,6 @@ namespace SS.Integration.Adapter
             if (fixtureDelta.Epoch < _currentEpoch)
             {
                 _logger.WarnFormat("Unexpected Epoch={0} when current={1} for {2}", fixtureDelta.Epoch, _currentEpoch, _resource);
-                IsErrored = true;
                 return false;
             }
             
@@ -633,25 +558,14 @@ namespace SS.Integration.Adapter
         /// <summary>
         /// This method allows to grab a new snapshot and process it.
         /// 
-        /// Before getting the snapshot, it closes the updates barrier
-        /// (so no updates can be process meanwhile) and suspends
-        /// all the fixture's markets. After the snapshot is processed
-        /// the updates barrier is opened again.
+        /// Before getting the snapshot, it suspends
+        /// all the fixture's markets. 
         /// </summary>
         /// <param name="hasEpochChanged"></param>
         private void SuspendAndReprocessSnapshot(bool hasEpochChanged = false)
         {
-            CloseProcessUpdatesBarrier();
-
-            try
-            {
-                SuspendMarkets();
-                RetrieveAndProcessSnapshot(hasEpochChanged);
-            }
-            finally
-            {
-                OpenProcessUpdatesBarrier();
-            }
+            SuspendMarkets();
+            RetrieveAndProcessSnapshot(hasEpochChanged);
         }
 
         private Fixture RetrieveSnapshot()
@@ -670,7 +584,7 @@ namespace SS.Integration.Adapter
             catch (Exception e)
             {
                 _logger.Error(string.Format("An error occured while trying to acquire snapshot for {0}", _resource), e);
-                IsErrored = true;
+                SetErrorState();
             }
 
             return null;
@@ -710,8 +624,8 @@ namespace SS.Integration.Adapter
                 }
                 catch (Exception e)
                 {
-                    IsErrored = true;
                     _logger.Error(string.Format("An error occcured while trying to unsuspend {0}", _resource), e);
+                    SetErrorState();
                 }
             }
         }
@@ -740,24 +654,24 @@ namespace SS.Integration.Adapter
                 _logger.InfoFormat("{0} received a FixtureIgnoredException. Stopping listener", _resource);
                 _logger.Error("FixtureIgnoredException", ie);
                 IsIgnored = true;
-                Stop();
             }
             catch (AggregateException ex)
             {
-                IsErrored = true;
                 _marketsRuleManager.RollbackChanges();
 
                 foreach (var innerException in ex.InnerExceptions)
                 {
                     _logger.Error(string.Format("There has been an aggregate error while trying to process snapshot {0}", snapshot), innerException);
                 }
+
+                SetErrorState();
             }
             catch (Exception e)
             {
-                IsErrored = true;
                 _marketsRuleManager.RollbackChanges();
 
                 _logger.Error(string.Format("An error occured while trying to process snapshot {0}", snapshot), e);
+                SetErrorState();
             }
         }
 
@@ -803,13 +717,16 @@ namespace SS.Integration.Adapter
             _marketsRuleManager.ApplyRules(fixture);
         }
 
-        public bool CheckStreamHealth(int maxPeriodWithoutMessage, int receivedSequence = -1)
+        public bool CheckStreamHealth(int maxPeriodWithoutMessage, int receivedSequence)
         {
             if (IsFixtureSetup || IsFixtureDeleted)
             {
                 // Stream has not yet started as fixture is Setup/Ready
                 return true;
             }
+
+            if (!IsStreaming)
+                return false;
 
             var streamStatistics = _resource as IStreamStatistics;
 
@@ -836,7 +753,16 @@ namespace SS.Integration.Adapter
 
             _logger.InfoFormat("{0} has been deleted from the GTP Fixture Factory. Suspending all markets and stopping the stream.", _resource);
 
-            SuspendMarkets(false);
+            try
+            {
+                SuspendMarkets(false);
+                _platformConnector.ProcessFixtureDeletion(fixtureDelta);
+            }
+            catch (Exception e)
+            {
+                _logger.Error(string.Format("An exception occured while trying to process fixture deletion for {0}", _resource), e);
+            }
+            
 
             var status = (MatchStatus)Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus);
             
@@ -851,13 +777,14 @@ namespace SS.Integration.Adapter
             try
             {
                 SuspendAndReprocessSnapshot(true);
-                _platformConnector.ProcessFixtureDeletion(fixtureDelta);
 
                 this.IsFixtureEnded = true;
+                
+                if(_marketsRuleManager != null)
+                    _marketsRuleManager.Clear();
             }
             catch (Exception e)
             {
-                IsErrored = true;
                 _logger.Error(string.Format("An error occured while trying to process match over snapshot {0}", fixtureDelta), e);
             }
         }

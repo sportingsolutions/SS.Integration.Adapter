@@ -13,8 +13,11 @@
 //limitations under the License.
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Newtonsoft.Json;
 using NUnit.Framework;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.MarketRules.Model;
@@ -60,41 +63,6 @@ namespace SS.Integration.Adapter.Tests
 
             connector.Verify(c => c.ProcessSnapshot(It.IsAny<Fixture>(), false), Times.Once());
         }
-
-        /*
-        [Category("Integration")]
-        [Test]
-        public void ShouldReceiveDeltaWithSnapshotProcess()
-        {
-            // We need to review this unit test as it fails on team city
-            // while on a local environment is always succed
-
-            var fixtureDeltaJson = TestHelper.GetRawStreamMessage(epoch:1, sequence:2);
-            var fixtureSnapshot = new Fixture { Id = "y9s1fVzAoko805mzTnnTRU_CQy8", Epoch = 1, MatchStatus = "30", Sequence = 1};
-
-            var resource = new Mock<IResourceFacade>();
-            var connector = new Mock<IAdapterPlugin>();
-            var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IDictionary<string, MarketState>>>();
-            var are = new AutoResetEvent(false);
-
-            marketFilterObjectStore.Setup(m => m.GetObject(It.IsAny<string>())).Returns(() => new Dictionary<string, MarketState>());
-            eventState.Setup(e => e.GetCurrentSequence(It.IsAny<string>(), It.IsAny<string>())).Returns(-1);
-            resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamEvent += null, new StreamEventArgs(fixtureDeltaJson));
-            resource.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);
-            connector.Setup(c => c.ProcessSnapshot(fixtureSnapshot, false));
-            connector.Setup(c => c.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>())).Callback( () => are.Set());
-           
-            var listener = new StreamListener("football", resource.Object, fixtureSnapshot, connector.Object, eventState.Object,marketFilterObjectStore.Object, currentSequence:-1);
-
-            listener.Start();
-            are.WaitOne(10000);
-
-            listener.Stop();
-
-            connector.VerifyAll();
-            resource.VerifyAll(); 
-        }*/
 
         [Category("Adapter")]
         [Test]
@@ -220,7 +188,6 @@ namespace SS.Integration.Adapter.Tests
             resource.Verify(r => r.GetSnapshot(), Times.Once());
             eventState.Verify(es => es.UpdateFixtureState(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(),It.IsAny<MatchStatus>()), Times.Once());
         }
-
 
         [Test]
         [Category("Adapter")]
@@ -452,5 +419,480 @@ namespace SS.Integration.Adapter.Tests
             connector.Verify(c => c.ProcessSnapshot(It.IsAny<Fixture>(), false), Times.Exactly(2));
             resource.Verify(r => r.GetSnapshot(), Times.Exactly(2));
         }
+
+        [Test]
+        [Category("Adapter")]
+        public void ShouldNotStreamOnSetupState()
+        {
+            // here I want to test that if a resource is in
+            // Setup state, the streaming should not start
+
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<IObjectProvider<IMarketStateCollection>> provider = new Mock<IObjectProvider<IMarketStateCollection>>();
+
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Setup);
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+            listener.Start();
+
+            // STEP 3: check that is not streaming
+            listener.IsStreaming.Should().BeFalse();
+
+            // STEP 4: we do the same but with status Ready
+
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Ready);
+
+            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+            listener.IsStreaming.Should().BeFalse();
+        }
+
+        [Test]
+        [Category("Adapter")]
+        public void ShouldStreamOnInRunningState()
+        {
+            // here I want to test that if a resource is in
+            // InRunning state, the streaming should start
+
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<IObjectProvider<IMarketStateCollection>> provider = new Mock<IObjectProvider<IMarketStateCollection>>();
+
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+            listener.Start();
+
+            // STEP 3: check that is streaming
+            listener.IsStreaming.Should().BeTrue();
+
+        }
+
+        [Test]
+        [Category("Adapter")]
+        public void ShouldStartStreamingOnMatchStatusChange()
+        {
+            // here I want to test that when a resource
+            // pass from "InSetup" to "InRunning", the stream
+            // should start
+
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<IObjectProvider<IMarketStateCollection>> provider = new Mock<IObjectProvider<IMarketStateCollection>>();
+
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Setup);
+            resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+            listener.Start();
+
+            // STEP 3: check that is NOT streaming
+            listener.IsStreaming.Should().BeFalse();
+
+            // STEP 4: put the resource object in "InRunningState" and notify the listener
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            listener.UpdateResourceState(resource.Object);
+
+            // STEP 5: check that the streaming is activated
+            listener.IsStreaming.Should().BeTrue();
+
+        }
+
+        [Test]
+        [Category("Adapter")]
+        public void ShouldSuspendOnEarlyDisconnection()
+        {
+            // here I want to test that in the case that the streamlistener
+            // receives an early disconnect event, the fixture is suspend.
+            // Moreover, I want to test that the adapter is able to
+            // recognize this situation by calling CheckHealthStream
+
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<IObjectProvider<IMarketStateCollection>> provider = new Mock<IObjectProvider<IMarketStateCollection>>();
+
+            Fixture fixture = new Fixture {Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString()};
+
+            provider.Setup(x => x.GetObject(It.IsAny<string>())).Returns(new MarketStateCollection());
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+            listener.Start();
+
+            // just to be sure that we are streaming
+            listener.IsStreaming.Should().BeTrue();
+
+            listener.ResourceOnStreamDisconnected(this, EventArgs.Empty);
+
+            // STEP 3: Check the resoults
+            listener.IsStreaming.Should().BeFalse();
+            listener.IsFixtureEnded.Should().BeFalse();
+
+            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Once, "StreamListener did not suspend the fixture");
+            listener.CheckStreamHealth(1, 1).Should().BeFalse();
+        }
+
+        [Test]
+        [Category("Adapter")]
+        public void ShouldNotSuspendFixtureOnProperDisconnection()
+        {
+            // here I want to test that in the case that the streamlistener
+            // receives an a disconnect event due the fact that the fixture
+            // is ended, the stream listener do not generate a suspend request
+            
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<IObjectProvider<IMarketStateCollection>> provider = new Mock<IObjectProvider<IMarketStateCollection>>();
+
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+            Fixture update = new Fixture {
+                Id = "ABC", 
+                Sequence = 2, 
+                MatchStatus = ((int) MatchStatus.MatchOver).ToString(), 
+                Epoch = 2, 
+                LastEpochChangeReason = new [] { (int) EpochChangeReason.MatchStatus }
+            };
+
+            StreamMessage message = new StreamMessage {Content = update};
+
+            provider.Setup(x => x.GetObject(It.IsAny<string>())).Returns(new MarketStateCollection());
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+            listener.Start();
+
+            // just to be sure that we are streaming
+            listener.IsStreaming.Should().BeTrue();
+
+            // send the update that contains the match status change
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+            listener.ResourceOnStreamDisconnected(this, EventArgs.Empty);
+
+            // STEP 3: Check the resoults
+            listener.IsStreaming.Should().BeFalse();
+            listener.IsFixtureEnded.Should().BeTrue();
+            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Once, "StreamListener did not suspend the fixture");
+            listener.CheckStreamHealth(1, 1).Should().BeFalse();
+        }
+
+        [Test]
+        [Category("Adapter")]
+        public void ShouldStartStreamingOnlyOnce()
+        {
+            // here I want to test that I can call
+            // StreamListener.Start() how many times
+            // I want, that only one connection is actually
+            // made to the stream server
+
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<IObjectProvider<IMarketStateCollection>> provider = new Mock<IObjectProvider<IMarketStateCollection>>();
+
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+
+            // STEP 3: raise 100 calls at random (short) delayes to listener.Start()
+            for (int i = 0; i < 100; i++)
+            {
+                Task.Delay(new Random(DateTime.Now.Millisecond).Next(100)).ContinueWith(x => listener.Start());
+            }
+
+            // give a change to the thread to start and finish
+            Thread.Sleep(1000);
+
+            // STEP 4: verify that only one call to resource.StartStreaming() has been made...
+            resource.Verify(x => x.StartStreaming(), Times.Once, "Streaming must start only once!");
+
+            // ... and we are indeed streaming
+            listener.IsStreaming.Should().BeTrue();
+        }
+
+        [Test]
+        [Category("Adapter")]
+        public void ShouldReturnOnAlreadyProcessedSequence()
+        {
+            // here I want to test that, if for some unknown reason,
+            // we receive an update that contains a sequence number
+            // lesser than the last processed sequence, then the update
+            // should be discarded
+
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<IObjectProvider<IMarketStateCollection>> provider = new Mock<IObjectProvider<IMarketStateCollection>>();
+
+            // Please note Sequence = 3
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 3, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+
+            // ...and Sequence = 2
+            Fixture update = new Fixture
+            {
+                Id = "ABC",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.MatchOver).ToString()
+            };
+
+            StreamMessage message = new StreamMessage {Content = update};
+
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never, "Update should be processed");
+        }
+
+        [Test]
+        [Category("Adapter")]
+        public void ShouldGetSnasphotOnInvalidSequence()
+        {
+            // here I want to test that, if for some unknown reasons
+            // I miss an update (I get an update with 
+            // sequence > last processed sequence + 1) then I should
+            // get a snapshot
+
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<IObjectProvider<IMarketStateCollection>> provider = new Mock<IObjectProvider<IMarketStateCollection>>();
+
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+
+            Fixture update = new Fixture
+            {
+                Id = "ABC",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.Paused).ToString(),
+                Epoch = 2,
+                LastEpochChangeReason = new[] { (int)EpochChangeReason.MatchStatus }
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+
+            provider.Setup(x => x.GetObject(It.IsAny<string>())).Returns(new MarketStateCollection());
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            // STEP 4: send the update containing a the epoch change
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+
+            // STEP 5: check that ProcessStreamUpdate is never called!
+            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
+            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Once);
+            connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The streamlistener was supposed to acquire a new snapshot"); 
+        }
+
+        [Test]
+        [Category("Adapter")]
+        public void ShouldGetASnapshotOnInvalidEpoch()
+        {
+            // here I want to test that if, for some reasons,
+            // we get a snapshot with a epoch change, then
+            // a snapshot must be retrieved.
+            //
+            // Pay attention that IsStartTimeChanged is considered
+            // an epoch change for which is not necessary
+            // retrieve a new snapshot
+
+
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<IObjectProvider<IMarketStateCollection>> provider = new Mock<IObjectProvider<IMarketStateCollection>>();
+
+            // Please note Sequence = 1
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+
+            // ...and Sequence = 3
+            Fixture update = new Fixture
+            {
+                Id = "ABC",
+                Sequence = 3,
+                MatchStatus = ((int)MatchStatus.MatchOver).ToString()
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+
+            provider.Setup(x => x.GetObject(It.IsAny<string>())).Returns(new MarketStateCollection());
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            // STEP 4: send the update containing a wrong sequence number
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+
+            // STEP 5: check that ProcessStreamUpdate is never called!
+            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
+            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Once);
+            connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The streamlistener was supposed to acquire a new snapshot"); 
+        }
+
+        [Test]
+        [Category("Adapter")]
+        public void ShouldNOTGetASnapshotOnValidEpoch()
+        {
+            // here I want to test that if, a new snapshot
+            // is not retrieved when there is no epoch change
+
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<IObjectProvider<IMarketStateCollection>> provider = new Mock<IObjectProvider<IMarketStateCollection>>();
+
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+
+            Fixture update = new Fixture
+            {
+                Id = "ABC",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.InRunning).ToString()
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+
+            provider.Setup(x => x.GetObject(It.IsAny<string>())).Returns(new MarketStateCollection());
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            // STEP 4: send the update containing a wrong sequence number
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+
+            // STEP 5: check that ProcessSnapshot is called only once!
+            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once);
+            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Never);
+            connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once);
+            resource.Verify(x => x.GetSnapshot(), Times.Once, "The streamlistener was NOT supposed to acquire a new snapshot");
+        }
+
+        [Test]
+        [Category("Adapter")]
+        public void ShouldStopStreamingIfFixtureIsEnded()
+        {
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<IObjectProvider<IMarketStateCollection>> provider = new Mock<IObjectProvider<IMarketStateCollection>>();
+
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+
+            Fixture update = new Fixture
+            {
+                Id = "ABC",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.MatchOver).ToString(),
+                Epoch = 2, 
+                LastEpochChangeReason = new [] { (int) EpochChangeReason.MatchStatus }
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+
+            provider.Setup(x => x.GetObject(It.IsAny<string>())).Returns(new MarketStateCollection());
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            // STEP 4: send the update containing a wrong sequence number
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+
+            // STEP 5: check that ProcessSnapshot is called only once!
+            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
+            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Never);
+            connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once);
+            resource.Verify(x => x.GetSnapshot(), Times.Once, "The streamlistener was supposed to acquire a new snapshot");
+        }
+
+    
     }
 }
