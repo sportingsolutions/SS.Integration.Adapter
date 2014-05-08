@@ -17,6 +17,7 @@ using System.Linq;
 using FluentAssertions;
 using Moq;
 using SS.Integration.Adapter.MarketRules;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
@@ -30,7 +31,7 @@ namespace SS.Integration.Adapter.Specs
         private IEnumerable<Market> _markets;
         private readonly Fixture _fixture = new Fixture {Id = "TestFixture", MatchStatus = "40"};
         private MarketsRulesManager _marketFilters;
-        private readonly IMarketStateCollection _marketsCache = new MarketStateCollection();
+        private readonly IUpdatableMarketStateCollection _marketsCache = new MarketStateCollection();
 
         
 
@@ -45,9 +46,9 @@ namespace SS.Integration.Adapter.Specs
         {
             _fixture.Markets.Clear();
             _fixture.Markets.AddRange(_markets);
-            var objectProviderMock = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var objectProviderMock = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
             objectProviderMock.Setup(x => x.GetObject(It.IsAny<string>())).Returns(_marketsCache);
-            objectProviderMock.Setup(x => x.SetObject(It.IsAny<string>(), It.IsAny<IMarketStateCollection>()));
+            objectProviderMock.Setup(x => x.SetObject(It.IsAny<string>(), It.IsAny<IUpdatableMarketStateCollection>()));
 
             List<IMarketRule> rules = new List<IMarketRule> { InactiveMarketsFilteringRule.Instance, VoidUnSettledMarket.Instance };
 

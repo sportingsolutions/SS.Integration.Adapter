@@ -17,7 +17,7 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.MarketRules.Interfaces
 {
-    internal interface IUpdatableMarketStateCollection : IMarketStateCollection
+    public interface IUpdatableMarketStateCollection : IMarketStateCollection
     {
         /// <summary>
         /// Allows to update the markets' states with

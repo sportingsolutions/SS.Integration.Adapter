@@ -67,6 +67,11 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
                 return HasMarket(MarketId) ? _States[MarketId] : null;
             }
+            internal set
+            {
+                if (!string.IsNullOrEmpty(MarketId) && value != null)
+                    _States[MarketId] = value as IUpdatableMarketState;
+            }
         }
 
         public IEnumerable<string> Markets
@@ -87,10 +92,10 @@ namespace SS.Integration.Adapter.MarketRules.Model
         {
             foreach (var market in Fixture.Markets)
             {
-                IMarketState mkt_state = null;
+                IUpdatableMarketState mkt_state = null;
                 if (HasMarket(market.Id))
                 {
-                    mkt_state = this[market.Id];
+                    mkt_state = this[market.Id] as IUpdatableMarketState;
                     mkt_state.Update(market, fullSnapshot);
                 }
                 else

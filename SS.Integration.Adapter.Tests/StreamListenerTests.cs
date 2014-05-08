@@ -18,6 +18,7 @@ using FluentAssertions;
 using Moq;
 using NUnit.Framework;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Exceptions;
@@ -42,7 +43,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
 
             resource.Setup(r => r.Sport).Returns("Football");
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
@@ -107,7 +108,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
 
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamEvent += null, new StreamEventArgs(fixtureDeltaJson));
             resource.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);
@@ -137,7 +138,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
 
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamEvent += null, new StreamEventArgs(fixtureDeltaJson));
             resource.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);
@@ -164,7 +165,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
             int matchStatusDelta = 40;
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(epoch: 1, sequence: 2, matchStatus: matchStatusDelta);
             
@@ -195,7 +196,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
             marketFilterObjectStore.Setup(m => m.GetObject(It.IsAny<string>())).Returns(() => new MarketStateCollection());
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(epoch: 1, sequence: 19);
@@ -221,7 +222,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
             marketFilterObjectStore.Setup(m => m.GetObject(It.IsAny<string>())).Returns(() => new MarketStateCollection());
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(epoch:1, sequence:19);
@@ -256,7 +257,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
             marketFilterObjectStore.Setup(m => m.GetObject(It.IsAny<string>())).Returns(() => new MarketStateCollection());
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(epoch: 1, sequence: 19);
@@ -306,7 +307,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
             marketFilterObjectStore.Setup(m => m.GetObject(It.IsAny<string>())).Returns(() => new MarketStateCollection());
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(epoch: 1, sequence: 19);
@@ -359,7 +360,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
             marketFilterObjectStore.Setup(m => m.GetObject(It.IsAny<string>())).Returns(() => new MarketStateCollection());
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(epoch: 1, sequence: 19);
@@ -395,7 +396,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
             marketFilterObjectStore.Setup(m => m.GetObject(It.IsAny<string>())).Returns(() => new MarketStateCollection());
             
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(epoch:3, sequence:2, epochChangeReason:30);   // Start Time has changed
@@ -421,7 +422,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
             marketFilterObjectStore.Setup(m => m.GetObject(It.IsAny<string>())).Returns(() => new MarketStateCollection());
 
             resource.Setup(r => r.GetSnapshot()).Returns(TestHelper.GetSnapshotJson(3, 2, 40, 40));
@@ -451,7 +452,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(epoch:3, sequence:2);
             var fixtureSnapshot = new Fixture { Epoch = 4, MatchStatus = "30" };
@@ -475,7 +476,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(epoch:3, sequence:2, epochChangeReason:10);   // Fixture Deleted
             var fixtureSnapshot = new Fixture { Id = "y9s1fVzAoko805mzTnnTRU_CQy8", Epoch = 2, MatchStatus = "30" };
@@ -498,7 +499,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(epoch:3, sequence:2, matchStatus:50, epochChangeReason:10); // deleted
             var fixtureSnapshot = new Fixture { Id = "y9s1fVzAoko805mzTnnTRU_CQy8", Epoch = 2, MatchStatus = "30"};
@@ -524,7 +525,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
 
             marketFilterObjectStore.Setup(m => m.GetObject(It.IsAny<string>())).Returns(() => new MarketStateCollection());
             
@@ -555,7 +556,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
 
             var snapshot = TestHelper.GetSnapshotJson();
             resource.Setup(r => r.GetSnapshot()).Returns(snapshot);
@@ -584,7 +585,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(epoch:2, sequence:2, epochChangeReason:40, matchStatus:50);  // epoch reason: match status
             
@@ -616,7 +617,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
             
             var snapshot = new Fixture { Id = "y9s1fVzAoko805mzTnnTRU_CQy8", Epoch = 1, MatchStatus = matchStatus };
 
@@ -640,7 +641,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
             string snapshotId = "y9s1fVzAoko805mzTnnTRU_CQy8";
 
             var snapshot = new Fixture { Id = snapshotId, Epoch = 1, MatchStatus = "40" };
@@ -672,7 +673,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IMarketStateCollection>>();
+            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
             marketFilterObjectStore.Setup(m => m.GetObject(It.IsAny<string>())).Returns(() => new MarketStateCollection());
 
             resource.Setup(x => x.Id).Returns("TestFixtureId");

@@ -58,7 +58,7 @@ namespace SS.Integration.Adapter.WindowsService
                     (sport, resource, fixtureSnapshot, connector, eventState,marketFilterObjectProvider, lastSequence) 
                         => new StreamListener(sport, resource, fixtureSnapshot, connector, eventState, marketFilterObjectProvider, lastSequence));
 
-            Bind<Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState,IObjectProvider<IMarketStateCollection>, int, IListener>>().ToConstant(factoryMethod);
+            Bind<Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState, IObjectProvider<IUpdatableMarketStateCollection>, int, IListener>>().ToConstant(factoryMethod);
         }
     }
 }

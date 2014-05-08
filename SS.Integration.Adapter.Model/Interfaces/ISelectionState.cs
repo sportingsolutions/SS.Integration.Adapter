@@ -17,10 +17,11 @@ using System.Collections.Generic;
 namespace SS.Integration.Adapter.Model.Interfaces
 {
     /// <summary>
-    /// An ISelectionState represent the state of a selection.
+    /// An ISelectionState represents the state of a selection.
     /// 
     /// At every snapshot (delta or full) the state of a selection
-    /// is update. This allows the IMarketState to infer properties.
+    /// is updated. This allows an IMarketState object to infer properties
+    /// about a market.
     /// </summary>
     public interface ISelectionState
     {

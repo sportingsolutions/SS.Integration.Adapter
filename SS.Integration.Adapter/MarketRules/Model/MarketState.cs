@@ -174,7 +174,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
             if (NewMarket == null)
                 throw new ArgumentNullException("NewMarket");
 
-            if (NewMarket.Id != Market.Id)
+            if (NewMarket.Id != this.Id)
                 throw new Exception("Cannot compare two markets with different Ids");
 
             if (NewMarket.Name != this.Name)

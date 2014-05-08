@@ -64,7 +64,7 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// a market as it comes from the Connect platform.
         /// 
         /// It is not related in any way to the resulted
-        /// stated of any down-end sytems.
+        /// stated of any down-stream sytems.
         /// </summary>
         bool IsResulted { get; }
 
@@ -94,7 +94,7 @@ namespace SS.Integration.Adapter.Model.Interfaces
         IEnumerable<ISelectionState> Selections { get; }
 
         /// <summary>
-        /// Get the ISelectionState object associated
+        /// Returns the ISelectionState object associated
         /// to the given selection's id.
         /// 
         /// It returns null if the selection's id is

@@ -22,6 +22,9 @@ namespace SS.Integration.Adapter.MarketRules.Interfaces
         /// <summary>
         /// Allows to update the selection's state
         /// with information coming from the Selection object
+        /// 
+        /// If fullSnapshot is true, then the Selection object
+        /// must contain the tag section.
         /// </summary>
         /// <param name="Selection"></param>
         /// <param name="fullSnapshot">True if the Selection object is coming from a full snapshot</param>
