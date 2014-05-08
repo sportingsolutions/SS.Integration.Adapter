@@ -12,7 +12,9 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+
 using System;
+using System.Collections.Generic;
 
 namespace SS.Integration.Adapter.Model.Interfaces
 {
@@ -29,8 +31,11 @@ namespace SS.Integration.Adapter.Model.Interfaces
         void ProcessFixtureDeletion(Fixture fixture);
 
         void UnSuspend(Fixture fixture);
+
         void Suspend(string fixtureId);
         
         void Dispose();
+
+        IEnumerable<IMarketRule> MarketRules { get; }
     }
 }

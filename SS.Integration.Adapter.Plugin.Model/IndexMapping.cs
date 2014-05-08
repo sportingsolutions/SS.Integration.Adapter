@@ -62,10 +62,10 @@ namespace SS.Integration.Adapter.Plugin.Model
             }
         }
 
-        private bool TagEquals(string selectionIndexTag, KeyValuePair<string, object> tag, Selection selection)
+        private bool TagEquals(string selectionIndexTag, KeyValuePair<string, string> tag, Selection selection)
         {
             var output = tag.Key == selectionIndexTag
-                   || (selection.Tags.ContainsKey(tag.Key) && selection.Tags[tag.Key].ToString() == tag.Value.ToString());
+                   || (selection.Tags.ContainsKey(tag.Key) && string.Equals(selection.Tags[tag.Key], tag.Value, StringComparison.OrdinalIgnoreCase));
 
             return output;
         }

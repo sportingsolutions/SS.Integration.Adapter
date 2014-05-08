@@ -39,7 +39,7 @@
       <HintPath>..\packages\log4net.1.2.10\lib\2.0\log4net.dll</HintPath>
     </Reference>
     <Reference Include="Moq">
-      <HintPath>..\packages\Moq.4.0.10827\lib\NET40\Moq.dll</HintPath>
+      <HintPath>..\packages\Moq.4.2.1402.2112\lib\net40\Moq.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.5.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -54,6 +54,7 @@
       <HintPath>..\packages\RestSharp.104.3.3\lib\net4\RestSharp.dll</HintPath>
     </Reference>
     <Reference Include="SportingSolutions.Udapi.Sdk">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\SportingSolutions.Udapi.Sdk.1.0.108.0-Build\lib\net40\SportingSolutions.Udapi.Sdk.dll</HintPath>
     </Reference>
     <Reference Include="System" />
@@ -66,6 +67,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdapterTests.cs" />
+    <Compile Include="DefaultMappingUpdaterTests.cs" />
     <Compile Include="EventStateTests.cs" />
     <Compile Include="MarketsFilterTests.cs" />
     <Compile Include="StreamListenerTests.cs" />
@@ -73,6 +75,7 @@
     <Compile Include="TestHelper.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
@@ -82,9 +85,17 @@
       <Project>{29461692-6de2-47fa-acc4-ecaae9462ae3}</Project>
       <Name>SS.Integration.Adapter.Model</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Adapter.Plugin.Model\SS.Integration.Adapter.Plugin.Model.csproj">
+      <Project>{b622855c-9331-4792-9fbf-339f737db982}</Project>
+      <Name>SS.Integration.Adapter.Plugin.Model</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Adapter\SS.Integration.Adapter.csproj">
       <Project>{1ad0b149-3a7b-4725-abde-9455d953f036}</Project>
       <Name>SS.Integration.Adapter</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Common.ConfigSerializer\SS.Integration.Common.ConfigSerializer.csproj">
+      <Project>{1C527842-E5A0-4E7A-A475-EFE1F8F892A2}</Project>
+      <Name>SS.Integration.Common.ConfigSerializer</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

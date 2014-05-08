@@ -102,7 +102,7 @@ namespace SS.Integration.Adapter.UdapiClient
             }
             catch (Exception)
             {
-                _logger.ErrorFormat("{0} : {1} - Unable to retrieve Snapshot from GTP-UDAPI after multiple attempts. Check the Evenue adapter is running ok.", _featureName, _udapiResource.Name);
+                _logger.ErrorFormat("{0} : {1} - Unable to retrieve Snapshot from GTP-UDAPI after multiple attempts", _featureName, _udapiResource.Name);
                 throw;
             }
         }
@@ -131,7 +131,7 @@ namespace SS.Integration.Adapter.UdapiClient
             }
             catch (Exception)
             {
-                _logger.ErrorFormat("{0} : {1} - Unable to start streaming from GTP-UDAPI after multiple attempts. Check the Evenue adapter is running ok.", _featureName, _udapiResource.Name);
+                _logger.ErrorFormat("{0} : {1} - Unable to start streaming from GTP-UDAPI after multiple attempts", _featureName, _udapiResource.Name);
                 throw;
             }
         }
@@ -144,7 +144,7 @@ namespace SS.Integration.Adapter.UdapiClient
             }
             catch (Exception)
             {
-                _logger.ErrorFormat("{0} : {1} - Unable to pause streaming from GTP-UDAPI after multiple attempts. Check the Evenue adapter is running ok.", _featureName, _udapiResource.Name);
+                _logger.ErrorFormat("{0} : {1} - Unable to pause streaming from GTP-UDAPI after multiple attempts", _featureName, _udapiResource.Name);
                 throw;
             }
         }
@@ -157,7 +157,7 @@ namespace SS.Integration.Adapter.UdapiClient
             }
             catch (Exception)
             {
-                _logger.ErrorFormat("{0} : {1} - Unable to un-pause streaming from GTP-UDAPI after multiple attempts. Check the Evenue adapter is running ok.", _featureName, _udapiResource.Name);
+                _logger.ErrorFormat("{0} : {1} - Unable to un-pause streaming from GTP-UDAPI after multiple attempts", _featureName, _udapiResource.Name);
                 throw;
             }
         }
@@ -174,7 +174,7 @@ namespace SS.Integration.Adapter.UdapiClient
             }
             catch (Exception)
             {
-                _logger.ErrorFormat("{0} : {1} - Unable to stop streaming from GTP-UDAPI after multiple attempts. Check the Evenue adapter is running ok.", _featureName, _udapiResource.Name);
+                _logger.ErrorFormat("{0} : {1} - Unable to stop streaming from GTP-UDAPI after multiple attempts", _featureName, _udapiResource.Name);
                 throw;
             }
         }

@@ -12,10 +12,13 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using System.Collections.Generic;
 
 namespace SS.Integration.Adapter.Plugin.Model
 {
+
+    [Serializable]
     public class Mapping
     {
         public string Sport { get; set; }
