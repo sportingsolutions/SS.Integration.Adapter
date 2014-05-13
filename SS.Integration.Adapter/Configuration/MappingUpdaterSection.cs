@@ -42,7 +42,7 @@ namespace SS.Integration.Adapter.Configuration
                     Type serializerSettingsType =Type.GetType(result.SerializerSettingsClass);
                     if (serializerSettingsType != null)
                     {
-                        IConfigSerializerSettings configSerializerSettings = (IConfigSerializerSettings) Activator.CreateInstance(serializerSettingsType);
+                        IConfigSerializerSettings configSerializerSettings = Activator.CreateInstance(serializerSettingsType) as IConfigSerializerSettings;
                         SetProperties(configSerializerSettings,
                                       doc.Element("mappingUpdater")
                                          .Element(result.SerializerSettingsSection)
