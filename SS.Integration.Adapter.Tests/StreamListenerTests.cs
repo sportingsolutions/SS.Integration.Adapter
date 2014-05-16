@@ -420,12 +420,14 @@ namespace SS.Integration.Adapter.Tests
             resource.Verify(r => r.GetSnapshot(), Times.Exactly(2));
         }
 
+        /// <summary>
+        /// I want to test that if a resource is in
+        /// Setup or Ready state, the streaming should NOT start
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void ShouldNotStreamOnSetupState()
         {
-            // here I want to test that if a resource is in
-            // Setup state, the streaming should not start
 
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
@@ -453,12 +455,14 @@ namespace SS.Integration.Adapter.Tests
             listener.IsStreaming.Should().BeFalse();
         }
 
+        /// <summary>
+        /// I want to test that if a resource is in
+        /// InRunning state, the streaming should start
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void ShouldStreamOnInRunningState()
         {
-            // here I want to test that if a resource is in
-            // InRunning state, the streaming should start
 
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
@@ -480,13 +484,15 @@ namespace SS.Integration.Adapter.Tests
 
         }
 
+        /// <summary>
+        /// I want to test that when a resource
+        /// passes from a "InSetup" to a "InRunning" state,
+        /// the streaming should start
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void ShouldStartStreamingOnMatchStatusChange()
         {
-            // here I want to test that when a resource
-            // pass from "InSetup" to "InRunning", the stream
-            // should start
 
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
@@ -515,14 +521,16 @@ namespace SS.Integration.Adapter.Tests
 
         }
 
+        /// <summary>
+        /// I want to test that in the case that the streamlistener
+        /// receives an early disconnect event, the fixture is suspend.
+        /// Moreover, I want to test that the adapter is able to
+        /// recognize this situation by calling CheckHealthStream
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void ShouldSuspendOnEarlyDisconnection()
         {
-            // here I want to test that in the case that the streamlistener
-            // receives an early disconnect event, the fixture is suspend.
-            // Moreover, I want to test that the adapter is able to
-            // recognize this situation by calling CheckHealthStream
 
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
@@ -556,14 +564,16 @@ namespace SS.Integration.Adapter.Tests
             listener.CheckStreamHealth(1, 1).Should().BeFalse();
         }
 
+        /// <summary>
+        /// I want to test that in the case that the streamlistener
+        /// receives an a disconnect event due the fact that the fixture
+        /// is ended, the stream listener does not generate a suspend request
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void ShouldNotSuspendFixtureOnProperDisconnection()
         {
-            // here I want to test that in the case that the streamlistener
-            // receives an a disconnect event due the fact that the fixture
-            // is ended, the stream listener do not generate a suspend request
-            
+
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
@@ -603,17 +613,23 @@ namespace SS.Integration.Adapter.Tests
             // STEP 3: Check the resoults
             listener.IsStreaming.Should().BeFalse();
             listener.IsFixtureEnded.Should().BeTrue();
+
+            // suspend is called when the stream listener correctly handles the "IsFixtureEnded" case, 
+            // so we need to make sure that is only called once
+
             connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Once, "StreamListener did not suspend the fixture");
             listener.CheckStreamHealth(1, 1).Should().BeFalse();
         }
 
+        /// <summary>
+        /// I want to test that if a disconnect
+        /// event is raise while trying to connect,
+        /// then the streamlistener should NOT be in a streaming state
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void ShouldNotStreamOnFailedConnectingAttempt()
         {
-            // here I want to test that if a disconnect
-            // event is raise while trying to connect,
-            // then the streamlistener is not on a streaming state
 
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
@@ -650,20 +666,23 @@ namespace SS.Integration.Adapter.Tests
 
             // STEP 5: check results
             listener.IsFixtureEnded.Should().BeFalse();
+            listener.IsStreaming.Should().BeFalse();
 
             resource.Verify(x => x.GetSnapshot(), Times.Never);
             listener.CheckStreamHealth(1, 1).Should().BeFalse();
 
         }
 
+        /// <summary>
+        /// I want to test that I can call
+        /// StreamListener.Start() how many times
+        /// I want and only one connection is actually
+        /// made to the stream server
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void ShouldStartStreamingOnlyOnce()
         {
-            // here I want to test that I can call
-            // StreamListener.Start() how many times
-            // I want, that only one connection is actually
-            // made to the stream server
 
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
@@ -695,16 +714,17 @@ namespace SS.Integration.Adapter.Tests
             listener.IsStreaming.Should().BeTrue();
         }
 
+        /// <summary>
+        /// I want to test that when I start
+        /// the StreamListener, if the sequence number
+        /// coming within the resource is the same
+        /// of the last processed snapshot, then
+        /// a new snapshot must not be retrieved
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void ShouldNotGetASnapshotIfNothingHasChanged()
         {
-            // here I want to test that when I start
-            // the StreamListener, if the sequence number
-            // coming within the resource is the same
-            // of the last processed snapshot, then
-            // a new snapshot must not be retrieved
-
 
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
@@ -738,14 +758,16 @@ namespace SS.Integration.Adapter.Tests
             listener.IsStreaming.Should().BeTrue();
         }
 
+        /// <summary>
+        /// I want to test that, if for some unknown reason,
+        /// we receive an update that contains a sequence number
+        /// smaller than the last processed sequence, then the update
+        /// should be discarded
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void ShouldReturnOnAlreadyProcessedSequence()
         {
-            // here I want to test that, if for some unknown reason,
-            // we receive an update that contains a sequence number
-            // lesser than the last processed sequence, then the update
-            // should be discarded
 
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
@@ -783,14 +805,16 @@ namespace SS.Integration.Adapter.Tests
             connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never, "Update should be processed");
         }
 
+        /// <summary>
+        /// I want to test that, if for some unknown reasons
+        /// I miss an update (I get an update with 
+        /// sequence > last processed sequence + 1) then I should
+        /// get a snapshot
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void ShouldGetSnasphotOnInvalidSequence()
         {
-            // here I want to test that, if for some unknown reasons
-            // I miss an update (I get an update with 
-            // sequence > last processed sequence + 1) then I should
-            // get a snapshot
 
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
@@ -835,18 +859,19 @@ namespace SS.Integration.Adapter.Tests
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The streamlistener was supposed to acquire a new snapshot"); 
         }
 
+        /// <summary>
+        /// I want to test that if, for some reasons,
+        /// we get a snapshot with a epoch change, then
+        /// a snapshot must be retrieved.
+        ///
+        /// Pay attention that IsStartTimeChanged is considered
+        /// an epoch change for which is not necessary
+        /// retrieve a new snapshot
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void ShouldGetASnapshotOnInvalidEpoch()
         {
-            // here I want to test that if, for some reasons,
-            // we get a snapshot with a epoch change, then
-            // a snapshot must be retrieved.
-            //
-            // Pay attention that IsStartTimeChanged is considered
-            // an epoch change for which is not necessary
-            // retrieve a new snapshot
-
 
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
@@ -891,12 +916,14 @@ namespace SS.Integration.Adapter.Tests
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The streamlistener was supposed to acquire a new snapshot"); 
         }
 
+        /// <summary>
+        /// I want to test that no new snapshots
+        /// are retrieved when there is no epoch change
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void ShouldNOTGetASnapshotOnValidEpoch()
         {
-            // here I want to test that if, a new snapshot
-            // is not retrieved when there is no epoch change
 
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
@@ -985,14 +1012,16 @@ namespace SS.Integration.Adapter.Tests
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The StreamListener was supposed to acquire a new snapshot");
         }
 
+        /// <summary>
+        /// I want to test that if an error is
+        /// raised while processing a snasphot, then
+        /// the StreamListener immediately takes a new 
+        /// snapshot for trying to solve the problem.
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void ShouldTakeASnapshotOnError()
         {
-            // here I want to test that if an error is
-            // raise while processing a snasphot, then
-            // the StreamListener immediately take a new 
-            // snapshot to trying to solve the problem.
 
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
@@ -1020,15 +1049,16 @@ namespace SS.Integration.Adapter.Tests
             connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Exactly(2));
         }
 
+        /// <summary>
+        /// I want to test that if the StreamListener
+        /// is in an error state and an update arrives,
+        /// then, instead of processing the update
+        /// a snapshot is retrieved and processed 
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void ShouldTakeASnapshotOnUpdateIfItIsInAnErrorState()
         {
-            // here I want to test that if the StreamListener
-            // is in an error state and an update arrives,
-            // then, instead of processing the update
-            // a snapshot is retrieved and processed 
-
 
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();

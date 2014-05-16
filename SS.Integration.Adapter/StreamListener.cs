@@ -131,7 +131,7 @@ namespace SS.Integration.Adapter
         /// <summary>
         /// Returns true when the fixture is deleted.
         /// In this case, the listener has to be stopped
-        /// as it has finished its job.
+        /// as its job is finished
         /// 
         /// Thread-safe property
         /// </summary>
@@ -239,6 +239,15 @@ namespace SS.Integration.Adapter
             }
         }
 
+        /// <summary>
+        /// Allows to inform this object that a resource
+        /// may have changed its status.
+        /// 
+        /// If the resource is now in a state were
+        /// streaming is allowed, this object will 
+        /// try to connect to the streaming server.
+        /// </summary>
+        /// <param name="resource"></param>
         public void UpdateResourceState(IResourceFacade resource)
         {
             IsFixtureSetup = (resource.MatchStatus == MatchStatus.Setup ||
@@ -247,6 +256,14 @@ namespace SS.Integration.Adapter
             StartStreaming();
         }
 
+        /// <summary>
+        /// Allows to send a suspension requests for all
+        /// the markets associated to the fixture.
+        ///        
+        /// </summary>
+        /// <param name="fixtureLevelOnly">If true, the object will send
+        /// a fixture suspend request instead of a set of market suspend requests
+        /// </param>
         public void SuspendMarkets(bool fixtureLevelOnly = true)
         {
             _logger.InfoFormat("Suspending Markets for {0} with fixtureLevelOnly={1}", _resource, fixtureLevelOnly);
@@ -333,7 +350,8 @@ namespace SS.Integration.Adapter
                 // The current UDAPI SDK, before consuming events from the queue raises
                 // a "connected" event. We are sure that no updates are pushed
                 // before our "connected" event handler terminates because 
-                // updates are pushed using the same thread from the SDK.
+                // updates are pushed using the same thread the SDK uses to 
+                // push updates.
                 //
                 // If the SDK's threading model changes, this 
                 // class must be revisited
