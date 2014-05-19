@@ -18,7 +18,6 @@ using System.Linq;
 using log4net;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Common.Extensions;
 
 namespace SS.Integration.Adapter.MarketRules
 {
@@ -40,7 +39,7 @@ namespace SS.Integration.Adapter.MarketRules
 
         public void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState, IMarketRuleProcessingContext Context)
         {
-            if (!Fixture.IsMatchOver)
+            if (!Fixture.IsMatchOver || OldState == null)
                 return;
 
             var markets = Fixture.Markets.ToDictionary(m => m.Id);

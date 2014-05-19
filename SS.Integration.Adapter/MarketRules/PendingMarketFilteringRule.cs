@@ -49,6 +49,8 @@ namespace SS.Integration.Adapter.MarketRules
 
         public void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState, IMarketRuleProcessingContext Context)
         {
+            List<Market> toremove = new List<Market>();
+
             foreach (var mkt in Fixture.Markets)
             {
 
@@ -59,7 +61,9 @@ namespace SS.Integration.Adapter.MarketRules
                 }
 
                 // get the value from the old state
-                var mkt_state = OldState[mkt.Id];
+                IMarketState mkt_state = null;
+                if (OldState != null)
+                    mkt_state = OldState[mkt.Id];
 
                 // here we are trying to filter market that passed from 
                 // a pending state to an active state for the first time.
@@ -67,7 +71,18 @@ namespace SS.Integration.Adapter.MarketRules
                 {
                     GetTags(mkt, mkt_state);
                 }
+                else if (mkt.IsPending)
+                {
+                    // otherwise, if it is in a pending state, then we mark it as removable.
+                    // This happens if AlwaysExcludePendingMarkets is true, or, if the markets
+                    // has never been active before
+
+                    toremove.Add(mkt);
+                }
             }
+
+            foreach (var mkt in toremove)
+                Fixture.Markets.Remove(mkt);
 
         }
 

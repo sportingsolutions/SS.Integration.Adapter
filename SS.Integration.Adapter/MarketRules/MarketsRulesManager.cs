@@ -46,31 +46,21 @@ namespace SS.Integration.Adapter.MarketRules
 
             _StateProvider = StateProvider;
 
-            var state = _StateProvider.GetObject(_FixtureId) ?? new MarketStateCollection();
-            state.Update(fixture, true);
-            _StateProvider.SetObject(_FixtureId, state);
-
             _logger.DebugFormat("Market filters initiated successfully for {0}", fixture);
         }
 
         public void CommitChanges()
         {
-            lock (this)
-            {
-                if (_CurrentTransaction == null)
-                    return;
+            if (_CurrentTransaction == null)
+                return;
 
-                _StateProvider.SetObject(_FixtureId, _CurrentTransaction);
-                _CurrentTransaction = null;
-            }
+            _StateProvider.SetObject(_FixtureId, _CurrentTransaction);
+            _CurrentTransaction = null;
         }
 
         public void RollbackChanges()
         {
-            lock (this)
-            {
-                _CurrentTransaction = null;
-            }
+            _CurrentTransaction = null;
         }
 
         private IMarketStateCollection BeginTransaction(IMarketStateCollection OldState, Fixture Fixture)
@@ -81,11 +71,8 @@ namespace SS.Integration.Adapter.MarketRules
             // the snapshot
             var clone = new MarketStateCollection(OldState);
             clone.Update(Fixture, Fixture.Tags != null && Fixture.Tags.Any());
-               
-            lock (this)
-            {
-                _CurrentTransaction = clone;
-            }
+
+            _CurrentTransaction = clone;
 
             return clone;
         }
@@ -133,11 +120,13 @@ namespace SS.Integration.Adapter.MarketRules
 
         public Fixture GenerateAllMarketsSuspenssion()
         {
-            var marketStates = _StateProvider.GetObject(_FixtureId);
             var fixture = new Fixture { Id = _FixtureId, MatchStatus = ((int)MatchStatus.Ready).ToString() };
 
-            foreach(var mkt_id in marketStates.Markets)
-                fixture.Markets.Add(CreateSuspendedMarket(marketStates[mkt_id]));
+            if (_CurrentTransaction == null)
+                return fixture;
+
+            foreach (var mkt_id in _CurrentTransaction.Markets)
+                fixture.Markets.Add(CreateSuspendedMarket(_CurrentTransaction[mkt_id]));
 
             return fixture;
         }

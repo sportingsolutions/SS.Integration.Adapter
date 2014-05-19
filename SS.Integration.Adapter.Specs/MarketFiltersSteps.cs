@@ -17,7 +17,6 @@ using System.Linq;
 using FluentAssertions;
 using Moq;
 using SS.Integration.Adapter.MarketRules;
-using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 using TechTalk.SpecFlow;
@@ -28,9 +27,9 @@ namespace SS.Integration.Adapter.Specs
     public class MarketFiltersSteps
     {
         private IEnumerable<Market> _markets;
-        private readonly Fixture _fixture = new Fixture {Id = "TestFixture", MatchStatus = "40"};
+        private readonly Fixture _fixture = new Fixture { Id = "TestFixture", MatchStatus = "40", Tags = { { "Sport", "Football" } } };
         private MarketsRulesManager _marketFilters;
-        private readonly IMarketStateCollection _marketsCache = new MarketStateCollection();
+        private IMarketStateCollection _marketsCache;
 
         
 
@@ -43,11 +42,13 @@ namespace SS.Integration.Adapter.Specs
         [When(@"Market filters are initiated")]
         public void WhenMarketFiltersAreInitiated()
         {
+            _marketsCache = null;
             _fixture.Markets.Clear();
             _fixture.Markets.AddRange(_markets);
             var objectProviderMock = new Mock<IObjectProvider<IMarketStateCollection>>();
-            objectProviderMock.Setup(x => x.GetObject(It.IsAny<string>())).Returns(_marketsCache);
-            objectProviderMock.Setup(x => x.SetObject(It.IsAny<string>(), It.IsAny<IMarketStateCollection>()));
+            objectProviderMock.Setup(x => x.GetObject(It.IsAny<string>())).Returns(() => _marketsCache);
+            objectProviderMock.Setup(x => x.SetObject(It.IsAny<string>(), It.IsAny<IMarketStateCollection>()))
+                .Callback<string, IMarketStateCollection>((s, newState) => _marketsCache = newState);
 
             List<IMarketRule> rules = new List<IMarketRule> { InactiveMarketsFilteringRule.Instance, VoidUnSettledMarket.Instance };
 
@@ -76,9 +77,7 @@ namespace SS.Integration.Adapter.Specs
             market.Selections.AddRange(table.Rows.Select(r=>  Helper.GetObjectFromTableRow<Selection>(r)));
 
             _fixture.Markets.Clear();
-            _fixture.Markets.Add(market);
-
-            _marketFilters.ApplyRules(_fixture);
+            _fixture.Markets.Add(market);            
         }
 
         [When(@"Rollback change")]
@@ -96,7 +95,7 @@ namespace SS.Integration.Adapter.Specs
         [When(@"Request voiding")]
         public void WhenRequestVoiding()
         {
-           _marketFilters.ApplyRules(_fixture);
+            _marketFilters.ApplyRules(_fixture);           
         }
 
         [Then(@"Market Voided=(.*)")]

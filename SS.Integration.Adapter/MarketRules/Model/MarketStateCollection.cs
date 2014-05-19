@@ -32,9 +32,12 @@ namespace SS.Integration.Adapter.MarketRules.Model
         public MarketStateCollection(IMarketStateCollection collection) 
             : this()
         {
-            foreach (var mkt_id in collection.Markets)
+            if (collection != null)
             {
-                this[mkt_id] = collection[mkt_id].Clone();
+                foreach (var mkt_id in collection.Markets)
+                {
+                    this[mkt_id] = collection[mkt_id].Clone();
+                }
             }
         }
 

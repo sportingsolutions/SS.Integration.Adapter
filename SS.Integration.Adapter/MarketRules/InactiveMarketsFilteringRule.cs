@@ -47,7 +47,7 @@ namespace SS.Integration.Adapter.MarketRules
             _Logger.DebugFormat("Filtering inactive markets for {0}", Fixture);
 
 
-            var inactiveMarkets = Fixture.Markets.Where(m => !m.IsActive && OldState.HasMarket(m.Id) && !OldState[m.Id].IsActive);
+            var inactiveMarkets = Fixture.Markets.Where(m => !m.IsActive && OldState != null && OldState.HasMarket(m.Id) && !OldState[m.Id].IsActive);
 
             foreach (var market in inactiveMarkets.ToList())
             {
