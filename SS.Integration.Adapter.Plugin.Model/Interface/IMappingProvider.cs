@@ -24,7 +24,7 @@ namespace SS.Integration.Adapter.Plugin.Model.Interface
         void IncrementIndex(string marketId);
         void UpdateHandicapMarkets(Fixture fixture, Mapping mapping);
         void AddMappingsForNewMarkets(Fixture snapshot, Mapping mapping);
-
+        void RefreshMappings(Fixture snapshot, string[] marketIds, Mapping mapping);
         bool IsHandicapLineShiftedUp(Fixture fixture);
         string HandicapLineIndicatorMarketId { get; }
     }
