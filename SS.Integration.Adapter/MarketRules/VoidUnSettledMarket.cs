@@ -38,12 +38,12 @@ namespace SS.Integration.Adapter.MarketRules
 
         public string Name { get { return NAME; } }
 
-        public void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState, out IMarketRuleResultIntent Result)
+        public IMarketRuleResultIntent Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState)
         {
-            Result = new MarketRuleResultIntent();
+            var result = new MarketRuleResultIntent();
 
             if (!Fixture.IsMatchOver)
-                return;
+                return result;
 
             _Logger.DebugFormat("Applying market rule={0} for {1}", Name, Fixture);
 
@@ -73,7 +73,7 @@ namespace SS.Integration.Adapter.MarketRules
                 {
                     _Logger.DebugFormat("market rule={0} => marketId={1} of {2} is marked to be voided", Name, mkt_state.Id, Fixture);
 
-                    ((MarketRuleResultIntent)Result).AddMarket(CreateSettledMarket(mkt_state));
+                    result.AddMarket(CreateSettledMarket(mkt_state));
                 }
                 else
                 {
@@ -81,10 +81,12 @@ namespace SS.Integration.Adapter.MarketRules
                         Name, market.Id, Fixture);
 
                     Action<Market> action = x => x.Selections.ForEach(s => s.Status = SelectionStatus.Void);
-                    ((MarketRuleResultIntent)Result).EditMarket(market, action);
+                    result.EditMarket(market, action);
                 }
 
             }
+
+            return result;
         }
 
         private static Market CreateSettledMarket(IMarketState MarketState)

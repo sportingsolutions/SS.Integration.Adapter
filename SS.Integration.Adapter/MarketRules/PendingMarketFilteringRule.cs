@@ -14,6 +14,7 @@
 
 
 using System.Collections.Generic;
+using log4net;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 
@@ -22,13 +23,15 @@ namespace SS.Integration.Adapter.MarketRules
     public class PendingMarketFilteringRule : IMarketRule
     {
 
-        private const string NAME = "PendingMarket_Filtering";
+        private const string NAME = "Pending_Markets";
+        private static readonly ILog _Logger = LogManager.GetLogger(typeof(PendingMarketFilteringRule));
         private readonly HashSet<string> _ExcludedMarketType;
         
 
         public PendingMarketFilteringRule()
         {
             _ExcludedMarketType = new HashSet<string>();
+            AlwaysExcludePendingMarkets = false;
         }
 
         public string Name
@@ -36,6 +39,11 @@ namespace SS.Integration.Adapter.MarketRules
             get { return NAME; }
         }
 
+        /// <summary>
+        /// Allows to specify a market type that will be 
+        /// excluded from the checks performed on this market rule
+        /// </summary>
+        /// <param name="type"></param>
         public void ExcludeMarketType(string type)
         {
             _ExcludedMarketType.Add(type);
@@ -47,29 +55,67 @@ namespace SS.Integration.Adapter.MarketRules
                 ExcludeMarketType(type);
         }
 
-        public void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState, out IMarketRuleResultIntent Result)
+        /// <summary>
+        /// By default, this class filters out markets
+        /// that are in a pending state and they have
+        /// never been on active state.
+        /// 
+        /// By settting to true this property, the class
+        /// will filter out all the pending markets, 
+        /// indipendently wheter they have been active
+        /// or not.
+        /// </summary>
+        public bool AlwaysExcludePendingMarkets
         {
-            Result = new MarketRuleResultIntent();
+            get;
+            set;
+        }
+
+        public IMarketRuleResultIntent Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState)
+        {
+            _Logger.DebugFormat("Applying market rule={0} for {1} - AlwaysExcludePendingMarkets={2}", Name, Fixture, AlwaysExcludePendingMarkets);
+
+            var result = new MarketRuleResultIntent();
 
             foreach (var mkt in Fixture.Markets)
             {
 
                 if (_ExcludedMarketType.Contains(mkt.Type))
                 {
-                    ((MarketRuleResultIntent)Result).MarkAsUnRemovable(mkt);
+                    _Logger.InfoFormat("market rule={0} => {1} of {2} is marked as un-removable due its type={3}", 
+                        Name, mkt, Fixture, mkt.Type);
+
+                    result.MarkAsUnRemovable(mkt);
                     continue;
                 }
 
                 // get the value from the old state
                 var mkt_state = OldState[mkt.Id];
 
-                // here we are trying to filter market that passed from 
-                // a pending state to an active state for the first time.
+                // if a market is now active (for the first time), then we add all the tags
+                // that we have collected and let the markets goes through the filter
                 if (mkt.IsActive && (mkt_state != null && mkt_state.IsPending && !mkt_state.HasBeenActive))
                 {
                     GetTags(mkt, mkt_state);
                 }
+                else if(mkt.IsPending)
+                {
+                    // otherwise, if it is in a pending state, then we mark it as removable.
+                    // This happens if AlwaysExcludePendingMarkets is true, or, if the markets
+                    // has never been active before
+
+                    if (AlwaysExcludePendingMarkets || !mkt_state.HasBeenActive)
+                    {
+                        _Logger.InfoFormat("market rule={0} => {1} of {2} is marked as removable",
+                            Name, mkt, Fixture);
+
+                        result.MarkAsRemovable(mkt);
+                    }
+                    
+                }
             }
+
+            return result;
 
         }
 

@@ -43,7 +43,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
             ParallelOptions options = new ParallelOptions {MaxDegreeOfParallelism = Environment.ProcessorCount};
 
-            // fill the nodes, as they are already created, there is no race-condition here
+            // fill the nodes and as they are already created, there is no race-condition here
             Parallel.ForEach(collection.Markets, options, x =>
                 {
                     _States[x] = ((IUpdatableMarketState)collection[x]).Clone();

@@ -96,29 +96,73 @@ namespace SS.Integration.Adapter.MarketRules
 
             if (Fixture.Id != _FixtureId)
             {
-                throw new ArgumentException("MarketsRulesManager has been created for fixtureId=" + _FixtureId + 
+                throw new ArgumentException("MarketsRulesManager has been created for fixtureId=" + _FixtureId +
                     " You cannot pass in fixtureId=" + Fixture.Id);
             }
 
             var oldstate = _StateProvider.GetObject(Fixture.Id);
             var newstate = BeginTransaction(oldstate, Fixture);
 
-            ParallelOptions options = new ParallelOptions {MaxDegreeOfParallelism = Environment.ProcessorCount};
+            ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
 
             // we create a temp dictionary so we can apply the rules in parallel without accessing (writing to) any 
             // shared variables
-            Dictionary<IMarketRule, IMarketRuleResultIntent> tmp = new Dictionary<IMarketRule,IMarketRuleResultIntent>();
-            foreach(var rule in _Rules)
+            Dictionary<IMarketRule, IMarketRuleResultIntent> tmp = new Dictionary<IMarketRule, IMarketRuleResultIntent>();
+            foreach (var rule in _Rules)
                 tmp[rule] = null;
 
             Parallel.ForEach(tmp.Keys, options, rule =>
                 {
                     _logger.DebugFormat("Filtering markets with rule={0}", rule.Name);
-                    var result = tmp[rule];
-                    rule.Apply(Fixture, oldstate, newstate, out result);
+                    tmp[rule] = rule.Apply(Fixture, oldstate, newstate);
                     _logger.DebugFormat("Filtering market with rule={0} completed", rule.Name);
                 }
             );
+
+
+            MergeIntents(tmp);
+        }
+
+        private static void MergeIntents(Dictionary<IMarketRule, IMarketRuleResultIntent> intents)
+        {
+            Dictionary<Market, bool> toremove = new Dictionary<Market, bool>();
+            List<Market> toadd = new List<Market>();
+            Dictionary<Market, Action<Market>> toedit = new Dictionary<Market, Action<Market>>();
+
+            foreach (var rule in intents.Keys)
+            {
+                var intent = intents[rule];
+
+                foreach (var mkt in intent.MarkedAsRemovable)
+                {
+                    if (!toremove.ContainsKey(mkt))
+                        toremove.Add(mkt, true);
+                }
+
+                foreach (var mkt in intent.MarkedAsUnRemovable)
+                {
+                    if (toremove.ContainsKey(mkt))
+                        toremove[mkt] = false;
+                    else
+                        toremove.Add(mkt, false);
+                }
+
+                foreach (var mkt in intent.Edited)
+                {
+                    if (!toedit.ContainsKey(mkt))
+                        toedit.Add(mkt, intent.GetEditingAction(mkt));
+                }
+
+                foreach (var mkt in intent.MarkedAsUnEditable)
+                {
+                    if (toedit.ContainsKey(mkt))
+                        toedit[mkt] = null;
+                    else
+                        toedit.Add(mkt, null);
+                }
+
+                toadd.AddRange(intent.Added);
+            }
         }
 
         private static Market CreateSuspendedMarket(IMarketState marketState)

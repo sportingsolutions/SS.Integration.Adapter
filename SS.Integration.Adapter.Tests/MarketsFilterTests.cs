@@ -739,7 +739,6 @@ namespace SS.Integration.Adapter.Tests
             state.IsResulted.Should().BeFalse();
             state.IsSuspended.Should().BeTrue();   // The market must be suspended
 
-            selection2
         }
     }
 }
