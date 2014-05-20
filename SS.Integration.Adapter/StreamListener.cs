@@ -762,7 +762,6 @@ namespace SS.Integration.Adapter
                 };
 
                 rules.AddRange(_platformConnector.MarketRules);
-                rules.Reverse();
 
                 _marketsRuleManager = new MarketsRulesManager(fixture, _stateProvider, rules);
             }

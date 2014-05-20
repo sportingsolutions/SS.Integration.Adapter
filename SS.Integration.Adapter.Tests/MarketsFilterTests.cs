@@ -12,7 +12,6 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
@@ -20,7 +19,6 @@ using Moq;
 using NUnit.Framework;
 using SS.Integration.Adapter.MarketRules;
 using SS.Integration.Adapter.MarketRules.Interfaces;
-using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
@@ -39,38 +37,31 @@ namespace SS.Integration.Adapter.Tests
         private Mock<Market> _market3;
 
         private IObjectProvider<IUpdatableMarketStateCollection> _objectProvider;
-        private IUpdatableMarketStateCollection _marketStorage = new MarketStateCollection();
-            
+
+        private IUpdatableMarketStateCollection _marketStorage;
             
         [SetUp]
         public void SetUp()
         {
             SetUpSnapshotAndMarkets();
 
+            _marketStorage = null;
+
             var objectProviderMock = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
 
-            var returnDictionary = new Func<IUpdatableMarketStateCollection>(() => _marketStorage);
-            objectProviderMock.Setup(x => x.GetObject(It.IsAny<string>())).Returns(returnDictionary);
-            
             // if there's a better way of assigning parameter let me know
             objectProviderMock.Setup(x => x.SetObject(It.IsAny<string>(), It.IsAny<IUpdatableMarketStateCollection>()))
                               .Callback<string, IUpdatableMarketStateCollection>((s, newState) => _marketStorage = newState);
 
-            _objectProvider = objectProviderMock.Object;
-        }
+            objectProviderMock.Setup(x => x.GetObject(It.IsAny<string>())).Returns(() => _marketStorage);
 
-        [Test]
-        public void TestMockSetup()
-        {
-            ((MarketStateCollection)_marketStorage)["123"] = new MarketState ("123");
-            _objectProvider.SetObject("Test999",_marketStorage);
-            var test = _objectProvider.GetObject("Test999");
-            test.HasMarket("123").Should().BeTrue();
+            _objectProvider = objectProviderMock.Object;
         }
 
         private void SetUpSnapshotAndMarkets(MatchStatus status = MatchStatus.InRunning)
         {
             _snapshot = new Fixture {Id = "123", MatchStatus = ((int) status).ToString()};
+            _snapshot.Tags.Add("Sport", "TestFootball");
             _market1 = new Mock<Market>();
             _market2 = new Mock<Market>();
             _market3 = new Mock<Market>();
@@ -105,12 +96,15 @@ namespace SS.Integration.Adapter.Tests
         {
             // 1) Filter is created with initial snapshot
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
-            var filteredMarkets = new MarketsRulesManager(_snapshot,_objectProvider, rules);
+            var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
 
-            _snapshot.MatchStatus = "40";
+            filteredMarkets.ApplyRules(_snapshot);
+            filteredMarkets.CommitChanges();
+
 
             // 2) Markets are already created and first update arrives
             filteredMarkets.ApplyRules(_snapshot);
+            filteredMarkets.CommitChanges();
 
             _snapshot.Markets.Should().Contain(_market1.Object);
             _snapshot.Markets.Should().NotContain(_market2.Object);
@@ -122,7 +116,7 @@ namespace SS.Integration.Adapter.Tests
         {
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var filteredMarkets = new MarketsRulesManager(_snapshot,_objectProvider, rules);
+            var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
 
 
             // 2) Markets are already created and first update arrives
@@ -130,7 +124,7 @@ namespace SS.Integration.Adapter.Tests
             filteredMarkets.CommitChanges();
 
             _snapshot.Markets.Should().Contain(_market1.Object);
-            _snapshot.Markets.Should().NotContain(_market2.Object);  // not sent as market2 is still inactive
+            _snapshot.Markets.Should().Contain(_market2.Object);  // not sent as market2 is still inactive
             _snapshot.Markets.Should().Contain(_market3.Object);
 
             // 3) New update arrives but market1 is inactive this time
@@ -140,20 +134,20 @@ namespace SS.Integration.Adapter.Tests
             filteredMarkets.ApplyRules(_snapshot);
             filteredMarkets.CommitChanges();
 
-            _snapshot.Markets.Should().Contain(m=> AreIdsEqual(m,_market1));     // market1 will update with its new status of pending
-            _snapshot.Markets.Should().NotContain(m=> AreIdsEqual(m,_market2));  // market2 is still inactive
-            _snapshot.Markets.Should().Contain(m=> AreIdsEqual(m,_market3));     // no changes for active market3
+            _snapshot.Markets.Should().Contain(m => AreIdsEqual(m, _market1));     // market1 will update with its new status of pending
+            _snapshot.Markets.Should().NotContain(m => AreIdsEqual(m, _market2));  // market2 is still inactive
+            _snapshot.Markets.Should().Contain(m => AreIdsEqual(m, _market3));     // no changes for active market3
 
             // 4) New update arrives with no changes (market1 is still inactive)
-            SetUpSnapshotAndMarkets(); 
+            SetUpSnapshotAndMarkets();
             _market1.Setup(s => s.Selections).Returns(GetSelections(false, false));
 
             filteredMarkets.ApplyRules(_snapshot);
             filteredMarkets.CommitChanges();
 
-            _snapshot.Markets.Should().NotContain(m=> AreIdsEqual(m,_market1));  // market1 will not update as it was inactive before and still inactive
-            _snapshot.Markets.Should().NotContain(m=> AreIdsEqual(m,_market2));  // no changes for inactive market2
-            _snapshot.Markets.Should().Contain(m=> AreIdsEqual(m,_market3));     // no changes for active market3
+            _snapshot.Markets.Should().NotContain(m => AreIdsEqual(m, _market1));  // market1 will not update as it was inactive before and still inactive
+            _snapshot.Markets.Should().NotContain(m => AreIdsEqual(m, _market2));  // no changes for inactive market2
+            _snapshot.Markets.Should().Contain(m => AreIdsEqual(m, _market3));     // no changes for active market3
         }
 
         private bool AreIdsEqual(Market market, Mock<Market> mockMarket)
@@ -227,15 +221,21 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void AutoVoidForUnsettledMarkets()
         {
+
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
             var marketsFilter = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+
+            marketsFilter.ApplyRules(_snapshot);
+
+            marketsFilter.CommitChanges();
 
             _snapshot.MatchStatus = "50";
             _snapshot.Markets.RemoveAll(m => m.Id == _market2.Object.Id);
 
             _market1.Setup(x => x.Selections).Returns(GetSettledSelections());
             _market3.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Void, false));
+
 
             marketsFilter.ApplyRules(_snapshot);
 
@@ -279,6 +279,9 @@ namespace SS.Integration.Adapter.Tests
             // 1) Filter is created with initial snapshot
             var marketsFilter = new MarketsRulesManager(_snapshot, _objectProvider, rules);
 
+            marketsFilter.ApplyRules(_snapshot);
+            marketsFilter.CommitChanges();
+
             _snapshot.MatchStatus = "50";
             _market1.Setup(x => x.Selections).Returns(GetSettledSelections());
             
@@ -315,7 +318,7 @@ namespace SS.Integration.Adapter.Tests
             marketsFilter.CommitChanges();
 
             _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeTrue();
-            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeFalse();
+            _snapshot.Markets.Exists(m => m.Id == _market2.Object.Id).Should().BeTrue();
             _snapshot.Markets.Exists(m => m.Id == _market3.Object.Id).Should().BeTrue();
 
 
@@ -381,7 +384,7 @@ namespace SS.Integration.Adapter.Tests
             List<IMarketRule> rules = new List<IMarketRule> { 
                 VoidUnSettledMarket.Instance, 
                 InactiveMarketsFilteringRule.Instance,
-                new PendingMarketFilteringRule()
+                new PendingMarketFilteringRule() { AlwaysExcludePendingMarkets = true}
             };
 
 
@@ -411,7 +414,7 @@ namespace SS.Integration.Adapter.Tests
 
             _market1.Object.AddOrUpdateTagValue("type", "do_not_touch");
 
-            var rule = new PendingMarketFilteringRule();
+            var rule = new PendingMarketFilteringRule { AlwaysExcludePendingMarkets = true };
             rule.ExcludeMarketType("do_not_touch");
 
             List<IMarketRule> rules = new List<IMarketRule> { 
@@ -447,7 +450,7 @@ namespace SS.Integration.Adapter.Tests
             _market1.Object.AddOrUpdateTagValue("type", "do_not_touch");
             _market1.Object.AddOrUpdateTagValue("extra_tag", "just_to_check_that_tags_are_correctly_passed");
 
-            var rule = new PendingMarketFilteringRule();
+            var rule = new PendingMarketFilteringRule { AlwaysExcludePendingMarkets = true };
             rule.ExcludeMarketType("do_not_touch");
 
             List<IMarketRule> rules = new List<IMarketRule> { 
@@ -496,7 +499,7 @@ namespace SS.Integration.Adapter.Tests
             List<IMarketRule> rules = new List<IMarketRule> { 
                 VoidUnSettledMarket.Instance, 
                 InactiveMarketsFilteringRule.Instance,
-                new PendingMarketFilteringRule()
+                new PendingMarketFilteringRule {AlwaysExcludePendingMarkets = true}
             };
 
   
@@ -600,145 +603,6 @@ namespace SS.Integration.Adapter.Tests
         private List<Selection> GetSelections(bool isActive, bool isSuspended)
         {
             return GetSelections(isActive ? SelectionStatus.Active : SelectionStatus.Pending, isSuspended);
-        }
-
-
-        [Test]
-        [Category("MarketFiltering")]
-        public void ShouldCreateValidMarketStateCollection()
-        {
-            // here I want to test that given a fixture
-            // a MarketStateCollection is correctly created
-
-            // STEP 1: prepare data
-            Fixture fixture = new Fixture {Id = "ABC"};
-
-            Market market1 = new Market {Id = "Market1"};
-            market1.AddOrUpdateTagValue("type", "MarketTypeA");
-            market1.AddOrUpdateTagValue("name", "Market1");
-            market1.AddOrUpdateTagValue("tagA-1", "A-1");
-            market1.AddOrUpdateTagValue("tagA-2", "A-2");
-            market1.AddOrUpdateTagValue("tagA-3", "A-3");
-
-            Selection selection1 = new Selection
-            {
-                Id = "Seln1",
-                Tradable = true,
-                Status = SelectionStatus.Active,
-                Price = 200
-            };
-            selection1.AddOrUpdateTagValue("name", "Seln1");
-            selection1.AddOrUpdateTagValue("tag-S-A-1", "S-A-1");
-            selection1.AddOrUpdateTagValue("tag-S-A-2", "S-A-2");
-            selection1.AddOrUpdateTagValue("tag-S-A-3", "S-A-3");
-            
-            market1.Selections.Add(selection1);
-            fixture.Markets.Add(market1);
-
-
-            // STEP 2: create a market state collection
-            MarketStateCollection collection = new MarketStateCollection();
-            collection.Update(fixture, true);
-
-            // STEP 3: verify results
-
-            collection.HasMarket("Market1").Should().BeTrue();
-            collection.MarketCount.Should().Be(1);
-
-            collection["Market1"].Selections.Count().Should().Be(1);
-
-            collection["Market1"].HasBeenActive.Should().BeTrue();
-            collection["Market1"].Id.Should().Be("Market1");
-            collection["Market1"].IsActive.Should().BeTrue();
-            collection["Market1"].IsPending.Should().BeFalse();
-            collection["Market1"].IsResulted.Should().BeFalse();
-            collection["Market1"].IsSuspended.Should().BeFalse();
-            collection["Market1"].Name.Should().Be("Market1");
-            collection["Market1"].TagsCount.Should().Be(5);
-
-            collection["Market1"].HasTag("type").Should().BeTrue();
-            collection["Market1"].GetTagValue("type").Should().Be("MarketTypeA");
-            collection["Market1"].HasTag("name").Should().BeTrue();
-            collection["Market1"].GetTagValue("name").Should().Be("Market1");
-            collection["Market1"].HasTag("tagA-1").Should().BeTrue();
-            collection["Market1"].GetTagValue("tagA-1").Should().Be("A-1");
-            collection["Market1"].HasTag("tagA-2").Should().BeTrue();
-            collection["Market1"].GetTagValue("tagA-2").Should().Be("A-2");
-            collection["Market1"].HasTag("tagA-3").Should().BeTrue();
-            collection["Market1"].GetTagValue("tagA-3").Should().Be("A-3");
-
-            collection["Market1"].HasSelection("Seln1").Should().BeTrue();
-            collection["Market1"]["Seln1"].Id.Should().Be("Seln1");
-            collection["Market1"]["Seln1"].Name.Should().Be("Seln1");
-            collection["Market1"]["Seln1"].Price.Should().Be(200);
-            collection["Market1"]["Seln1"].Status.Should().Be(SelectionStatus.Active);
-            collection["Market1"]["Seln1"].Tradability.Should().BeTrue();
-            collection["Market1"]["Seln1"].TagsCount.Should().Be(4);
-
-            collection["Market1"]["Seln1"].HasTag("name").Should().BeTrue();
-            collection["Market1"]["Seln1"].GetTagValue("name").Should().Be("Seln1");
-            collection["Market1"]["Seln1"].HasTag("tag-S-A-1").Should().BeTrue();
-            collection["Market1"]["Seln1"].GetTagValue("tag-S-A-1").Should().Be("S-A-1");
-            collection["Market1"]["Seln1"].HasTag("tag-S-A-2").Should().BeTrue();
-            collection["Market1"]["Seln1"].GetTagValue("tag-S-A-2").Should().Be("S-A-2");
-            collection["Market1"]["Seln1"].HasTag("tag-S-A-3").Should().BeTrue();
-            collection["Market1"]["Seln1"].GetTagValue("tag-S-A-3").Should().Be("S-A-3");
-
-        }
-
-        [Test]
-        [Category("MarketFiltering")]
-        public void ShouldComputeMarketPropertiesCorrectly()
-        {
-            // here I want to test that MarketState
-            // correctly infer a market's status 
-
-
-            // STEP 1: prepare data
-            Market market1 = new Market { Id = "Market1" };
-            
-            Selection selection1 = new Selection
-            {
-                Id = "Seln1",
-                Tradable = true,
-                Status = SelectionStatus.Active,
-                Price = 200
-            };
-
-            Selection selection2 = new Selection
-            {
-                Id = "Seln2",
-                Tradable = true,
-                Status = SelectionStatus.Active,
-                Price = 201
-            };
-            
-            market1.Selections.Add(selection1);
-            market1.Selections.Add(selection2);
-
-            // STEP 2 : check results
-
-            // case 1: all selections are active and tradability = true
-            MarketState state = new MarketState(market1, true);
-
-            state.HasBeenActive.Should().BeTrue();
-            state.IsActive.Should().BeTrue();
-            state.IsPending.Should().BeFalse();
-            state.IsResulted.Should().BeFalse();
-            state.IsSuspended.Should().BeFalse();
-            
-            // case 2: one selection is tradabale = false
-
-            selection2.Tradable = false;
-
-            state = new MarketState(market1, true);
-
-            state.HasBeenActive.Should().BeTrue();
-            state.IsActive.Should().BeTrue();
-            state.IsPending.Should().BeFalse();
-            state.IsResulted.Should().BeFalse();
-            state.IsSuspended.Should().BeTrue();   // The market must be suspended
-
         }
     }
 }

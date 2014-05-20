@@ -18,6 +18,7 @@ Scenario: Market has 3 suspended selections
 	| 2  | Away | 1      | false        |
 	| 3  | Draw | 1      | false        |	
 	When Market filters are initiated
+	And Market filters are applied
 	Then Market IsSuspended is true 
 	
 Scenario: Market update was rolled back
@@ -27,6 +28,7 @@ Scenario: Market update was rolled back
 	| 2  | Away | 1      | false        |
 	| 3  | Draw | 1      | false        |	
 	When Market filters are initiated
+	And Market filters are applied
 	And Update Arrives
 	| Id | Name | Status | Tradable	|
 	| 1  | Home | 0      | false        |
@@ -39,6 +41,8 @@ Scenario: Market update was rolled back
 	| 1  | Home | 0      | false        |
 	| 2  | Away | 0      | false        |
 	| 3  | Draw | 0      | false        |	
+	And Market filters are applied
+	And Commit change
 	Then Market with id=TestId is not removed from snapshot
 	And Market IsSuspended is true
 
@@ -56,6 +60,7 @@ Scenario: Market receives duplicated update after the first update was commited
 	| 1  | Home | 0      | false        |
 	| 2  | Away | 0      | false        |
 	| 3  | Draw | 0      | false        |	
+	And Market filters are applied
 	Then Market with id=TestId is removed from snapshot
 	
 
@@ -66,9 +71,12 @@ Scenario: Market initially has all selections active and later recieved an updat
 	| 2  | Away | 1      | true        |
 	| 3  | Draw | 1      | true        |	
 	When Market filters are initiated
+	And Market filters are applied
+	And Commit change
 	And Update Arrives 
 	| Id | Name | Status | Tradable  |	
 	| 2  | Away | 1      | false        |	
+	And Market filters are applied
 	Then Market IsSuspended is false
 
 Scenario: Market initially has all selections active and later receives update making it all suspended
@@ -78,11 +86,14 @@ Scenario: Market initially has all selections active and later receives update m
 	| 2  | Away | 1      | true        |
 	| 3  | Draw | 1      | true        |	
 	When Market filters are initiated
+	And Market filters are applied
+	And Commit change
 	And Update Arrives 
 	| Id | Name | Status | Tradable		|	
 	| 1  | Home | 1      | false        |
 	| 2  | Away | 1      | false        |
 	| 3  | Draw | 1      | false        |	
+	And Market filters are applied
 	Then Market IsSuspended is true
 
 Scenario: Market becomes partially void
@@ -106,11 +117,14 @@ Scenario: Market becomes partially void and is suspended
 	| 2  | Away | 1      | true        |
 	| 3  | Draw | 1      | true        |	
 	When Market filters are initiated
+	And Market filters are applied
+	And Commit change
 	And Update Arrives 
 	| Id | Name | Status | Tradable		|	
 	| 1  | Home | 3      | false        |
 	| 2  | Away | 1      | false	    |
 	| 3  | Draw | 3      | false        |	
+	And Market filters are applied
 	Then Market IsSuspended is true
 
 Scenario: Voiding markets should not be applied markets that were previously active
@@ -120,6 +134,7 @@ Scenario: Voiding markets should not be applied markets that were previously act
 	| 2  | Away | 1      | true        |
 	| 3  | Draw | 1      | true        |	
 	When Market filters are initiated
+	And Market filters are applied
 	And Fixture is over
 	And Request voiding
 	Then Market Voided=false
@@ -131,6 +146,8 @@ Scenario: Voiding markets should be applied to markets which have never been act
 	| 2  | Away | 0      | false        |
 	| 3  | Draw | 0      | false        |	
 	When Market filters are initiated
+	And Market filters are applied
+	And Commit change
 	And Fixture is over
 	And Request voiding
 	Then Market Voided=true

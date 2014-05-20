@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using log4net;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 
@@ -40,9 +41,10 @@ namespace SS.Integration.Adapter.MarketRules
 
         public IMarketRuleResultIntent Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState)
         {
+         
             var result = new MarketRuleResultIntent();
 
-            if (!Fixture.IsMatchOver)
+            if (!Fixture.IsMatchOver || OldState == null)
                 return result;
 
             _Logger.DebugFormat("Applying market rule={0} for {1}", Name, Fixture);

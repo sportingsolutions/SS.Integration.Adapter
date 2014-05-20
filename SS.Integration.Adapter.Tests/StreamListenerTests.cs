@@ -81,51 +81,20 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);
             resource.Setup(r => r.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixtureSnapshot));
             resource.Setup(r => r.Content).Returns(new Summary());
-            eventState.Setup(e => e.GetCurrentSequence(It.IsAny<string>(), It.IsAny<string>())).Returns(10);
+            eventState.Setup(e => e.GetFixtureState(It.IsAny<string>())).Returns( new FixtureState {Sequence = 10});
             marketFilterObjectStore.Setup(x => x.GetObject(It.IsAny<string>())).Returns(new MarketStateCollection());
 
 
             var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore.Object);
 
             listener.Start();
-
-            Thread.Sleep(1000);
-
-            listener.Stop();
-
-            connector.Verify(c => c.ProcessSnapshot(fixtureSnapshot, false), Times.Once());
-            connector.Verify(c => c.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never());
-            resource.VerifyAll();
-        }
-
-        [Category("Integration")]
-        [Test]
-        public void ShouldNotProcessDeltaAsSequenceHasChanged()
-        {
-            var fixtureDeltaJson = TestHelper.GetRawStreamMessage();
-
-            var resource = new Mock<IResourceFacade>();
-            var connector = new Mock<IAdapterPlugin>();
-            var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
-
-            resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamEvent += null, new StreamEventArgs(fixtureDeltaJson));
-            resource.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);
-            resource.Setup(r => r.Sport).Returns("Football");
-            eventState.Setup(e => e.GetCurrentSequence(It.IsAny<string>(), It.IsAny<string>())).Returns(4);
-
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore.Object);
-
-            listener.Start();
-
-            resource.Raise(r => r.StreamEvent += null, new StreamEventArgs(fixtureDeltaJson));
-
             listener.Stop();
 
             connector.Verify(c => c.ProcessSnapshot(It.IsAny<Fixture>(), false), Times.Once());
             connector.Verify(c => c.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never());
             resource.VerifyAll();
         }
+
 
         [Test]
         [Category("Adapter")]

@@ -31,17 +31,21 @@ namespace SS.Integration.Adapter.MarketRules.Model
             _States = new Dictionary<string, IUpdatableMarketState>();
         }
 
-        public MarketStateCollection(IUpdatableMarketStateCollection collection) 
+        public MarketStateCollection(IUpdatableMarketStateCollection collection)
             : this()
         {
-            
+
+            if (collection == null)
+                return;
+         
             // this is just for creating the nodes
             foreach (var mkt_id in collection.Markets)
             {
                 _States[mkt_id] = null;
+
             }
 
-            ParallelOptions options = new ParallelOptions {MaxDegreeOfParallelism = Environment.ProcessorCount};
+            ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
 
             // fill the nodes and as they are already created, there is no race-condition here
             Parallel.ForEach(collection.Markets, options, x =>

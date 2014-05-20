@@ -90,24 +90,27 @@ namespace SS.Integration.Adapter.MarketRules
                 }
 
                 // get the value from the old state
-                var mkt_state = OldState[mkt.Id];
+                IMarketState mkt_state = null;
+                if (OldState != null)
+                    mkt_state = OldState[mkt.Id];
 
                 // if a market is now active (for the first time), then we add all the tags
                 // that we have collected and let the markets goes through the filter
                 if (mkt.IsActive && (mkt_state != null && mkt_state.IsPending && !mkt_state.HasBeenActive))
                 {
                     GetTags(mkt, mkt_state);
+                    result.MarkAsUnRemovable(mkt);
+
+                    _Logger.InfoFormat("market rule={0} => assigned tags to {1} of {2}", Name, mkt, Fixture);
                 }
-                else if(mkt.IsPending)
+                else if (mkt.IsPending)
                 {
                     // otherwise, if it is in a pending state, then we mark it as removable.
                     // This happens if AlwaysExcludePendingMarkets is true, or, if the markets
                     // has never been active before
-
-                    if (AlwaysExcludePendingMarkets || !mkt_state.HasBeenActive)
+                    if (AlwaysExcludePendingMarkets || (mkt_state != null && !mkt_state.HasBeenActive))
                     {
-                        _Logger.InfoFormat("market rule={0} => {1} of {2} is marked as removable",
-                            Name, mkt, Fixture);
+                        _Logger.InfoFormat("market rule={0} => {1} of {2} is marked as removable", Name, mkt, Fixture);
 
                         result.MarkAsRemovable(mkt);
                     }
