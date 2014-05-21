@@ -139,9 +139,9 @@ namespace SS.Integration.Adapter.Specs
             foreach(var row in table.Rows) 
             {
                 Mock<IMarketRule> rule = new Mock<IMarketRule>();
-                rule.Setup(x => x.Name).Returns(row["Name"]);
+                rule.Setup(x => x.Name).Returns(row["Rule"]);
                 rules.Add(rule.Object);
-                ScenarioContext.Current.Add("RULE-" + row["Name"], rule);
+                ScenarioContext.Current.Add("RULE-" + row["Rule"], rule);
             }
 
             MarketsRulesManager manager = new MarketsRulesManager(fixture, provider.Object, rules);
@@ -205,35 +205,48 @@ namespace SS.Integration.Adapter.Specs
         [Given(@"a fixture with the following markets")]
         public void GivenAFixtureWithTheFollowingMarkets(Table table)
         {
-            Fixture fixture = new Fixture { Id = "Test" };
             ScenarioContext.Current.Clear();
+
+            Fixture fixture = new Fixture { Id = "Test" };
             ScenarioContext.Current.Add("FIXTURE", fixture);
 
             foreach (var row in table.Rows)
             {
                 Market mkt = new Market {Id = row["Market"]};
-                mkt.AddOrUpdateTagValue("Name", row["Name"]);
+                mkt.AddOrUpdateTagValue("name", row["Name"]);
 
                 fixture.Markets.Add(mkt);
             }
         }
 
-        [Given(@"the market rule returns the following intent")]
-        public void GivenTheMarketRuleReturnsTheFollowingIntent(Table table)
-        {
-            ScenarioContext.Current.Pending();
-        }
-
         [When(@"I apply the rules")]
         public void WhenIApplyTheRules()
         {
-            ScenarioContext.Current.Pending();
+            MarketsRulesManager manager = ScenarioContext.Current["MARKETRULEMANAGER"] as MarketsRulesManager;
+            manager.Should().NotBeNull();
+
+            Fixture fixture = ScenarioContext.Current["FIXTURE"] as Fixture;
+
+            manager.ApplyRules(fixture);
         }
 
         [Then(@"I must see these changes")]
         public void ThenIMustSeeTheseChanges(Table table)
         {
-            ScenarioContext.Current.Pending();
+            Fixture fixture = ScenarioContext.Current["FIXTURE"] as Fixture;
+            fixture.Should().NotBeNull();
+
+
+            foreach (var row in table.Rows)
+            {
+                var mkt_name = row["Market"];
+                if (Convert.ToBoolean (row["Exists"]))
+                {
+                    Market mkt = fixture.Markets.First(x => x.Id == mkt_name);
+                    var n = row["Name"];
+                    mkt.Name.Should().Be(n);
+                }
+            }
         }
 
     }
