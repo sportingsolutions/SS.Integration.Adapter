@@ -651,6 +651,59 @@ this.ScenarioSetup(scenarioInfo);
 #line hidden
             this.ScenarioCleanup();
         }
+        
+        [NUnit.Framework.TestAttribute()]
+        [NUnit.Framework.DescriptionAttribute("Market rule solver must resolve correctly any conflicts")]
+        public virtual void MarketRuleSolverMustResolveCorrectlyAnyConflicts()
+        {
+            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Market rule solver must resolve correctly any conflicts", ((string[])(null)));
+#line 156
+this.ScenarioSetup(scenarioInfo);
+#line hidden
+            TechTalk.SpecFlow.Table table18 = new TechTalk.SpecFlow.Table(new string[] {
+                        "Market",
+                        "Name"});
+            table18.AddRow(new string[] {
+                        "1",
+                        "One"});
+            table18.AddRow(new string[] {
+                        "2",
+                        "Two"});
+            table18.AddRow(new string[] {
+                        "3",
+                        "Three"});
+#line 157
+ testRunner.Given("a fixture with the following markets", ((string)(null)), table18, "Given ");
+#line hidden
+            TechTalk.SpecFlow.Table table19 = new TechTalk.SpecFlow.Table(new string[] {
+                        "Rule"});
+            table19.AddRow(new string[] {
+                        "A"});
+            table19.AddRow(new string[] {
+                        "B"});
+            table19.AddRow(new string[] {
+                        "C"});
+#line 162
+ testRunner.And("A market rule with the have the following rules", ((string)(null)), table19, "And ");
+#line hidden
+            TechTalk.SpecFlow.Table table20 = new TechTalk.SpecFlow.Table(new string[] {
+                        "Rule",
+                        "Market",
+                        "Result"});
+#line 167
+ testRunner.And("the market rules return the following intents", ((string)(null)), table20, "And ");
+#line 169
+ testRunner.When("I apply the rules", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line hidden
+            TechTalk.SpecFlow.Table table21 = new TechTalk.SpecFlow.Table(new string[] {
+                        "Market",
+                        "Name",
+                        "Exists"});
+#line 170
+ testRunner.Then("I must see these changes", ((string)(null)), table21, "Then ");
+#line hidden
+            this.ScenarioCleanup();
+        }
     }
 }
 #pragma warning restore

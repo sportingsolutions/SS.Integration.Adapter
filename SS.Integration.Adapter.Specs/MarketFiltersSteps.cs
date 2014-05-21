@@ -12,6 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
@@ -126,6 +127,114 @@ namespace SS.Integration.Adapter.Specs
         }
 
 
+        [Given(@"A market rule with the have the following rules")]
+        public void GivenAMarketRuleWithTheHaveTheFollowingRules(Table table)
+        {
+            Fixture fixture = ScenarioContext.Current["FIXTURE"] as Fixture;
+            fixture.Should().NotBeNull();
+
+            Mock<IObjectProvider<IUpdatableMarketStateCollection>> provider = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
+
+            List<IMarketRule> rules = new List<IMarketRule>();
+            foreach(var row in table.Rows) 
+            {
+                Mock<IMarketRule> rule = new Mock<IMarketRule>();
+                rule.Setup(x => x.Name).Returns(row["Name"]);
+                rules.Add(rule.Object);
+                ScenarioContext.Current.Add("RULE-" + row["Name"], rule);
+            }
+
+            MarketsRulesManager manager = new MarketsRulesManager(fixture, provider.Object, rules);
+            ScenarioContext.Current.Add("MARKETRULEMANAGER", manager);
+        }
+
+        [Given(@"the market rules return the following intents")]
+        public void GivenTheMarketRulesReturnTheFollowingIntents(Table table)
+        {
+            MarketsRulesManager manager = ScenarioContext.Current["MARKETRULEMANAGER"] as MarketsRulesManager;
+            manager.Should().NotBeNull();
+
+            Fixture fixture = ScenarioContext.Current["FIXTURE"] as Fixture;
+            fixture.Should().NotBeNull();
+
+            foreach (var row in table.Rows)
+            {
+                var name = row["Rule"];
+                Mock<IMarketRule> rule = ScenarioContext.Current["RULE-" + name] as Mock<IMarketRule>;
+                rule.Should().NotBeNull();
+
+                var mkt_name = row["Market"];
+                var result = row["Result"];
+                var mkt = fixture.Markets.FirstOrDefault( x => x.Id == mkt_name);
+                mkt.Should().NotBeNull();
+
+
+                if (!ScenarioContext.Current.ContainsKey("INTENT-RULE-" + name))
+                {
+                    MarketRuleResultIntent rule_intent = new MarketRuleResultIntent();
+                    ScenarioContext.Current.Add("INTENT-RULE-" + name, rule_intent);
+                    rule.Setup(x => x.Apply(It.IsAny<Fixture>(), It.IsAny<IMarketStateCollection>(), It.IsAny<IMarketStateCollection>())).Returns(rule_intent);
+                }
+
+                MarketRuleResultIntent intent = ScenarioContext.Current["INTENT-RULE-" + name] as MarketRuleResultIntent;
+                intent.Should().NotBeNull();
+
+                switch (result)
+                {
+                    case "E":
+                        intent.EditMarket(mkt, x => x.AddOrUpdateTagValue("name",  x.Name + " - E: " + name));
+                        break;
+                    case "!E":
+                        intent.MarkAsUnEditable(mkt);
+                        break;
+                    case "R":
+                        intent.MarkAsRemovable(mkt);
+                        break;
+                    case "!R":
+                        intent.MarkAsUnRemovable(mkt);
+                        break;
+                    default:
+                        throw new Exception("Unknow status");
+
+                }
+                
+            }
+        }
+
+
+        [Given(@"a fixture with the following markets")]
+        public void GivenAFixtureWithTheFollowingMarkets(Table table)
+        {
+            Fixture fixture = new Fixture { Id = "Test" };
+            ScenarioContext.Current.Clear();
+            ScenarioContext.Current.Add("FIXTURE", fixture);
+
+            foreach (var row in table.Rows)
+            {
+                Market mkt = new Market {Id = row["Market"]};
+                mkt.AddOrUpdateTagValue("Name", row["Name"]);
+
+                fixture.Markets.Add(mkt);
+            }
+        }
+
+        [Given(@"the market rule returns the following intent")]
+        public void GivenTheMarketRuleReturnsTheFollowingIntent(Table table)
+        {
+            ScenarioContext.Current.Pending();
+        }
+
+        [When(@"I apply the rules")]
+        public void WhenIApplyTheRules()
+        {
+            ScenarioContext.Current.Pending();
+        }
+
+        [Then(@"I must see these changes")]
+        public void ThenIMustSeeTheseChanges(Table table)
+        {
+            ScenarioContext.Current.Pending();
+        }
 
     }
 }

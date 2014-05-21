@@ -151,3 +151,22 @@ Scenario: Voiding markets should be applied to markets which have never been act
 	And Fixture is over
 	And Request voiding
 	Then Market Voided=true
+
+
+Scenario: Market rule solver must resolve correctly any conflicts
+	Given a fixture with the following markets
+	| Market | Name  |
+	| 1      | One   |
+	| 2      | Two   |
+	| 3      | Three |
+	And A market rule with the have the following rules
+	| Rule |
+	| A    |
+	| B    |
+	| C    |
+	And the market rules return the following intents
+	| Rule | Market | Result |
+	When I apply the rules
+	Then I must see these changes
+	|Market | Name | Exists|
+
