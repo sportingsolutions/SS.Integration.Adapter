@@ -127,6 +127,30 @@ Scenario: Market becomes partially void and is suspended
 	And Market filters are applied
 	Then Market IsSuspended is true
 
+Scenario: Market is partially settled
+	Given Market with the following selections
+	| Id | Name | Status | Tradable	|
+	| 1  | Home | 1      | true        |
+	| 2  | Away | 1      | true        |
+	| 3  | Draw | 0      | false       |	
+	When Market filters are initiated
+	And Market filters are applied
+	And Commit change
+	And Update Arrives 
+	| Id | Name | Status | Tradable | Price |
+	| 1  | Home | 2      | false    |  1.0	|
+	| 2  | Away | 2      | false    |   0   |
+	And Market filters are applied
+	And Commit change
+	And Update Arrives 
+	| Id | Name | Status | Tradable | Price |
+	| 1  | Home | 2      | false    |    1.0|
+	| 2  | Away | 2      | false    |    0  |
+	| 3  | Draw | 2      | false    |    0  |
+	And Market filters are applied
+	And Commit change
+	Then Market with id=TestId is not removed from snapshot
+
 Scenario: Voiding markets should not be applied markets that were previously active
 	Given Market with the following selections
 	| Id | Name | Status | Tradable	|
