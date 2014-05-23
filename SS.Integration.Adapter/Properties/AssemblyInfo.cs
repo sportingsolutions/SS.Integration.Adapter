@@ -40,3 +40,4 @@ using System.Runtime.InteropServices;
 [assembly: Guid("2af6a12c-8698-4c11-a1e6-bc338c0cf346")]
 [assembly: InternalsVisibleTo("SS.Integration.Adapter.Tests")]
 [assembly: InternalsVisibleTo("SS.Integration.Adapter.Specs")]
+[assembly: InternalsVisibleTo("SS.Integration.Adapter.E2E.Test")]
