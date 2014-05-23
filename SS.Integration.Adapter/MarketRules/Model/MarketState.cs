@@ -63,8 +63,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
         {
             get
             {
-                return
-                    _SelectionStates.Where(s => s.Value.Status == SelectionStatus.Active && s.Value.Tradability.HasValue).All(s => !s.Value.Tradability.Value);
+                return _SelectionStates.Where(s => s.Value.Status == SelectionStatus.Active && s.Value.Tradability.HasValue).All(s => !s.Value.Tradability.Value);
             }
         }
 
@@ -85,6 +84,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
             } 
         }
 
+        public bool IsTradedInPlay { get; set; }
+
         public bool HasBeenActive { get; set; }
         
         public void Update(Market Market, bool fullSnapshot)
@@ -96,6 +97,9 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 _Tags = new Dictionary<string, string>();
                 foreach (var key in Market.TagKeys)
                     _Tags.Add(key, Market.GetTagValue(key));
+
+                if (_Tags.ContainsKey("traded_in_play"))
+                    IsTradedInPlay = string.Equals(_Tags["traded_in_play"], "true", StringComparison.OrdinalIgnoreCase);
             }
 
             if (!HasBeenActive && IsActive)
@@ -106,6 +110,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
             Market.IsActive = IsActive;
             Market.IsResulted = IsResulted;
             Market.IsSuspended = IsSuspended;
+            Market.IsTradedInPlay = IsTradedInPlay;
         }
 
         private void MergeSelectionStates(Market Market, bool fullSnapshot)
@@ -213,7 +218,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
             MarketState clone = new MarketState
             {
                 Id = this.Id,
-                HasBeenActive = this.HasBeenActive
+                HasBeenActive = this.HasBeenActive,
+                IsTradedInPlay = this.IsTradedInPlay
             };
 
             foreach(var key in this.TagKeys)
