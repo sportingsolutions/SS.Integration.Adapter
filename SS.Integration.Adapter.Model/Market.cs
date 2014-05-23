@@ -92,12 +92,9 @@ namespace SS.Integration.Adapter.Model
         /// <summary>
         /// Determines if the market can be traded in play.
         /// 
-        /// The information is not available in a delta-snapshot
+        /// The information is always available
         /// </summary>
-        public bool IsTradedInPlay
-        {
-            get { return HasTag("traded_in_play") && bool.Parse(GetTagValue("traded_in_play")); }
-        }
+        public bool IsTradedInPlay { get; set; }
 
         /// <summary>
         /// Returns true if the market is active.

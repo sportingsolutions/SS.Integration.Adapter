@@ -67,8 +67,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
         {
             get
             {
-                return
-                    _SelectionStates.Where(s => s.Value.Status == SelectionStatus.Active && s.Value.Tradability.HasValue).All(s => !s.Value.Tradability.Value);
+                return _SelectionStates.Where(s => s.Value.Status == SelectionStatus.Active && s.Value.Tradability.HasValue).All(s => !s.Value.Tradability.Value);
             }
         }
 
@@ -89,7 +88,50 @@ namespace SS.Integration.Adapter.MarketRules.Model
             } 
         }
 
+        public bool IsTradedInPlay { get; set; }
+
         public bool HasBeenActive { get; set; }
+        
+        public void Update(Market Market, bool fullSnapshot)
+        {
+            MergeSelectionStates(Market, fullSnapshot);
+
+            if (fullSnapshot)
+            {
+                _Tags = new Dictionary<string, string>();
+                foreach (var key in Market.TagKeys)
+                    _Tags.Add(key, Market.GetTagValue(key));
+
+                if (_Tags.ContainsKey("traded_in_play"))
+                    IsTradedInPlay = string.Equals(_Tags["traded_in_play"], "true", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (!HasBeenActive && IsActive)
+                HasBeenActive = true;
+
+
+            Market.IsPending = IsPending;
+            Market.IsActive = IsActive;
+            Market.IsResulted = IsResulted;
+            Market.IsSuspended = IsSuspended;
+            Market.IsTradedInPlay = IsTradedInPlay;
+        }
+
+        private void MergeSelectionStates(Market Market, bool fullSnapshot)
+        {
+            if (Market.Selections == null)
+                return;
+
+            foreach (var selection in Market.Selections)
+            {
+                if (_SelectionStates.ContainsKey(selection.Id))
+                    _SelectionStates[selection.Id].Update(selection, fullSnapshot);
+                else
+                {
+                    _SelectionStates[selection.Id] = new SelectionState(selection, fullSnapshot);
+                }
+            }
+        }
 
         #region Tags
 
@@ -148,27 +190,6 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         #region IUpdatableMarketState
 
-        public void Update(Market Market, bool fullSnapshot)
-        {
-            MergeSelectionStates(Market, fullSnapshot);
-
-            if (fullSnapshot)
-            {
-                _Tags = new Dictionary<string, string>();
-                foreach (var key in Market.TagKeys)
-                    _Tags.Add(key, Market.GetTagValue(key));
-            }
-
-            if (!HasBeenActive && IsActive)
-                HasBeenActive = true;
-
-
-            Market.IsPending = IsPending;
-            Market.IsActive = IsActive;
-            Market.IsResulted = IsResulted;
-            Market.IsSuspended = IsSuspended;
-        }
-
         public bool IsEqualTo(IMarketState NewMarket)
         {
             if (NewMarket == null)
@@ -203,7 +224,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
             MarketState clone = new MarketState
             {
                 Id = this.Id,
-                HasBeenActive = this.HasBeenActive
+                HasBeenActive = this.HasBeenActive,
+                IsTradedInPlay = this.IsTradedInPlay
             };
 
             foreach(var key in this.TagKeys)
@@ -216,21 +238,5 @@ namespace SS.Integration.Adapter.MarketRules.Model
         }
 
         #endregion
-
-        private void MergeSelectionStates(Market Market, bool fullSnapshot)
-        {
-            if (Market.Selections == null)
-                return;
-
-            foreach (var selection in Market.Selections)
-            {
-                if (_SelectionStates.ContainsKey(selection.Id))
-                    _SelectionStates[selection.Id].Update(selection, fullSnapshot);
-                else
-                {
-                    _SelectionStates[selection.Id] = new SelectionState(selection, fullSnapshot);
-                }
-            }
-        }
     }
 }

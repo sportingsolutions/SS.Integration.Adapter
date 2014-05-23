@@ -109,17 +109,6 @@ namespace SS.Integration.Adapter.Model
 
                 return Status == SelectionStatus.Active;
             }
-            set
-            {
-                if (value == null || !value.Value)
-                {
-                    Status = SelectionStatus.Pending;
-                }
-                else
-                {
-                    Status = SelectionStatus.Active;
-                }
-            }
         }
 
         #region Tags
