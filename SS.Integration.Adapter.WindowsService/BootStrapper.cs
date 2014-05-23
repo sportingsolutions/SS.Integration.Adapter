@@ -17,7 +17,6 @@ using Ninject.Modules;
 using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Mappings;
-using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Adapter.Plugin.Model;
 using SS.Integration.Adapter.Plugin.Model.Interface;
 using SS.Integration.Adapter.UdapiClient;
@@ -36,7 +35,6 @@ namespace SS.Integration.Adapter.WindowsService
             Bind<IReconnectStrategy>().To<DefaultReconnectStrategy>().InSingletonScope();
             Bind<IServiceFacade>().To<UdapiServiceFacade>();
 
-            IMappingUpdater mappingUpdater;
             IMappingUpdaterFactory mappingUpdaterFactInstance = null;
              
             var mappingUpdaterSetting = ConfigurationManager.GetSection("mappingUpdater") as MappingUpdaterConfiguration;
@@ -59,7 +57,7 @@ namespace SS.Integration.Adapter.WindowsService
             }
 
             mappingUpdaterFactInstance.Configuration = mappingUpdaterSetting;   
-            mappingUpdater = mappingUpdaterFactInstance.GetMappingUpdater();
+            IMappingUpdater mappingUpdater = mappingUpdaterFactInstance.GetMappingUpdater();
 
 
             Bind<IMappingUpdater>().ToConstant(mappingUpdater);

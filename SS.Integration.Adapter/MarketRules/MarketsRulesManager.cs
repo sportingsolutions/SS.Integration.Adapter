@@ -15,6 +15,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
@@ -23,30 +25,28 @@ using log4net;
 
 namespace SS.Integration.Adapter.MarketRules
 {
-    /// <summary>
-    /// Not Thread-Safe class
-    /// Keeps the list of inactive markets for a specific fixture so they can be filtered out 
-    /// in order to avoid updating inactive mappings more than once
-    /// </summary>
+   
     public class MarketsRulesManager
     {        
         private readonly ILog _logger = LogManager.GetLogger(typeof(MarketsRulesManager).ToString());
 
         private readonly string _FixtureId;
-        private readonly IObjectProvider<IMarketStateCollection> _StateProvider;
+        private readonly IObjectProvider<IUpdatableMarketStateCollection> _StateProvider;
         private readonly IEnumerable<IMarketRule> _Rules;
-        private IMarketStateCollection _CurrentTransaction;
-        
+        private IUpdatableMarketStateCollection _CurrentTransaction;
 
-        public MarketsRulesManager(Fixture fixture, IObjectProvider<IMarketStateCollection> StateProvider, IEnumerable<IMarketRule> FilteringRules)
+
+        internal MarketsRulesManager(Fixture fixture, IObjectProvider<IUpdatableMarketStateCollection> stateProvider, IEnumerable<IMarketRule> filteringRules)
         {
-            _logger.DebugFormat("Initiating market filters for {0}", fixture);
+            _logger.DebugFormat("Initiating market rule manager for {0}", fixture);
+            
             _FixtureId = fixture.Id;
-            _Rules = FilteringRules;
+            _Rules = filteringRules;
 
-            _StateProvider = StateProvider;
+            _StateProvider = stateProvider;
 
-            _logger.DebugFormat("Market filters initiated successfully for {0}", fixture);
+            _logger.DebugFormat("Market rule manager initiated successfully for {0}", fixture);
+
         }
 
         public void CommitChanges()
@@ -63,44 +63,210 @@ namespace SS.Integration.Adapter.MarketRules
             _CurrentTransaction = null;
         }
 
-        private IMarketStateCollection BeginTransaction(IMarketStateCollection OldState, Fixture Fixture)
+        private void BeginTransaction(IUpdatableMarketStateCollection oldState, Fixture fixture)
         {
            
             // get a new market state by cloning the previous one
             // and then updating it with the new info coming within
             // the snapshot
-            var clone = new MarketStateCollection(OldState);
-            clone.Update(Fixture, Fixture.Tags != null && Fixture.Tags.Any());
 
+            var clone = new MarketStateCollection(oldState);
+            clone.Update(fixture, fixture.Tags != null && fixture.Tags.Any());
+               
             _CurrentTransaction = clone;
-
-            return clone;
         }
 
-        public void ApplyRules(Fixture Fixture)
+        /// <summary>
+        /// Allows to apply the registered rules to the given fixture.
+        /// 
+        /// A rule can edit/remove/add markets as it wish (through their
+        /// intents)
+        /// 
+        /// However, as there might be multiple rules, conflicts usually
+        /// arise. When there is a conflict, the MarketRuleManager
+        /// always takes a conservative approach.
+        /// 
+        /// </summary>
+        /// <param name="fixture"></param>
+        public void ApplyRules(Fixture fixture)
         {
-            if (Fixture == null)
-                throw new ArgumentNullException("Fixture");
+            if (fixture == null)
+                throw new ArgumentNullException("fixture");
 
-            if (Fixture.Id != _FixtureId)
+            if (fixture.Id != _FixtureId)
             {
-                throw new ArgumentException("MarketFilter has been created for fixtureId=" + _FixtureId + ". " +
-                    "You cannot pass in fixtureId=" + Fixture.Id);
+                throw new ArgumentException("MarketsRulesManager has been created for fixtureId=" + _FixtureId +
+                    " You cannot pass in fixtureId=" + fixture.Id);
             }
 
-            var oldstate = _StateProvider.GetObject(Fixture.Id);
-            var newstate = BeginTransaction(oldstate, Fixture);
+            var oldstate = _StateProvider.GetObject(fixture.Id);
+            BeginTransaction(oldstate, fixture);
 
-            var context = new MarketRuleProcessingContext();
+            ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount};
 
+            // we create a temp dictionary so we can apply the rules in parallel 
+            // without accessing (writing to) any shared variables
+            Dictionary<IMarketRule, IMarketRuleResultIntent> tmp = new Dictionary<IMarketRule, IMarketRuleResultIntent>();
             foreach (var rule in _Rules)
-            {
-                if(rule == null)
-                    continue;
+                tmp[rule] = null;
 
-                _logger.DebugFormat("Filtering markets with rule={0}", rule.Name);
-                rule.Apply(Fixture, oldstate, newstate, context);
-                _logger.DebugFormat("Filtering market with rule={0} completed", rule.Name);
+
+            // a rule usually goes through the entire list of markets...if the fixture
+            // comes from a full snapshot, it can have a lot of markets...
+            Parallel.ForEach(tmp.Keys.ToList(), options, rule =>
+                {                    
+                    _logger.DebugFormat("Filtering markets with rule={0}", rule.Name);
+                    tmp[rule] = rule.Apply(fixture, oldstate, _CurrentTransaction);
+                    _logger.DebugFormat("Filtering market with rule={0} completed", rule.Name);
+                }
+            );
+
+
+            MergeIntents(fixture, tmp);
+        }
+
+        /// <summary>
+        /// E = Editable , !E = NotEditable
+        /// R = Removable, !R = NotRemovable
+        ///        
+        /// This table shows how conflicts are solved 
+        /// on a specific market
+        ///
+        /// (Rule 1, Rule 2) => Result
+        /// (E, R)  => E
+        /// (E, !R) => E
+        /// (E, E1) => E + E1
+        /// (E, !E) => !E    
+        /// 
+        /// (R, !R) => !R
+        /// (R, R)  => R
+        /// (R, !E) => R
+        /// 
+        /// (!R, !R) => !R
+        /// (!R, !E) => !E + !R
+        /// 
+        /// (!E, !E) => !E
+        /// 
+        /// </summary>
+        /// <param name="fixture"></param>
+        /// <param name="intents"></param>
+        private void MergeIntents(Fixture fixture, Dictionary<IMarketRule, IMarketRuleResultIntent> intents)
+        {
+            Dictionary<Market, bool> toremove = new Dictionary<Market, bool>();
+            List<Market> toadd = new List<Market>();
+            Dictionary<Market, Dictionary<Action<Market>, string>> toedit = new Dictionary<Market, Dictionary<Action<Market>, string>>();
+
+            foreach (var rule in intents.Keys)
+            {
+                var intent = intents[rule];
+
+                /* "toremove" lists all the markets that a rule wants to remove.
+                 * Those that would actually be removed are only those
+                 * whose flag is set to true. Those that have the flag
+                 * set to false are markets that some rule wanted to 
+                 * remove but some other rule marked them as not
+                 * removable. As we follow a conservative approch
+                 * we only remove a market if no other rule specified
+                 * otherwise.
+                 */
+
+                foreach (var mkt in intent.MarkedAsRemovable)
+                {
+                    // if it already contains the market, don't do 
+                    // anything as the flag could be "false"
+                    if (!toremove.ContainsKey(mkt)) 
+                        toremove.Add(mkt, true);
+                }
+
+                foreach (var mkt in intent.MarkedAsUnRemovable)
+                {
+                    // if it is already present, then 
+                    // set its flag to false
+                    if (toremove.ContainsKey(mkt))
+                        toremove[mkt] = false;
+                    else
+                        toremove.Add(mkt, false);
+                }
+
+                /* For "editable" markets we follow the same 
+                 * reasoning we do for removing the markets,
+                 * except here the flag is the action to perform
+                 * or null if a rule marked the market to be
+                 * not-editable
+                 */
+
+                foreach (var mkt in intent.Edited)
+                {
+                    if (!toedit.ContainsKey(mkt))
+                    {
+                        toedit.Add(mkt, new Dictionary<Action<Market>, string> {{intent.GetEditingAction(mkt), rule.Name}});
+                    }
+                    else if (toedit[mkt] != null)
+                    {
+                        toedit[mkt].Add(intent.GetEditingAction(mkt), rule.Name);
+                    }
+                }
+
+                foreach (var mkt in intent.MarkedAsUnEditable)
+                {
+                    if (toedit.ContainsKey(mkt))
+                        toedit[mkt] = null;
+                    else
+                        toedit.Add(mkt, null);
+                }
+
+                toadd.AddRange(intent.Added);
+            }
+
+
+            toadd.ForEach(x => _logger.DebugFormat("Adding market {0} to {1} as requested by market rules", x, fixture));
+            fixture.Markets.AddRange(toadd);
+
+            foreach (var mkt in toedit.Keys)
+            {
+                if (toedit[mkt] != null)
+                {
+                    try
+                    {
+                        var count = 0;
+                        var total = toedit[mkt].Count;
+                        foreach (var action in toedit[mkt].Keys)
+                        {
+                            count++;
+
+                            if(action == null)
+                                continue;
+
+                            _logger.DebugFormat("Performing edit action={0} count={1}/{2} on {3} of {4} as requested by market rules", 
+                                toedit[mkt][action], count, total, mkt, fixture);
+                            action(mkt);
+                        }
+
+                        _logger.DebugFormat("Successfully applied edit actions on {0} of {1} as requested by market rules", mkt, fixture);
+
+                        // as we might have changed import details of the market, we need to update the market state
+                        ((IUpdatableMarketState)_CurrentTransaction[mkt.Id]).Update(mkt, false);
+
+                        _logger.DebugFormat("Updating market state for {0} of {1}", mkt, fixture);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Error(string.Format("An error occured while executing an edit action as requested by market rules on {0} of {1}", mkt, fixture), e);
+
+                        throw;
+                    }
+                }
+            }
+
+            foreach (var mkt in toremove.Keys)
+            {
+                // we need to check that a removable market
+                // wasn't marked as editable or not editable
+                if (toremove[mkt] && !toedit.ContainsKey(mkt))
+                {
+                    _logger.DebugFormat("{0} of {1} will be removed from snapshot due market rules", mkt, fixture);
+                    fixture.Markets.Remove(mkt);
+                }
             }
         }
 

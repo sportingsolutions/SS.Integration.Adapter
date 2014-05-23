@@ -42,9 +42,11 @@ namespace SS.Integration.Adapter.MarketRules
         /// 
         /// NB: If there is a change in market's name or status then will not be removed
         /// </summary>
-        public void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState, IMarketRuleProcessingContext Context)
+        public IMarketRuleResultIntent Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState)
         {
-            _Logger.DebugFormat("Filtering inactive markets for {0}", Fixture);
+            var result = new MarketRuleResultIntent();
+
+            _Logger.DebugFormat("Applying market rule={0} for {1}", Name, Fixture);
 
 
             var inactiveMarkets = Fixture.Markets.Where(m => !m.IsActive && OldState != null && OldState.HasMarket(m.Id) && !OldState[m.Id].IsActive);
@@ -53,15 +55,17 @@ namespace SS.Integration.Adapter.MarketRules
             {
 
                 var marketState = OldState[market.Id];
+                var nextState = NewState[market.Id];
 
                 // Only remove market from snapshot/delta if it is not active AND values like name and status have not changed
-                if (Context.CanBeRemoved(market) && marketState.IsEqualTo(market))
+                if (marketState.IsEqualTo(nextState))
                 {
-                    Fixture.Markets.Remove(market);
-
-                    _Logger.InfoFormat("{0} has been removed from {1} due rule={2}", market, Fixture, Name);
+                    result.MarkAsRemovable(market);
+                    _Logger.InfoFormat("market rule={0} => {1} of {2} is marked as removable", Name, market, Fixture);
                 }
             }
+
+            return result;
         }
     }
 }

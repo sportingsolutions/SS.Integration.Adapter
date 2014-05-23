@@ -61,12 +61,22 @@
       <DependentUpon>MarketFilters.feature</DependentUpon>
     </Compile>
     <Compile Include="MarketFiltersSteps.cs" />
+    <Compile Include="MarketState.feature.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MarketState.feature</DependentUpon>
+    </Compile>
+    <Compile Include="MarketStateSteps.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="MarketFilters.feature">
       <Generator>SpecFlowSingleFileGenerator</Generator>
       <LastGenOutput>MarketFilters.feature.cs</LastGenOutput>
+    </None>
+    <None Include="MarketState.feature">
+      <Generator>SpecFlowSingleFileGenerator</Generator>
+      <LastGenOutput>MarketState.feature.cs</LastGenOutput>
     </None>
     <None Include="packages.config" />
   </ItemGroup>

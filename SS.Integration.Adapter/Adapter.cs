@@ -20,6 +20,7 @@ using System.Threading;
 using System.Linq;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Plugin.Model.Interface;
 using SS.Integration.Adapter.ProcessState;
 using log4net;
@@ -56,8 +57,8 @@ namespace SS.Integration.Adapter
             EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
             
 
-            StateProvider = new CachedObjectStoreWithPersistance<IMarketStateCollection>(
-                new BinaryStoreProvider<IMarketStateCollection>(settings.MarketFiltersDirectory, "FilteredMarkets-{0}.bin"),
+            StateProvider = new CachedObjectStoreWithPersistance<IUpdatableMarketStateCollection>(
+                new BinaryStoreProvider<IUpdatableMarketStateCollection>(settings.MarketFiltersDirectory, "FilteredMarkets-{0}.bin"),
                 "MarketFilters", settings.CacheExpiryInMins * 60
                 );
 
@@ -75,7 +76,7 @@ namespace SS.Integration.Adapter
 
         internal IEventState EventState { get; private set; }
 
-        internal IObjectProvider<IMarketStateCollection> StateProvider { get; private set; }
+        internal IObjectProvider<IUpdatableMarketStateCollection> StateProvider { get; private set; }
 
         internal IAdapterPlugin PlatformConnector { get; private set; }
 

@@ -56,10 +56,11 @@
     <Compile Include="Fixture.cs" />
     <Compile Include="FixtureState.cs" />
     <Compile Include="Interfaces\IMarketRule.cs" />
-    <Compile Include="Interfaces\IMarketRuleProcessingContext.cs" />
+    <Compile Include="Interfaces\IMarketRuleResultIntents.cs" />
     <Compile Include="Interfaces\IMarketState.cs" />
     <Compile Include="Interfaces\IMarketStateCollection.cs" />
     <Compile Include="Interfaces\ISelectionState.cs" />
+    <Compile Include="MarketRuleResultIntent.cs" />
     <Compile Include="ModuleConfigurationProvider.cs" />
     <Compile Include="Interfaces\IObjectProvider.cs" />
     <Compile Include="Interfaces\IAdapterPlugin.cs" />

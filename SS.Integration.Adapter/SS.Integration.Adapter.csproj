@@ -67,7 +67,6 @@
     <Compile Include="Adapter.cs" />
     <Compile Include="Configuration\MappingUpdaterSection.cs" />
     <Compile Include="Configuration\Settings.cs" />
-    <Compile Include="Configuration\SportConfiguration.cs" />
     <Compile Include="FixtureJsonHelper.cs" />
     <Compile Include="Interface\IEventState.cs" />
     <Compile Include="Interface\IListener.cs" />
@@ -81,7 +80,9 @@
     <Compile Include="Mappings\DefaultMappingUpdaterFactory.cs" />
     <Compile Include="Mappings\DummyMappingUpdater.cs" />
     <Compile Include="Mappings\DummyMappingUpdaterFactory.cs" />
-    <Compile Include="MarketRules\Model\MarketRuleProcessingContext.cs" />
+    <Compile Include="MarketRules\Interfaces\IUpdatableMarketState.cs" />
+    <Compile Include="MarketRules\Interfaces\IUpdatableMarketStateCollection.cs" />
+    <Compile Include="MarketRules\Interfaces\IUpdatableSelectionState.cs" />
     <Compile Include="MarketRules\PendingMarketFilteringRule.cs" />
     <Compile Include="MarketRules\VoidUnSettledMarket.cs" />
     <Compile Include="ProcessState\BinaryStoreProvider.cs" />

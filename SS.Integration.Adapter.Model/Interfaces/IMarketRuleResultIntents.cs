@@ -14,26 +14,21 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Configuration;
 
-namespace SS.Integration.Adapter.Configuration
+namespace SS.Integration.Adapter.Model.Interfaces
 {
-    public class SportConfiguration
+    public interface IMarketRuleResultIntent
     {
-        private static readonly IEnumerable<dynamic> SportList;
+        IEnumerable<Market> MarkedAsRemovable { get; }
 
-        static SportConfiguration()
-        {
-            dynamic supportedSports = ConfigurationManager.GetSection("supportedSports") as dynamic;
-            SportList = supportedSports.SportList;
-        }
+        IEnumerable<Market> MarkedAsUnRemovable { get; }
+        
+        IEnumerable<Market> MarkedAsUnEditable { get; }
 
-        public static IEnumerable<string> GetSports()
-        {
-            return SportList.Select(x => (string)x.SportName);
-        }
+        IEnumerable<Market> Added { get; }
+
+        IEnumerable<Market> Edited { get; }
+
+        Action<Market> GetEditingAction(Market Market);
     }
 }

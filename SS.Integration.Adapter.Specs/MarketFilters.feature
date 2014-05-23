@@ -175,3 +175,61 @@ Scenario: Voiding markets should be applied to markets which have never been act
 	And Fixture is over
 	And Request voiding
 	Then Market Voided=true
+
+
+Scenario: Market rule solver must resolve correctly any conflicts
+	Given a fixture with the following markets
+	| Market | Name  |
+	| 1      | One   |
+	| 2      | Two   |
+	| 3      | Three |
+	| 4      | Four  |
+	| 5      | Five  |
+	| 6      | Six   |
+	| 7      | Seven |
+	| 8      | Eight |
+	| 9      | Nine  |
+	And A market rule with the have the following rules
+	| Rule |
+	| A    |
+	| B    |
+	| C    |
+	| D    |
+	And the market rules return the following intents
+	| Rule | Market | Result |
+	| A    | 1      | R      |
+	| B    | 1      | !R     |
+	| C    | 1      | E      |
+	| D    | 1      | !E     |
+	| A    | 2      | E      |
+	| B    | 2      | !E     |
+	| A    | 3      | R      |
+	| B    | 3      | E      |
+	| A    | 4      | !E     |
+	| B    | 4      | R      |
+	| A    | 5      | E      |
+	| B    | 5      | E      |
+	| A    | 6      | !E     |
+	| B    | 6      | !R     |
+	| A    | 7      | E      |
+	| B    | 7      | E      |
+	| C    | 7      | !E     |
+	| D    | 7      | E      |
+	| A    | 8      | !R     |
+	| B    | 8      | E      |
+	| A    | 9      | R      |
+	| B    | 9      | !R     |
+	When I apply the rules
+	Then I must see these changes
+	| Market | Name               | Exists |
+	| 1      | One                | true   |
+	| 2      | Two                | true   |
+	| 3      | Three - E: B       | true   |
+	| 4      | Four               | true   |
+	| 5      | Five - E: A - E: B | true   |
+	| 6      | Six                | true   |
+	| 7      | Seven              | true   |
+	| 8      | Eight - E: B       | true   |
+	| 9      | Nine               | true   |
+
+

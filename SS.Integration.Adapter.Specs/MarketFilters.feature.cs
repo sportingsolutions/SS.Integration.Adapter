@@ -749,6 +749,203 @@ this.ScenarioSetup(scenarioInfo);
 #line hidden
             this.ScenarioCleanup();
         }
+        
+        [NUnit.Framework.TestAttribute()]
+        [NUnit.Framework.DescriptionAttribute("Market rule solver must resolve correctly any conflicts")]
+        public virtual void MarketRuleSolverMustResolveCorrectlyAnyConflicts()
+        {
+            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Market rule solver must resolve correctly any conflicts", ((string[])(null)));
+#line 156
+this.ScenarioSetup(scenarioInfo);
+#line hidden
+            TechTalk.SpecFlow.Table table18 = new TechTalk.SpecFlow.Table(new string[] {
+                        "Market",
+                        "Name"});
+            table18.AddRow(new string[] {
+                        "1",
+                        "One"});
+            table18.AddRow(new string[] {
+                        "2",
+                        "Two"});
+            table18.AddRow(new string[] {
+                        "3",
+                        "Three"});
+            table18.AddRow(new string[] {
+                        "4",
+                        "Four"});
+            table18.AddRow(new string[] {
+                        "5",
+                        "Five"});
+            table18.AddRow(new string[] {
+                        "6",
+                        "Six"});
+            table18.AddRow(new string[] {
+                        "7",
+                        "Seven"});
+            table18.AddRow(new string[] {
+                        "8",
+                        "Eight"});
+            table18.AddRow(new string[] {
+                        "9",
+                        "Nine"});
+#line 157
+ testRunner.Given("a fixture with the following markets", ((string)(null)), table18, "Given ");
+#line hidden
+            TechTalk.SpecFlow.Table table19 = new TechTalk.SpecFlow.Table(new string[] {
+                        "Rule"});
+            table19.AddRow(new string[] {
+                        "A"});
+            table19.AddRow(new string[] {
+                        "B"});
+            table19.AddRow(new string[] {
+                        "C"});
+            table19.AddRow(new string[] {
+                        "D"});
+#line 168
+ testRunner.And("A market rule with the have the following rules", ((string)(null)), table19, "And ");
+#line hidden
+            TechTalk.SpecFlow.Table table20 = new TechTalk.SpecFlow.Table(new string[] {
+                        "Rule",
+                        "Market",
+                        "Result"});
+            table20.AddRow(new string[] {
+                        "A",
+                        "1",
+                        "R"});
+            table20.AddRow(new string[] {
+                        "B",
+                        "1",
+                        "!R"});
+            table20.AddRow(new string[] {
+                        "C",
+                        "1",
+                        "E"});
+            table20.AddRow(new string[] {
+                        "D",
+                        "1",
+                        "!E"});
+            table20.AddRow(new string[] {
+                        "A",
+                        "2",
+                        "E"});
+            table20.AddRow(new string[] {
+                        "B",
+                        "2",
+                        "!E"});
+            table20.AddRow(new string[] {
+                        "A",
+                        "3",
+                        "R"});
+            table20.AddRow(new string[] {
+                        "B",
+                        "3",
+                        "E"});
+            table20.AddRow(new string[] {
+                        "A",
+                        "4",
+                        "!E"});
+            table20.AddRow(new string[] {
+                        "B",
+                        "4",
+                        "R"});
+            table20.AddRow(new string[] {
+                        "A",
+                        "5",
+                        "E"});
+            table20.AddRow(new string[] {
+                        "B",
+                        "5",
+                        "E"});
+            table20.AddRow(new string[] {
+                        "A",
+                        "6",
+                        "!E"});
+            table20.AddRow(new string[] {
+                        "B",
+                        "6",
+                        "!R"});
+            table20.AddRow(new string[] {
+                        "A",
+                        "7",
+                        "E"});
+            table20.AddRow(new string[] {
+                        "B",
+                        "7",
+                        "E"});
+            table20.AddRow(new string[] {
+                        "C",
+                        "7",
+                        "!E"});
+            table20.AddRow(new string[] {
+                        "D",
+                        "7",
+                        "E"});
+            table20.AddRow(new string[] {
+                        "A",
+                        "8",
+                        "!R"});
+            table20.AddRow(new string[] {
+                        "B",
+                        "8",
+                        "E"});
+            table20.AddRow(new string[] {
+                        "A",
+                        "9",
+                        "R"});
+            table20.AddRow(new string[] {
+                        "B",
+                        "9",
+                        "!R"});
+#line 174
+ testRunner.And("the market rules return the following intents", ((string)(null)), table20, "And ");
+#line 198
+ testRunner.When("I apply the rules", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line hidden
+            TechTalk.SpecFlow.Table table21 = new TechTalk.SpecFlow.Table(new string[] {
+                        "Market",
+                        "Name",
+                        "Exists"});
+            table21.AddRow(new string[] {
+                        "1",
+                        "One",
+                        "true"});
+            table21.AddRow(new string[] {
+                        "2",
+                        "Two",
+                        "true"});
+            table21.AddRow(new string[] {
+                        "3",
+                        "Three - E: B",
+                        "true"});
+            table21.AddRow(new string[] {
+                        "4",
+                        "Four",
+                        "true"});
+            table21.AddRow(new string[] {
+                        "5",
+                        "Five - E: A - E: B",
+                        "true"});
+            table21.AddRow(new string[] {
+                        "6",
+                        "Six",
+                        "true"});
+            table21.AddRow(new string[] {
+                        "7",
+                        "Seven",
+                        "true"});
+            table21.AddRow(new string[] {
+                        "8",
+                        "Eight - E: B",
+                        "true"});
+            table21.AddRow(new string[] {
+                        "9",
+                        "Nine",
+                        "true"});
+#line 199
+ testRunner.Then("I must see these changes", ((string)(null)), table21, "Then ");
+#line hidden
+            this.ScenarioCleanup();
+        }
     }
 }
 #pragma warning restore

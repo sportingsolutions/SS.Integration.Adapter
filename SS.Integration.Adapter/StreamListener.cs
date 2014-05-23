@@ -21,6 +21,7 @@ using SS.Integration.Adapter.MarketRules;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Events;
 using SportingSolutions.Udapi.Sdk.Extensions;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Exceptions;
@@ -45,7 +46,7 @@ namespace SS.Integration.Adapter
         private readonly IResourceFacade _resource;
         private readonly IAdapterPlugin _platformConnector;
         private readonly IEventState _eventState;
-        private readonly IObjectProvider<IMarketStateCollection> _stateProvider;
+        private readonly IObjectProvider<IUpdatableMarketStateCollection> _stateProvider;
         private readonly IStatsHandle _Stats;
         
         private MarketsRulesManager _marketsRuleManager;
@@ -55,7 +56,7 @@ namespace SS.Integration.Adapter
         private int _lastSequenceProcessedInSnapshot;
         private bool _hasRecoveredFromError;
 
-        public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IObjectProvider<IMarketStateCollection> stateProvider)
+        public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IObjectProvider<IUpdatableMarketStateCollection> stateProvider)
         {
 
             if (resource == null)
@@ -95,6 +96,7 @@ namespace SS.Integration.Adapter
 
             SetupListener();
         }
+
 
         /// <summary>
         /// Returns true if the match is over and the fixture is ended.
@@ -760,7 +762,6 @@ namespace SS.Integration.Adapter
                 };
 
                 rules.AddRange(_platformConnector.MarketRules);
-                rules.Reverse();
 
                 _marketsRuleManager = new MarketsRulesManager(fixture, _stateProvider, rules);
             }
