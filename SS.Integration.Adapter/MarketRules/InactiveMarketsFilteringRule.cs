@@ -52,7 +52,7 @@ namespace SS.Integration.Adapter.MarketRules
             var inactiveMarkets = Fixture.Markets.Where(
                 m => (OldState != null && OldState.HasMarket(m.Id)) 
                         && (!m.IsActive && !OldState[m.Id].IsActive)
-                        && !m.IsResulted
+                        && m.IsResulted == OldState[m.Id].IsResulted
                     );
 
             foreach (var market in inactiveMarkets.ToList())
