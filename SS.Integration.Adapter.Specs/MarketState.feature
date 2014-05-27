@@ -178,4 +178,4 @@ Scenario: Compute Market Tradability (resulted look at the selection price)
 	When I infer the market's status
 	Then I should have these values
 	| Active | Pending | Suspended | Resulted |
-	| 1      | 0       | 0         | 1        |
+	| 1      | 0       | 0         | 0        |

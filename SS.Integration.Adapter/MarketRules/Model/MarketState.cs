@@ -81,10 +81,13 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public bool IsResulted 
         { 
-            get 
+            get
             {
-                return this.Selections.Any(x => x.Status == SelectionStatus.Settled && x.Price == 1.00) || 
-                       this.Selections.All(x => x.Status == SelectionStatus.Void);
+                // market is resulted if at least one selection has a price of 1.0 and status settled and the rest are settled or void
+                // alternatively all selections need to be void
+                return (Selections.Any(x => x.Status == SelectionStatus.Settled && x.Price == 1.0) &&
+                        Selections.All(x => x.Status == SelectionStatus.Settled || x.Status == SelectionStatus.Void)) ||
+                        Selections.All(x => x.Status == SelectionStatus.Void);
             } 
         }
 
@@ -164,10 +167,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public IEnumerable<ISelectionState> Selections
         {
-            get
-            {
-                return _SelectionStates.Keys.Select(seln_id => _SelectionStates[seln_id]);
-            }
+            get { return _SelectionStates.Values; }
         }
 
         public ISelectionState this[string SelectionId]
