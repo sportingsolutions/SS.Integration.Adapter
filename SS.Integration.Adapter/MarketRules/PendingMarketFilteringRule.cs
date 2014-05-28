@@ -71,19 +71,19 @@ namespace SS.Integration.Adapter.MarketRules
             set;
         }
 
-        public IMarketRuleResultIntent Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState)
+        public IMarketRuleResultIntent Apply(Fixture fixture, IMarketStateCollection oldState, IMarketStateCollection newState)
         {
-            _Logger.DebugFormat("Applying market rule={0} for {1} - AlwaysExcludePendingMarkets={2}", Name, Fixture, AlwaysExcludePendingMarkets);
+            _Logger.DebugFormat("Applying market rule={0} for {1} - AlwaysExcludePendingMarkets={2}", Name, fixture, AlwaysExcludePendingMarkets);
 
             var result = new MarketRuleResultIntent();
 
-            foreach (var mkt in Fixture.Markets)
+            foreach (var mkt in fixture.Markets)
             {
 
                 if (_ExcludedMarketType.Contains(mkt.Type))
                 {
                     _Logger.InfoFormat("market rule={0} => {1} of {2} is marked as un-removable due its type={3}", 
-                        Name, mkt, Fixture, mkt.Type);
+                        Name, mkt, fixture, mkt.Type);
 
                     result.MarkAsUnRemovable(mkt);
                     continue;
@@ -91,8 +91,8 @@ namespace SS.Integration.Adapter.MarketRules
 
                 // get the value from the old state
                 IMarketState mkt_state = null;
-                if (OldState != null)
-                    mkt_state = OldState[mkt.Id];
+                if (oldState != null)
+                    mkt_state = oldState[mkt.Id];
 
                 // if a market is now active (for the first time), then we add all the tags
                 // that we have collected and let the markets goes through the filter
@@ -101,7 +101,7 @@ namespace SS.Integration.Adapter.MarketRules
                     GetTags(mkt, mkt_state);
                     result.MarkAsUnRemovable(mkt);
 
-                    _Logger.InfoFormat("market rule={0} => assigned tags to {1} of {2}", Name, mkt, Fixture);
+                    _Logger.InfoFormat("market rule={0} => assigned tags to {1} of {2}", Name, mkt, fixture);
                 }
                 else if (mkt.IsPending)
                 {
@@ -110,7 +110,7 @@ namespace SS.Integration.Adapter.MarketRules
                     // has never been active before
                     if (AlwaysExcludePendingMarkets || (mkt_state != null && !mkt_state.HasBeenActive))
                     {
-                        _Logger.InfoFormat("market rule={0} => {1} of {2} is marked as removable", Name, mkt, Fixture);
+                        _Logger.InfoFormat("market rule={0} => {1} of {2} is marked as removable", Name, mkt, fixture);
 
                         result.MarkAsRemovable(mkt);
                     }

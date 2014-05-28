@@ -39,24 +39,24 @@ namespace SS.Integration.Adapter.MarketRules
 
         public string Name { get { return NAME; } }
 
-        public IMarketRuleResultIntent Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState)
+        public IMarketRuleResultIntent Apply(Fixture fixture, IMarketStateCollection oldState, IMarketStateCollection newState)
         {
          
             var result = new MarketRuleResultIntent();
 
-            if (!Fixture.IsMatchOver || OldState == null)
+            if (!fixture.IsMatchOver || oldState == null)
                 return result;
 
-            _Logger.DebugFormat("Applying market rule={0} for {1}", Name, Fixture);
+            _Logger.DebugFormat("Applying market rule={0} for {1}", Name, fixture);
 
-            var markets = Fixture.Markets.ToDictionary(m => m.Id);
+            var markets = fixture.Markets.ToDictionary(m => m.Id);
 
             // get list of markets which are either no longer in snapshot or are in the snapshot and are not resulted
             // markets which were already priced (activated) should be ignored
             var marketsNotPresentInTheSnapshot = new List<IMarketState>();
-            foreach (var mkt in NewState.Markets)
+            foreach (var mkt in newState.Markets)
             {
-                IMarketState mkt_state = NewState[mkt];
+                IMarketState mkt_state = newState[mkt];
                 if (!mkt_state.IsResulted && (!markets.ContainsKey(mkt_state.Id) || !markets[mkt_state.Id].IsResulted))
                     marketsNotPresentInTheSnapshot.Add(mkt_state);
             }
@@ -66,21 +66,21 @@ namespace SS.Integration.Adapter.MarketRules
                 if (mkt_state.HasBeenActive)
                 {
                     _Logger.WarnFormat("market rule={0} => marketId={1} of {2} was priced during the fixture lifetime but has NOT been settled on match over.", 
-                        Name, mkt_state.Id, Fixture);
+                        Name, mkt_state.Id, fixture);
                     continue;
                 }
 
-                var market = Fixture.Markets.FirstOrDefault(m => m.Id == mkt_state.Id);
+                var market = fixture.Markets.FirstOrDefault(m => m.Id == mkt_state.Id);
                 if (market == null)
                 {
-                    _Logger.DebugFormat("market rule={0} => marketId={1} of {2} is marked to be voided", Name, mkt_state.Id, Fixture);
+                    _Logger.DebugFormat("market rule={0} => marketId={1} of {2} is marked to be voided", Name, mkt_state.Id, fixture);
 
                     result.AddMarket(CreateSettledMarket(mkt_state));
                 }
                 else
                 {
                     _Logger.WarnFormat("market rule={0} => marketId={1} of {2} that was in the snapshot but wasn't resulted is marked to be voided", 
-                        Name, market.Id, Fixture);
+                        Name, market.Id, fixture);
 
                     Action<Market> action = x => x.Selections.ForEach(s => s.Status = SelectionStatus.Void);
                     result.EditMarket(market, action);

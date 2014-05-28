@@ -45,10 +45,10 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// a fixture is seen by the adapter.
         /// 
         /// </summary>
-        /// <param name="Fixture"></param>
-        /// <param name="OldState"></param>
-        /// <param name="NewState"></param>
+        /// <param name="fixture"></param>
+        /// <param name="oldState"></param>
+        /// <param name="newState"></param>
         /// <returns></returns>
-        IMarketRuleResultIntent Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState);
+        IMarketRuleResultIntent Apply(Fixture fixture, IMarketStateCollection oldState, IMarketStateCollection newState);
     }
 }
