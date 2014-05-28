@@ -356,6 +356,15 @@ namespace SS.Integration.Adapter
 
             if (_listeners.ContainsKey(resource.Id))
             {
+                lock (_sync)
+                {
+                    if (_currentlyProcessedFixtures.Contains(resource.Id))
+                    {
+                        _logger.DebugFormat("{0} is currently being processed - skipping it", resource);
+                        return;
+                    }
+                }
+
                 IListener listener = _listeners[resource.Id];
                 
                 if (listener.IsFixtureDeleted)

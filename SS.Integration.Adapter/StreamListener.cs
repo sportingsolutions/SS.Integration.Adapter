@@ -55,6 +55,7 @@ namespace SS.Integration.Adapter
         private int _currentEpoch;
         private int _lastSequenceProcessedInSnapshot;
         private bool _hasRecoveredFromError;
+        private bool _isFirstSnapshotProcessed;
 
         public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IObjectProvider<IUpdatableMarketStateCollection> stateProvider)
         {
@@ -77,6 +78,7 @@ namespace SS.Integration.Adapter
             _lastSequenceProcessedInSnapshot = -1;
             _currentEpoch = -1;
             _hasRecoveredFromError = true;
+            _isFirstSnapshotProcessed = false;
 
             IsStreaming = false;
             IsConnecting = false;
@@ -322,6 +324,10 @@ namespace SS.Integration.Adapter
                 _logger.InfoFormat(
                     "{0} is in Setup stage so the listener will not connect to streaming server whilst it's in this stage",
                     _resource);
+
+                // even if we are in setup, we still want to process a snapshot
+                // in order to insert the fixture
+                ProcessFirstSnapshotIfNecessary();
             }
         }
 
@@ -553,6 +559,10 @@ namespace SS.Integration.Adapter
             IsStreaming = true;
             IsConnecting = false;
 
+            // we are connected, so we don't need the acquire the first snapshot
+            // directly
+            _isFirstSnapshotProcessed = true; 
+
             _logger.InfoFormat("Stream connected for {0}", _resource);
             _Stats.SetValue(StreamListenerKeys.STATUS, "Connected");
             _Stats.IncrementValue(StreamListenerKeys.RESTARTED);
@@ -621,7 +631,7 @@ namespace SS.Integration.Adapter
             RetrieveAndProcessSnapshot(hasEpochChanged);
         }
 
-        private Fixture RetrieveSnapshot()
+        private Fixture RetrieveSnapshot(bool setErrorState = true)
         {
             _logger.DebugFormat("Getting Snapshot for {0}", _resource);
 
@@ -637,10 +647,31 @@ namespace SS.Integration.Adapter
             catch (Exception e)
             {
                 _logger.Error(string.Format("An error occured while trying to acquire snapshot for {0}", _resource), e);
-                SetErrorState();
+
+                if(setErrorState)
+                    SetErrorState();
             }
 
             return null;
+        }
+
+        private void ProcessFirstSnapshotIfNecessary()
+        {
+            // if we have already processed the first 
+            // snapshot directly, don't do it again
+            if (_isFirstSnapshotProcessed)
+                return;
+
+            try 
+            {
+                ProcessSnapshot(RetrieveSnapshot(false), true, false, false);
+                _isFirstSnapshotProcessed = true;
+            }
+            catch 
+            {
+                // No need to raise up the exception
+                // we will try again later
+            }
         }
 
         private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false)
@@ -683,7 +714,7 @@ namespace SS.Integration.Adapter
             }
         }
 
-        private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged)
+        private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool setErrorState = true)
         {
             _logger.DebugFormat("Processing snapshot for {0} with isFullSnapshot={1}", snapshot, isFullSnapshot);
 
@@ -717,14 +748,17 @@ namespace SS.Integration.Adapter
                     _logger.Error(string.Format("There has been an aggregate error while trying to process snapshot {0}", snapshot), innerException);
                 }
 
-                SetErrorState();
+                if(setErrorState)
+                    SetErrorState();
             }
             catch (Exception e)
             {
                 _marketsRuleManager.RollbackChanges();
 
                 _logger.Error(string.Format("An error occured while trying to process snapshot {0}", snapshot), e);
-                SetErrorState();
+
+                if(setErrorState)
+                    SetErrorState();
             }
         }
 
