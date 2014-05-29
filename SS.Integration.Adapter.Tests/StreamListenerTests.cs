@@ -95,7 +95,6 @@ namespace SS.Integration.Adapter.Tests
             resource.VerifyAll();
         }
 
-
         [Test]
         [Category("Adapter")]
         public void ShouldSequenceAndEpochBeValid()
@@ -1135,5 +1134,112 @@ namespace SS.Integration.Adapter.Tests
             connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never, "The StreamListener was not supposed to process any updates");
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once);
         }
+
+        /// <summary>
+        /// Here I want to test that the first time the stream listener
+        /// sees a resource (that is in a setup state), 
+        /// it needs to retrieve a snapshot in order
+        /// to insert the fixture in the downstream system. 
+        /// This behaviour must be executed only at the very first time
+        /// the streamlistener sees the fixture 
+        /// </summary>
+        [Test]
+        [Category("StreamListener")]
+        public void ShouldTakeASnapshotOnFirstTimeWeSeeAFixture()
+        {
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<IObjectProvider<IUpdatableMarketStateCollection>> provider = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
+
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.Setup).ToString() };
+
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Setup);
+
+            // FIRST TEST -> if an error is raised, don't reach the error state
+
+            // with returning an empty string we force the stream listener to raise an exception
+            resource.Setup(x => x.GetSnapshot()).Returns(string.Empty);
+
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+            listener.Start();
+
+            // make sure that the listener has not call StartStreaming
+            // but has instead hit the procedure to acquire the first snapshot
+            resource.Verify(x => x.StartStreaming(), Times.Never);
+            resource.Verify(x => x.GetSnapshot(), Times.Once);
+
+            // we need to make sure that even if GetSnapshot raised an exception
+            // the stream listener is not on an error state (as that state
+            // is only reached if we are streaming)
+            listener.IsErrored.Should().BeFalse();
+
+            listener.Stop();
+
+            // SECOND TEST -> make sure we only acquire one snapshot (locking mechanism)
+
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // until the procedure of getting and processing the first snapshot is over,
+            // no other snapshots should be acquired. To check this, we try to acquire 
+            // a new snapshot while we are processing the previous one.
+            connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>())).Callback(() =>
+                {
+                    listener.UpdateResourceState(resource.Object);
+                    resource.Verify(x => x.StartStreaming(), Times.Never);
+
+                    // check that GetSnapshot is only called once!
+                    // 2 = this test + previous one
+                    resource.Verify(x => x.GetSnapshot(), Times.Exactly(2));
+                }
+            );
+
+
+            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+            listener.Start();
+
+            listener.IsErrored.Should().BeFalse();
+
+
+            // THIRD TEST -> make sure that if we acquired the first snapshot but
+            // while processing we raised an exception, then a new snapshot should
+            // be taken
+
+            // until the procedure of getting and processing the first snapshot is over,
+            // no other snapshots should be acquired. To check this, we try to acquire 
+            // a new snapshot while we are processing the previous one.
+            connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>())).Callback(() =>
+                {
+                    throw new Exception("While processing the first snapshot, the plugin raised an exception");
+                }
+            );
+
+
+            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider.Object);
+
+            // an exception is raised while we process the first snapshot
+            listener.Start();
+
+            listener.IsErrored.Should().BeFalse();
+
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(3));
+
+            // ...clear the callback so we don't raise any exception
+            connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>())).Callback(() => { });
+
+            // ... retry....and it should be fine
+            listener.UpdateResourceState(resource.Object);
+
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(4));
+
+            // ... retry again but this time the stream listener should not do anything
+            listener.UpdateResourceState(resource.Object);
+
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(4));
+        }
+
     }
 }

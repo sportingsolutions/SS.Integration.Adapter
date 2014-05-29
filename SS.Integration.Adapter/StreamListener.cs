@@ -55,6 +55,8 @@ namespace SS.Integration.Adapter
         private int _currentEpoch;
         private int _lastSequenceProcessedInSnapshot;
         private bool _hasRecoveredFromError;
+        private bool _isFirstSnapshotProcessed;
+        private bool _isProcessingFirstSnapshot;
 
         public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IObjectProvider<IUpdatableMarketStateCollection> stateProvider)
         {
@@ -77,6 +79,8 @@ namespace SS.Integration.Adapter
             _lastSequenceProcessedInSnapshot = -1;
             _currentEpoch = -1;
             _hasRecoveredFromError = true;
+            _isFirstSnapshotProcessed = false;
+            _isProcessingFirstSnapshot = false;
 
             IsStreaming = false;
             IsConnecting = false;
@@ -185,12 +189,12 @@ namespace SS.Integration.Adapter
         /// 
         /// Thread-safe property
         /// </summary>
-        private bool IsConnecting
+        internal bool IsConnecting
         {
             [MethodImpl(MethodImplOptions.Synchronized)]
             get;
             [MethodImpl(MethodImplOptions.Synchronized)]
-            set;
+            private set;
         }
 
         /// <summary>
@@ -205,12 +209,12 @@ namespace SS.Integration.Adapter
         /// 
         /// Thread-safe property
         /// </summary>
-        private bool IsErrored
+        internal bool IsErrored
         {
             [MethodImpl(MethodImplOptions.Synchronized)]
             get;
             [MethodImpl(MethodImplOptions.Synchronized)]
-            set;
+            private set;
         }
 
         /// <summary>
@@ -238,6 +242,8 @@ namespace SS.Integration.Adapter
                 _resource.StreamEvent -= ResourceOnStreamEvent;
 
                 _resource.StopStreaming();
+                IsStreaming = false;
+                IsConnecting = false;
             }
         }
 
@@ -322,6 +328,10 @@ namespace SS.Integration.Adapter
                 _logger.InfoFormat(
                     "{0} is in Setup stage so the listener will not connect to streaming server whilst it's in this stage",
                     _resource);
+
+                // even if we are in setup, we still want to process a snapshot
+                // in order to insert the fixture
+                ProcessFirstSnapshotIfNecessary();
             }
         }
 
@@ -553,6 +563,10 @@ namespace SS.Integration.Adapter
             IsStreaming = true;
             IsConnecting = false;
 
+            // we are connected, so we don't need the acquire the first snapshot
+            // directly
+            _isFirstSnapshotProcessed = true; 
+
             _logger.InfoFormat("Stream connected for {0}", _resource);
             _Stats.SetValue(StreamListenerKeys.STATUS, "Connected");
             _Stats.IncrementValue(StreamListenerKeys.RESTARTED);
@@ -621,7 +635,7 @@ namespace SS.Integration.Adapter
             RetrieveAndProcessSnapshot(hasEpochChanged);
         }
 
-        private Fixture RetrieveSnapshot()
+        private Fixture RetrieveSnapshot(bool setErrorState = true)
         {
             _logger.DebugFormat("Getting Snapshot for {0}", _resource);
 
@@ -637,10 +651,58 @@ namespace SS.Integration.Adapter
             catch (Exception e)
             {
                 _logger.Error(string.Format("An error occured while trying to acquire snapshot for {0}", _resource), e);
-                SetErrorState();
+
+                if (setErrorState)
+                    SetErrorState();
+                else
+                    throw;
             }
 
             return null;
+        }
+
+        private void ProcessFirstSnapshotIfNecessary()
+        {
+            // if we have already processed the first 
+            // snapshot directly, don't do it again
+
+            lock (this)
+            {
+                if (_isFirstSnapshotProcessed)
+                {
+                    _logger.DebugFormat("Requested to process first snapshot for {0} but it has already been processed - skipping it", _resource);
+                    return;
+                }
+
+                if (_isProcessingFirstSnapshot)
+                {
+                    _logger.DebugFormat("Requested to process first snapshot for {0} but it is being processed by another thread", _resource);
+                    return;
+                }
+
+                _isProcessingFirstSnapshot = true;
+            }
+
+            bool tmp = false;
+            try
+            {
+                ProcessSnapshot(RetrieveSnapshot(false), true, false, false);
+
+                tmp = true;
+            }
+            catch
+            {
+                // No need to raise up the exception
+                // we will try again later
+            }
+            finally
+            {
+                lock (this)
+                {
+                    _isFirstSnapshotProcessed = tmp;
+                    _isProcessingFirstSnapshot = false;
+                }
+            }
         }
 
         private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false)
@@ -683,8 +745,11 @@ namespace SS.Integration.Adapter
             }
         }
 
-        private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged)
+        private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool setErrorState = true)
         {
+            if (snapshot == null)
+                return;
+
             _logger.DebugFormat("Processing snapshot for {0} with isFullSnapshot={1}", snapshot, isFullSnapshot);
 
             try
@@ -717,14 +782,21 @@ namespace SS.Integration.Adapter
                     _logger.Error(string.Format("There has been an aggregate error while trying to process snapshot {0}", snapshot), innerException);
                 }
 
-                SetErrorState();
+                if (setErrorState)
+                    SetErrorState();
+                else
+                    throw;
             }
             catch (Exception e)
             {
                 _marketsRuleManager.RollbackChanges();
 
                 _logger.Error(string.Format("An error occured while trying to process snapshot {0}", snapshot), e);
-                SetErrorState();
+
+                if (setErrorState)
+                    SetErrorState();
+                else
+                    throw;
             }
         }
 
