@@ -12,10 +12,14 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using FluentAssertions;
 using NUnit.Framework;
 using System.Threading;
 using Moq;
+using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
@@ -208,6 +212,140 @@ namespace SS.Integration.Adapter.Tests
             service.VerifyAll();
             
             eventState.Verify(es => es.RemoveFixture(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
+        }
+
+
+        /// <summary>
+        /// Here I want to test that when a resource
+        /// is being processed by the adapter thread
+        /// (timer tick) then it must not be processed
+        /// by another thread at the same time
+        /// </summary>
+        [Test]
+        [Category("Adapter")]
+        public void ResourceIsProcessedExclusivelyTest()
+        {
+            var settings = new Mock<ISettings>();
+            var service = new Mock<IServiceFacade>();
+            var connector = new Mock<IAdapterPlugin>();
+            var updater = new Mock<IMappingUpdater>();
+            var state = new Mock<IEventState>();
+
+            settings.Setup(x => x.EventStateFilePath).Returns(".");
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            settings.Setup(x => x.FixtureCreationConcurrency).Returns(1);
+            settings.Setup(x => x.FixtureCheckerFrequency).Returns(500);
+
+            var sport = new Mock<IFeature>();
+
+            var resource = new Mock<IResourceFacade>();
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary { Sequence = 1 });
+
+            service.Setup(x => x.GetSports()).Returns(new List<IFeature> { sport.Object });
+            service.Setup(x => x.GetResources(It.IsAny<string>())).Returns(new List<IResourceFacade> { resource.Object });
+            
+
+
+            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object, updater.Object);
+            adapter.StreamCreated += adapter_StreamCreated;
+            adapter.EventState = state.Object;
+
+            // after this call a stream listener for the above resource will be created
+            // and the thread that created it will be blocked on the adapter_StreamCreated 
+            // event handler until we un-block it
+            adapter.Start();
+
+            // As the FixtureCheckerFrequency is half second, before returning
+            // from the event handler, the adapter's timer tick surely has
+            // been fired several times. As we haven't yet returned from
+            // the event handler, for the adapter the resource is still
+            // being processed. Here we want to check that this is true.
+
+            // For checking this we check how many times the adapter
+            // interrogates EventState.GetFixtureState("ABC")
+            // (that call is made immediately before adding the resource
+            // to the creation queue - if that detail change, we need
+            // to revisit this unit test
+
+            Thread.Sleep(5000);
+
+            lock (adapter)
+            {
+                Monitor.PulseAll(adapter);
+                state.Verify(x => x.GetFixtureState("ABC"), Times.Once);
+            }
+
+            adapter.Stop();
+
+        }
+
+        [Test]
+        [Category("Adapter")]
+        public void AdapterIsDisposedCorrectlyTest()
+        {
+            var settings = new Mock<ISettings>();
+            var service = new Mock<IServiceFacade>();
+            var connector = new Mock<IAdapterPlugin>();
+            var updater = new Mock<IMappingUpdater>();
+
+            settings.Setup(x => x.EventStateFilePath).Returns(".");
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            settings.Setup(x => x.FixtureCreationConcurrency).Returns(1);
+            settings.Setup(x => x.FixtureCheckerFrequency).Returns(500);
+
+            var sport = new Mock<IFeature>();
+
+            var resource = new Mock<IResourceFacade>();
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary { Sequence = 1 });
+
+            service.Setup(x => x.GetSports()).Returns(new List<IFeature> { sport.Object });
+            service.Setup(x => x.GetResources(It.IsAny<string>())).Returns(new List<IResourceFacade> { resource.Object });
+
+
+            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object, updater.Object);
+            adapter.StreamCreated += adapter_StreamCreated;
+
+            adapter.Start();
+
+            Thread.Sleep(1000);
+
+            bool error = false;
+
+            // as stop needs to wait for thread termination, and all the threads
+            // are waiting on a lock, we need to call this on a separate thread
+            Task t = Task.Factory.StartNew(() =>
+                {
+                    try
+                    {
+                        adapter.Stop();
+                    }
+                    catch
+                    {
+                        error = true;
+                    }
+                }
+                
+            );
+
+            Thread.Sleep(2000);
+
+            lock (adapter)
+            {
+                Monitor.PulseAll(adapter);
+            }
+
+            t.Wait();
+            error.Should().BeFalse();
+        }
+
+        private static void adapter_StreamCreated(object sender, System.EventArgs e)
+        {
+            lock (sender)
+            {
+                Monitor.Wait(sender);
+            }
         }
 
         private IEnumerable<string> Sports(ListOfSports howMany)

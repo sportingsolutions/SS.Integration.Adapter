@@ -56,6 +56,7 @@ namespace SS.Integration.Adapter
         private int _lastSequenceProcessedInSnapshot;
         private bool _hasRecoveredFromError;
         private bool _isFirstSnapshotProcessed;
+        private bool _isProcessingFirstSnapshot;
 
         public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IObjectProvider<IUpdatableMarketStateCollection> stateProvider)
         {
@@ -79,6 +80,7 @@ namespace SS.Integration.Adapter
             _currentEpoch = -1;
             _hasRecoveredFromError = true;
             _isFirstSnapshotProcessed = false;
+            _isProcessingFirstSnapshot = false;
 
             IsStreaming = false;
             IsConnecting = false;
@@ -187,12 +189,12 @@ namespace SS.Integration.Adapter
         /// 
         /// Thread-safe property
         /// </summary>
-        private bool IsConnecting
+        internal bool IsConnecting
         {
             [MethodImpl(MethodImplOptions.Synchronized)]
             get;
             [MethodImpl(MethodImplOptions.Synchronized)]
-            set;
+            private set;
         }
 
         /// <summary>
@@ -207,12 +209,12 @@ namespace SS.Integration.Adapter
         /// 
         /// Thread-safe property
         /// </summary>
-        private bool IsErrored
+        internal bool IsErrored
         {
             [MethodImpl(MethodImplOptions.Synchronized)]
             get;
             [MethodImpl(MethodImplOptions.Synchronized)]
-            set;
+            private set;
         }
 
         /// <summary>
@@ -240,6 +242,8 @@ namespace SS.Integration.Adapter
                 _resource.StreamEvent -= ResourceOnStreamEvent;
 
                 _resource.StopStreaming();
+                IsStreaming = false;
+                IsConnecting = false;
             }
         }
 
@@ -648,8 +652,10 @@ namespace SS.Integration.Adapter
             {
                 _logger.Error(string.Format("An error occured while trying to acquire snapshot for {0}", _resource), e);
 
-                if(setErrorState)
+                if (setErrorState)
                     SetErrorState();
+                else
+                    throw;
             }
 
             return null;
@@ -659,18 +665,43 @@ namespace SS.Integration.Adapter
         {
             // if we have already processed the first 
             // snapshot directly, don't do it again
-            if (_isFirstSnapshotProcessed)
-                return;
 
-            try 
+            lock (this)
+            {
+                if (_isFirstSnapshotProcessed)
+                {
+                    _logger.DebugFormat("Requested to process first snapshot for {0} but it has already been processed - skipping it", _resource);
+                    return;
+                }
+
+                if (_isProcessingFirstSnapshot)
+                {
+                    _logger.DebugFormat("Requested to process first snapshot for {0} but it is being processed by another thread", _resource);
+                    return;
+                }
+
+                _isProcessingFirstSnapshot = true;
+            }
+
+            bool tmp = false;
+            try
             {
                 ProcessSnapshot(RetrieveSnapshot(false), true, false, false);
-                _isFirstSnapshotProcessed = true;
+
+                tmp = true;
             }
-            catch 
+            catch
             {
                 // No need to raise up the exception
                 // we will try again later
+            }
+            finally
+            {
+                lock (this)
+                {
+                    _isFirstSnapshotProcessed = tmp;
+                    _isProcessingFirstSnapshot = false;
+                }
             }
         }
 
@@ -716,6 +747,9 @@ namespace SS.Integration.Adapter
 
         private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool setErrorState = true)
         {
+            if (snapshot == null)
+                return;
+
             _logger.DebugFormat("Processing snapshot for {0} with isFullSnapshot={1}", snapshot, isFullSnapshot);
 
             try
@@ -748,8 +782,10 @@ namespace SS.Integration.Adapter
                     _logger.Error(string.Format("There has been an aggregate error while trying to process snapshot {0}", snapshot), innerException);
                 }
 
-                if(setErrorState)
+                if (setErrorState)
                     SetErrorState();
+                else
+                    throw;
             }
             catch (Exception e)
             {
@@ -757,8 +793,10 @@ namespace SS.Integration.Adapter
 
                 _logger.Error(string.Format("An error occured while trying to process snapshot {0}", snapshot), e);
 
-                if(setErrorState)
+                if (setErrorState)
                     SetErrorState();
+                else
+                    throw;
             }
         }
 
