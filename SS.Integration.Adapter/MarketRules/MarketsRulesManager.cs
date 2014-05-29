@@ -220,7 +220,7 @@ namespace SS.Integration.Adapter.MarketRules
 
 
             toadd.ForEach(x => _logger.DebugFormat("Adding market {0} to {1} as requested by market rules", x, fixture));
-            fixture.Markets.AddRange(toadd);
+            fixture.AllMarkets.AddRange(toadd);
 
             foreach (var mkt in toedit.Keys)
             {
@@ -265,7 +265,7 @@ namespace SS.Integration.Adapter.MarketRules
                 if (toremove[mkt] && !toedit.ContainsKey(mkt))
                 {
                     _logger.DebugFormat("{0} of {1} will be removed from snapshot due market rules", mkt, fixture);
-                    fixture.Markets.Remove(mkt);
+                    fixture.AllMarkets.Remove(mkt);
                 }
             }
         }
@@ -292,7 +292,7 @@ namespace SS.Integration.Adapter.MarketRules
                 return fixture;
 
             foreach (var mkt_id in _CurrentTransaction.Markets)
-                fixture.Markets.Add(CreateSuspendedMarket(_CurrentTransaction[mkt_id]));
+                fixture.AllMarkets.Add(CreateSuspendedMarket(_CurrentTransaction[mkt_id]));
 
             return fixture;
         }

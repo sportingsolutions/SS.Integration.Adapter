@@ -31,6 +31,7 @@ namespace SS.Integration.Adapter.Plugin.Model
         public string TagValue { get; set; }
         public string HandicapTag { get; set; }
         public bool IsHandicap { get { return HandicapMapping != null; } }
+        public bool IsRollingHandicap { get; set; }
         public HandicapMapping HandicapMapping { get; set; }
         public IndexMapping IndexMapping { get; set; }
         public bool IsResulted { get; set; }

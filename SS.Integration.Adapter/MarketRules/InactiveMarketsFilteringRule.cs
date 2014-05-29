@@ -49,7 +49,7 @@ namespace SS.Integration.Adapter.MarketRules
             _Logger.DebugFormat("Applying market rule={0} for {1}", Name, fixture);
 
 
-            var inactiveMarkets = fixture.Markets.Where(
+            var inactiveMarkets = fixture.AllMarkets.Where(
                 m => (oldState != null && oldState.HasMarket(m.Id) && oldState[m.Id].IsEqualTo(newState[m.Id]))
                         && (!m.IsActive && !oldState[m.Id].IsActive));
 
