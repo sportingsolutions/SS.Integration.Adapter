@@ -375,20 +375,9 @@ namespace SS.Integration.Adapter
         {
             _logger.InfoFormat("Processing {0} for sport={1}", resource, sport);
 
-            // this prevents to take any decision
-            // about the resource while it is
-            // being processed by another thread
-            lock (_sync)
-            {
-                if (_currentlyProcessedFixtures.Contains(resource.Id))
-                {
-                    _logger.DebugFormat("{0} is currently being processed - skipping it", resource);
-                    return;
-                }
-
-                _currentlyProcessedFixtures.Add(resource.Id);
-            }
-
+            if(!CanProcessResource(resource))
+                return;
+            
             if (_listeners.ContainsKey(resource.Id))
             {
 
@@ -407,12 +396,16 @@ namespace SS.Integration.Adapter
                 else
                 {
                     if (StopListenerIfFixtureEnded(sport, resource))
+                    {
+                        MarkResourceAsProcessable(resource);
                         return;
+                    }
 
                     // if the stream is valid, update its status
                     if (ValidateStream(resource))
                     {
                         _listeners[resource.Id].UpdateResourceState(resource);
+                        MarkResourceAsProcessable(resource);
                         return;
                     }
 
@@ -426,6 +419,7 @@ namespace SS.Integration.Adapter
             if (resource.IsMatchOver && (fixtureState == null || fixtureState.MatchStatus == resource.MatchStatus))
             {
                 _logger.InfoFormat("{0} has finished. Will not process", resource);
+                MarkResourceAsProcessable(resource);
                 return;
             }
 
@@ -465,10 +459,7 @@ namespace SS.Integration.Adapter
                     }
                     finally
                     {
-                        lock (_sync)
-                        {
-                            _currentlyProcessedFixtures.Remove(resource.Id);
-                        }
+                        MarkResourceAsProcessable(resource);
 
                         _logger.InfoFormat("Finished processing fixture from queue {0}", resource);
                     }
@@ -573,6 +564,34 @@ namespace SS.Integration.Adapter
 
             _Stats.SetValue(AdapterKeys.HOST_NAME, Environment.MachineName);
             _Stats.SetValue(AdapterKeys.START_TIME, DateTime.Now.ToUniversalTime().ToString());
+        }
+
+        private bool CanProcessResource(IResourceFacade resource)
+        {
+            // this prevents to take any decision
+            // about the resource while it is
+            // being processed by another thread
+            lock (_sync)
+            {
+                if (_currentlyProcessedFixtures.Contains(resource.Id))
+                {
+                    _logger.DebugFormat("{0} is currently being processed - skipping it", resource);
+                    return false;
+                }
+
+                _currentlyProcessedFixtures.Add(resource.Id);
+            }
+
+            return true;
+        }
+
+        private void MarkResourceAsProcessable(IResourceFacade resource)
+        {
+            lock (_sync)
+            {
+                if (_currentlyProcessedFixtures.Contains(resource.Id))
+                    _currentlyProcessedFixtures.Remove(resource.Id);
+            }
         }
 
         protected virtual void OnStreamCreated()
