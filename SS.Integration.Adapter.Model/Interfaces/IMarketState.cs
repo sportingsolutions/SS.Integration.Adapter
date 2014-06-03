@@ -101,17 +101,17 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// null or empty of if the selection does not
         /// exist
         /// </summary>
-        /// <param name="SelectionId"></param>
+        /// <param name="selectionId"></param>
         /// <returns></returns>
-        ISelectionState this[string SelectionId] { get; }
+        ISelectionState this[string selectionId] { get; }
 
         /// <summary>
         /// True if an ISelectionState object for
         /// the given selection's id is present
         /// </summary>
-        /// <param name="SelectionId"></param>
+        /// <param name="selectionId"></param>
         /// <returns></returns>
-        bool HasSelection(string SelectionId);
+        bool HasSelection(string selectionId);
 
         #endregion
 
@@ -153,8 +153,8 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// Determines if the given market state
         /// is equal to the current object
         /// </summary>
-        /// <param name="State"></param>
+        /// <param name="newMarket"></param>
         /// <returns></returns>
-        bool IsEqualTo(IMarketState State);
+        bool IsEqualTo(IMarketState newMarket);
     }
 }

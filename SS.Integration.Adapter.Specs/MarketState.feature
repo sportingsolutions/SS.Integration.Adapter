@@ -17,7 +17,7 @@ Scenario: Compute Market Tradability (all selection must be pending in order to 
 	| Property | Value |
 	| Id       | "ABC" |
 	And The market has these selections
-	| Selection | Status | Tradability | Price |
+	| Id		| Status | Tradability | Price |
 	| 1         | 0      | 0           | -1    |
 	| 2         | 0      | 0           | 0     |
 	| 3         | 0      | 0           | 1     |
@@ -30,7 +30,7 @@ Scenario: Compute Market Tradability (all selection must be pending in order to 
 	| Property | Value |
 	| Id       | "ABC" |
 	And The market has these selections
-	| Selection | Status | Tradability | Price |
+	| Id		| Status | Tradability | Price |
 	| 1         | 1      | 1           | -1    |
 	| 2         | 0      | 1           | 0     |
 	| 3         | 0      | 1           | 1     |
@@ -46,7 +46,7 @@ Scenario: Compute Market Tradability (tradability IS considered for suspension)
 	| Property | Value |
 	| Id       | "1" |
 	And The market has these selections
-	| Selection | Status | Tradability | Price |
+	| Id	    | Status | Tradability | Price |
 	| 1         | 1      | 1           | -1    |
 	| 2         | 1      | 1           | 0     |
 	| 3         | 1      | 1           | 1     |
@@ -60,7 +60,7 @@ Scenario: Compute Market Tradability (tradability IS considered for suspension)
 	| Id       | "2" |
 	And The market has these selections
 	# Pay attention here to tradability = false
-	| Selection | Status | Tradability | Price |
+	| Id		| Status | Tradability | Price |
 	| 1         | 1      | 1           | -1    |
 	| 2         | 1      | 1           | 0     |
 	| 3         | 1      | 1           | 1     |
@@ -74,7 +74,7 @@ Scenario: Compute Market Tradability (tradability IS considered for suspension)
 	| Id       | "3" |
 	And The market has these selections
 	# Pay attention here to tradability = false
-	| Selection | Status | Tradability | Price |
+	| Id	    | Status | Tradability | Price |
 	| 1         | 1      | 0           | -1    |
 	| 2         | 1      | 0           | 0     |
 	| 3         | 1      | 0           | 1     |
@@ -89,7 +89,7 @@ Scenario: Compute Market Tradability (one active selection is enough to make the
 	| Property | Value |
 	| Id       | "ABC" |
 	And The market has these selections
-	| Selection | Status | Tradability | Price |
+	| Id		| Status | Tradability | Price |
 	| 1         | 1      | 0           | -1    |
 	| 2         | 0      | 0           | 0     |
 	| 3         | 0      | 0           | 1     |
@@ -102,7 +102,7 @@ Scenario: Compute Market Tradability (one active selection is enough to make the
 	| Property | Value |
 	| Id       | "ABC" |
 	And The market has these selections
-	| Selection | Status | Tradability | Price |
+	| Id		| Status | Tradability | Price |
 	| 1         | 1      | 1           | -1    |
 	| 2         | 0      | 0           | 0     |
 	| 3         | 0      | 0           | 1     |
@@ -115,7 +115,7 @@ Scenario: Compute Market Tradability (one active selection is enough to make the
 	| Property | Value |
 	| Id       | "ABC" |
 	And The market has these selections
-	| Selection | Status | Tradability | Price |
+	| Id		| Status | Tradability | Price |
 	| 1         | 1      | 1           | -1    |
 	| 2         | 2      | 0           | 0     |
 	| 3         | 3      | 0           | 1     |
@@ -131,7 +131,7 @@ Scenario: Compute Market Tradability (resulted look at the selection price)
 	| Property | Value |
 	| Id       | "ABC" |
 	And The market has these selections
-	| Selection | Status | Tradability | Price |
+	| Id		| Status | Tradability | Price |
 	| 1         | 3      | 0           | -1    |
 	| 2         | 3      | 0           | 0     |
 	| 3         | 3      | 0           | 1     |
@@ -144,7 +144,7 @@ Scenario: Compute Market Tradability (resulted look at the selection price)
 	| Property | Value |
 	| Id       | "ABC" |
 	And The market has these selections
-	| Selection | Status | Tradability | Price |
+	| Id		| Status | Tradability | Price |
 	| 1         | 3      | 1           | -1    |
 	| 2         | 3      | 1           | 0     |
 	| 3         | 3      | 1           | 1     |
@@ -157,7 +157,7 @@ Scenario: Compute Market Tradability (resulted look at the selection price)
 	| Property | Value |
 	| Id       | "ABC" |
 	And The market has these selections
-	| Selection | Status | Tradability | Price |
+	| Id		| Status | Tradability | Price |
 	| 1         | 1      | 1           | -1    |
 	| 2         | 1      | 1           | 0     |
 	| 3         | 1      | 1           | 1     |
@@ -170,7 +170,7 @@ Scenario: Compute Market Tradability (resulted look at the selection price)
 	| Property | Value |
 	| Id       | "ABC" |
 	And The market has these selections
-	| Selection | Status | Tradability | Price |
+	| Id | Status | Tradability | Price |
 	| 1         | 1      | 1           | -1    |
 	| 2         | 1      | 1           | 0     |
 	| 3         | 1      | 1           | 1     |
@@ -179,3 +179,71 @@ Scenario: Compute Market Tradability (resulted look at the selection price)
 	Then I should have these values
 	| Active | Pending | Suspended | Resulted |
 	| 1      | 0       | 0         | 0        |
+
+
+Scenario: Rolling handicap line is stored correctly 
+Given MarketStates collection is set up
+And Rolling Handicap market wit id=rollingMarket
+And The rolling market has these selections
+| Id | Status | Tradability | Price | Line |
+| 1  | 1      | 0			| -1    | 1    |
+| 2  | 1      | 0			|  0    | 1    |
+When Market status is generated for snapshot=true
+Then Rolling market should have line=1	
+
+Scenario: Rolling handicap line is calculated correctly on updates
+Given MarketStates collection is set up
+And Rolling Handicap market wit id=rollingMarket
+And The rolling market has these selections
+| Id | Status | Tradability | Price | Line |
+| 1  | 1      | 0           | -1    | 1    |
+| 2  | 1      | 0           | 0     | 1    |
+When Market status is generated for snapshot=true
+Then Rolling market should have line=1	
+When Market has been updated 
+| Id | Status | Tradability | Price | Line  | 
+| 1  | 1      | 0           | 0     |  -2    | 
+| 2  | 1      | 0           | 0     |  -2    | 
+And Market status is generated for snapshot=false
+Then Rolling market should have line=-2	
+
+Scenario: Rolling handicap line is calculated correctly on home/away market
+Given MarketStates collection is set up
+And Rolling Handicap market wit id=rollingMarket
+And The rolling market has these selections
+| Id | Status | Tradability | Price | Line | TagKey | TagValue  |
+| 1  | 1      | 0           | -1    | -1   | team   |     1     |
+| 2  | 1      | 0           | 0     | 1    | team   |     2     |
+When Market status is generated for snapshot=true
+Then Rolling market should have line=-1	
+
+Scenario: Rolling handicap line is calculated correctly on home/away market during updates
+Given MarketStates collection is set up
+And Rolling Handicap market wit id=rollingMarket
+And The rolling market has these selections
+| Id | Status | Tradability | Price | Line | TagKey | TagValue  |
+| 1  | 1      | 0           | -1    | -1   | team   |     1     |
+| 2  | 1      | 0           | 0     | 1    | team   |     2     |
+When Market status is generated for snapshot=true
+Then Rolling market should have line=-1	
+When Market has been updated 
+| Id | Status | Tradability | Price | Line  | 
+| 1  | 1      | 0           | 0     |  2    | 
+| 2  | 1      | 0           | 0     | -2    | 
+And Market status is generated for snapshot=false
+Then Rolling market should have line=2	
+
+Scenario: Rolling handicap line is calculated correctly on when only away selection is passed
+Given MarketStates collection is set up
+And Rolling Handicap market wit id=rollingMarket
+And The rolling market has these selections
+| Id | Status | Tradability | Price | Line | TagKey | TagValue  |
+| 1  | 1      | 0           | -1    | -1   | team   |     1     |
+| 2  | 1      | 0           | 0     | 1    | team   |     2     |
+When Market status is generated for snapshot=true
+Then Rolling market should have line=-1	
+When Market has been updated 
+| Id | Status | Tradability | Price | Line | 
+| 2  | 1      | 0           | 0     | 1    | 
+And Market status is generated for snapshot=false
+Then Rolling market should have line=-1	

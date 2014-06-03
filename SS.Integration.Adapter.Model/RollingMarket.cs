@@ -27,7 +27,7 @@ namespace SS.Integration.Adapter.Model
 
         public double? Line
         {
-            get { return Selections.First().Line; }
+            get; set;
         }
 
         public RollingMarketScore Score { get; set; }

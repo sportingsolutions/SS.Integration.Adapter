@@ -51,6 +51,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
         public bool? Tradability { get; private set; }
 
         public string Status { get; private set; }
+        
+        public double Line { get; private set; }
 
         #region Tags
 
@@ -94,21 +96,31 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         #region IUpdatableSelectionState
 
-        public void Update(Selection Selection, bool fullSnapshot)
+        public void Update(Selection selection, bool fullSnapshot)
         {
-            Price = Selection.Price;
-            Status = Selection.Status;
-            Tradability = Selection.Tradable;
+            Price = selection.Price;
+            Status = selection.Status;
+            Tradability = selection.Tradable;
 
             if (fullSnapshot)
             {
                 _Tags = new Dictionary<string, string>();
 
-                foreach (var key in Selection.TagKeys)
-                    _Tags.Add(key, Selection.GetTagValue(key));
+                foreach (var key in selection.TagKeys)
+                    _Tags.Add(key, selection.GetTagValue(key));
 
-                Name = Selection.Name;
+                Name = selection.Name;
             }
+
+            UpdateLineOnRollingSelection(selection);
+        }
+
+        private void UpdateLineOnRollingSelection(Selection selection)
+        {
+            var rollingSelection = selection as RollingSelection;
+            if(rollingSelection == null) return;
+
+            this.Line = rollingSelection.Line;
         }
 
         public IUpdatableSelectionState Clone()

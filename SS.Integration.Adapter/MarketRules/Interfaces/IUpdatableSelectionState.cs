@@ -26,9 +26,9 @@ namespace SS.Integration.Adapter.MarketRules.Interfaces
         /// If fullSnapshot is true, then the Selection object
         /// must contain the tag section.
         /// </summary>
-        /// <param name="Selection"></param>
+        /// <param name="selection"></param>
         /// <param name="fullSnapshot">True if the Selection object is coming from a full snapshot</param>
-        void Update(Selection Selection, bool fullSnapshot);
+        void Update(Selection selection, bool fullSnapshot);
 
         /// <summary>
         /// Allows to create a deep copy of this object
