@@ -49,7 +49,7 @@ namespace SS.Integration.Adapter.MarketRules
 
             _Logger.DebugFormat("Applying market rule={0} for {1}", Name, fixture);
 
-            var markets = fixture.AllMarkets.ToDictionary(m => m.Id);
+            var markets = fixture.Markets.ToDictionary(m => m.Id);
 
             // get list of markets which are either no longer in snapshot or are in the snapshot and are not resulted
             // markets which were already priced (activated) should be ignored
@@ -70,7 +70,7 @@ namespace SS.Integration.Adapter.MarketRules
                     continue;
                 }
 
-                var market = fixture.AllMarkets.FirstOrDefault(m => m.Id == mkt_state.Id);
+                var market = fixture.Markets.FirstOrDefault(m => m.Id == mkt_state.Id);
                 if (market == null)
                 {
                     _Logger.DebugFormat("market rule={0} => marketId={1} of {2} is marked to be voided", Name, mkt_state.Id, fixture);

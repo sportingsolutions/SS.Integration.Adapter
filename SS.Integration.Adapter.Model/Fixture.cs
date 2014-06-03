@@ -26,7 +26,6 @@ namespace SS.Integration.Adapter.Model
             Tags = new Dictionary<string, object>();
             GameState = new Dictionary<string, object>();
             Markets = new List<Market>();
-            RollingMarkets = new List<RollingMarket>();
             Participants = new List<Participant>();
         }
 
@@ -49,21 +48,25 @@ namespace SS.Integration.Adapter.Model
         public Dictionary<string, object> GameState { get; private set; }
 
         public List<Market> Markets { get; private set; }
-        public List<RollingMarket> RollingMarkets { get; private set; }
-        
-        public List<Market> AllMarkets
-        {
-            get
-            {
-                if (Markets != null && RollingMarkets == null)
-                    return Markets;
 
-                if (Markets == null && RollingMarkets != null)
-                    return RollingMarkets.Cast<Market>().ToList();
-                
-                return Markets.Concat(RollingMarkets.Cast<Market>()).ToList();
-            }
+        public List<RollingMarket> RollingMarkets
+        {
+            set { Markets.AddRange(value); }
         }
+
+        //public IEnumerable<Market> AllMarkets
+        //{
+        //    get
+        //    {
+        //        if (Markets != null && RollingMarkets == null)
+        //            return Markets;
+
+        //        if (Markets == null && RollingMarkets != null)
+        //            return RollingMarkets.Cast<Market>().ToList();
+
+        //        return Markets.Concat(RollingMarkets);
+        //    }
+        //}
 
         public List<Participant> Participants { get; private set; }
 

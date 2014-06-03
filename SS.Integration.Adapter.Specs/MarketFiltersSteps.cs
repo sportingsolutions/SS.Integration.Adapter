@@ -45,8 +45,8 @@ namespace SS.Integration.Adapter.Specs
         public void WhenMarketFiltersAreInitiated()
         {
             _marketsCache = null;
-            _fixture.AllMarkets.Clear();
-            _fixture.AllMarkets.AddRange(_markets);
+            _fixture.Markets.Clear();
+            _fixture.Markets.AddRange(_markets);
             var objectProviderMock = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
             objectProviderMock.Setup(x => x.GetObject(It.IsAny<string>())).Returns(() => _marketsCache);
             objectProviderMock.Setup(x => x.SetObject(It.IsAny<string>(), It.IsAny<IUpdatableMarketStateCollection>()))
@@ -67,7 +67,7 @@ namespace SS.Integration.Adapter.Specs
         [Then(@"Market IsSuspended is (.*)")]
         public void ThenMarketIsSuspendedIs(string isSuspendedString)
         {
-            _fixture.AllMarkets.First(m => m.Id == "TestId").IsSuspended.Should().Be(bool.Parse(isSuspendedString));
+            _fixture.Markets.First(m => m.Id == "TestId").IsSuspended.Should().Be(bool.Parse(isSuspendedString));
         }
 
         [When(@"Update Arrives")]
@@ -78,8 +78,8 @@ namespace SS.Integration.Adapter.Specs
             market.Selections.Clear();
             market.Selections.AddRange(table.Rows.Select(r=>  Helper.GetObjectFromTableRow<Selection>(r)));
 
-            _fixture.AllMarkets.Clear();
-            _fixture.AllMarkets.Add(market);            
+            _fixture.Markets.Clear();
+            _fixture.Markets.Add(market);            
         }
 
         [When(@"Rollback change")]
@@ -103,20 +103,20 @@ namespace SS.Integration.Adapter.Specs
         [Then(@"Market Voided=(.*)")]
         public void ThenMarketVoidedFalse(bool isVoid)
         {
-            var market = _fixture.AllMarkets.First();
+            var market = _fixture.Markets.First();
             market.IsResulted.Should().Be(isVoid);
         }
 
         [Then(@"Market with id=(.*) is not removed from snapshot")]
         public void ThenMarketIsNotRemovedFromSnapshot(string marketId)
         {
-            _fixture.AllMarkets.Should().Contain(m => m.Id == marketId);
+            _fixture.Markets.Should().Contain(m => m.Id == marketId);
         }
 
         [Then(@"Market with id=(.*) is removed from snapshot")]
         public void ThenMarketWithIdTestIdIsRemovedFromSnapshot(string marketId)
         {
-            _fixture.AllMarkets.Should().NotContain(m => m.Id == marketId);
+            _fixture.Markets.Should().NotContain(m => m.Id == marketId);
         }
 
 
@@ -165,7 +165,7 @@ namespace SS.Integration.Adapter.Specs
 
                 var mkt_name = row["Market"];
                 var result = row["Result"];
-                var mkt = fixture.AllMarkets.FirstOrDefault( x => x.Id == mkt_name);
+                var mkt = fixture.Markets.FirstOrDefault( x => x.Id == mkt_name);
                 mkt.Should().NotBeNull();
 
 
@@ -215,7 +215,7 @@ namespace SS.Integration.Adapter.Specs
                 Market mkt = new Market {Id = row["Market"]};
                 mkt.AddOrUpdateTagValue("name", row["Name"]);
 
-                fixture.AllMarkets.Add(mkt);
+                fixture.Markets.Add(mkt);
             }
         }
 
@@ -242,7 +242,7 @@ namespace SS.Integration.Adapter.Specs
                 var mkt_name = row["Market"];
                 if (Convert.ToBoolean (row["Exists"]))
                 {
-                    Market mkt = fixture.AllMarkets.First(x => x.Id == mkt_name);
+                    Market mkt = fixture.Markets.First(x => x.Id == mkt_name);
                     var n = row["Name"];
                     mkt.Name.Should().Be(n);
                 }

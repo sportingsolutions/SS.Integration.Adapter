@@ -94,7 +94,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public void Update(Fixture Fixture, bool fullSnapshot)
         {
-            foreach (var market in Fixture.AllMarkets)
+            foreach (var market in Fixture.Markets)
             {
                 IUpdatableMarketState mkt_state = null;
                 if (HasMarket(market.Id))

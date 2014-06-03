@@ -95,7 +95,7 @@ namespace SS.Integration.Adapter.Specs
             ScenarioContext.Current.Add("RollingMarket", rollingMarket);
             
             _fixture = new Fixture { Id = "TestFixture", MatchStatus = "40", Tags = { { "Sport", "Football" } } };
-            _fixture.RollingMarkets.Add(rollingMarket);
+            _fixture.Markets.Add(rollingMarket);
         }
 
         [Given(@"MarketStates collection is set up")]

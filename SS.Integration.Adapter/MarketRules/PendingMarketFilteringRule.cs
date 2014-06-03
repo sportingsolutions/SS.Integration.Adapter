@@ -77,7 +77,7 @@ namespace SS.Integration.Adapter.MarketRules
 
             var result = new MarketRuleResultIntent();
 
-            foreach (var mkt in fixture.AllMarkets)
+            foreach (var mkt in fixture.Markets)
             {
 
                 if (_ExcludedMarketType.Contains(mkt.Type))
