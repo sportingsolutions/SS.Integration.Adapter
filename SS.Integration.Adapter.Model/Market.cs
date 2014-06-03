@@ -30,6 +30,8 @@ namespace SS.Integration.Adapter.Model
     public class Market
     {
         private readonly Dictionary<string, string> _Tags;
+        protected List<Selection> _selections; 
+
 
         public Market(string Id)
             : this()
@@ -40,7 +42,7 @@ namespace SS.Integration.Adapter.Model
         public Market()
         {
             _Tags = new Dictionary<string, string>();
-            Selections = new List<Selection>();
+            _selections = new List<Selection> ();
         }
 
         /// <summary>
@@ -137,7 +139,11 @@ namespace SS.Integration.Adapter.Model
         /// Returns the selections's for this market
         /// as they are contained within the snapshot.
         /// </summary>
-        public virtual List<Selection> Selections { get; private set; }
+        public virtual List<Selection> Selections
+        {
+            get { return _selections; }
+            protected set { _selections = value; }
+        }
 
         #region Tags
 

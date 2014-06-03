@@ -9,6 +9,6 @@ namespace SS.Integration.Adapter.Model
     [Serializable]
     public class RollingSelection : Selection
     {
-        public double Line { get; private set; }
+        public double Line { get; set; }
     }
 }

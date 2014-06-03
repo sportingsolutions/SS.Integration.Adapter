@@ -9,8 +9,8 @@ namespace SS.Integration.Adapter.Model
     [Serializable]
     public class RollingMarketScore
     {
-         public double? Home { get; private set; }
-         public double? Away { get; private set; }
-         public double? Total { get; private set; }
+        public double? Home { get; set; }
+        public double? Away { get; set; }
+        public double? Total { get; set; }
     }
 }
