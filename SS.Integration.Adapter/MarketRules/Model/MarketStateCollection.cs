@@ -14,29 +14,48 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.MarketRules.Model
 {
     [Serializable]
-    internal class MarketStateCollection : IMarketStateCollection
+    internal class MarketStateCollection : IUpdatableMarketStateCollection
     {
-        private readonly Dictionary<string, IMarketState> _States;
+        private readonly Dictionary<string, IUpdatableMarketState> _States;
 
         public MarketStateCollection()
         {
-            _States = new Dictionary<string, IMarketState>();
+            _States = new Dictionary<string, IUpdatableMarketState>();
         }
 
-        public MarketStateCollection(IMarketStateCollection collection) 
+        public MarketStateCollection(IUpdatableMarketStateCollection collection)
             : this()
         {
+
+            if (collection == null)
+                return;
+         
+            // this is just for creating the nodes
             foreach (var mkt_id in collection.Markets)
             {
-                this[mkt_id] = collection[mkt_id].Clone();
+                _States[mkt_id] = null;
+
             }
+
+            ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
+
+            // fill the nodes and as they are already created, there is no race-condition here
+            Parallel.ForEach(collection.Markets, options, x =>
+                {
+                    _States[x] = ((IUpdatableMarketState)collection[x]).Clone();
+                }
+            );
         }
+
+        #region IMarketStateCollection
 
         public bool HasMarket(string MarketId)
         {
@@ -52,9 +71,10 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
                 return HasMarket(MarketId) ? _States[MarketId] : null;
             }
-            set
+            internal set
             {
-                _States[MarketId] = value;
+                if (!string.IsNullOrEmpty(MarketId) && value != null)
+                    _States[MarketId] = value as IUpdatableMarketState;
             }
         }
 
@@ -63,14 +83,23 @@ namespace SS.Integration.Adapter.MarketRules.Model
             get { return _States.Keys; }
         }
 
+        public int MarketCount
+        {
+            get { return _States.Count; }
+        }
+
+        #endregion
+
+        #region IUpdatableMarketStateCollection
+
         public void Update(Fixture Fixture, bool fullSnapshot)
         {
             foreach (var market in Fixture.Markets)
             {
-                IMarketState mkt_state = null;
+                IUpdatableMarketState mkt_state = null;
                 if (HasMarket(market.Id))
                 {
-                    mkt_state = this[market.Id];
+                    mkt_state = this[market.Id] as IUpdatableMarketState;
                     mkt_state.Update(market, fullSnapshot);
                 }
                 else
@@ -80,5 +109,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 }
             }
         }
+
+        #endregion
     }
 }

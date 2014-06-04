@@ -36,7 +36,6 @@
 			<Library
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.dll;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.exe;
-						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\mappingUpdater.config;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.exe.config;"
 				Exclude="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.pdb;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.json;
@@ -46,13 +45,15 @@
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\SS.Integration.Adapter.Plugin.Logger.dll;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\log4net.config"
 			/>
-			<Licence Include="$(MSBuildProjectDirectory)\LICENCE.txt" />
+			<ConfFile Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\mappingUpdater.config" />
+			<Licence  Include="$(MSBuildProjectDirectory)\LICENCE.txt" />
 		</ItemGroup>
 
 		<Message Text="Preparing artifact for $(Configuration) started " />
-		<Copy SourceFiles="@(Library)"       DestinationFolder="$(BuildDir)"/>
-		<Copy SourceFiles="@(DefaultPlugin)" DestinationFolder="$(BuildDir)"/>
-		<Copy SourceFiles="@(Licence)"       DestinationFolder="$(BuildDir)"/>
+		<Copy SourceFiles="@(Library)"       DestinationFolder="$(BuildDir)" />
+		<Copy SourceFiles="@(DefaultPlugin)" DestinationFolder="$(BuildDir)" />
+		<Copy SourceFiles="@(ConfFile)"      DestinationFolder="$(BuildDir)" />
+		<Copy SourceFiles="@(Licence)"       DestinationFolder="$(BuildDir)" />
 		<Message Text="Preparing artifict for $(Configuration) completed" />
 	</Target>
 
@@ -69,14 +70,16 @@
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\SS.Integration.Adapter.Plugin.Logger.dll;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\log4net.config" 
 			/>
-			<Licence Include="$(MSBuildProjectDirectory)\LICENCE.txt" />
+			<ConfFile Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\mappingUpdater.config" />
+			<Licence  Include="$(MSBuildProjectDirectory)\LICENCE.txt" />
 		</ItemGroup>
 
-		<Message Text="Preparing ZIP file for $(Configuration) started " />
-		<Copy SourceFiles="@(Library)"       DestinationFolder="$(BuildDir)"/>
-		<Copy SourceFiles="@(DefaultPlugin)" DestinationFolder="$(BuildDir)"/>
-		<Copy SourceFiles="@(Licence)"       DestinationFolder="$(BuildDir)"/>
-		<Message Text="Preparing ZIP file for $(Configuration) completed" />
+		<Message Text="Preparing ZIP file for $(Configuration) env: $(Environment) build: $(BUILD_NUMBER)$(BUILD_RELEASE)$(BUILD_COUNTER) " />
+		<Copy SourceFiles="@(Library)"       DestinationFolder="$(BuildDir)" />
+		<Copy SourceFiles="@(DefaultPlugin)" DestinationFolder="$(BuildDir)" />
+		<Copy SourceFiles="@(Licence)"       DestinationFolder="$(BuildDir)" />
+		<Copy SourceFiles="@(ConfFile)"      DestinationFolder="$(BuildDir)" />
+		<Message Text="Preparing ZIP file for $(Configuration) env: $(Environment) build: $(BUILD_NUMBER)$(BUILD_RELEASE)$(BUILD_COUNTER) completed" />
 	</Target>
 
 	<Target Name="BuildZip" >
@@ -84,7 +87,7 @@
 		<ItemGroup>
 			<ZipFiles Include="$(BuildDir)\**\*.*" Exclude="*.zip" />
 		</ItemGroup>
-		<MSBuild.ExtensionPack.Compression.DNZip TaskAction="Create" CompressFiles="@(ZipFiles)" ZipFileName="$(BuildDir)\SS.Integration.Adapter-$(BUILD_NUMBER).zip" RemoveRoot="$(BuildDir)"/>
+		<MSBuild.ExtensionPack.Compression.DNZip TaskAction="Create" CompressFiles="@(ZipFiles)" ZipFileName="$(BuildDir)\SS.Integration.Adapter-$(BUILD_NUMBER)$(BUILD_RELEASE)$(BUILD_COUNTER).zip" RemoveRoot="$(BuildDir)"/>
 		<Message Text="Building ZIP completed" />
 	</Target>
 

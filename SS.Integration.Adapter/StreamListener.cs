@@ -14,13 +14,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
+using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.MarketRules;
-using SportingSolutions.Udapi.Sdk.Interfaces;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Events;
 using SportingSolutions.Udapi.Sdk.Extensions;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Exceptions;
@@ -42,301 +43,251 @@ namespace SS.Integration.Adapter
     {
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListener).ToString());
 
-        private readonly string _sportName;
         private readonly IResourceFacade _resource;
-        private readonly Fixture _fixtureSnapshot;
         private readonly IAdapterPlugin _platformConnector;
         private readonly IEventState _eventState;
+        private readonly IObjectProvider<IUpdatableMarketStateCollection> _stateProvider;
         private readonly IStatsHandle _Stats;
-        private readonly MarketsRulesManager _marketsRuleManager;
-
-        private int _currentSequence = -1;
-        private int _lastSequenceProcessedInSnapshot = -1;
-        private int _currentEpoch;
-        private bool _isUpdateBeingProcessed = false;
-
-        /// <summary>
-        /// true if temporarily lost connection from stream
-        /// </summary>
-        private bool _hasLostConnection;
-
-        /// <summary>
-        /// true if has successfuly established connection to stream server
-        /// </summary>
-        private bool _isStreamConnected;
-        private Task _processingTask;
-        private Task _sequenceSynchroniser;
         
+        private MarketsRulesManager _marketsRuleManager;
 
+        private int _currentSequence;
+        private int _currentEpoch;
+        private int _lastSequenceProcessedInSnapshot;
+        private bool _hasRecoveredFromError;
+        private bool _isFirstSnapshotProcessed;
+        private bool _isProcessingFirstSnapshot;
 
-        public StreamListener(string sportName, IResourceFacade resource, Fixture fixtureSnapshot, IAdapterPlugin platformConnector, IEventState eventState, 
-            IObjectProvider<IMarketStateCollection> marketStateProvider, int currentSequence = -1)
+        public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IObjectProvider<IUpdatableMarketStateCollection> stateProvider)
         {
-            _logger.InfoFormat("Instantiating StreamListener for {0} with sequence={1}", fixtureSnapshot, currentSequence);
-            if (fixtureSnapshot == null)
-            {
-                _logger.WarnFormat("Snapshot passed to streamlistener for fixtureId={0} was null, stream listener will not be created!", resource.Id);
-                throw new ArgumentException(
-                    "Snapshot passed to streamlistener for fixtureId=" + resource.Id + " was null, stream listener will not be created!");
-            }
 
-            _sportName = sportName;
+            if (resource == null)
+                throw new ArgumentException("Resource information cannot be null", "resource");
+
+            if (resource.Content == null)
+                throw new Exception("Resource does not contain any content");
+
+
+            _logger.DebugFormat("Instantiating StreamListener for {0} with sequence={1}", resource, resource.Content.Sequence);
+
             _resource = resource;
-            _fixtureSnapshot = fixtureSnapshot;
             _platformConnector = platformConnector;
             _eventState = eventState;
-            _currentSequence = currentSequence;
-            _currentEpoch = fixtureSnapshot.Epoch;
+            _stateProvider = stateProvider;
 
-            _hasLostConnection = false;
-            _isStreamConnected = false;
+            _currentSequence = resource.Content.Sequence;
+            _lastSequenceProcessedInSnapshot = -1;
+            _currentEpoch = -1;
+            _hasRecoveredFromError = true;
+            _isFirstSnapshotProcessed = false;
+            _isProcessingFirstSnapshot = false;
 
-            IsFixtureEnded = false;
+            IsStreaming = false;
+            IsConnecting = false;
+
             IsErrored = false;
             IsIgnored = false;
-
-            // the null check shouldn't be needed but there were parsing errors in the logs so I've added it here as a precaution
-            IsFixtureSetup = fixtureSnapshot.MatchStatus != null &&
-                (int.Parse(fixtureSnapshot.MatchStatus) == (int)MatchStatus.Setup
-                ||
-                int.Parse(fixtureSnapshot.MatchStatus) == (int)MatchStatus.Ready);
-
+            IsFixtureDeleted = false;
+            
+            IsFixtureEnded = _resource.IsMatchOver;
+            IsFixtureSetup = (_resource.MatchStatus == MatchStatus.Setup ||
+                              _resource.MatchStatus == MatchStatus.Ready);
 
 
-            List<IMarketRule> rules = new List<IMarketRule> 
-            { 
-                InactiveMarketsFilteringRule.Instance,
-                VoidUnSettledMarket.Instance
-            };
+            _Stats = StatsManager.Instance["StreamListener"].GetHandle(_resource.Id);
+            _Stats.SetValue(StreamListenerKeys.FIXTURE, _resource.Id);
+            _Stats.SetValue(StreamListenerKeys.STATUS, "Idle");
 
-            rules.AddRange(platformConnector.MarketRules);
-            rules.Reverse();
+            SetupListener();
+        }
 
-            _marketsRuleManager = new MarketsRulesManager(fixtureSnapshot, marketStateProvider, rules);
 
-            _Stats = StatsManager.Instance["StreamListener"].GetHandle(fixtureSnapshot.Id);
-            _Stats.SetValue(StreamListenerKeys.FIXTURE, fixtureSnapshot.Id);
-            _Stats.SetValue(StreamListenerKeys.STATUS, "Created");
+        /// <summary>
+        /// Returns true if the match is over and the fixture is ended.
+        /// When the fixture is ended the listener will not pass any updates.
+        /// 
+        /// This property is set when a snapshot says that the fixture
+        /// is over. The streaming stops when such a snapshot arrives.
+        /// 
+        /// Thread-safe property
+        /// </summary>
+        public bool IsFixtureEnded 
+        { 
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get; 
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            private set; 
         }
 
         /// <summary>
-        /// If match is over, fixture is ended and listener will not pass any update
+        /// Returns true if the fixture is ignored.
+        /// When a fixture is ignored, the listener will not
+        /// push any updates.
+        /// 
+        /// Thread-safe property
         /// </summary>
-        public bool IsFixtureEnded { get; private set; }
-
-        /// <summary>
-        /// This Listener has errors and needs to be re-created
-        /// </summary>
-        public bool IsErrored { get; private set; }
-
-        /// <summary>
-        /// The fixture is ignored (and listener will not push updates) as there's a problem with target platform
-        /// </summary>
-        public bool IsIgnored { get; private set; }
-
-        public bool IsFixtureDeleted { get; private set; }
-
-        /// <summary>
-        /// If the fixture is Setup the listener would not connect to stream
-        /// </summary>
-        public bool IsFixtureSetup { get; private set; }
-
-        public bool Start()
+        public bool IsIgnored 
         {
-            if (!IsErrored)
-            {
-                _logger.InfoFormat("Starting Listener for sport={0} {1}", _sportName, _resource);
-            }
-            else
-            {
-                _logger.InfoFormat("Re-starting Listener for sport={0} {1} because it failed in previous attempt", _sportName, _resource);
-            }
-
-            if (_currentSequence > 0)
-            {
-                _logger.InfoFormat("{0} starts streaming with sequence={1}", _resource, _currentSequence);
-            }
-
-            return SetupListener();
-        }
-
-        private bool SetupListener()
-        {
-            if (_resource == null)
-            {
-                _logger.WarnFormat("Listener for sport={0} cannot listen as resource (fixture) is null", _sportName);
-                _Stats.AddMessage(GlobalKeys.CAUSE, "Fixture is null").SetValue(StreamListenerKeys.STATUS, "Error");
-                IsErrored = true;
-                return false;
-            }
-
-            if (_processingTask != null)
-            {
-                _logger.InfoFormat("Processing task is already created. No action will be taken to refresh it. {0}", _fixtureSnapshot);
-                return false;
-            }
-
-            try
-            {
-                _logger.InfoFormat("Processing snapshot for first time for {0}", _resource);
-
-                int sequence_number = _eventState.GetCurrentSequence(_sportName, _resource.Id);
-
-                if (sequence_number == -1 || _currentSequence != sequence_number)
-                {
-                    _platformConnector.ProcessSnapshot(_fixtureSnapshot);
-                }
-                else
-                {
-                    //sequence didn't change
-                    _platformConnector.UnSuspend(_fixtureSnapshot);
-                    _logger.DebugFormat("Stored sequence={1} skipping processing snapshot for {0}", _fixtureSnapshot, _currentSequence);
-                }
-
-                UpdateState(_fixtureSnapshot, true);
-                
-                IsErrored = false;
-            }
-            catch (FixtureIgnoredException)
-            {
-                _logger.WarnFormat("Fixture {0} will be ignored.", _resource);
-                _Stats.SetValue(StreamListenerKeys.STATUS, "Fixture Ignored");
-                IsIgnored = true;
-
-                // state is required for fixture deletion
-                _eventState.UpdateFixtureState(_resource.Sport, _resource.Id, -1, _resource.MatchStatus);
-
-                return false;
-            }
-            catch (Exception ex)
-            {
-                IsErrored = true;
-                SuspendMarkets();
-
-                _Stats.AddMessage(GlobalKeys.CAUSE, ex).SetValue(StreamListenerKeys.STATUS, "Error");
-                _logger.Error(string.Format("Error processing snapshot for {0}", _resource), ex);
-
-                return false;
-            }
-
-            _processingTask = Task.Factory.StartNew(StreamSetup, TaskCreationOptions.LongRunning);
-            _processingTask.ContinueWith(
-                t =>
-                {
-                    _logger.ErrorFormat("Error occured while streaming {0} {1}", _resource.Id, t.Exception);
-                    IsErrored = true;
-                    _Stats.AddMessage(GlobalKeys.CAUSE, t.Exception).SetValue(StreamListenerKeys.STATUS, "Error");
-                },
-                TaskContinuationOptions.OnlyOnFaulted);
-
-            return true;
-        }
-
-        private void StreamSetup()
-        {
-            _resource.StreamConnected += ResourceOnStreamConnected;
-            _resource.StreamDisconnected += ResourceOnStreamDisconnected;
-            _resource.StreamEvent += ResourceOnStreamEvent;
-
-            // Only start streaming if fixture is not Setup/Ready
-            if (!IsFixtureSetup)
-            {
-                ConnectToStreamServer();
-            }
-            else
-            {
-                _Stats.SetValue(StreamListenerKeys.STATUS, "In Setup");
-                _logger.InfoFormat(
-                    "{0} is in Setup stage so the listener will not connect to streaming server whilst it's in this stage",
-                    _resource);
-            }
-        }
-
-        private void ConnectToStreamServer()
-        {
-            try
-            {
-                _resource.StartStreaming();
-
-                _isStreamConnected = true;
-                _Stats.SetValue(StreamListenerKeys.STATUS, "Connected");
-            }
-            catch (Exception ex)
-            {
-                IsErrored = true;
-
-                _Stats.AddMessage(GlobalKeys.CAUSE, ex).SetValue(StreamListenerKeys.STATUS, "Error");
-                _logger.Error(string.Format("An error has occured when trying to connect to stream server for {0}", _resource), ex);
-            }
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get;
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            private set; 
         }
 
         /// <summary>
-        /// Connect to Streaming server 
-        /// The fixture should not be in Setup/Ready stage when calling this method
+        /// Returns true when the fixture is deleted.
+        /// In this case, the listener has to be stopped
+        /// as its job is finished
+        /// 
+        /// Thread-safe property
         /// </summary>
-        public void StartStreaming()
+        public bool IsFixtureDeleted 
         {
-            // Need to get a snapshot as the delta with match status change to PreMatch is lost (due to listener was not connected to stream at that moment in time)
-            try
-            {
-                RetrieveAndProcessSnapshot();
-                ConnectToStreamServer();
-
-                IsFixtureSetup = _eventState.GetFixtureState(_resource.Id).MatchStatus == MatchStatus.Setup;
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(string.Format("{0} Error trying to process snapshot when connecting to stream", _resource), ex);
-                IsErrored = true;
-                _Stats.AddMessage(GlobalKeys.CAUSE, ex).SetValue(StreamListenerKeys.STATUS, "Error");
-                _marketsRuleManager.RollbackChanges();
-            }
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get;
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            private set; 
         }
 
+        /// <summary>
+        /// Returns true if the fixture is not ready to receive
+        /// updates. When IsFixtureSetup is true, the listener
+        /// cannot be connected to the streaming server.
+        /// 
+        /// Use UpdateResourceState() to update the
+        /// resource's state and start the streaming
+        /// if necessary
+        /// 
+        /// Thread-safe property
+        /// </summary>
+        public bool IsFixtureSetup 
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get;
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            private set; 
+        }
+
+        /// <summary>
+        /// Returns true if the listener is connected
+        /// to the streaming server.
+        /// 
+        /// Thread-safe property
+        /// </summary>
+        public bool IsStreaming 
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get;
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            private set; 
+        }
+
+        /// <summary>
+        /// Returns true if the listener
+        /// is in the process of connecting
+        /// itself to the stream server.
+        /// 
+        /// Thread-safe property
+        /// </summary>
+        internal bool IsConnecting
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get;
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            private set;
+        }
+
+        /// <summary>
+        /// Returns true if the current state of the listener
+        /// is errored. In this case, if we are streaming
+        /// (IsStreaming is true) then at the next update
+        /// a snapshot will be acquired and processed instead
+        /// of a delta snapshot. 
+        /// 
+        /// Please note that this indicates only that 
+        /// an error occured while streaming.
+        /// 
+        /// Thread-safe property
+        /// </summary>
+        internal bool IsErrored
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get;
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            private set;
+        }
+
+        /// <summary>
+        /// Starts the listener. 
+        /// </summary>
+        public void Start()
+        {
+            StartStreaming();
+        }
+
+        /// <summary>
+        /// Stops the streaming
+        /// </summary>
         public void Stop()
         {
-            _logger.InfoFormat("Stopping Listener for {0} sport={1}", _resource, _sportName);
-
-            SynchroniseUpdateProcessing();
+            _logger.InfoFormat("Stopping Listener for {0} sport={1}", _resource, _resource.Sport);
 
             if (IsErrored)
                 SuspendMarkets();
 
-            if (_resource != null)
+            if (IsStreaming)
             {
                 _resource.StreamConnected -= ResourceOnStreamConnected;
                 _resource.StreamDisconnected -= ResourceOnStreamDisconnected;
                 _resource.StreamEvent -= ResourceOnStreamEvent;
 
-                if (_isStreamConnected)
-                {
-                    _resource.StopStreaming();
-                }
+                _resource.StopStreaming();
+                IsStreaming = false;
+                IsConnecting = false;
             }
-
-            if (_processingTask != null &&
-                    (_processingTask.Status == TaskStatus.RanToCompletion ||
-                     _processingTask.Status == TaskStatus.Faulted || _processingTask.Status == TaskStatus.Canceled))
-            {
-                _processingTask.Dispose();
-            }
-
-            if (_sequenceSynchroniser != null)
-                _sequenceSynchroniser.Dispose();
-
-            _isStreamConnected = false;
-            _processingTask = null;
         }
 
+        /// <summary>
+        /// Allows to inform this object that a resource
+        /// may have changed its status.
+        /// 
+        /// If the resource is now in a state were
+        /// streaming is allowed, this object will 
+        /// try to connect to the streaming server.
+        /// </summary>
+        /// <param name="resource"></param>
+        public void UpdateResourceState(IResourceFacade resource)
+        {
+            IsFixtureSetup = (resource.MatchStatus == MatchStatus.Setup ||
+                              resource.MatchStatus == MatchStatus.Ready);
+
+            StartStreaming();
+        }
+
+        /// <summary>
+        /// Allows to send a suspension requests for all
+        /// the markets associated to the fixture.
+        ///        
+        /// </summary>
+        /// <param name="fixtureLevelOnly">If true, the object will send
+        /// a fixture suspend request instead of a set of market suspend requests
+        /// </param>
         public void SuspendMarkets(bool fixtureLevelOnly = true)
         {
-            _logger.InfoFormat("Suspending Markets for {0} fixtureLevelOnly={1}", _resource, fixtureLevelOnly);
+            _logger.InfoFormat("Suspending Markets for {0} with fixtureLevelOnly={1}", _resource, fixtureLevelOnly);
 
             try
             {
                 _platformConnector.Suspend(_resource.Id);
                 if (!fixtureLevelOnly)
                 {
+                    if (_marketsRuleManager == null)
+                    {
+                        _logger.WarnFormat("Cannot perform a full suspension of {0} as no state information is currently available", _resource);
+                        return;
+                    }
+
+
                     var suspendedSnapshot = _marketsRuleManager.GenerateAllMarketsSuspenssion();
                     _platformConnector.ProcessStreamUpdate(suspendedSnapshot);
                 }
@@ -355,41 +306,163 @@ namespace SS.Integration.Adapter
             }
         }
 
-        private void SynchroniseUpdateProcessing()
+        private void SetupListener()
         {
-            if (_sequenceSynchroniser == null || _sequenceSynchroniser.IsCompleted)
-                return;
-
-            _logger.DebugFormat("Waiting for sequence synchornisation to complete for {0}", _fixtureSnapshot);
-            _sequenceSynchroniser.Wait();
-            _logger.DebugFormat("Sequence synchornisation is complete for {0}", _fixtureSnapshot);
+            _resource.StreamConnected += ResourceOnStreamConnected;
+            _resource.StreamDisconnected += ResourceOnStreamDisconnected;
+            _resource.StreamEvent += ResourceOnStreamEvent;
         }
 
-        public void ResourceOnStreamEvent(object sender, StreamEventArgs streamEventArgs)
+        private void StartStreaming()
         {
+  
+            // Only start streaming if fixture is not Setup/Ready
+            if (!IsFixtureSetup)
+            {
+                _logger.InfoFormat("{0} sport={1} starts streaming with sequence={2}", _resource, _resource.Sport, _currentSequence);
+                ConnectToStreamServer();
+            }
+            else
+            {
+                _Stats.SetValue(StreamListenerKeys.STATUS, "Ready");
+                _logger.InfoFormat(
+                    "{0} is in Setup stage so the listener will not connect to streaming server whilst it's in this stage",
+                    _resource);
+
+                // even if we are in setup, we still want to process a snapshot
+                // in order to insert the fixture
+                ProcessFirstSnapshotIfNecessary();
+            }
+        }
+
+        private void ConnectToStreamServer()
+        {
+            // even if each property used within this block is thread-safe
+            // we need to use a lock block because we want to do a check-set operation
+            lock (this)
+            {
+                if (IsFixtureEnded)
+                {
+                    _logger.DebugFormat("Listener will not start for {0} as it is marked as ended", _resource);
+                    return;
+                }
+
+                // do not start streaming twice
+                if (IsStreaming || IsConnecting)
+                    return;
+
+                IsErrored = false;
+                IsStreaming = false;
+                IsConnecting = true;
+            }
+
             try
             {
-                SynchroniseUpdateProcessing();
-                _isUpdateBeingProcessed = true;
+
+                // The current UDAPI SDK, before consuming events from the queue raises
+                // a "connected" event. We are sure that no updates are pushed
+                // before our "connected" event handler terminates because 
+                // updates are pushed using the same thread the SDK uses to 
+                // push updates.
+                //
+                // If the SDK's threading model changes, this 
+                // class must be revisited
+
+                _logger.DebugFormat("Starting streaming for {0}", _resource);
+                _resource.StartStreaming();
+                _logger.DebugFormat("Streaming started for {0}", _resource);
+            }
+            catch (Exception ex)
+            {
+                IsConnecting = false;
+                IsStreaming = false;
+
+                _Stats.AddMessage(GlobalKeys.CAUSE, ex).SetValue(StreamListenerKeys.STATUS, "Error");
+                _logger.Error(string.Format("An error has occured when trying to connect to stream server for {0}", _resource), ex);
+            }
+        }
+
+        private void SetErrorState()
+        {
+            // the idea is that when we encounter an error
+            // we immediately suspend the fixture and get
+            // a new full snapshot to process.
+            //
+            // However, processing the new snapshot
+            // might introduce a new error (and this
+            // method is called again). For not
+            // entering a useless loop, first thing we do
+            // when we enter this method is checking
+            // if IsError = true. If it is so, it means
+            // that a new error was raised while processing
+            // the snapshot that was acquired to try to solve
+            // a previous error (got it? )
+            //
+            // If IsError = false, then we grab and process
+            // a new snapshot. After this, due the fact
+            // that processing the snapshot can raise a new 
+            // error, we set IsError to !_hasRecoveredFromError
+            // that is false only if a second call to 
+            // SetErrorState was made
+
+            if (IsErrored)
+            {
+                _hasRecoveredFromError = false;
+
+                // make sure markets are suspended
+                SuspendMarkets(); 
+                _logger.ErrorFormat("Streming for {0} is still in an error state even after trying to recover with a full snapshot", _resource);
+                return;
+            }
+
+            _logger.InfoFormat("Streaming for {0} entered the error state - going to acquire a new snapshot", _resource);
+
+            _hasRecoveredFromError = true;
+            IsErrored = true;
+            SuspendAndReprocessSnapshot();
+            IsErrored = !_hasRecoveredFromError;
+        }
+
+        internal void ResourceOnStreamEvent(object sender, StreamEventArgs streamEventArgs)
+        {
+            // Note that we can have only one update at time
+            // as the current SDK's threading model calls this 
+            // method using always the same thread (per object basis)
+
+            try
+            {
+             
                 var deltaMessage = streamEventArgs.Update.FromJson<StreamMessage>();
                 var fixtureDelta = deltaMessage.GetContent<Fixture>();
 
-                _logger.InfoFormat("{0} streaming Update arrived", fixtureDelta);
+                _logger.InfoFormat("{0} streaming update arrived", fixtureDelta);
+
+                // if there was an error from which we haven't recovered yet
+                // it might be that with a new sequence, we might recover.
+                // So in this case, ignore the update and grab a new 
+                // snapshot.
+                if (IsErrored)
+                {
+                    _logger.InfoFormat("Streaming was in an error state for {0} - skipping update and grabbing a new snapshot", _resource);
+                    IsErrored = false;
+                    RetrieveAndProcessSnapshot();
+                    return;
+                }
+
+                
 
                 if (!IsSequenceValid(fixtureDelta))
                 {
-                    _logger.DebugFormat(
-                        "Stream update {0} with sequence={1} will not be processed because sequence was not valid",
-                        fixtureDelta, fixtureDelta.Sequence);
-
-                    _Stats.AddMessage(GlobalKeys.CAUSE, "Sequence not valid").SetValue(StreamListenerKeys.LAST_INVALID_SEQUENCE, fixtureDelta.Sequence);
+                    _logger.InfoFormat("Stream update {0} will not be processed because sequence was not valid", fixtureDelta);
+                    
+                    _Stats.SetValue(StreamListenerKeys.LAST_INVALID_SEQUENCE, fixtureDelta.Sequence);
                     _Stats.IncrementValue(StreamListenerKeys.INVALID_SEQUENCE);
 
                     // if snapshot was already processed with higher sequence no need to process this sequence
+                    // THIS should never happen!!
                     if (fixtureDelta.Sequence <= _lastSequenceProcessedInSnapshot)
                     {
-                        _logger.DebugFormat(
-                            "Stream update {0} will be ignored because snapshot with higher sequence={1} was already processed",
+                        _logger.FatalFormat("Stream update {0} will be ignored because snapshot with higher sequence={1} was already processed",
                             fixtureDelta, _lastSequenceProcessedInSnapshot);
                         return;
                     }
@@ -403,119 +476,117 @@ namespace SS.Integration.Adapter
 
                 if (epochValid)
                 {
-                    _marketsRuleManager.ApplyRules(fixtureDelta);
-                    _platformConnector.ProcessStreamUpdate(fixtureDelta, hasEpochChanged);
-
-                    _Stats.IncrementValue(StreamListenerKeys.UPDATE_PROCESSED);
-                    UpdateState(fixtureDelta);
+                    ProcessSnapshot(fixtureDelta, false, hasEpochChanged);
                 }
                 else
                 {
-                    _logger.DebugFormat(
-                        "Stream update {0} will not be processed because epoch was not valid",
-                        fixtureDelta);
 
-                    _Stats.AddMessage(GlobalKeys.CAUSE, "Epoch was not valid").SetValue(StreamListenerKeys.LAST_INVALID_SEQUENCE, fixtureDelta.Sequence);
-                    _Stats.IncrementValue(StreamListenerKeys.INVALID_EPOCH); 
+                    if (fixtureDelta.IsMatchStatusChanged && !string.IsNullOrEmpty(fixtureDelta.MatchStatus))
+                    {
+                        _logger.InfoFormat("{0} has changed matchStatus={1}", _resource, Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus));
+                        _platformConnector.ProcessMatchStatus(fixtureDelta);
+                    }
+
+                    if ((fixtureDelta.IsMatchStatusChanged && fixtureDelta.IsMatchOver) || fixtureDelta.IsDeleted)
+                    {
+
+                        if (fixtureDelta.IsDeleted)
+                        {
+                            ProcessFixtureDelete(fixtureDelta);
+                        }
+                        else  // Match Over
+                        {
+                            ProcessMatchOver(fixtureDelta);
+                        }
+
+                        Stop();
+                        return;
+                    }
+
+
+                    _logger.InfoFormat("Stream update {0} will not be processed because epoch was not valid", fixtureDelta);
+                    _Stats.SetValue(StreamListenerKeys.LAST_INVALID_SEQUENCE, fixtureDelta.Sequence);
+                    _Stats.IncrementValue(StreamListenerKeys.INVALID_EPOCH);
+
+                    SuspendAndReprocessSnapshot(hasEpochChanged);
+                    return;
                 }
 
                 _logger.InfoFormat("{0} streaming Update was processed successfully", fixtureDelta);
                 _Stats.SetValue(StreamListenerKeys.LAST_SEQUENCE, fixtureDelta.Sequence);
+                _Stats.IncrementValue(StreamListenerKeys.UPDATE_PROCESSED);
             }
             catch (AggregateException ex)
             {
-                IsErrored = true;
-                _marketsRuleManager.RollbackChanges();
                 foreach (var innerException in ex.InnerExceptions)
                 {
-                    _logger.Error(string.Format("Error processing update that arrived for {0}", _resource),
-                                  innerException);
+                    _logger.Error(string.Format("Error processing update that arrived for {0}", _resource), innerException);
                     _Stats.AddMessage(GlobalKeys.CAUSE, innerException);
                 }
 
                 _Stats.SetValue(StreamListenerKeys.STATUS, "Error");
+                SetErrorState();
             }
             catch (Exception ex)
             {
-                IsErrored = true;
                 _Stats.AddMessage(GlobalKeys.CAUSE, ex).SetValue(StreamListenerKeys.STATUS, "Error");
-                _marketsRuleManager.RollbackChanges();
                 _logger.Error(string.Format("Error processing update that arrived for {0}", _resource), ex);
-            }
-            finally
-            {
-                _isUpdateBeingProcessed = false;
+                SetErrorState();
             }
         }
 
-        public void ResourceOnStreamDisconnected(object sender, EventArgs eventArgs)
+        internal void ResourceOnStreamDisconnected(object sender, EventArgs eventArgs)
         {
+            IsStreaming = false;
+
+            // for when a disconnect event is raised due a failed attempt to connect 
+            // (in other words, when we didn't receive a connect event)
+            IsConnecting = false;
+
             if (!this.IsFixtureEnded)
             {
-                IsErrored = true;
-                _hasLostConnection = true;
-                _logger.WarnFormat("Stream disconnected due to problem with {0}, suspending markets, will try reconnect within 1 minute", _resource);
-                _Stats.AddMessage(GlobalKeys.CAUSE, "Stream disconnected").SetValue(StreamListenerKeys.STATUS, "Disconnected");
+
+                _logger.WarnFormat("Stream disconnected for {0}, suspending markets, will try reconnect soon", _resource);
+                _Stats.AddMessage(GlobalKeys.CAUSE, "Stream disconnected").SetValue(StreamListenerKeys.STATUS, "Error");
 
                 SuspendMarkets();
             }
             else
             {
                 _Stats.AddMessage(GlobalKeys.CAUSE, "Fixture is over").SetValue(StreamListenerKeys.STATUS, "Disconnected");
-                _logger.InfoFormat("Stream disconnected for {0}", _resource);
+                _logger.InfoFormat("Stream disconnected for {0} - fixture is over", _resource);
             }
         }
 
-        public void ResourceOnStreamConnected(object sender, EventArgs eventArgs)
+        internal void ResourceOnStreamConnected(object sender, EventArgs eventArgs)
         {
+            IsStreaming = true;
+            IsConnecting = false;
+
+            // we are connected, so we don't need the acquire the first snapshot
+            // directly
+            _isFirstSnapshotProcessed = true; 
+
             _logger.InfoFormat("Stream connected for {0}", _resource);
+            _Stats.SetValue(StreamListenerKeys.STATUS, "Connected");
             _Stats.IncrementValue(StreamListenerKeys.RESTARTED);
 
-            if (_hasLostConnection)
-            {
-                _hasLostConnection = false;
-
-                try
-                {
-                    RetrieveAndProcessSnapshot();
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error(string.Format("{0} Error trying to process snapshot when reconnecting", _resource), ex);
-                    _marketsRuleManager.RollbackChanges();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Comparison is done from the perspective of the current sequence. 
-        /// </summary>
-        private int CompareSequence(int receivedSequence)
-        {
-            if (receivedSequence < _currentSequence)
-                return 1;
-
-            if (receivedSequence - _currentSequence > 1)
-                return -1;
-
-            return 0;
+            RetrieveAndProcessSnapshotIfNeeded();
         }
 
         private bool IsSequenceValid(Fixture fixtureDelta)
         {
-            var comparisonResult = CompareSequence(fixtureDelta.Sequence);
-
-            if (comparisonResult == 1)
+            if(fixtureDelta.Sequence < _currentSequence)
             {
-                _logger.InfoFormat("{0} sequence={1} is less than currentSequence={2} in {3}", 
-                    _resource, fixtureDelta.Sequence, _currentSequence, fixtureDelta);
+                _logger.InfoFormat("sequence={0} is less than currentSequence={1} in {2}", 
+                    fixtureDelta.Sequence, _currentSequence, fixtureDelta);
                 return false;
             }
             
-            if (comparisonResult == -1)
+            if (fixtureDelta.Sequence - _currentSequence > 1)
             {
-                _logger.WarnFormat("{0} sequence={1} is more than one greater that currentSequence={2} in {3} ", 
-                    _resource, fixtureDelta.Sequence, _currentSequence, fixtureDelta);
+                _logger.WarnFormat("equence={0} is more than one greater that currentSequence={1} in {2} ", 
+                    fixtureDelta.Sequence, _currentSequence, fixtureDelta);
                 return false;
             }
 
@@ -530,15 +601,15 @@ namespace SS.Integration.Adapter
 
             if (fixtureDelta.Epoch < _currentEpoch)
             {
-                _logger.WarnFormat("Unexpected Epoch {0} when current is {1} for {2}", fixtureDelta.Epoch, _currentEpoch, _resource);
+                _logger.WarnFormat("Unexpected Epoch={0} when current={1} for {2}", fixtureDelta.Epoch, _currentEpoch, _resource);
+                return false;
             }
-            else if (fixtureDelta.Epoch == _currentEpoch)
-            {
+            
+            if (fixtureDelta.Epoch == _currentEpoch)
                 return true;
-            }
 
             // Cases for fixtureDelta.Epoch > _currentEpoch
-            _logger.InfoFormat("Epoch changed for {0} from {1} to {2}", _resource, _currentEpoch, fixtureDelta.Epoch);
+            _logger.InfoFormat("Epoch changed for {0} from={1} to={2}", _resource, _currentEpoch, fixtureDelta.Epoch);
 
             _currentEpoch = fixtureDelta.Epoch;
 
@@ -548,171 +619,238 @@ namespace SS.Integration.Adapter
                 return true;
             }
 
-            if (fixtureDelta.IsMatchStatusChanged && !string.IsNullOrEmpty(fixtureDelta.MatchStatus))
-            {
-                _logger.InfoFormat("{0} has changed matchStatus={1}", _resource, Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus));
-
-                _platformConnector.ProcessMatchStatus(fixtureDelta);
-
-            }
-
-            if ((fixtureDelta.IsMatchStatusChanged && fixtureDelta.IsMatchOver) || fixtureDelta.IsDeleted)
-            {
-
-                if (fixtureDelta.IsDeleted)
-                {
-                    FixtureDeleted(fixtureDelta);
-                }
-                else  // Match Over
-                {
-                    _logger.InfoFormat("{0} is Match Over. Suspending all markets and stopping the stream.", _resource);
-
-                    SuspendMarkets();
-                    this.RetrieveAndProcessSnapshot(hasEpochChanged);
-                    _platformConnector.ProcessFixtureDeletion(fixtureDelta);
-                    this.IsFixtureEnded = true;
-                    _marketsRuleManager.Clear();
-                }
-
-                Stop();
-
-                return false;
-            }
-
-            SuspendAndReprocessSnapshot(hasEpochChanged);
-
             return false;
         }
 
-        private void FixtureDeleted(Fixture fixtureDelta)
-        {
-            IsFixtureDeleted = true;
-
-            _logger.InfoFormat(
-                "{0} has been deleted from the GTP Fixture Factroy. Suspending all markets and stopping the stream.", _resource);
-
-            SuspendMarkets(false);
-
-            //reset event state
-            _eventState.UpdateFixtureState(_sportName, fixtureDelta.Id, -1, GetMatchStatusFromSnapshot(fixtureDelta));
-        }
-
+        /// <summary>
+        /// This method allows to grab a new snapshot and process it.
+        /// 
+        /// Before getting the snapshot, it suspends
+        /// all the fixture's markets. 
+        /// </summary>
+        /// <param name="hasEpochChanged"></param>
         private void SuspendAndReprocessSnapshot(bool hasEpochChanged = false)
         {
-            Fixture snapshot = null;
-
-            try
-            {
-                SuspendMarkets();
-
-                snapshot = RetrieveSnapshot();
-            }
-            catch (AggregateException ex)
-            {
-                IsErrored = true;
-                foreach (var innerException in ex.InnerExceptions)
-                {
-                    _logger.Error(string.Format("There has been an error when trying to Suspend and Reprocess snapshot for {0}", _resource), innerException);
-                }
-            }
-            catch (Exception ex)
-            {
-                IsErrored = true;
-                _logger.Error(string.Format("There has been an error when trying to Suspend and Reprocess snapshot for {0}", _resource), ex);
-            }
-
-            if (snapshot != null)
-            {
-                _marketsRuleManager.ApplyRules(snapshot);
-
-                _logger.DebugFormat("Sending snapshot {0} with ",snapshot);
-
-                _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
-
-                UpdateState(snapshot, true);
-                
-                _logger.DebugFormat("Processed snapshot {0}", snapshot);
-            }
+            SuspendMarkets();
+            RetrieveAndProcessSnapshot(hasEpochChanged);
         }
 
-        private static MatchStatus GetMatchStatusFromSnapshot(Fixture snapshot)
-        {
-            return (MatchStatus)Enum.Parse(typeof(MatchStatus), snapshot.MatchStatus);
-        }
-
-        private Fixture RetrieveSnapshot()
+        private Fixture RetrieveSnapshot(bool setErrorState = true)
         {
             _logger.DebugFormat("Getting Snapshot for {0}", _resource);
 
-            var snapshotJson = _resource.GetSnapshot();
-
-            if (string.IsNullOrEmpty(snapshotJson))
+            try
             {
-                _logger.ErrorFormat("Received empty Snapshot for {0}", _resource);
-                return null;
+                var snapshotJson = _resource.GetSnapshot();
+
+                if (string.IsNullOrEmpty(snapshotJson))
+                    throw new Exception("Received empty snapshot");
+
+                return FixtureJsonHelper.GetFromJson(snapshotJson);
+            }
+            catch (Exception e)
+            {
+                _logger.Error(string.Format("An error occured while trying to acquire snapshot for {0}", _resource), e);
+
+                if (setErrorState)
+                    SetErrorState();
+                else
+                    throw;
             }
 
-            var snapshot = FixtureJsonHelper.GetFromJson(snapshotJson);
+            return null;
+        }
 
-            return snapshot;
+        private void ProcessFirstSnapshotIfNecessary()
+        {
+            // if we have already processed the first 
+            // snapshot directly, don't do it again
+
+            lock (this)
+            {
+                if (_isFirstSnapshotProcessed)
+                {
+                    _logger.DebugFormat("Requested to process first snapshot for {0} but it has already been processed - skipping it", _resource);
+                    return;
+                }
+
+                if (_isProcessingFirstSnapshot)
+                {
+                    _logger.DebugFormat("Requested to process first snapshot for {0} but it is being processed by another thread", _resource);
+                    return;
+                }
+
+                _isProcessingFirstSnapshot = true;
+            }
+
+            bool tmp = false;
+            try
+            {
+                ProcessSnapshot(RetrieveSnapshot(false), true, false, false);
+
+                tmp = true;
+            }
+            catch
+            {
+                // No need to raise up the exception
+                // we will try again later
+            }
+            finally
+            {
+                lock (this)
+                {
+                    _isFirstSnapshotProcessed = tmp;
+                    _isProcessingFirstSnapshot = false;
+                }
+            }
         }
 
         private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false)
         {
-            _logger.DebugFormat("Getting snapshot for {0}", _resource);
-
             var snapshot = RetrieveSnapshot();
+            if (snapshot != null)
+                ProcessSnapshot(snapshot, true, hasEpochChanged);
+        }
 
-            _marketsRuleManager.ApplyRules(snapshot);
-
-            _logger.DebugFormat("Sending snapshot to plugin for {0}", _resource);
-            _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
+        private void RetrieveAndProcessSnapshotIfNeeded()
+        {
+            FixtureState state = _eventState.GetFixtureState(_resource.Id);
+            int sequence_number = -1;
+            if(state != null)
+                sequence_number = state.Sequence;
             
-            UpdateState(snapshot, true);
+
+            _logger.DebugFormat("{0} has stored sequence={1} and current_sequence={2}", _resource, sequence_number, _currentSequence);
+
+            if (sequence_number == -1 || _currentSequence != sequence_number)
+            {
+                RetrieveAndProcessSnapshot();
+            }
+            else
+            {
+                Fixture fixture = new Fixture {Sequence = sequence_number, Id = _resource.Id};
+
+                if (state != null)
+                    fixture.MatchStatus = state.MatchStatus.ToString();
+
+                try
+                {
+                    _platformConnector.UnSuspend(fixture);
+                }
+                catch (Exception e)
+                {
+                    _logger.Error(string.Format("An error occcured while trying to unsuspend {0}", _resource), e);
+                    SetErrorState();
+                }
+            }
+        }
+
+        private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool setErrorState = true)
+        {
+            if (snapshot == null)
+                return;
+
+            _logger.DebugFormat("Processing snapshot for {0} with isFullSnapshot={1}", snapshot, isFullSnapshot);
+
+            try
+            {
+                _logger.DebugFormat("Applying market rules for {0}", _resource);
+
+                ApplyMarketRules(snapshot);
+
+                _logger.DebugFormat("Sending snapshot for {0} to plugin with has_epoch_changed={1}", snapshot, hasEpochChanged);
+
+                if (isFullSnapshot)
+                    _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
+                else
+                    _platformConnector.ProcessStreamUpdate(snapshot, hasEpochChanged);
+
+                UpdateState(snapshot, isFullSnapshot);
+            }
+            catch (FixtureIgnoredException ie)
+            {
+                _logger.InfoFormat("{0} received a FixtureIgnoredException. Stopping listener", _resource);
+                _logger.Error("FixtureIgnoredException", ie);
+                IsIgnored = true;
+            }
+            catch (AggregateException ex)
+            {
+                _marketsRuleManager.RollbackChanges();
+
+                foreach (var innerException in ex.InnerExceptions)
+                {
+                    _logger.Error(string.Format("There has been an aggregate error while trying to process snapshot {0}", snapshot), innerException);
+                }
+
+                if (setErrorState)
+                    SetErrorState();
+                else
+                    throw;
+            }
+            catch (Exception e)
+            {
+                _marketsRuleManager.RollbackChanges();
+
+                _logger.Error(string.Format("An error occured while trying to process snapshot {0}", snapshot), e);
+
+                if (setErrorState)
+                    SetErrorState();
+                else
+                    throw;
+            }
         }
 
         private void UpdateState(Fixture snapshot, bool isSnapshot = false)
         {
+            _logger.DebugFormat("Updating state for {0} with isSnapshot={1}", _resource, isSnapshot);
+
             _marketsRuleManager.CommitChanges();
-            _eventState.UpdateFixtureState(_resource.Sport, _resource.Id, snapshot.Sequence, GetMatchStatusFromSnapshot(snapshot));
+
+            var status = (MatchStatus)Enum.Parse(typeof(MatchStatus), snapshot.MatchStatus);
+
+            _eventState.UpdateFixtureState(_resource.Sport, _resource.Id, snapshot.Sequence, status);
 
             if (isSnapshot)
             {
                 _lastSequenceProcessedInSnapshot = snapshot.Sequence;
+                _currentEpoch = snapshot.Epoch;
                 _Stats.IncrementValue(StreamListenerKeys.SNAPSHOT_RETRIEVED);
             }
 
             _currentSequence = snapshot.Sequence;
-
             _Stats.SetValue(StreamListenerKeys.LAST_SEQUENCE, _currentSequence);
         }
 
-        public bool CheckStreamHealth(int maxPeriodWithoutMessage, int receivedSequence = -1)
+        private void ApplyMarketRules(Fixture fixture)
         {
-            if (IsFixtureSetup || !_isStreamConnected || IsFixtureDeleted)
+            if (_marketsRuleManager == null)
+            {
+                _logger.DebugFormat("Instantiating market rule manager for {0}", _resource);
+
+                List<IMarketRule> rules = new List<IMarketRule> 
+                { 
+                    InactiveMarketsFilteringRule.Instance,
+                    VoidUnSettledMarket.Instance
+                };
+
+                rules.AddRange(_platformConnector.MarketRules);
+
+                _marketsRuleManager = new MarketsRulesManager(fixture, _stateProvider, rules);
+            }
+
+            _marketsRuleManager.ApplyRules(fixture);
+        }
+
+        public bool CheckStreamHealth(int maxPeriodWithoutMessage, int receivedSequence)
+        {
+            if (IsFixtureSetup || IsFixtureDeleted)
             {
                 // Stream has not yet started as fixture is Setup/Ready
-                // Do not remove flag _isStreamConnected from IF as the snapshot may take long to process when fixture becomes PreMatch and before start streaming
-                // If removed, this check method will kill the listener and adapter will create another all over again
-
                 return true;
             }
 
-            var shouldProcessSnapshot = (_sequenceSynchroniser == null || _sequenceSynchroniser.IsCompleted)
-                && _currentSequence != -1
-                && _currentSequence < receivedSequence
-                && _lastSequenceProcessedInSnapshot < receivedSequence;
-
-            if (shouldProcessSnapshot && !IsFixtureDeleted && !IsErrored && !_isUpdateBeingProcessed)
-            {
-                _logger.WarnFormat("Received sequence different from expected sequence {0} receivedSequence={1} currentSequence={2}", _fixtureSnapshot, receivedSequence, _currentSequence);
-                if (_sequenceSynchroniser == null || _sequenceSynchroniser.IsCompleted)
-                    _sequenceSynchroniser = Task.Factory.StartNew(() => SuspendAndReprocessSnapshot());
-                else
-                {
-                    _logger.DebugFormat("The sequence synchroniser is already running for fixture {0}", _fixtureSnapshot);
-                }
-            }
+            if (!IsStreaming)
+                return false;
 
             var streamStatistics = _resource as IStreamStatistics;
 
@@ -725,12 +863,56 @@ namespace SS.Integration.Adapter
             var timespan = DateTime.UtcNow - streamStatistics.LastMessageReceived;
             if (timespan.TotalMilliseconds >= maxPeriodWithoutMessage)
             {
-                IsErrored = true;
-                _logger.WarnFormat("Stream for fixtureId={0} has not received a message in {1}, suspending markets, will try to reconnect within 1 minute", _resource.Id, timespan.TotalSeconds);
+                _logger.WarnFormat("Stream for {0} has not received a message in span={1}, suspending markets, will try to reconnect soon", 
+                    _resource.Id, timespan.TotalSeconds);
                 SuspendMarkets();
+                return false;
             }
 
-            return !IsErrored;
+            return true;
         }
+
+        private void ProcessFixtureDelete(Fixture fixtureDelta)
+        {
+            IsFixtureDeleted = true;
+
+            _logger.InfoFormat("{0} has been deleted from the GTP Fixture Factory. Suspending all markets and stopping the stream.", _resource);
+
+            try
+            {
+                SuspendMarkets(false);
+                _platformConnector.ProcessFixtureDeletion(fixtureDelta);
+            }
+            catch (Exception e)
+            {
+                _logger.Error(string.Format("An exception occured while trying to process fixture deletion for {0}", _resource), e);
+            }
+            
+
+            var status = (MatchStatus)Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus);
+            
+            //reset event state
+            _eventState.UpdateFixtureState(_resource.Sport, fixtureDelta.Id, -1, status);
+        }
+
+        private void ProcessMatchOver(Fixture fixtureDelta)
+        {
+            _logger.InfoFormat("{0} is Match Over. Suspending all markets and stopping the stream.", _resource);
+
+            try
+            {
+                SuspendAndReprocessSnapshot(true);
+
+                this.IsFixtureEnded = true;
+                
+                if(_marketsRuleManager != null)
+                    _marketsRuleManager.Clear();
+            }
+            catch (Exception e)
+            {
+                _logger.Error(string.Format("An error occured while trying to process match over snapshot {0}", fixtureDelta), e);
+            }
+        }
+    
     }
 }

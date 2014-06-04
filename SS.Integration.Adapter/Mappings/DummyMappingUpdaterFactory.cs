@@ -20,11 +20,29 @@ namespace SS.Integration.Adapter.Mappings
 {
     public class DummyMappingUpdaterFactory : IMappingUpdaterFactory
     {
-        public MappingUpdaterConfiguration Configuration { get; set; }
+        private static IMappingUpdater _mappingUpdater;
+        private static readonly object _syncLock = new object();
 
-        public IMappingUpdater GetMappingUpdater()
+        public MappingUpdaterConfiguration Configuration { get; set; }
+        
+        IMappingUpdater IMappingUpdaterFactory.GetMappingUpdater()
         {
-            return new DummyMappingUpdater();
+            return GetMappingUpdater();
+        }
+
+        public static IMappingUpdater GetMappingUpdater()
+        {
+            if (_mappingUpdater != null)
+                return _mappingUpdater;
+
+            lock (_syncLock)
+            {
+                if (_mappingUpdater != null)
+                    return _mappingUpdater;
+
+                _mappingUpdater = new DummyMappingUpdater();
+                return _mappingUpdater;
+            }
         }
     }
 }

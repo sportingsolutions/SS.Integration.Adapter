@@ -16,11 +16,32 @@ using System.Collections.Generic;
 
 namespace SS.Integration.Adapter.Model.Interfaces
 {
+    /// <summary>
+    /// An IMarketState object represents the state of a market.
+    /// The main purpose of keeping the state of a market 
+    /// is to infer properties like "IsActive", "IsSuspended", "IsResulted", "IsPending".
+    /// 
+    /// As these properties can only be inferred by looking at the selections' states,
+    /// it is difficult, if not impossibile, to determine a market's state 
+    /// on a delta snapshot, as information about selections might be absent.
+    /// 
+    /// IMarketState keeps track of information coming from subsequents snapshots (full, or delta)
+    /// updating correcly the above properties and then exposing them.
+    /// 
+    /// IMarketRule must infer the values of its properties by looking a the
+    /// selections' states, or in other words, by looking at ISelectionState objects.
+    /// </summary>
     public interface IMarketState
     {
 
+        /// <summary>
+        /// Market's Id
+        /// </summary>
         string Id { get; }
 
+        /// <summary>
+        /// Market's name
+        /// </summary>
         string Name { get; }
 
         /// <summary>
@@ -37,42 +58,103 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// </summary>
         bool IsActive { get; }
 
+        /// <summary>
+        /// Is the market resulted?
+        /// This value returns the resulted state of
+        /// a market as it comes from the Connect platform.
+        /// 
+        /// It is not related in any way to the resulted
+        /// stated of any down-stream sytems.
+        /// </summary>
         bool IsResulted { get; }
 
+        /// <summary>
+        /// Is the market in a pending state?
+        /// 
+        /// A pending state means that the market
+        /// is in a transition state between two valid states
+        /// (i.e Active and Resulted, ...).
+        /// 
+        /// Usually, when the market is an pending state, 
+        /// no decision about it should be taken
+        /// </summary>
         bool IsPending { get; }
 
         /// <summary>
         /// True if the market has been active at least once 
-        /// during the fixture lifetime
+        /// during the fixture's lifetime
         /// </summary>
         bool HasBeenActive { get; }
 
         #region Selections 
 
+        /// <summary>
+        /// Lists all the ISelectionState objects
+        /// </summary>
         IEnumerable<ISelectionState> Selections { get; }
 
+        /// <summary>
+        /// Returns the ISelectionState object associated
+        /// to the given selection's id.
+        /// 
+        /// It returns null if the selection's id is
+        /// null or empty of if the selection does not
+        /// exist
+        /// </summary>
+        /// <param name="SelectionId"></param>
+        /// <returns></returns>
         ISelectionState this[string SelectionId] { get; }
 
+        /// <summary>
+        /// True if an ISelectionState object for
+        /// the given selection's id is present
+        /// </summary>
+        /// <param name="SelectionId"></param>
+        /// <returns></returns>
         bool HasSelection(string SelectionId);
 
         #endregion
 
         #region Tags
 
+        /// <summary>
+        /// Lists all the tags that a market has had
+        /// during its lifetime
+        /// </summary>
         IEnumerable<string> TagKeys { get; }
 
+        /// <summary>
+        /// Get the value associated to the
+        /// given tag key. 
+        /// 
+        /// It returns null if the tag key
+        /// does not exist
+        /// </summary>
+        /// <param name="TagKey"></param>
+        /// <returns></returns>
         string GetTagValue(string TagKey);
 
+        /// <summary>
+        /// True if the given tag key exists
+        /// </summary>
+        /// <param name="TagKey"></param>
+        /// <returns></returns>
         bool HasTag(string TagKey);
 
+        /// <summary>
+        /// Returns the number of tag associated
+        /// to this market state.
+        /// </summary>
         int TagsCount { get; }
 
         #endregion
 
-        void Update(Market Market, bool fullSnapshot);
-
-        bool IsEqualTo(Market Market);
-
-        IMarketState Clone();
+        /// <summary>
+        /// Determines if the given market state
+        /// is equal to the current object
+        /// </summary>
+        /// <param name="State"></param>
+        /// <returns></returns>
+        bool IsEqualTo(IMarketState State);
     }
 }

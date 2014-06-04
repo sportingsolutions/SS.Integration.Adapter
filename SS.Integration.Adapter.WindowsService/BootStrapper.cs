@@ -17,47 +17,53 @@ using Ninject.Modules;
 using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Mappings;
-using SS.Integration.Adapter.Model;
-using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Adapter.Plugin.Model;
 using SS.Integration.Adapter.Plugin.Model.Interface;
 using SS.Integration.Adapter.UdapiClient;
 using System.Configuration;
+using log4net;
 
 namespace SS.Integration.Adapter.WindowsService
 {
     public class BootStrapper : NinjectModule
     {
+        private readonly ILog _logger = LogManager.GetLogger(typeof(BootStrapper).ToString());
+
         public override void Load()
         {
             Bind<ISettings>().To<Settings>().InSingletonScope();
             Bind<IReconnectStrategy>().To<DefaultReconnectStrategy>().InSingletonScope();
             Bind<IServiceFacade>().To<UdapiServiceFacade>();
 
+            IMappingUpdaterFactory mappingUpdaterFactInstance = null;
+             
             var mappingUpdaterSetting = ConfigurationManager.GetSection("mappingUpdater") as MappingUpdaterConfiguration;
-            Type mappingUpdaterFactoryType = Type.GetType(mappingUpdaterSetting.MappingUpdaterFactoryClass);
-            if (mappingUpdaterFactoryType == null)
-                throw new ApplicationException(
-                    string.Format(
-                        "Couldn't load MappingUpdaterFactory type of: {0}",
-                        mappingUpdaterSetting.MappingUpdaterFactoryClass));
 
-            IMappingUpdaterFactory mappingUpdaterFactInstance = (IMappingUpdaterFactory)Activator.CreateInstance(mappingUpdaterFactoryType);
-            mappingUpdaterFactInstance.Configuration = mappingUpdaterSetting;
+            if (mappingUpdaterSetting != null)
+            {
+                Type mappingUpdaterFactoryType = Type.GetType(mappingUpdaterSetting.MappingUpdaterFactoryClass);
+                if (mappingUpdaterFactoryType == null)
+                    throw new ApplicationException(
+                        string.Format(
+                            "Couldn't load MappingUpdaterFactory type of: {0}",
+                            mappingUpdaterSetting.MappingUpdaterFactoryClass));
+                mappingUpdaterFactInstance = Activator.CreateInstance(mappingUpdaterFactoryType) as IMappingUpdaterFactory;         
+            }
+
+            if (mappingUpdaterFactInstance == null)
+            {
+                _logger.Debug("no mapping udpater configuration found; initialising DummyMappingUpdater");
+                mappingUpdaterFactInstance = new DummyMappingUpdaterFactory();
+            }
+
+            mappingUpdaterFactInstance.Configuration = mappingUpdaterSetting;   
             IMappingUpdater mappingUpdater = mappingUpdaterFactInstance.GetMappingUpdater();
 
-            Bind<IMappingUpdater>().ToConstant(mappingUpdater);
 
+            Bind<IMappingUpdater>().ToConstant(mappingUpdater);
             IMappingsCollectionProvider mapCollProvider = new DefaultMappingsCollectionProvider(mappingUpdater);
             Bind<IMappingsCollectionProvider>().ToConstant(mapCollProvider);
 
-            // Factory method for creation of listener instances.
-            var factoryMethod =
-                new Func<string, IResourceFacade, Fixture, IAdapterPlugin,IEventState,IObjectProvider<IMarketStateCollection>, int, IListener>(
-                    (sport, resource, fixtureSnapshot, connector, eventState,marketFilterObjectProvider, lastSequence) 
-                        => new StreamListener(sport, resource, fixtureSnapshot, connector, eventState, marketFilterObjectProvider, lastSequence));
-
-            Bind<Func<string, IResourceFacade, Fixture, IAdapterPlugin, IEventState,IObjectProvider<IMarketStateCollection>, int, IListener>>().ToConstant(factoryMethod);
         }
     }
 }

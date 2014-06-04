@@ -18,6 +18,14 @@ using System.Linq;
 
 namespace SS.Integration.Adapter.Model
 {
+    /// <summary>
+    /// This class represents a market as it comes within 
+    /// a (delta/full)-snasphot.
+    /// 
+    /// As delta snapshots don't have the tag section,
+    /// some properties don't have a valid value when
+    /// the object is created from a delta snapshot.
+    /// </summary>
     [Serializable]
     public class Market
     {
@@ -35,6 +43,10 @@ namespace SS.Integration.Adapter.Model
             Selections = new List<Selection>();
         }
 
+        /// <summary>
+        /// Market's name. Not present if 
+        /// the snapshot is a delta snapshot
+        /// </summary>
         public string Name
         {
             get
@@ -43,6 +55,11 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        /// <summary>
+        /// Market's type. This information
+        /// is not present if this object
+        /// is coming from a delta-snapshot.
+        /// </summary>
         public string Type
         {
             get
@@ -51,10 +68,19 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        /// <summary>
+        /// Market's Id
+        /// </summary>
         public string Id { get; set; }
 
         public Rule4[] Rule4s { get; set; }
 
+        /// <summary>
+        /// Determines if the market is an 
+        /// over-under market by looking a the tags.
+        /// 
+        /// Information not available on a delta snapshot
+        /// </summary>
         public bool IsOverUnder
         {
             get
@@ -63,30 +89,87 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        /// <summary>
+        /// Determines if the market can be traded in play.
+        /// 
+        /// The information is always available
+        /// </summary>
         public bool IsTradedInPlay { get; set; }
 
+        /// <summary>
+        /// Returns true if the market is active.
+        /// 
+        /// This information is always available and it is computed
+        /// by looking a the selections' states and 
+        /// theirs tradability values.
+        /// </summary>
         public bool IsActive { get; set; }
 
+        /// <summary>
+        /// Returns true if the market is suspended.
+        /// 
+        /// Please note that this value only make sense
+        /// when IsActive is true.
+        /// 
+        /// This value is always present.
+        /// </summary>
         public bool IsSuspended { get; set; }
 
+        /// <summary>
+        /// Determines if the market has been
+        /// resulted on the Connect platform.
+        /// 
+        /// The value is always present and it
+        /// is computed by looking at the selections'
+        /// states and theirs tradability values
+        /// </summary>
         public bool IsResulted { get; set; }
 
+        /// <summary>
+        /// Determines if the market is in a pending state.
+        /// 
+        /// This information is always present and it is
+        /// computed by looking at the selections's states.
+        /// </summary>
         public bool IsPending { get; set; }
 
+        /// <summary>
+        /// Returns the selections's for this market
+        /// as they are contained within the snapshot.
+        /// </summary>
         public virtual List<Selection> Selections { get; private set; }
 
         #region Tags
 
+        /// <summary>
+        /// Determines if the market has the given tag.
+        /// 
+        /// If this object has been created from a delta snapshot,
+        /// this method always returns false.
+        /// </summary>
+        /// <param name="tagKey"></param>
+        /// <returns></returns>
         public bool HasTag(string tagKey)
         {
             return !string.IsNullOrEmpty(tagKey) && _Tags.ContainsKey(tagKey);
         }
 
+        /// <summary>
+        /// Returns the value of the given tag.
+        /// Null if the tag doesn't exist.
+        /// </summary>
+        /// <param name="tagName"></param>
+        /// <returns></returns>
         public string GetTagValue(string tagName)
         {
             return HasTag(tagName) ? _Tags[tagName] : null;
         }
 
+        /// <summary>
+        /// Allows to add/update a tag
+        /// </summary>
+        /// <param name="tagName">Must not be empty or null</param>
+        /// <param name="tagValue"></param>
         public void AddOrUpdateTagValue(string tagName, string tagValue)
         {
             if (string.IsNullOrEmpty(tagName))
@@ -95,6 +178,9 @@ namespace SS.Integration.Adapter.Model
             _Tags[tagName] = tagValue;
         }
 
+        /// <summary>
+        /// Returns the list of all tags
+        /// </summary>
         public IEnumerable<string> TagKeys
         {
             get
@@ -103,6 +189,10 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        /// <summary>
+        /// Returns the number of tags contained
+        /// within this object.
+        /// </summary>
         public int TagsCount
         {
             get
@@ -114,6 +204,7 @@ namespace SS.Integration.Adapter.Model
         /// <summary>
         /// Deprecated, use the API interface to deal with tags
         /// </summary>
+        [Obsolete("Use Tag interface to deal with tags", false)]
         public Dictionary<string, string> Tags
         {
             get

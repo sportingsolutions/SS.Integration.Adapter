@@ -17,6 +17,14 @@ using System.Collections.Generic;
 
 namespace SS.Integration.Adapter.Model
 {
+    /// <summary>
+    /// This class represents a selection as it comes
+    /// within a delta/full snapshot.
+    /// 
+    /// As some information are only present in a full snapshot
+    /// (i.e. tag section) not all the properties have valid
+    /// value when the object is created from a delta snapshot.
+    /// </summary>
     [Serializable]
     public class Selection
     {
@@ -29,14 +37,40 @@ namespace SS.Integration.Adapter.Model
             _OverridenName = null;
         }
 
+        /// <summary>
+        /// Selection's Id
+        /// </summary>
         public string Id { get; set; }
 
+        /// <summary>
+        /// Selection's price when present
+        /// within the snapshot
+        /// </summary>
         public double? Price { get; set; }
 
+        /// <summary>
+        /// Selections' status. 
+        /// See SelectionStatus for a list of valid values.
+        /// </summary>
         public string Status { get; set; }
 
+        /// <summary>
+        /// Selection's tradability when present
+        /// within the snapshot
+        /// </summary>
         public bool? Tradable { get; set; }
 
+        /// <summary>
+        /// The selection's name.
+        /// 
+        /// The selection's name can be overwritten by manually setting it, but
+        /// it is only valid for the current object. If another snapshot arrives,
+        /// the Selection object is re-created with the information contained within
+        /// the snapshot.
+        /// 
+        /// If not manually set, this field is only valid when the object
+        /// is created from a full snapshot.
+        /// </summary>
         public string Name
         {
             get
@@ -50,6 +84,14 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        /// <summary>
+        /// Returns true if the selection is suspended.
+        /// 
+        /// This is currently computed by checking the
+        /// tradability value. If the tradability is present
+        /// and its value if false, then the selection is 
+        /// considered as suspended.
+        /// </summary>
         public bool IsSuspended
         {
             get
@@ -66,17 +108,6 @@ namespace SS.Integration.Adapter.Model
                     return null;
 
                 return Status == SelectionStatus.Active;
-            }
-            set
-            {
-                if (value == null || !value.Value)
-                {
-                    Status = SelectionStatus.Pending;
-                }
-                else
-                {
-                    Status = SelectionStatus.Active;
-                }
             }
         }
 

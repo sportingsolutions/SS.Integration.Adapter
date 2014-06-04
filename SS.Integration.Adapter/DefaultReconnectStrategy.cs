@@ -23,15 +23,14 @@ namespace SS.Integration.Adapter
     public class DefaultReconnectStrategy : IReconnectStrategy
     {
         private readonly ILog _logger = LogManager.GetLogger(typeof(Adapter).ToString());
-
         private readonly ISettings _settings;
-
         private Action<bool> _initialiseSession;
 
         public DefaultReconnectStrategy(ISettings settings)
         {
             _settings = settings;
         }
+
         public void SetSessionInitialiser(Action<bool> sessionInitialiser)
         {
             _initialiseSession = sessionInitialiser;

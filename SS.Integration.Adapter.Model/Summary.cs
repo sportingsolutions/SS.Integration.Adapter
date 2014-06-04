@@ -16,6 +16,9 @@ using System.Collections.Generic;
 
 namespace SS.Integration.Adapter.Model
 {
+    /// <summary>
+    /// A resource's summary
+    /// </summary>
     public class Summary
     {
         public Summary()

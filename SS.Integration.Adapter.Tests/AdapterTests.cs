@@ -14,14 +14,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Threading.Tasks;
+using FluentAssertions;
 using NUnit.Framework;
 using System.Threading;
 using Moq;
+using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Interface;
-using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
-using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Adapter.Plugin.Model.Interface;
 
@@ -30,16 +30,15 @@ namespace SS.Integration.Adapter.Tests
     [TestFixture]
     public class AdapterTests
     {
-        [Category("Integration")]
+        [Category("Adapter")]
         [Test]
         public void ShouldStartAndStopNoSports()
         {
             var settings = new Mock<ISettings>();
+            settings.Setup(x => x.EventStateFilePath).Returns(".");
             var service = new Mock<IServiceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
-            var eventState = new Mock<IEventState>();
-            var marketStateObjectStore = new Mock<IObjectProvider<IDictionary<string, MarketState>>>();
             var mappingUpdater = new Mock<IMappingUpdater>();
 
             settings.Setup(s => s.FixtureCheckerFrequency).Returns(10000);
@@ -50,32 +49,25 @@ namespace SS.Integration.Adapter.Tests
                 settings.Object,
                 service.Object,
                 connector.Object,
-                eventState.Object,
-                mappingUpdater.Object,
-                (s, facade, arg3, arg4, arg5,m, arg6) => listener.Object);
+                mappingUpdater.Object);
 
             adapter.Start();
-
-            Thread.Sleep(1000);
-
             adapter.Stop();
-
-            Thread.Sleep(250);
 
             service.VerifyAll();
             listener.Verify(l => l.Start(), Times.Never());
             listener.Verify(l => l.Stop(), Times.Never());
         }
 
-        [Category("Integration")]
+        [Category("Adapter")]
         [Test]
         public void ShouldStartAndStopWithFewSportsNoFixtures()
         {
             var settings = new Mock<ISettings>();
+            settings.Setup(x => x.EventStateFilePath).Returns(".");
             var service = new Mock<IServiceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
-            var eventState = new Mock<IEventState>();
             var mappingUpdater = new Mock<IMappingUpdater>();
 
             settings.Setup(s => s.FixtureCheckerFrequency).Returns(10000);
@@ -86,20 +78,13 @@ namespace SS.Integration.Adapter.Tests
                 settings.Object,
                 service.Object,
                 connector.Object,
-                eventState.Object,
-                mappingUpdater.Object,
-                (s, facade, arg3, arg4, arg5,m, arg6) => listener.Object);
+                mappingUpdater.Object);
 
             foreach (var sport in this.Sports(ListOfSports.GiveMeFew))
                 adapter.AddSport(sport);
 
             adapter.Start();
-
-            Thread.Sleep(1000);
-
             adapter.Stop();
-
-            Thread.Sleep(250);
 
             service.VerifyAll();
             listener.Verify(l => l.Start(), Times.Never());
@@ -107,11 +92,12 @@ namespace SS.Integration.Adapter.Tests
             connector.Verify(c => c.Suspend(It.IsAny<string>()), Times.Never());
         }
 
-        [Category("Integration")]
+        [Category("Adapter")]
         [Ignore]
         public void ShouldStartAndStopWithFewSportsAndFixtures()
         {
             var settings = new Mock<ISettings>();
+            settings.Setup(x => x.EventStateFilePath).Returns(".");
             var service = new Mock<IServiceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
@@ -153,9 +139,7 @@ namespace SS.Integration.Adapter.Tests
                 settings.Object,
                 service.Object,
                 connector.Object,
-                eventState.Object,
-                mappingUpdater.Object,
-                (s, facade, arg3, arg4, arg5,m, arg6) => listener.Object);
+                mappingUpdater.Object);
 
 
             foreach (var sport in this.Sports(ListOfSports.GiveMeFew))
@@ -183,12 +167,13 @@ namespace SS.Integration.Adapter.Tests
         }
 
         [Test]
+        [Category("Adapter")]
         public void ShouldCreateListeners()
         {
             var settings = new Mock<ISettings>();
+            settings.Setup(x => x.EventStateFilePath).Returns(".");
             var service = new Mock<IServiceFacade>();
             var connector = new Mock<IAdapterPlugin>();
-            var listener = new Mock<IListener>();
             var eventState = new Mock<IEventState>();
             var mappingUpdater = new Mock<IMappingUpdater>();
 
@@ -197,19 +182,17 @@ namespace SS.Integration.Adapter.Tests
 
             fixtureOne.Setup(f => f.Id).Returns("1");
             fixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetSnapshotJson());
-            fixtureOne.Setup(f => f.Content)
-                      .Returns(new Summary() { Id = "1", Date = "23/05/2012", StartTime = "10:20", MatchStatus = 1});
+            fixtureOne.Setup(f => f.Content).Returns(new Summary { Id = "1", Date = "23/05/2012", StartTime = "10:20", MatchStatus = 1});
 
             fixtureTwo.Setup(f => f.Id).Returns("2");
             fixtureTwo.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetSnapshotJson());
             fixtureTwo.Setup(f => f.Content)
-                      .Returns(new Summary()
+                      .Returns(new Summary
                           {
                               Id = "2", Date = "23/05/2012", StartTime = "13:20", MatchStatus = 1
                           });
 
-            service.Setup(s => s.GetResources("Football"))
-                   .Returns(new List<IResourceFacade> { fixtureOne.Object, fixtureTwo.Object });
+            service.Setup(s => s.GetResources("Football")).Returns(new List<IResourceFacade> { fixtureOne.Object, fixtureTwo.Object });
 
             settings.Setup(s => s.FixtureCreationConcurrency).Returns(2);
 
@@ -217,314 +200,153 @@ namespace SS.Integration.Adapter.Tests
                 settings.Object,
                 service.Object,
                 connector.Object,
-                eventState.Object,  
-                mappingUpdater.Object,
-                (s, facade, arg3, arg4, arg5,m, arg6) => listener.Object);
+                mappingUpdater.Object);
 
             adapter.Start();
-
-            AutoResetEvent are = new AutoResetEvent(false);
-            listener.Setup(f => f.Start()).Callback(() => 
-                are.Set()
-                );
             
             adapter.ProcessSport("Football");
             adapter.ProcessSport("Rugby");
 
-            are.WaitOne(10000);
+            Thread.Yield();
 
             service.VerifyAll();
-            listener.Verify(l => l.Start(), Times.Exactly(2));
-            listener.Verify(l => l.Stop(), Times.Never());
-
+            
             eventState.Verify(es => es.RemoveFixture(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
         }
 
+
+        /// <summary>
+        /// Here I want to test that when a resource
+        /// is being processed by the adapter thread
+        /// (timer tick) then it must not be processed
+        /// by another thread at the same time
+        /// </summary>
         [Test]
-        public void ShouldStopListenerWithFixtureEnded()
+        [Category("Adapter")]
+        public void ResourceIsProcessedExclusivelyTest()
         {
             var settings = new Mock<ISettings>();
             var service = new Mock<IServiceFacade>();
             var connector = new Mock<IAdapterPlugin>();
-            var listener = new Mock<IListener>();
-            var eventState = new Mock<IEventState>();
-            var mappingUpdater = new Mock<IMappingUpdater>();
+            var updater = new Mock<IMappingUpdater>();
+            var state = new Mock<IEventState>();
 
-            listener.Setup(l => l.IsFixtureEnded).Returns(true);
+            settings.Setup(x => x.EventStateFilePath).Returns(".");
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            settings.Setup(x => x.FixtureCreationConcurrency).Returns(1);
+            settings.Setup(x => x.FixtureCheckerFrequency).Returns(500);
 
-            var fixtureOne = new Mock<IResourceFacade>();
-            var fixtureTwo = new Mock<IResourceFacade>();
+            var sport = new Mock<IFeature>();
 
-            fixtureOne.Setup(f => f.Id).Returns("1");
-            fixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetSnapshotJson());
-            fixtureOne.Setup(f => f.Content)
-                      .Returns(new Summary() { Date = "23/05/2012", StartTime = "10:20", MatchStatus = 50 });
-            fixtureTwo.Setup(f => f.Id).Returns("2");
-            fixtureTwo.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetSnapshotJson());
-            fixtureTwo.Setup(f => f.Content)
-                      .Returns(new Summary() { Date = "24/05/2012", StartTime = "11:20", MatchStatus = 50});
+            var resource = new Mock<IResourceFacade>();
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary { Sequence = 1 });
 
-            settings.Setup(s => s.FixtureCreationConcurrency).Returns(2);
-            service.Setup(s => s.GetResources(It.IsAny<string>()))
-                   .Returns(new List<IResourceFacade> { fixtureOne.Object, fixtureTwo.Object });
-
-            var countDown = new CountdownEvent(2);
-            listener.Setup(f => f.Start()).Callback(() => countDown.Signal());
-            listener.Setup(f => f.Start()).Returns(true);
-            listener.Setup(f => f.Stop()).Callback(() => countDown.Signal());
+            service.Setup(x => x.GetSports()).Returns(new List<IFeature> { sport.Object });
+            service.Setup(x => x.GetResources(It.IsAny<string>())).Returns(new List<IResourceFacade> { resource.Object });
             
-            var adapter = new Adapter(
-                settings.Object,
-                service.Object,
-                connector.Object,
-                eventState.Object,
-                mappingUpdater.Object,
-                (s, facade, arg3, arg4, arg5,m, arg6) => listener.Object);
-
-            adapter.Start();
-            adapter.ProcessSport("Football");
-
-            countDown.Wait(10000);
-            countDown.Reset();
-            //removing fixtures
-            adapter.ProcessSport("Football");
-
-            countDown.Wait(10000);
-
-            service.VerifyAll();
-            
-            listener.Verify(l => l.Start(), Times.Exactly(2));
-            listener.Verify(l => l.Stop(), Times.Exactly(2));
-            eventState.Verify(es => es.RemoveFixture("Football", "1"), Times.Once());
-            eventState.Verify(es => es.RemoveFixture("Football", "2"), Times.Once());
-        }
 
 
-        [Test]
-        public void ShouldSkipEventStateCleanup()
-        {
-            var settings = new Mock<ISettings>();
-            var service = new Mock<IServiceFacade>();
-            var connector = new Mock<IAdapterPlugin>();
-            var listener = new Mock<IListener>();
-            var eventState = new Mock<IEventState>();
-            var mappingUpdater = new Mock<IMappingUpdater>();
-            var footballFixtureOne = new Mock<IResourceFacade>();
-            
-            footballFixtureOne.Setup(f => f.Id).Returns("1");
-            footballFixtureOne.Setup(f => f.IsMatchOver).Returns(false);
+            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object, updater.Object);
+            adapter.StreamCreated += adapter_StreamCreated;
+            adapter.EventState = state.Object;
 
-            footballFixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetSnapshotJson(1,2,0,40));
-
-            listener.Setup(l => l.IsFixtureEnded).Returns(false);
-         
-            service.Setup(s => s.GetResources("Football")).Returns(new List<IResourceFacade> { footballFixtureOne.Object });
-            eventState.Setup(es => es.GetFixtureState(It.IsAny<string>()))
-                      .Returns(new FixtureState()
-                          {
-                              Id = footballFixtureOne.Object.Id,
-                              MatchStatus = MatchStatus.InRunning,
-                              Sport = "Football"
-                          });
-            settings.Setup(s => s.FixtureCreationConcurrency).Returns(2);
-            settings.Setup(s => s.FixtureCheckerFrequency).Returns(1000);
-
-            var adapter = new Adapter(
-                settings.Object,
-                service.Object,
-                connector.Object,
-                eventState.Object,    
-                mappingUpdater.Object,
-                (s, facade, arg3, arg4, arg5, m, arg6) => listener.Object);
-
-            adapter.AddSport("Football");
-
-            AutoResetEvent are = new AutoResetEvent(false);
-            listener.Setup(f => f.Start()).Callback(() => are.Set());
-
+            // after this call a stream listener for the above resource will be created
+            // and the thread that created it will be blocked on the adapter_StreamCreated 
+            // event handler until we un-block it
             adapter.Start();
 
-            are.WaitOne(9000);
+            // As the FixtureCheckerFrequency is half second, before returning
+            // from the event handler, the adapter's timer tick surely has
+            // been fired several times. As we haven't yet returned from
+            // the event handler, for the adapter the resource is still
+            // being processed. Here we want to check that this is true.
 
-            footballFixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetRawStreamMessage(1, 2, 0, 50)).Callback(() => are.Set());
-            footballFixtureOne.Setup(f => f.IsMatchOver).Returns(true);
-            service.Setup(s => s.GetResources("Football")).Returns(new List<IResourceFacade> { footballFixtureOne.Object });
+            // For checking this we check how many times the adapter
+            // interrogates EventState.GetFixtureState("ABC")
+            // (that call is made immediately before adding the resource
+            // to the creation queue - if that detail change, we need
+            // to revisit this unit test
 
-            are.WaitOne(3000);
+            Thread.Sleep(5000);
 
-            footballFixtureOne.VerifyAll();
-          
-            eventState.Verify(es => es.RemoveFixture("Football", footballFixtureOne.Object.Id), Times.Never());
+            lock (adapter)
+            {
+                Monitor.PulseAll(adapter);
+                state.Verify(x => x.GetFixtureState("ABC"), Times.Once);
+            }
+
+            adapter.Stop();
 
         }
 
         [Test]
-        public void ShouldHandleErroredListener()
+        [Category("Adapter")]
+        public void AdapterIsDisposedCorrectlyTest()
         {
             var settings = new Mock<ISettings>();
             var service = new Mock<IServiceFacade>();
             var connector = new Mock<IAdapterPlugin>();
-            var listener = new Mock<IListener>();
-            var eventState = new Mock<IEventState>();
-            var mappingUpdater = new Mock<IMappingUpdater>();
+            var updater = new Mock<IMappingUpdater>();
 
-            listener.Setup(l => l.IsFixtureEnded).Returns(false);
-            listener.Setup(l => l.IsErrored).Returns(true);
+            settings.Setup(x => x.EventStateFilePath).Returns(".");
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            settings.Setup(x => x.FixtureCreationConcurrency).Returns(1);
+            settings.Setup(x => x.FixtureCheckerFrequency).Returns(500);
 
-            var fixtureOne = new Mock<IResourceFacade>();
+            var sport = new Mock<IFeature>();
 
-            fixtureOne.Setup(f => f.Id).Returns("1");
-            fixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetSnapshotJson());
+            var resource = new Mock<IResourceFacade>();
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary { Sequence = 1 });
 
-            service.Setup(s => s.GetResources(It.IsAny<string>()))
-                   .Returns(new List<IResourceFacade> { fixtureOne.Object });
+            service.Setup(x => x.GetSports()).Returns(new List<IFeature> { sport.Object });
+            service.Setup(x => x.GetResources(It.IsAny<string>())).Returns(new List<IResourceFacade> { resource.Object });
 
-            settings.Setup(s => s.FixtureCreationConcurrency).Returns(2);
 
-            var adapter = new Adapter(
-                settings.Object,
-                service.Object,
-                connector.Object,
-                eventState.Object,
-                mappingUpdater.Object,
-                (s, facade, arg3, arg4, arg5,m, arg6) => listener.Object);
+            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object, updater.Object);
+            adapter.StreamCreated += adapter_StreamCreated;
 
             adapter.Start();
 
-            AutoResetEvent are = new AutoResetEvent(false);
-            listener.Setup(f => f.Start()).Callback(() =>
-                are.Set()
-                );
+            Thread.Sleep(1000);
 
-            // First Iteration
-            adapter.ProcessSport("Football");
+            bool error = false;
 
-            are.WaitOne(10000);
+            // as stop needs to wait for thread termination, and all the threads
+            // are waiting on a lock, we need to call this on a separate thread
+            Task t = Task.Factory.StartNew(() =>
+                {
+                    try
+                    {
+                        adapter.Stop();
+                    }
+                    catch
+                    {
+                        error = true;
+                    }
+                }
+                
+            );
 
-            // Second Iteration
-            adapter.ProcessSport("Football");
-            are.WaitOne(10000);
+            Thread.Sleep(2000);
 
-            listener.Verify(l => l.Start(), Times.Exactly(2));
-            service.Verify(s => s.GetResources(It.IsAny<string>()), Times.Exactly(2));
+            lock (adapter)
+            {
+                Monitor.PulseAll(adapter);
+            }
+
+            t.Wait();
+            error.Should().BeFalse();
         }
 
-        [Test]
-        public void ShouldDeleteStateAndStopListenerWhenResourceIsDeleted()
+        private static void adapter_StreamCreated(object sender, System.EventArgs e)
         {
-            var settings = new Mock<ISettings>();
-            var service = new Mock<IServiceFacade>();
-            var connector = new Mock<IAdapterPlugin>();
-            var listener = new Mock<IListener>();
-            var eventState = new Mock<IEventState>();
-            var mappingUpdater = new Mock<IMappingUpdater>();
-
-            eventState.Setup(es => es.GetFixtures("Football")).Returns(() => new List<string> {"1"});
-
-            listener.Setup(l => l.IsFixtureEnded).Returns(false);
-            listener.Setup(l => l.IsErrored).Returns(true);
-
-            var fixtureOne = new Mock<IResourceFacade>();
-
-            fixtureOne.Setup(f => f.Id).Returns("1");
-            fixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetSnapshotJson());
-
-            service.Setup(s => s.GetResources(It.IsAny<string>()))
-                   .Returns(new List<IResourceFacade> { fixtureOne.Object });
-
-            settings.Setup(s => s.FixtureCreationConcurrency).Returns(2);
-
-            var adapter = new Adapter(
-                settings.Object,
-                service.Object,
-                connector.Object,
-                eventState.Object,
-                mappingUpdater.Object,
-                (s, facade, arg3, arg4, arg5, m, arg6) => listener.Object);
-
-            adapter.Start();
-
-            AutoResetEvent are = new AutoResetEvent(false);
-            listener.Setup(f => f.Start()).Callback(() =>
-                are.Set()
-                );
-            listener.Setup(f => f.Start()).Returns(true);
-
-            // First Iteration
-            adapter.ProcessSport("Football");
-
-            are.WaitOne(10000);
-
-            service.Setup(s => s.GetResources(It.IsAny<string>())).Returns(new List<IResourceFacade>());
-            listener.Setup(f => f.Stop()).Callback(() =>
-                are.Set()
-                );
-
-            adapter.ProcessSport("Football");
-            are.WaitOne(10000);
-
-            listener.Verify(f=> f.Stop(),Times.Once());
-
-
-
+            lock (sender)
+            {
+                Monitor.Wait(sender);
+            }
         }
-
-        [Test]
-        public void ShouldHandleDeletedFixtureListener()
-        {
-            var settings = new Mock<ISettings>();
-            var service = new Mock<IServiceFacade>();
-            var connector = new Mock<IAdapterPlugin>();
-            var listener = new Mock<IListener>();
-            var eventState = new Mock<IEventState>();
-            var mappingUpdater = new Mock<IMappingUpdater>();
-
-            listener.Setup(l => l.IsFixtureEnded).Returns(false);
-            listener.Setup(l => l.IsErrored).Returns(false);
-            
-            var fixtureOne = new Mock<IResourceFacade>();
-
-            fixtureOne.Setup(f => f.Id).Returns("1");
-            fixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetSnapshotJson());
-
-            service.Setup(s => s.GetResources(It.IsAny<string>()))
-                   .Returns(new List<IResourceFacade> { fixtureOne.Object });
-
-            settings.Setup(s => s.FixtureCreationConcurrency).Returns(2);
-
-            var adapter = new Adapter(
-                settings.Object,
-                service.Object,
-                connector.Object,
-                eventState.Object,
-                mappingUpdater.Object,
-                (s, facade, arg3, arg4, arg5, m, arg6) => listener.Object);
-
-            adapter.Start();
-
-            AutoResetEvent are = new AutoResetEvent(false);
-            listener.Setup(f => f.Start()).Callback(() =>
-                are.Set()
-                );
-            listener.Setup(f => f.Start()).Returns(true);
-
-            // First Iteration
-            adapter.ProcessSport("Football");
-
-            are.WaitOne(10000);
-            listener.Setup(l => l.IsFixtureDeleted).Returns(true);
-            
-            // Second Iteration
-            adapter.ProcessSport("Football");
-            are.WaitOne(10000);
-
-            listener.Verify(l => l.Start(), Times.Exactly(2));
-            listener.Verify(l => l.Stop(),Times.Once());
-            listener.Verify(l => l.CheckStreamHealth(It.IsAny<int>(),It.IsAny<int>()),Times.Never());
-
-            service.Verify(s => s.GetResources(It.IsAny<string>()), Times.Exactly(2));
-        }
-
 
         private IEnumerable<string> Sports(ListOfSports howMany)
         {
@@ -545,7 +367,6 @@ namespace SS.Integration.Adapter.Tests
         private enum ListOfSports
         {
             None,
-            JustOne,
             GiveMeFew
         }
     }

@@ -17,8 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Linq;
 using SS.Integration.Adapter.Plugin.Model;
 using SS.Integration.Common.ConfigSerializer;
@@ -44,7 +42,7 @@ namespace SS.Integration.Adapter.Configuration
                     Type serializerSettingsType =Type.GetType(result.SerializerSettingsClass);
                     if (serializerSettingsType != null)
                     {
-                        IConfigSerializerSettings configSerializerSettings = (IConfigSerializerSettings) Activator.CreateInstance(serializerSettingsType);
+                        IConfigSerializerSettings configSerializerSettings = Activator.CreateInstance(serializerSettingsType) as IConfigSerializerSettings;
                         SetProperties(configSerializerSettings,
                                       doc.Element("mappingUpdater")
                                          .Element(result.SerializerSettingsSection)

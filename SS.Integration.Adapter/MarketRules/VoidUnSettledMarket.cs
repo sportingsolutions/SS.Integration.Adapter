@@ -13,12 +13,13 @@
 //limitations under the License.
 
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using log4net;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Common.Extensions;
 
 namespace SS.Integration.Adapter.MarketRules
 {
@@ -38,19 +39,24 @@ namespace SS.Integration.Adapter.MarketRules
 
         public string Name { get { return NAME; } }
 
-        public void Apply(Fixture Fixture, IMarketStateCollection OldState, IMarketStateCollection NewState, IMarketRuleProcessingContext Context)
+        public IMarketRuleResultIntent Apply(Fixture fixture, IMarketStateCollection oldState, IMarketStateCollection newState)
         {
-            if (!Fixture.IsMatchOver)
-                return;
+         
+            var result = new MarketRuleResultIntent();
 
-            var markets = Fixture.Markets.ToDictionary(m => m.Id);
+            if (!fixture.IsMatchOver || oldState == null)
+                return result;
+
+            _Logger.DebugFormat("Applying market rule={0} for {1}", Name, fixture);
+
+            var markets = fixture.Markets.ToDictionary(m => m.Id);
 
             // get list of markets which are either no longer in snapshot or are in the snapshot and are not resulted
             // markets which were already priced (activated) should be ignored
             var marketsNotPresentInTheSnapshot = new List<IMarketState>();
-            foreach (var mkt in NewState.Markets)
+            foreach (var mkt in newState.Markets)
             {
-                IMarketState mkt_state = NewState[mkt];
+                IMarketState mkt_state = newState[mkt];
                 if (!mkt_state.IsResulted && (!markets.ContainsKey(mkt_state.Id) || !markets[mkt_state.Id].IsResulted))
                     marketsNotPresentInTheSnapshot.Add(mkt_state);
             }
@@ -59,34 +65,30 @@ namespace SS.Integration.Adapter.MarketRules
             {
                 if (mkt_state.HasBeenActive)
                 {
-                    _Logger.WarnFormat("marketId={0} of {1} was priced during the fixture lifetime but has NOT been settled on match over.", 
-                        mkt_state.Id, Fixture);
+                    _Logger.WarnFormat("market rule={0} => marketId={1} of {2} was priced during the fixture lifetime but has NOT been settled on match over.", 
+                        Name, mkt_state.Id, fixture);
                     continue;
                 }
 
-                var market = Fixture.Markets.FirstOrDefault(m => m.Id == mkt_state.Id);
+                var market = fixture.Markets.FirstOrDefault(m => m.Id == mkt_state.Id);
                 if (market == null)
                 {
-                    _Logger.DebugFormat("marketId={0} of {1} will be voided due rule={2}", mkt_state.Id, Fixture, Name);
+                    _Logger.DebugFormat("market rule={0} => marketId={1} of {2} is marked to be voided", Name, mkt_state.Id, fixture);
 
-                    Market settled_mkt = CreateSettledMarket(mkt_state);
-
-                    Fixture.Markets.Add(settled_mkt);
-                    
-                    mkt_state.Update(settled_mkt, false);
+                    result.AddMarket(CreateSettledMarket(mkt_state));
                 }
                 else
                 {
-                    _Logger.WarnFormat("Voiding marketId={0} of {1} that was in the snapshot but wasn't resulted. rule={2}", 
-                        market.Id, Fixture, Name);
+                    _Logger.WarnFormat("market rule={0} => marketId={1} of {2} that was in the snapshot but wasn't resulted is marked to be voided", 
+                        Name, market.Id, fixture);
 
-                    market.Selections.ForEach(s => s.Status = SelectionStatus.Void);
-
-                    // as we change the selections' status, we need to update the cache too
-                    mkt_state.Update(market, false);
+                    Action<Market> action = x => x.Selections.ForEach(s => s.Status = SelectionStatus.Void);
+                    result.EditMarket(market, action);
                 }
 
             }
+
+            return result;
         }
 
         private static Market CreateSettledMarket(IMarketState MarketState)

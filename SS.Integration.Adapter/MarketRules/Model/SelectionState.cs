@@ -14,13 +14,14 @@
 
 using System;
 using System.Collections.Generic;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.MarketRules.Model
 {
     [Serializable]
-    public class SelectionState : ISelectionState
+    internal class SelectionState : IUpdatableSelectionState
     {
         private Dictionary<string, string> _Tags;
 
@@ -39,6 +40,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
             Update(selection, fullSnapshot);
         }
 
+        #region ISelectionState
+
         public string Id { get; private set; }
 
         public string Name { get; private set; }
@@ -48,34 +51,6 @@ namespace SS.Integration.Adapter.MarketRules.Model
         public bool? Tradability { get; private set; }
 
         public string Status { get; private set; }
-
-        public void Update(Selection Selection, bool fullSnapshot)
-        {
-            Price = Selection.Price;
-            Status = Selection.Status;
-            Tradability = Selection.Tradable;
-
-            if (fullSnapshot)
-            {
-                _Tags = new Dictionary<string, string>();
-
-                foreach (var key in Selection.TagKeys)
-                    _Tags.Add(key, Selection.GetTagValue(key));
-
-                Name = Selection.Name;
-            }
-        }
-
-        public bool IsEqualTo(Selection Selection)
-        {
-            if(Selection == null)
-                throw new ArgumentNullException("Selection", "selection is null in SelectionState comparison");
-
-            return (Selection.Name == null || Selection.Name == this.Name)
-                   && this.Price == Selection.Price
-                   && this.Tradability == Selection.Tradable
-                   && this.Status == Selection.Status;
-        }
 
         #region Tags
 
@@ -101,7 +76,42 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         #endregion
 
-        public ISelectionState Clone()
+        #endregion
+
+        public bool IsEqualTo(ISelectionState Selection)
+        {
+            if (this == Selection)
+                return true;
+
+            if (Selection == null)
+                throw new ArgumentNullException("Selection", "Selection is null in SelectionState comparison");
+
+            return (Selection.Name == null || Selection.Name == this.Name)
+                   && this.Price == Selection.Price
+                   && this.Tradability == Selection.Tradability
+                   && this.Status == Selection.Status;
+        }
+
+        #region IUpdatableSelectionState
+
+        public void Update(Selection Selection, bool fullSnapshot)
+        {
+            Price = Selection.Price;
+            Status = Selection.Status;
+            Tradability = Selection.Tradable;
+
+            if (fullSnapshot)
+            {
+                _Tags = new Dictionary<string, string>();
+
+                foreach (var key in Selection.TagKeys)
+                    _Tags.Add(key, Selection.GetTagValue(key));
+
+                Name = Selection.Name;
+            }
+        }
+
+        public IUpdatableSelectionState Clone()
         {
             SelectionState clone = new SelectionState
             {
@@ -118,5 +128,6 @@ namespace SS.Integration.Adapter.MarketRules.Model
             return clone;
         }
 
+        #endregion
     }
 }
