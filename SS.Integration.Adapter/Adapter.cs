@@ -519,7 +519,7 @@ namespace SS.Integration.Adapter
         /// <returns></returns>
         private bool StopListenerIfFixtureEnded(string sport, IResourceFacade resource)
         {
-            _logger.DebugFormat("{0} is currently being processed", resource);
+            _logger.DebugFormat("Checking {0} for stopping streaming", resource);
 
             var listener = _listeners[resource.Id];
 
@@ -546,6 +546,8 @@ namespace SS.Integration.Adapter
 
                 return true;
             }
+
+            _logger.DebugFormat("{0} will keep streaming", resource);
 
             return false;
         }
