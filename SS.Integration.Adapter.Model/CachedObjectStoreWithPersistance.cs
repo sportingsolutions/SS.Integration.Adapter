@@ -12,6 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using System.Runtime.Serialization;
 using SS.Integration.Adapter.Model.Interfaces;
 using log4net;
@@ -47,13 +48,22 @@ namespace SS.Integration.Adapter.Model
 
                 return item;
             }
-            catch (SerializationException se)
+            catch (Exception ex)
             {
-                _logger.Error(string.Format("Deserialization error occured for item with id={0}. Storage file must be corrupted and will be removed",id),se);
+                _logger.ErrorFormat("Deserialization error occured for item with id={0}. Storage file must be corrupted and will be removed",id);
+                
                 Remove(id);
+                
             }
 
             return null;
+        }
+
+        public override bool Remove(string id)
+        {
+            _persistanceStore.Remove(id);
+            base.Remove(id);
+            return true;
         }
 
         public override void SetObject(string id, T item)

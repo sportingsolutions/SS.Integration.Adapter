@@ -68,7 +68,9 @@ namespace SS.Integration.Adapter.ProcessState
 
         public bool Remove(string id)
         {
-            File.Delete(GetPath(id));
+            var filePath = GetPath(id);
+            if(File.Exists(filePath))
+                File.Delete(filePath);
             return true;
         }
 
