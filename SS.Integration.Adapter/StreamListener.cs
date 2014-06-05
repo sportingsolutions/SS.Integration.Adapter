@@ -84,7 +84,7 @@ namespace SS.Integration.Adapter
 
             IsStreaming = false;
             IsConnecting = false;
-            SequenceOnStreamingAvailable = -1;
+            SequenceOnStreamingAvailable = _currentSequence;
 
             IsErrored = false;
             IsIgnored = false;
