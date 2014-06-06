@@ -84,6 +84,7 @@ namespace SS.Integration.Adapter
 
             IsStreaming = false;
             IsConnecting = false;
+            SequenceOnStreamingAvailable = _currentSequence;
 
             IsErrored = false;
             IsIgnored = false;
@@ -218,6 +219,21 @@ namespace SS.Integration.Adapter
         }
 
         /// <summary>
+        /// This returns the sequence number of the 
+        /// fixture when it can start streaming
+        /// (needed to check if we need to acquire a new
+        /// snapshot when connecting to the streaming
+        /// server)
+        /// </summary>
+        internal int SequenceOnStreamingAvailable
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get;
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            set;
+        }
+
+        /// <summary>
         /// Starts the listener. 
         /// </summary>
         public void Start()
@@ -260,6 +276,9 @@ namespace SS.Integration.Adapter
         {
             IsFixtureSetup = (resource.MatchStatus == MatchStatus.Setup ||
                               resource.MatchStatus == MatchStatus.Ready);
+
+
+            SequenceOnStreamingAvailable = resource.Content.Sequence;
 
             StartStreaming();
         }
@@ -319,7 +338,7 @@ namespace SS.Integration.Adapter
             // Only start streaming if fixture is not Setup/Ready
             if (!IsFixtureSetup)
             {
-                _logger.InfoFormat("{0} sport={1} starts streaming with sequence={2}", _resource, _resource.Sport, _currentSequence);
+                _logger.InfoFormat("{0} sport={1} attempt to start streaming", _resource, _resource.Sport);
                 ConnectToStreamServer();
             }
             else
@@ -337,6 +356,8 @@ namespace SS.Integration.Adapter
 
         private void ConnectToStreamServer()
         {
+            int sequence = -1;
+
             // even if each property used within this block is thread-safe
             // we need to use a lock block because we want to do a check-set operation
             lock (this)
@@ -349,11 +370,15 @@ namespace SS.Integration.Adapter
 
                 // do not start streaming twice
                 if (IsStreaming || IsConnecting)
+                {
+                    _logger.DebugFormat("Listener will not start for {0} as it is already streaming/connection", _resource);
                     return;
+                }
 
                 IsErrored = false;
                 IsStreaming = false;
                 IsConnecting = true;
+                sequence = SequenceOnStreamingAvailable;
             }
 
             try
@@ -368,7 +393,7 @@ namespace SS.Integration.Adapter
                 // If the SDK's threading model changes, this 
                 // class must be revisited
 
-                _logger.DebugFormat("Starting streaming for {0}", _resource);
+                _logger.DebugFormat("Starting streaming for {0} - sequence on connection will be {1}", _resource, sequence);
                 _resource.StartStreaming();
                 _logger.DebugFormat("Streaming started for {0}", _resource);
             }
@@ -718,11 +743,12 @@ namespace SS.Integration.Adapter
             int sequence_number = -1;
             if(state != null)
                 sequence_number = state.Sequence;
-            
 
-            _logger.DebugFormat("{0} has stored sequence={1} and current_sequence={2}", _resource, sequence_number, _currentSequence);
+            int resource_sequence = SequenceOnStreamingAvailable;
 
-            if (sequence_number == -1 || _currentSequence != sequence_number)
+            _logger.DebugFormat("{0} has stored sequence={1} and current_sequence={2}", _resource, sequence_number, resource_sequence);
+
+            if (sequence_number == -1 || resource_sequence != sequence_number)
             {
                 RetrieveAndProcessSnapshot();
             }

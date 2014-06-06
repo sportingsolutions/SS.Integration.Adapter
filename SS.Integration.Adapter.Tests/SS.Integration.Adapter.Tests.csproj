@@ -70,6 +70,7 @@
     <Compile Include="DefaultMappingUpdaterTests.cs" />
     <Compile Include="EventStateTests.cs" />
     <Compile Include="MarketsFilterTests.cs" />
+    <Compile Include="RegressionTests.cs" />
     <Compile Include="StreamListenerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestHelper.cs" />
