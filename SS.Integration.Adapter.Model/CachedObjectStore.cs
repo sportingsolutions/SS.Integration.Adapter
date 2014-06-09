@@ -43,7 +43,7 @@ namespace SS.Integration.Adapter.Model
             _cache.Set(cacheItem,_cacheItemPolicy);
         }
 
-        public bool Remove(string id)
+        public virtual bool Remove(string id)
         {
             _cache.Remove(id);
             return true;
