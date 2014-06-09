@@ -25,7 +25,7 @@ namespace SS.Integration.Adapter.Specs
         public static Market GetMarketFromTable(Table table)
         {
             var market = new Market {Id = "TestId"};
-            market.Tags["name"] = "TestMarket";
+            market.AddOrUpdateTagValue("name", "TestMarket");
             market.Selections.Clear();
             market.Selections.AddRange(table.Rows.Select(r => GetObjectFromTableRow<Selection>(r)));
 

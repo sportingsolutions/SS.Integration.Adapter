@@ -31,6 +31,7 @@ namespace SS.Integration.Adapter.UdapiClient
         private readonly SessionContainer _sessionContainer;
         private readonly ISettings _settings;
         private IService _service;
+        private bool _isClosing;
         private readonly IReconnectStrategy _reconnectStrategy;
 
         public UdapiServiceFacade(IReconnectStrategy reconnectStrategy, ISettings settings)
@@ -42,6 +43,7 @@ namespace SS.Integration.Adapter.UdapiClient
             }, new Uri(settings.Url));
 
             _settings = settings;
+            _isClosing = false;
             _reconnectStrategy = reconnectStrategy;
             _reconnectStrategy.SetSessionInitialiser(Init);
         }
@@ -50,6 +52,8 @@ namespace SS.Integration.Adapter.UdapiClient
         {
             try
             {
+                _isClosing = false;
+                IsConnected = false;
                 Init(true);
             }
             catch (Exception)
@@ -58,6 +62,20 @@ namespace SS.Integration.Adapter.UdapiClient
                 throw;
             }
         }
+
+        public void Disconnect()
+        {
+            lock (this)
+            {
+                _isClosing = true;
+                _service = null;
+                IsConnected = false;
+            }
+
+            _logger.Info("Disconnect from GTP-UDAPI");
+        }
+
+        public bool IsConnected { get; private set; }
 
         public IEnumerable<IFeature> GetSports()
         {
@@ -114,6 +132,16 @@ namespace SS.Integration.Adapter.UdapiClient
 
             while (counter < _settings.MaxRetryAttempts)
             {
+                lock (this)
+                {
+                    if (_isClosing)
+                    {                                                    
+                        _service = null;
+                        IsConnected = false;
+                        return;
+                    }
+                }
+
                 try
                 {
                     if (connectSession)
@@ -127,6 +155,8 @@ namespace SS.Integration.Adapter.UdapiClient
                     {
                         _logger.Fatal("Udapi Service proxy could not be created");
                     }
+
+                    IsConnected = true;
 
                     return;
                 }

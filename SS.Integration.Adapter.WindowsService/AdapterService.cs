@@ -156,6 +156,7 @@ namespace SS.Integration.Adapter.WindowsService
                 PlatformConnector.Dispose();
             }
 
+
             _adapter.Stop();
             _adapterWorkerThread.Wait();
             _adapterWorkerThread.ContinueWith(task => _logger.InfoFormat("Adapter successfully stopped"));

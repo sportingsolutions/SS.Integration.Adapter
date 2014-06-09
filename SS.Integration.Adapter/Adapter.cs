@@ -107,6 +107,8 @@ namespace SS.Integration.Adapter
                 LogVersions();
 
                 UDAPIService.Connect();
+                if (!UDAPIService.IsConnected)
+                    return;
 
                 _Stats.SetValue(AdapterKeys.STATUS, "Connected");
 
@@ -181,6 +183,9 @@ namespace SS.Integration.Adapter
 
                 if (PlatformConnector != null)
                     PlatformConnector.Dispose();
+
+
+                UDAPIService.Disconnect();
             }
             catch (Exception e)
             {
@@ -471,7 +476,7 @@ namespace SS.Integration.Adapter
                     }
                 }
             }
-            catch (OperationCanceledException e)
+            catch (OperationCanceledException)
             {
                 _logger.DebugFormat("Fixture creation task={0} exited as requested", Task.CurrentId);
             }

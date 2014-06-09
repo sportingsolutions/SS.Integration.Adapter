@@ -76,6 +76,7 @@ namespace SS.Integration.Adapter.Tests
 
             service.Setup(x => x.GetSports()).Returns(new List<IFeature> { feature.Object });
             service.Setup(x => x.GetResources(It.Is<string>(y => y == "Football"))).Returns(new List<IResourceFacade> { resource.Object });
+            service.Setup(x => x.IsConnected).Returns(true);
 
             eventstate.Setup(x => x.GetFixtureState(It.Is<string>(y => y == "ABC"))).Returns(
                 new FixtureState 

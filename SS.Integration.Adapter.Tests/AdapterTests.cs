@@ -244,7 +244,7 @@ namespace SS.Integration.Adapter.Tests
 
             service.Setup(x => x.GetSports()).Returns(new List<IFeature> { sport.Object });
             service.Setup(x => x.GetResources(It.IsAny<string>())).Returns(new List<IResourceFacade> { resource.Object });
-            
+            service.Setup(x => x.IsConnected).Returns(true);
 
 
             Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object, updater.Object);
