@@ -13,7 +13,6 @@
 //limitations under the License.
 
 using System;
-using System.Runtime.Serialization;
 using SS.Integration.Adapter.Model.Interfaces;
 using log4net;
 
@@ -50,7 +49,7 @@ namespace SS.Integration.Adapter.Model
             }
             catch (Exception ex)
             {
-                _logger.ErrorFormat("Deserialization error occured for item with id={0}. Storage file must be corrupted and will be removed",id);
+                _logger.Error(string.Format("Deserialization error occured for item with id={0}. Storage file must be corrupted and will be removed",id), ex);
                 
                 Remove(id);
                 

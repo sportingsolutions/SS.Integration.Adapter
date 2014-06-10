@@ -16,7 +16,6 @@ using System;
 using System.Configuration;
 using System.IO;
 using System.Reflection;
-using System.Runtime.Remoting;
 using System.Xml;
 
 namespace SS.Integration.Adapter.Model

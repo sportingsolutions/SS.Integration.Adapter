@@ -21,6 +21,10 @@ namespace SS.Integration.Adapter.Interface
     {
         void Connect();
 
+        void Disconnect();
+
+        bool IsConnected { get; }
+
         IEnumerable<IFeature> GetSports();
 
         List<IResourceFacade> GetResources(string featureName);
