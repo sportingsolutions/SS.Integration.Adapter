@@ -53,21 +53,7 @@ namespace SS.Integration.Adapter.Model
         {
             set { Markets.AddRange(value); }
         }
-
-        //public IEnumerable<Market> AllMarkets
-        //{
-        //    get
-        //    {
-        //        if (Markets != null && RollingMarkets == null)
-        //            return Markets;
-
-        //        if (Markets == null && RollingMarkets != null)
-        //            return RollingMarkets.Cast<Market>().ToList();
-
-        //        return Markets.Concat(RollingMarkets);
-        //    }
-        //}
-
+        
         public List<Participant> Participants { get; private set; }
 
         public bool? IsPreMatchOnly
