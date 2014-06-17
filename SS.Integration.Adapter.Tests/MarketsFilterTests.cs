@@ -102,7 +102,7 @@ namespace SS.Integration.Adapter.Tests
             filteredMarkets.CommitChanges();
 
 
-            // 2) Markets are already created and first update arrives
+            // 2) AllMarkets are already created and first update arrives
             filteredMarkets.ApplyRules(_snapshot);
             filteredMarkets.CommitChanges();
 
@@ -119,7 +119,7 @@ namespace SS.Integration.Adapter.Tests
             var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
 
 
-            // 2) Markets are already created and first update arrives
+            // 2) AllMarkets are already created and first update arrives
             filteredMarkets.ApplyRules(_snapshot);
             filteredMarkets.CommitChanges();
 
@@ -162,7 +162,7 @@ namespace SS.Integration.Adapter.Tests
             // 1) Filter is created with initial snapshot
             var filteredMarkets = new MarketsRulesManager(_snapshot,_objectProvider, rules);
 
-            // 2) Markets are already created and first update arrives with a change in name for inactive market2
+            // 2) AllMarkets are already created and first update arrives with a change in name for inactive market2
             _market2.Object.AddOrUpdateTagValue("name", "Market Two with new name");
 
             filteredMarkets.ApplyRules(_snapshot);
@@ -540,7 +540,7 @@ namespace SS.Integration.Adapter.Tests
             bool active = true;
 
             var snapshot = Helper.GetInPlaySnapshot();
-            snapshot.Markets.ForEach(m => m.Selections.ForEach(s => s.Status = !active ? "1" : "0"));
+            snapshot.AllMarkets.ForEach(m => m.Selections.ForEach(s => s.Status = !active ? "1" : "0"));
             var marketFilter = new MarketsFilter(snapshot, cacheProvider);
             marketFilter.FilterInactiveMarkets(snapshot);
             marketFilter.CommitChanges();
@@ -548,7 +548,7 @@ namespace SS.Integration.Adapter.Tests
             for (int i = 0; i < 10; i++)
             {
                 snapshot = Helper.GetInPlaySnapshot();
-                snapshot.Markets.ForEach(m => m.Selections.ForEach(s => s.Status = active ? "1" : "0"));
+                snapshot.AllMarkets.ForEach(m => m.Selections.ForEach(s => s.Status = active ? "1" : "0"));
                 marketFilter.FilterInactiveMarkets(snapshot);
                 var sleep = new Random().Next(1, 10);
                 Debug.WriteLine(string.Format("Sleeping for {0}", sleep));

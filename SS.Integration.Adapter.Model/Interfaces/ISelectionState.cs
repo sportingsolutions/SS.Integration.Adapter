@@ -52,6 +52,8 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// </summary>
         double? Price { get; }
 
+        double Line { get; }
+
         #region Tags
 
         /// <summary>

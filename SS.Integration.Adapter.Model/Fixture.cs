@@ -49,6 +49,11 @@ namespace SS.Integration.Adapter.Model
 
         public List<Market> Markets { get; private set; }
 
+        public List<RollingMarket> RollingMarkets
+        {
+            set { Markets.AddRange(value); }
+        }
+        
         public List<Participant> Participants { get; private set; }
 
         public bool? IsPreMatchOnly
@@ -120,7 +125,7 @@ namespace SS.Integration.Adapter.Model
                 return int.Parse(this.MatchStatus) == (int)Enums.MatchStatus.MatchOver;
             }
         }
-        
+
         public override string ToString()
         {
             var format = "Fixture with fixtureId={0} sequence={1}";
@@ -130,7 +135,7 @@ namespace SS.Integration.Adapter.Model
                 return string.Format(format, Id, Sequence, FixtureName);
             }
 
-            return string.Format(format, Id,Sequence);
+            return string.Format(format, Id, Sequence);
         }
 
     }

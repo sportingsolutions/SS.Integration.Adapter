@@ -26,9 +26,9 @@ namespace SS.Integration.Adapter.MarketRules.Interfaces
         /// are updated accordingly.
         /// 
         /// </summary>
-        /// <param name="Market"></param>
+        /// <param name="market"></param>
         /// <param name="fullSnapshot">True if the Market object comes from a full snapshot</param>
-        void Update(Market Market, bool fullSnapshot);
+        void Update(Market market, bool fullSnapshot);
 
         /// <summary>
         /// Returns a deep-copy of this object.
