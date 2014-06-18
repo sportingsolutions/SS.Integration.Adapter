@@ -43,7 +43,7 @@ namespace SS.Integration.Adapter
     {
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListener).ToString());
 
-        private readonly IResourceFacade _resource;
+        private IResourceFacade _resource;
         private readonly IAdapterPlugin _platformConnector;
         private readonly IEventState _eventState;
         private readonly IObjectProvider<IUpdatableMarketStateCollection> _stateProvider;
@@ -258,6 +258,8 @@ namespace SS.Integration.Adapter
                 _resource.StreamEvent -= ResourceOnStreamEvent;
 
                 _resource.StopStreaming();
+                _resource = null;
+
                 IsStreaming = false;
                 IsConnecting = false;
             }

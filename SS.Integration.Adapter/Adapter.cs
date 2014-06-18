@@ -152,7 +152,10 @@ namespace SS.Integration.Adapter
             {
                 if (_trigger != null)
                 {
-                    _trigger.Dispose();
+                    var wait_handler = new ManualResetEvent(false);
+                    _trigger.Dispose(wait_handler);
+                    wait_handler.WaitOne();
+                    wait_handler.Dispose();
                     _trigger = null;
 
                     _creationQueueCancellationToken.Cancel(false);
@@ -170,6 +173,8 @@ namespace SS.Integration.Adapter
                                 _logger.Error(exception);
                             }
                         }
+
+                        _listeners.Clear();
                     }
 
                     EventState.WriteToFile();
@@ -183,7 +188,6 @@ namespace SS.Integration.Adapter
 
                 if (PlatformConnector != null)
                     PlatformConnector.Dispose();
-
 
                 UDAPIService.Disconnect();
             }
