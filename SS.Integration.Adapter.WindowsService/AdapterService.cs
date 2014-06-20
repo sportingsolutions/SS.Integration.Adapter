@@ -32,7 +32,7 @@ namespace SS.Integration.Adapter.WindowsService
     {
         private readonly ILog _logger = LogManager.GetLogger(typeof(AdapterService).ToString());
         private static Task _adapterWorkerThread;
-        private readonly StandardKernel _iocContainer;
+        private StandardKernel _iocContainer;
         private Adapter _adapter;
         
         [Import]
@@ -48,16 +48,7 @@ namespace SS.Integration.Adapter.WindowsService
             TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;    
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
 
-            List<NinjectModule> modules = new List<NinjectModule>();
-            modules.Add(new BootStrapper());
 
-            if (PluginBootstrapper != null)
-            {
-                modules.AddRange(PluginBootstrapper.BootstrapModules);
-            }
-
-            _iocContainer = new StandardKernel(modules.ToArray());
-            _iocContainer.Settings.InjectNonPublic = true;
 
             Compose();
         }
@@ -139,6 +130,17 @@ namespace SS.Integration.Adapter.WindowsService
                 _logger.Fatal("Plugin could not be found. Ensure that plugin is copied in folder and restart the service");
                 return;
             }
+
+            List<NinjectModule> modules = new List<NinjectModule>();
+            modules.Add(new BootStrapper());
+
+            if (PluginBootstrapper != null)
+            {
+                modules.AddRange(PluginBootstrapper.BootstrapModules);
+            }
+
+            _iocContainer = new StandardKernel(modules.ToArray());
+            _iocContainer.Settings.InjectNonPublic = true;
 
             _iocContainer.Inject(PlatformConnector);
 
