@@ -238,6 +238,9 @@ namespace SS.Integration.Adapter
         /// </summary>
         public void Start()
         {
+            if (_resource == null)
+                throw new ObjectDisposedException("StreamListener");
+
             StartStreaming();
         }
 
@@ -246,6 +249,9 @@ namespace SS.Integration.Adapter
         /// </summary>
         public void Stop()
         {
+            if (_resource == null)
+                return;
+
             _logger.InfoFormat("Stopping Listener for {0} sport={1}", _resource, _resource.Sport);
 
             if (IsErrored)
@@ -258,7 +264,6 @@ namespace SS.Integration.Adapter
                 _resource.StreamEvent -= ResourceOnStreamEvent;
 
                 _resource.StopStreaming();
-                _resource = null;
 
                 IsStreaming = false;
                 IsConnecting = false;
@@ -276,6 +281,11 @@ namespace SS.Integration.Adapter
         /// <param name="resource"></param>
         public void UpdateResourceState(IResourceFacade resource)
         {
+            // this is the case when the StreamListener 
+            // has been already stopped
+            if (_resource == null)
+                return;
+
             IsFixtureSetup = (resource.MatchStatus == MatchStatus.Setup ||
                               resource.MatchStatus == MatchStatus.Ready);
 
@@ -309,7 +319,7 @@ namespace SS.Integration.Adapter
                     }
 
 
-                    var suspendedSnapshot = _marketsRuleManager.GenerateAllMarketsSuspenssion();
+                    var suspendedSnapshot = _marketsRuleManager.GenerateAllMarketsSuspenssion(_currentSequence);
                     _platformConnector.ProcessStreamUpdate(suspendedSnapshot);
                 }
 
@@ -340,7 +350,7 @@ namespace SS.Integration.Adapter
             // Only start streaming if fixture is not Setup/Ready
             if (!IsFixtureSetup)
             {
-                _logger.InfoFormat("{0} sport={1} attempt to start streaming", _resource, _resource.Sport);
+                _logger.InfoFormat("{0} sport={1} attempts to start streaming", _resource, _resource.Sport);
                 ConnectToStreamServer();
             }
             else
@@ -941,6 +951,13 @@ namespace SS.Integration.Adapter
                 _logger.Error(string.Format("An error occured while trying to process match over snapshot {0}", fixtureDelta), e);
             }
         }
-    
+
+        public void Dispose()
+        {
+            Stop();
+
+            // free the resource instantiated by the SDK
+            _resource = null;
+        }
     }
 }
