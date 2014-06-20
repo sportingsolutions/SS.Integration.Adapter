@@ -136,6 +136,7 @@ namespace SS.Integration.Adapter.WindowsService
 
             if (PluginBootstrapper != null)
             {
+                _logger.InfoFormat("Plugin Bootstrapper found of type {0}", PluginBootstrapper.GetType().Name);
                 modules.AddRange(PluginBootstrapper.BootstrapModules);
             }
 
