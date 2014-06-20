@@ -12,11 +12,13 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-namespace SS.Integration.Adapter.Plugin.Model.Interface
+using SS.Integration.Common.ConfigSerializer.MappingUpdater.Configuration;
+
+namespace SS.Integration.Common.ConfigSerializer.MappingUpdater.Interfaces
 {
-    public interface IMappingsCollection
+    public interface IMappingUpdaterFactory<T>
     {
-        Mapping this[string key] { get; }
-        int Count { get; }
+        MappingUpdaterConfiguration Configuration { get; set; }
+        IMappingUpdater<T> GetMappingUpdater();
     }
 }

@@ -12,15 +12,15 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using SS.Integration.Adapter.Plugin.Model.Interface;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using SS.Integration.Common.ConfigSerializer.MappingUpdater.Interfaces;
 
 
-namespace SS.Integration.Adapter.Plugin.Model
+namespace SS.Integration.Common.ConfigSerializer.MappingUpdater
 {
-    public class MappingsCollection : IObserver<IEnumerable<Mapping>>, IMappingsCollection
+    public class MappingsCollection<T> : IObserver<IEnumerable<T>>, IMappingsCollection<T>
     {
 
         #region Constructors
@@ -29,32 +29,39 @@ namespace SS.Integration.Adapter.Plugin.Model
         {
         }
 
-        public MappingsCollection(IDictionary<string,Mapping> dictionary)
+        public MappingsCollection(IDictionary<string,T> dictionary,Func<T,string> keySelector)
         {
-            this.Collection = new ConcurrentDictionary<string, Mapping>(dictionary);
+            if (keySelector == null)
+            {
+                throw new ArgumentNullException("keySelector");
+            }
+            KeySelector = keySelector;
+            this.Collection = new ConcurrentDictionary<string, T>(dictionary);
         }
 
         #endregion
 
         #region Properties
 
-        private ConcurrentDictionary<string, Mapping> _collection = new ConcurrentDictionary<string, Mapping>();
-        private ConcurrentDictionary<string, Mapping> Collection
+        public Func<T, string> KeySelector { get; private set; }
+
+        private ConcurrentDictionary<string, T> _collection = new ConcurrentDictionary<string, T>();
+        private ConcurrentDictionary<string, T> Collection
         {
             get { return _collection; }
             set { _collection = value; }
         }
 
-        public Mapping this[string key]
+        public T this[string key]
         {
             get
             {
                 if (this.Collection == null)
-                    return null;
+                    return default(T);
 
                 if (this.Collection.ContainsKey(key))
                     return this.Collection[key];
-                return null;
+                return default(T);
             }
         }
 
@@ -67,6 +74,7 @@ namespace SS.Integration.Adapter.Plugin.Model
                 return this.Collection.Count;
             }
         }
+
 
 
         #endregion
@@ -83,12 +91,12 @@ namespace SS.Integration.Adapter.Plugin.Model
             //do nothing
         }
 
-        public void OnNext(IEnumerable<Mapping> value)
+        public void OnNext(IEnumerable<T> value)
         {
  
-            foreach (Mapping mapping in value)
+            foreach (T mapping in value)
             {
-                this.Collection.AddOrUpdate(mapping.Sport, mapping,
+                this.Collection.AddOrUpdate(KeySelector(mapping), mapping,
                     (key, existingVal) =>
                     {
                         return mapping;

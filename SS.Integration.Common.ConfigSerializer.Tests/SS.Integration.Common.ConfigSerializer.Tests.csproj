@@ -76,10 +76,6 @@
       <Project>{b622855c-9331-4792-9fbf-339f737db982}</Project>
       <Name>SS.Integration.Adapter.Plugin.Model</Name>
     </ProjectReference>
-    <ProjectReference Include="..\SS.Integration.Common.ConfigSerializer\SS.Integration.Common.ConfigSerializer.csproj">
-      <Project>{1c527842-e5a0-4e7a-a475-efe1f8f892a2}</Project>
-      <Name>SS.Integration.Common.ConfigSerializer</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />

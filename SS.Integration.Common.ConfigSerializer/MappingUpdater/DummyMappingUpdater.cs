@@ -15,39 +15,37 @@
 
 ﻿using System;
 using System.Collections.Generic;
-﻿using SS.Integration.Adapter.Plugin.Model;
-﻿using SS.Integration.Adapter.Plugin.Model.Interface;
-using SS.Integration.Common.ConfigSerializer;
+﻿using SS.Integration.Common.ConfigSerializer.MappingUpdater.Interfaces;
 
-namespace SS.Integration.Adapter.Mappings
+namespace SS.Integration.Common.ConfigSerializer.MappingUpdater
 {
-    public class DummyMappingUpdater : IMappingUpdater
+    public class DummyMappingUpdater<T> : IMappingUpdater<T>
     {
 
         public string FileNameOrReference { get; set; }
 
         public ISportConfigSerializer Serializer { get; set; }
 
-        private List<IObserver<IEnumerable<Mapping>>> _observers;
-        public List<IObserver<IEnumerable<Mapping>>> Observers
+        private List<IObserver<IEnumerable<T>>> _observers;
+        public List<IObserver<IEnumerable<T>>> Observers
         {
             get
             {
                 if (_observers == null)
                 {
-                    _observers = new List<IObserver<IEnumerable<Mapping>>>();
+                    _observers = new List<IObserver<IEnumerable<T>>>();
                 }
                 return _observers;
             }
 
         }
 
-        public IEnumerable<Mapping> LoadMappings()
+        public IEnumerable<T> LoadMappings()
         {
             return null;
         }
 
-        public void NotifySubscribers(IEnumerable<Mapping> mappings)
+        public void NotifySubscribers(IEnumerable<T> mappings)
         {
 
         }

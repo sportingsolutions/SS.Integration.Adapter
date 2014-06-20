@@ -13,36 +13,40 @@
 //limitations under the License.
 
 
-using SS.Integration.Adapter.Plugin.Model.Interface;
-using SS.Integration.Adapter.Plugin.Model;
+using SS.Integration.Common.ConfigSerializer.MappingUpdater.Configuration;
+using SS.Integration.Common.ConfigSerializer.MappingUpdater.Interfaces;
 
-namespace SS.Integration.Adapter.Mappings
+namespace SS.Integration.Common.ConfigSerializer.MappingUpdater
 {
-    public class DummyMappingUpdaterFactory : IMappingUpdaterFactory
+    public class DummyMappingUpdaterFactory<T> : IMappingUpdaterFactory<T>
     {
-        private static IMappingUpdater _mappingUpdater;
-        private static readonly object _syncLock = new object();
+        private static IMappingUpdater<T> _mappingUpdater;
+        private static readonly object SyncLock = new object();
 
         public MappingUpdaterConfiguration Configuration { get; set; }
-        
-        IMappingUpdater IMappingUpdaterFactory.GetMappingUpdater()
+
+        public IMappingUpdater<T> GetMappingUpdater()
         {
-            return GetMappingUpdater();
+            return GetMappingUpdaterInternal();
         }
 
-        public static IMappingUpdater GetMappingUpdater()
+
+        private static IMappingUpdater<T> GetMappingUpdaterInternal()
         {
             if (_mappingUpdater != null)
                 return _mappingUpdater;
 
-            lock (_syncLock)
+            lock (SyncLock)
             {
                 if (_mappingUpdater != null)
                     return _mappingUpdater;
 
-                _mappingUpdater = new DummyMappingUpdater();
+                _mappingUpdater = new DummyMappingUpdater<T>();
                 return _mappingUpdater;
             }
         }
+
+
+
     }
 }

@@ -12,18 +12,19 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using SS.Integration.Common.ConfigSerializer;
 
-namespace SS.Integration.Adapter.Plugin.Model.Interface
+namespace SS.Integration.Adapter.Model.Interfaces
 {
-    public interface IMappingUpdater : IDisposable
+    /// <summary>
+    /// an object containing the IoC modules to load
+    /// at the start of the adapter. 
+    /// </summary>
+    /// <typeparam name="TBootstrapModule">the type of the module to load.</typeparam>
+    public interface IPluginBootstrapper<TBootstrapModule>
     {
-        ISportConfigSerializer Serializer { get; set; }
-        List<IObserver<IEnumerable<Mapping>>> Observers { get; }
-        IEnumerable<Mapping> LoadMappings();
-        void NotifySubscribers(IEnumerable<Mapping> mappings);
-        void Initialize();
+        /// <summary>
+        /// the IoC modules
+        /// </summary>
+        TBootstrapModule[] BootstrapModules { get; }
     }
 }

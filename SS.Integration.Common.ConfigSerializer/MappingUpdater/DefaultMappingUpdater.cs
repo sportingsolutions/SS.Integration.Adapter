@@ -17,24 +17,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Adapter.Plugin.Model;
-using SS.Integration.Adapter.Plugin.Model.Interface;
-using SS.Integration.Common.ConfigSerializer;
-
+using SS.Integration.Common.ConfigSerializer.MappingUpdater.Interfaces;
 using log4net;
 
-namespace SS.Integration.Adapter.Mappings
+namespace SS.Integration.Common.ConfigSerializer.MappingUpdater
 {
-    public class DefaultMappingUpdater : IMappingUpdater
+    public abstract class DefaultMappingUpdater<T> : IMappingUpdater<T>
     {
 
-        private const string _cachedFileId = "Mappings";
+        protected  string CachedFileId = "Mappings";
 
         public ISportConfigSerializer Serializer { get; set; }
-        public IObjectProvider<List<Mapping>> CachedObjectProvider { get; set; }
+        public ICachedMappingsStorage<T> CachedMappingsStorage { get; set; }
 
-        private ILog _logger = LogManager.GetLogger(typeof(DefaultMappingUpdater));
+        private ILog _logger = LogManager.GetLogger(typeof(DefaultMappingUpdater<T>));
 
         private string[] _sportsList;
         private string[] SportsList
@@ -58,56 +54,37 @@ namespace SS.Integration.Adapter.Mappings
 
         private Timer _trigger;
 
-        private List<IObserver<IEnumerable<Mapping>>> _observers;
-        public List<IObserver<IEnumerable<Mapping>>> Observers
+        private List<IObserver<IEnumerable<T>>> _observers;
+        public List<IObserver<IEnumerable<T>>> Observers
         {
             get
             {
                 if (_observers == null)
                 {
-                    _observers = new List<IObserver<IEnumerable<Mapping>>>();
+                    _observers = new List<IObserver<IEnumerable<T>>>();
                 }
                 return _observers;
             }
 
         }
 
-
-        public DefaultMappingUpdater(ISportConfigSerializer serializer,
-                                          IObjectProvider<List<Mapping>> cachedObjectProvider)
+        protected DefaultMappingUpdater(ISportConfigSerializer serializer,
+                                          ICachedMappingsStorage<T> cachedMappingsStorage)
         {
             this.Serializer = serializer;
-            this.CachedObjectProvider = cachedObjectProvider;
+            this.CachedMappingsStorage = cachedMappingsStorage;
         }
 
-        private void ReplaceSingleMappingsInCache(List<Mapping> newMapping)
+        private void ReplaceSingleMappingsInCache(List<T> newMapping)
         {
-            //load the current cached object
-            List<Mapping> cachedMappings = this.CachedObjectProvider.GetObject(_cachedFileId);
-
-            if (cachedMappings == null)
-            {
-                cachedMappings = new List<Mapping>();
-            }
-            else
-            {
-                //remove the mappings with the same sport
-                cachedMappings.RemoveAll(map => newMapping.Exists(nm => nm.Sport == map.Sport));               
-            }
-
-            //add the mappings
-            cachedMappings.AddRange(newMapping);
-
-            //save to cache
-            this.CachedObjectProvider.SetObject(_cachedFileId,cachedMappings);
-
+            CachedMappingsStorage.SaveMappingsInCache(newMapping);
         }
 
         public void Initialize()
         {
             //load initial mappings from cache (if exists)
             _logger.DebugFormat("looking for cached mappings");
-            IEnumerable<Mapping> cachedMappings = this.CachedObjectProvider.GetObject(_cachedFileId);
+            IEnumerable<T> cachedMappings = CachedMappingsStorage.GetMappingsInCache();
             if (cachedMappings == null)
             {
                 _logger.DebugFormat("cached mappings not found");
@@ -130,8 +107,9 @@ namespace SS.Integration.Adapter.Mappings
                 _trigger.Dispose();
         }
 
-        protected virtual Mapping LoadMappings(string sport)
+        protected virtual T LoadMappings(string sport)
         {
+            /*
             Mapping mapping = new Mapping();
 
             mapping.Sport = sport;
@@ -149,18 +127,20 @@ namespace SS.Integration.Adapter.Mappings
             _logger.DebugFormat("market mappings for {0} successfully loaded.", sport);
 
             return mapping;
+            */
+            return default(T);
         }
-
-        public IEnumerable<Mapping> LoadMappings()
+        
+        public IEnumerable<T> LoadMappings()
         {
 
-            List<Mapping> newMappings = new List<Mapping>();
+            List<T> newMappings = new List<T>();
 
             foreach (string sport in this.SportsList)
             {
                 try
                 {
-                    Mapping singleMapping = LoadMappings(sport);
+                    T singleMapping = LoadMappings(sport);
                     newMappings.Add(singleMapping);
                 }
                 catch (Exception ex)
@@ -175,9 +155,9 @@ namespace SS.Integration.Adapter.Mappings
             return newMappings;
         }
 
-        public void NotifySubscribers(IEnumerable<Mapping> mappings)
+        public void NotifySubscribers(IEnumerable<T> mappings)
         {
-            foreach (IObserver<IEnumerable<Mapping>> observer in this.Observers)
+            foreach (IObserver<IEnumerable<T>> observer in this.Observers)
             {
                 try
                 {
@@ -197,8 +177,8 @@ namespace SS.Integration.Adapter.Mappings
         public void CheckForUpdates()
         {
 
-            List<Mapping> newMappings = new List<Mapping>();
-
+            List<T> newMappings = new List<T>();
+            List<string> sportProcessed = new List<string>();
             foreach (string sport in this.SportsList)
             {
                 try
@@ -208,9 +188,10 @@ namespace SS.Integration.Adapter.Mappings
                     if (Serializer.IsUpdateNeeded(MappingCategory.CompetitionMapping.ToString(),sport))
                     {
                         _logger.DebugFormat("new update found for sport={0}",sport);
-                        Mapping singleMap = LoadMappings(sport);
+                        T singleMap = LoadMappings(sport);
                         newMappings.Add(singleMap);
                         _logger.DebugFormat("mappings loaded for sport={0}", sport);
+                        sportProcessed.Add(sport);
                     }
                     else
                     {
@@ -229,7 +210,7 @@ namespace SS.Integration.Adapter.Mappings
             }
             else
             {
-                string sportsNames = string.Join(",", newMappings.Select(it => it.Sport));
+                string sportsNames = string.Join(",", sportProcessed);
 
                 try
                 {

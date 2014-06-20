@@ -12,11 +12,18 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
+using System.Collections.Generic;
+using SS.Integration.Common.ConfigSerializer;
 
-namespace SS.Integration.Adapter.Plugin.Model.Interface
+namespace SS.Integration.Common.ConfigSerializer.MappingUpdater.Interfaces
 {
-    public interface IMappingsCollectionProvider
+    public interface IMappingUpdater<T> : IDisposable
     {
-        IMappingsCollection GetMappingsCollection();
+        ISportConfigSerializer Serializer { get; set; }
+        List<IObserver<IEnumerable<T>>> Observers { get; }
+        IEnumerable<T> LoadMappings();
+        void NotifySubscribers(IEnumerable<T> mappings);
+        void Initialize();
     }
 }

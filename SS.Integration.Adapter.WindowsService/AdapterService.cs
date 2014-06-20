@@ -13,11 +13,13 @@
 //limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Reflection;
 using System.ServiceProcess;
 using System.Threading.Tasks;
+using Ninject.Modules;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Plugin.Model.Interface;
 using log4net;
@@ -32,10 +34,12 @@ namespace SS.Integration.Adapter.WindowsService
         private static Task _adapterWorkerThread;
         private readonly StandardKernel _iocContainer;
         private Adapter _adapter;
-
         
         [Import]
         public IAdapterPlugin PlatformConnector { get; set; }
+
+        [Import]
+        public IPluginBootstrapper<NinjectModule> PluginBootstrapper { get; set; }
 
         public AdapterService()
         {
@@ -44,7 +48,15 @@ namespace SS.Integration.Adapter.WindowsService
             TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;    
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
 
-            _iocContainer = new StandardKernel(new BootStrapper());
+            List<NinjectModule> modules = new List<NinjectModule>();
+            modules.Add(new BootStrapper());
+
+            if (PluginBootstrapper != null)
+            {
+                modules.AddRange(PluginBootstrapper.BootstrapModules);
+            }
+
+            _iocContainer = new StandardKernel(modules.ToArray());
             _iocContainer.Settings.InjectNonPublic = true;
 
             Compose();
@@ -136,9 +148,7 @@ namespace SS.Integration.Adapter.WindowsService
             var settings = _iocContainer.Get<ISettings>();
             var service = _iocContainer.Get<IServiceFacade>();
 
-            var mappingUpdater = _iocContainer.Get<IMappingUpdater>();
-
-            _adapter = new Adapter(settings, service, connector, mappingUpdater);
+            _adapter = new Adapter(settings, service, connector);
 
             _adapter.Start();
 

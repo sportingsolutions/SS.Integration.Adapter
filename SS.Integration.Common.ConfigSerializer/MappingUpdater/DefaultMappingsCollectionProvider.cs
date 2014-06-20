@@ -12,23 +12,21 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using SS.Integration.Common.ConfigSerializer.MappingUpdater.Interfaces;
 
-using SS.Integration.Adapter.Plugin.Model;
-using SS.Integration.Adapter.Plugin.Model.Interface;
-
-namespace SS.Integration.Adapter.Mappings
+namespace SS.Integration.Common.ConfigSerializer.MappingUpdater
 {
-    public class DefaultMappingsCollectionProvider : IMappingsCollectionProvider
+    public class DefaultMappingsCollectionProvider<T> : IMappingsCollectionProvider<T>
     {
-        private IMappingUpdater _mappingUpdater = null;
-        public DefaultMappingsCollectionProvider(IMappingUpdater mappingUpdater)
+        private IMappingUpdater<T> _mappingUpdater = null;
+        public DefaultMappingsCollectionProvider(IMappingUpdater<T> mappingUpdater)
         {
             _mappingUpdater = mappingUpdater;
         }
 
-        public IMappingsCollection GetMappingsCollection()
+        public IMappingsCollection<T> GetMappingsCollection()
         {
-            MappingsCollection result = new MappingsCollection();
+            MappingsCollection<T> result = new MappingsCollection<T>();
             _mappingUpdater.Observers.Add(result);
             _mappingUpdater.Initialize();
             return result;

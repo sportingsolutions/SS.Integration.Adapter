@@ -14,7 +14,7 @@
 
 using SS.Integration.Common.ConfigSerializer;
 
-namespace SS.Integration.Adapter.Plugin.Model
+namespace SS.Integration.Common.ConfigSerializer.MappingUpdater.Configuration
 {
     public class MappingUpdaterConfiguration
     {
