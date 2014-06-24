@@ -13,9 +13,11 @@
 //limitations under the License.
 
 
+using System;
+
 namespace SS.Integration.Adapter.Interface
 {
-    public interface IListener
+    public interface IListener : IDisposable
     {
         bool IsFixtureEnded { get; }
 
