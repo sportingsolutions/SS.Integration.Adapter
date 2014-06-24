@@ -211,6 +211,8 @@ namespace SS.Integration.Adapter
                     {
                         listener.SuspendMarkets();
                     }
+
+                    listener.Dispose();
                 });
         }
 
@@ -497,6 +499,7 @@ namespace SS.Integration.Adapter
             {
                 _Stats.RemoveValue(AdapterKeys.STREAMS, fixtureId);
                 listener.Stop();
+                listener.Dispose();
             }
 
             return listener != null;
