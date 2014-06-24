@@ -305,6 +305,9 @@ namespace SS.Integration.Adapter
         /// </param>
         public void SuspendMarkets(bool fixtureLevelOnly = true)
         {
+            if (_resource == null)
+                return;
+
             _logger.InfoFormat("Suspending Markets for {0} with fixtureLevelOnly={1}", _resource, fixtureLevelOnly);
 
             try
@@ -574,13 +577,17 @@ namespace SS.Integration.Adapter
 
         internal void ResourceOnStreamDisconnected(object sender, EventArgs eventArgs)
         {
+            // this is for when Dispose() was called
+            if (_resource == null)
+                return;
+
             IsStreaming = false;
 
             // for when a disconnect event is raised due a failed attempt to connect 
             // (in other words, when we didn't receive a connect event)
             IsConnecting = false;
 
-            if (!this.IsFixtureEnded)
+            if (!this.IsFixtureEnded && !IsFixtureDeleted)
             {
 
                 _logger.WarnFormat("Stream disconnected for {0}, suspending markets, will try reconnect soon", _resource);
@@ -590,8 +597,8 @@ namespace SS.Integration.Adapter
             }
             else
             {
-                _Stats.AddMessage(GlobalKeys.CAUSE, "Fixture is over").SetValue(StreamListenerKeys.STATUS, "Disconnected");
-                _logger.InfoFormat("Stream disconnected for {0} - fixture is over", _resource);
+                _Stats.AddMessage(GlobalKeys.CAUSE, "Fixture is over/deleted").SetValue(StreamListenerKeys.STATUS, "Disconnected");
+                _logger.InfoFormat("Stream disconnected for {0} - fixture is over/deleted", _resource);
             }
         }
 
@@ -952,6 +959,9 @@ namespace SS.Integration.Adapter
             }
         }
 
+        /// <summary>
+        /// Dispose the current stream listener
+        /// </summary>
         public void Dispose()
         {
             Stop();

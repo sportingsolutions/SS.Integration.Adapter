@@ -147,6 +147,7 @@ namespace SS.Integration.Adapter
         public void Stop()
         {
             _Stats.SetValue(AdapterKeys.STATUS, "Closing");
+            _logger.InfoFormat("Adapter is stopping");
 
             try
             {
@@ -164,7 +165,7 @@ namespace SS.Integration.Adapter
                     {
                         try
                         {
-                            StopListenerAndSuspendMarkets();
+                            DisposeListeners();
                         }
                         catch (AggregateException ax)
                         {
@@ -198,9 +199,11 @@ namespace SS.Integration.Adapter
 
             _Stats.SetValue(AdapterKeys.STOP_TIME, DateTime.Now.ToUniversalTime().ToString());
             _Stats.SetValue(AdapterKeys.STATUS, "Stopped");
+
+            _logger.InfoFormat("Adapter stopped");
         }
 
-        private void StopListenerAndSuspendMarkets()
+        private void DisposeListeners()
         {
             _logger.Debug("Stopping listeners and suspending fixtures as service is shouting down");
 
@@ -209,8 +212,6 @@ namespace SS.Integration.Adapter
                 new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
                 listener =>
                 {
-                    listener.Stop();
-
                     if (Settings.SuspendAllMarketsOnShutdown)
                     {
                         listener.SuspendMarkets();
@@ -501,8 +502,7 @@ namespace SS.Integration.Adapter
 
             if (listener != null)
             {
-                _Stats.RemoveValue(AdapterKeys.STREAMS, fixtureId);
-                listener.Stop();
+                _Stats.RemoveValue(AdapterKeys.STREAMS, fixtureId);                
                 listener.Dispose();
             }
 
