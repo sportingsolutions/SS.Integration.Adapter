@@ -45,7 +45,6 @@
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\SS.Integration.Adapter.Plugin.Logger.dll;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\log4net.config"
 			/>
-			<ConfFile Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\mappingUpdater.config" />
 			<Licence  Include="$(MSBuildProjectDirectory)\LICENCE.txt" />
 		</ItemGroup>
 
@@ -70,7 +69,6 @@
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\SS.Integration.Adapter.Plugin.Logger.dll;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\log4net.config" 
 			/>
-			<ConfFile Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\mappingUpdater.config" />
 			<Licence  Include="$(MSBuildProjectDirectory)\LICENCE.txt" />
 		</ItemGroup>
 
