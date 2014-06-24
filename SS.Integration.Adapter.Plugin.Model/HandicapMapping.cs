@@ -98,10 +98,9 @@ namespace SS.Integration.Adapter.Plugin.Model
 
         public double Line { get; private set; }
         
-
         public Score GetResult(string winningSelectionId)
         {
-            return _results[winningSelectionId];
+            return string.IsNullOrEmpty(winningSelectionId) || !_results.ContainsKey(winningSelectionId) ? null : _results[winningSelectionId];
         }
     }
 }

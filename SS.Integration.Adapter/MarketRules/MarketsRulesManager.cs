@@ -284,7 +284,8 @@ namespace SS.Integration.Adapter.MarketRules
             _StateProvider.Remove(_FixtureId);
         }
 
-        public Fixture GenerateAllMarketsSuspenssion(int sequence = 0)
+
+        public Fixture GenerateAllMarketsSuspenssion(int sequence = -1)
         {
             var fixture = new Fixture { Id = _FixtureId, MatchStatus = ((int)MatchStatus.Ready).ToString(), Sequence = sequence };
 

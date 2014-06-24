@@ -22,7 +22,7 @@ using SS.Integration.Adapter.Model.Interfaces;
 namespace SS.Integration.Adapter.MarketRules.Model
 {
     [Serializable]
-    public class MarketStateCollection : IUpdatableMarketStateCollection
+    internal class MarketStateCollection : IUpdatableMarketStateCollection
     {
         private readonly Dictionary<string, IUpdatableMarketState> _States;
 
