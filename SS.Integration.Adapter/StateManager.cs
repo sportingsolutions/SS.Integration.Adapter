@@ -111,7 +111,7 @@ namespace SS.Integration.Adapter
             if (string.IsNullOrEmpty(state.FixtureId))
                 throw new Exception("FixtureId cannot be null");
 
-            _PluginPersistanceLayer.SetObject(state.FixtureId, state);
+            _PluginPersistanceLayer.SetObject(PLUGIN_STORE_PREFIX + state.FixtureId, state);
         }
 
         #endregion

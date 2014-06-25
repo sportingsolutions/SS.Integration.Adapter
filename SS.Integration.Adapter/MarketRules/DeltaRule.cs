@@ -46,7 +46,7 @@ namespace SS.Integration.Adapter.MarketRules
             MarketRuleResultIntent intent = new MarketRuleResultIntent();
 
             // only apply delta rule on a full snapshot
-            if (fixture.Tags == null || !fixture.Tags.Any())
+            if (fixture.Tags == null || !fixture.Tags.Any() || oldState == null)
                 return intent;
 
             foreach (var mkt in fixture.Markets)

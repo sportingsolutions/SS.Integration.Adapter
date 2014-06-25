@@ -305,7 +305,6 @@ namespace SS.Integration.Adapter.Tests
             _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeFalse();
         }
 
-
         [Test]
         public void AutoVoidingEverythingThatWasntVoided()
         {
@@ -369,7 +368,6 @@ namespace SS.Integration.Adapter.Tests
                 mkt.Selections.All(x => x.Tradable.HasValue && !x.Tradable.Value).Should().BeTrue();
             }
         }
-
 
         [Test]
         public void RemovePendingMarketsTest()
@@ -605,6 +603,75 @@ namespace SS.Integration.Adapter.Tests
         private List<Selection> GetSelections(bool isActive, bool isSuspended)
         {
             return GetSelections(isActive ? SelectionStatus.Active : SelectionStatus.Pending, isSuspended);
+        }
+
+
+        [Test]
+        [Category("MarketRule")]
+        [Category("DeltaRule")]
+        public void DeltaRuleTest()
+        {
+            var settings = new Mock<ISettings>();
+            var stateprovider = new StateManager(settings.Object);
+
+            List<IMarketRule> rules = new List<IMarketRule> {DeltaRule.Instance};
+
+            Fixture fixture = new Fixture {Id = "TestId"};
+            fixture.Tags.Add("Sport", "Football");
+
+            Market mkt = new Market {Id = "MKT1"};
+            mkt.AddOrUpdateTagValue("name", "mkt1");
+            mkt.AddOrUpdateTagValue("type", "type1");
+
+            Selection seln = new Selection {Id = "SELN_1_1"};
+            seln.AddOrUpdateTagValue("name", "seln_1_1");
+            seln.Tradable = true;
+            seln.Status = SelectionStatus.Active;
+            seln.Price = 0.1;
+
+            mkt.Selections.Add(seln);
+
+            seln = new Selection { Id = "SELN_1_2" };
+            seln.AddOrUpdateTagValue("name", "seln_1_2");
+            seln.Tradable = true;
+            seln.Status = SelectionStatus.Active;
+            seln.Price = 0.2;
+
+            mkt.Selections.Add(seln);
+
+            fixture.Markets.Add(mkt);
+
+            mkt = new Market { Id = "MKT2" };
+            mkt.AddOrUpdateTagValue("name", "mkt2");
+            mkt.AddOrUpdateTagValue("type", "type2");
+
+            seln = new Selection { Id = "SELN_2_1" };
+            seln.AddOrUpdateTagValue("name", "seln_2_1");
+            seln.Tradable = false;
+            seln.Status = SelectionStatus.Pending;
+            seln.Price = null;
+
+            mkt.Selections.Add(seln);
+
+            seln = new Selection { Id = "SELN_2_2" };
+            seln.AddOrUpdateTagValue("name", "seln_2_2");
+            seln.Tradable = false;
+            seln.Status = SelectionStatus.Pending;
+            seln.Price = null;
+
+            mkt.Selections.Add(seln);
+
+            fixture.Markets.Add(mkt);
+
+
+            MarketRulesManager manager = new MarketRulesManager(fixture.Id, stateprovider, rules);
+            manager.ApplyRules(fixture);
+
+            manager.CommitChanges();
+
+            manager.ApplyRules(fixture);
+
+            fixture.Markets.Count.Should().Be(0);
         }
     }
 }

@@ -47,7 +47,6 @@ namespace SS.Integration.Adapter.MarketRules
             _StateProvider = stateProvider;
 
             _logger.DebugFormat("Market rule manager initiated successfully for fixtureId={0}", fixtureId);
-
         }
 
         #region IMarketRulesManager
@@ -116,12 +115,12 @@ namespace SS.Integration.Adapter.MarketRules
             get { return _CurrentTransaction; }
         }
 
-        #endregion
-
         public void RollbackChanges()
         {
             _CurrentTransaction = null;
         }
+
+        #endregion
 
         private void BeginTransaction(IUpdatableMarketStateCollection oldState, Fixture fixture)
         {
