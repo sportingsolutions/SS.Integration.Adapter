@@ -149,14 +149,6 @@ namespace SS.Integration.Adapter.WindowsService
         {
             _logger.Info("Requesting GTPService Adapter Stop");
 
-            if (PlatformConnector != null)
-            {
-                _logger.Info("Disposing Plugin");
-
-                PlatformConnector.Dispose();
-            }
-
-
             _adapter.Stop();
             _adapterWorkerThread.Wait();
             _adapterWorkerThread.ContinueWith(task => _logger.InfoFormat("Adapter successfully stopped"));
