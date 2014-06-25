@@ -129,16 +129,14 @@ namespace SS.Integration.Adapter.WindowsService
             }
 
             _iocContainer.Inject(PlatformConnector);
-
-            var connector = PlatformConnector;
-            connector.Initialise();
+            
 
             var settings = _iocContainer.Get<ISettings>();
             var service = _iocContainer.Get<IServiceFacade>();
 
             var mappingUpdater = _iocContainer.Get<IMappingUpdater>();
 
-            _adapter = new Adapter(settings, service, connector, mappingUpdater);
+            _adapter = new Adapter(settings, service, PlatformConnector, mappingUpdater);
 
             _adapter.Start();
 

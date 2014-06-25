@@ -28,7 +28,7 @@ namespace SS.Integration.Adapter.Tests
         private DefaultMappingUpdater _mapUpd;
         private Mock<IObjectProvider<List<Mapping>>> _mockObjProv;
         private Mock<ISportConfigSerializer> _mockSportConfSer;
-        private string[] _sports = new string[] { "a", "b", "c" };
+        private readonly string[] _sports = { "a", "b", "c" };
 
         [SetUp]
         public void SetUp()
@@ -40,6 +40,7 @@ namespace SS.Integration.Adapter.Tests
         }
 
         [Test]
+        [Category("MappingSerializer")]
         public void ShouldLoadJustCached()
         {
             _mockObjProv.Setup(op => op.GetObject(It.IsAny<string>())).Returns(new List<Mapping>());
@@ -50,6 +51,7 @@ namespace SS.Integration.Adapter.Tests
         }
 
         [Test]
+        [Category("MappingSerializer")]
         public void ShouldLoadFromSerializer()
         {
             _mockObjProv.Setup(op => op.GetObject(It.IsAny<string>())).Returns((List<Mapping>)null);
@@ -58,8 +60,5 @@ namespace SS.Integration.Adapter.Tests
             _mockSportConfSer.Verify(cs => cs.Deserialize<CompetitionMapping>(It.IsAny<string>(), It.IsAny<string>()), Times.Exactly(_sports.Length));
             _mockSportConfSer.Verify(cs => cs.Deserialize<MarketMapping>(It.IsAny<string>(), It.IsAny<string>()), Times.Exactly(_sports.Length));
         }
-
-
-
     }
 }

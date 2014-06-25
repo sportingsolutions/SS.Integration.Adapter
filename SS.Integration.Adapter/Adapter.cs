@@ -20,7 +20,6 @@ using System.Threading;
 using System.Linq;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
-using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Plugin.Model.Interface;
 using SS.Integration.Adapter.ProcessState;
 using log4net;
@@ -54,17 +53,18 @@ namespace SS.Integration.Adapter
 
         public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector, IMappingUpdater mappingUpdater)
         {
+
             Settings = settings;
             UDAPIService = udapiServiceFacade;
             PlatformConnector = platformConnector;
             MappingUpdater = mappingUpdater;
             EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
             
+            var statemanager = new StateManager(settings);
+            StateManager = statemanager;
 
-            StateProvider = new CachedObjectStoreWithPersistance<IUpdatableMarketStateCollection>(
-                new BinaryStoreProvider<IUpdatableMarketStateCollection>(settings.MarketFiltersDirectory, "FilteredMarkets-{0}.bin"),
-                "MarketFilters", settings.CacheExpiryInMins * 60
-                );
+            platformConnector.Initialise();
+
 
             ThreadPool.SetMinThreads(500, 500);
 
@@ -83,7 +83,7 @@ namespace SS.Integration.Adapter
 
         internal IEventState EventState { get; set; }
 
-        internal IObjectProvider<IUpdatableMarketStateCollection> StateProvider { get; set; }
+        internal IStateManager StateManager { get; set; }
 
         internal IAdapterPlugin PlatformConnector { get; private set; }
 
@@ -457,7 +457,7 @@ namespace SS.Integration.Adapter
 
                         _logger.InfoFormat("Attempting to create fixture for sport={0} and {1}", resource.Sport, resource);
 
-                        var listener = new StreamListener(resource, PlatformConnector, EventState, StateProvider);
+                        var listener = new StreamListener(resource, PlatformConnector, EventState, StateManager);
 
                         _Stats.AddValue(AdapterKeys.STREAMS, resource.Id);
                         listener.Start();
