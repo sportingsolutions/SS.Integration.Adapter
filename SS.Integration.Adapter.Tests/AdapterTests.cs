@@ -39,7 +39,6 @@ namespace SS.Integration.Adapter.Tests
             var service = new Mock<IServiceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
-            var mappingUpdater = new Mock<IMappingUpdater>();
 
             settings.Setup(s => s.FixtureCheckerFrequency).Returns(10000);
             settings.Setup(s => s.SuspendAllMarketsOnShutdown).Returns(false);
@@ -48,8 +47,7 @@ namespace SS.Integration.Adapter.Tests
             var adapter = new Adapter(
                 settings.Object,
                 service.Object,
-                connector.Object,
-                mappingUpdater.Object);
+                connector.Object);
 
             adapter.Start();
             adapter.Stop();
@@ -68,7 +66,6 @@ namespace SS.Integration.Adapter.Tests
             var service = new Mock<IServiceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
-            var mappingUpdater = new Mock<IMappingUpdater>();
 
             settings.Setup(s => s.FixtureCheckerFrequency).Returns(10000);
             settings.Setup(s => s.SuspendAllMarketsOnShutdown).Returns(true);
@@ -77,8 +74,7 @@ namespace SS.Integration.Adapter.Tests
             var adapter = new Adapter(
                 settings.Object,
                 service.Object,
-                connector.Object,
-                mappingUpdater.Object);
+                connector.Object);
 
             foreach (var sport in this.Sports(ListOfSports.GiveMeFew))
                 adapter.AddSport(sport);
@@ -122,7 +118,6 @@ namespace SS.Integration.Adapter.Tests
             var footballFixtureOne = new Mock<IResourceFacade>();
             var footballfixtureTwo = new Mock<IResourceFacade>();
             var tennisFixtureOne = new Mock<IResourceFacade>();
-            var mappingUpdater = new Mock<IMappingUpdater>();
 
             footballFixtureOne.Setup(f => f.Id).Returns("1");
             footballFixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetRawStreamMessage());
@@ -138,8 +133,7 @@ namespace SS.Integration.Adapter.Tests
             var adapter = new Adapter(
                 settings.Object,
                 service.Object,
-                connector.Object,
-                mappingUpdater.Object);
+                connector.Object);
 
 
             foreach (var sport in this.Sports(ListOfSports.GiveMeFew))
@@ -175,7 +169,6 @@ namespace SS.Integration.Adapter.Tests
             var service = new Mock<IServiceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var mappingUpdater = new Mock<IMappingUpdater>();
 
             var fixtureOne = new Mock<IResourceFacade>();
             var fixtureTwo = new Mock<IResourceFacade>();
@@ -199,8 +192,7 @@ namespace SS.Integration.Adapter.Tests
             var adapter = new Adapter(
                 settings.Object,
                 service.Object,
-                connector.Object,
-                mappingUpdater.Object);
+                connector.Object);
 
             adapter.Start();
             
@@ -228,7 +220,6 @@ namespace SS.Integration.Adapter.Tests
             var settings = new Mock<ISettings>();
             var service = new Mock<IServiceFacade>();
             var connector = new Mock<IAdapterPlugin>();
-            var updater = new Mock<IMappingUpdater>();
             var state = new Mock<IEventState>();
 
             settings.Setup(x => x.EventStateFilePath).Returns(".");
@@ -247,7 +238,7 @@ namespace SS.Integration.Adapter.Tests
             service.Setup(x => x.IsConnected).Returns(true);
 
 
-            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object, updater.Object);
+            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object);
             adapter.StreamCreated += adapter_StreamCreated;
             adapter.EventState = state.Object;
 
@@ -287,7 +278,6 @@ namespace SS.Integration.Adapter.Tests
             var settings = new Mock<ISettings>();
             var service = new Mock<IServiceFacade>();
             var connector = new Mock<IAdapterPlugin>();
-            var updater = new Mock<IMappingUpdater>();
 
             settings.Setup(x => x.EventStateFilePath).Returns(".");
             settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
@@ -304,7 +294,7 @@ namespace SS.Integration.Adapter.Tests
             service.Setup(x => x.GetResources(It.IsAny<string>())).Returns(new List<IResourceFacade> { resource.Object });
 
 
-            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object, updater.Object);
+            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object);
             adapter.StreamCreated += adapter_StreamCreated;
 
             adapter.Start();

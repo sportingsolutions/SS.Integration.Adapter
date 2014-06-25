@@ -55,6 +55,7 @@
     <Compile Include="Exceptions\FixtureIgnoredException.cs" />
     <Compile Include="Fixture.cs" />
     <Compile Include="FixtureState.cs" />
+    <Compile Include="Interfaces\IPluginBootstrapper.cs" />
     <Compile Include="Interfaces\IMarketRule.cs" />
     <Compile Include="Interfaces\IMarketRuleResultIntents.cs" />
     <Compile Include="Interfaces\IMarketState.cs" />
