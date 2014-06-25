@@ -80,6 +80,7 @@
     <Compile Include="Mappings\DefaultMappingUpdaterFactory.cs" />
     <Compile Include="Mappings\DummyMappingUpdater.cs" />
     <Compile Include="Mappings\DummyMappingUpdaterFactory.cs" />
+    <Compile Include="MarketRules\DeltaRule.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketState.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketStateCollection.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableSelectionState.cs" />

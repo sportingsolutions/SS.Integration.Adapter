@@ -45,6 +45,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
         public MarketState(Market market, bool fullSnapshot)
             : this(market.Id)
         {
+            IsRollingMarket = market is RollingMarket;
             this.Update(market, fullSnapshot);                
         }
 
@@ -94,85 +95,10 @@ namespace SS.Integration.Adapter.MarketRules.Model
         public bool IsTradedInPlay { get; set; }
 
         public bool HasBeenActive { get; set; }
-        
-        public void Update(Market market, bool fullSnapshot)
-        {
-            MergeSelectionStates(market, fullSnapshot);
 
-            if (fullSnapshot)
-            {
-                _Tags = new Dictionary<string, string>();
-                foreach (var key in market.TagKeys)
-                    _Tags.Add(key, market.GetTagValue(key));
+        public bool IsRollingMarket { get; private set; }
 
-                if (_Tags.ContainsKey("traded_in_play"))
-                    IsTradedInPlay = string.Equals(_Tags["traded_in_play"], "true", StringComparison.OrdinalIgnoreCase);
-            }
-
-            if (!HasBeenActive && IsActive)
-                HasBeenActive = true;
-
-
-            market.IsPending = IsPending;
-            market.IsActive = IsActive;
-            market.IsResulted = IsResulted;
-            market.IsSuspended = IsSuspended;
-            market.IsTradedInPlay = IsTradedInPlay;
-
-            UpdateLineOnRollingHandicap(market);
-        }
-
-        private void UpdateLineOnRollingHandicap(Market market)
-        {
-            var rollingHandicap = market as RollingMarket;
-            if(rollingHandicap == null)
-                return;
-
-            var oneLine = _selectionStates.Values.All(s=> s.Line == _selectionStates.Values.First().Line);
-
-            if (oneLine)
-                rollingHandicap.Line = rollingHandicap.Selections.First().Line;
-            else
-            {
-                var selectionWithHomeTeam =
-                    _selectionStates.Values.FirstOrDefault(s => s.HasTag("team") && s.GetTagValue("team") == "1");
-                if(selectionWithHomeTeam == null)
-                    throw new ArgumentException(string.Format("Rolling handicap line for market {0} can't be verified",market));
-
-                var homeSelection = rollingHandicap.Selections.FirstOrDefault(s => s.Id == selectionWithHomeTeam.Id);
-                
-                //during update we may not receive an update for all selections
-                if (homeSelection != null)
-                {
-                    rollingHandicap.Line = homeSelection.Line;
-                }
-                else
-                {
-                    var selectionWithAwayTeam =
-                        _selectionStates.Values.FirstOrDefault(s => s.HasTag("team") && s.GetTagValue("team") == "2");
-
-                    // invert the line
-                    rollingHandicap.Line = selectionWithAwayTeam.Line*(-1);
-                }
-            }
-
-        }
-
-        private void MergeSelectionStates(Market market, bool fullSnapshot)
-        {
-            if (market.Selections == null)
-                return;
-
-            foreach (var selection in market.Selections)
-            {
-                if (_selectionStates.ContainsKey(selection.Id))
-                    _selectionStates[selection.Id].Update(selection, fullSnapshot);
-                else
-                {
-                    _selectionStates[selection.Id] = new SelectionState(selection, fullSnapshot);
-                }
-            }
-        }
+        public double? Line { get; set; }
 
         #region Tags
 
@@ -224,38 +150,116 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         #endregion
 
+        public bool IsEqualTo(IMarketState market)
+        {
+            if (market == null)
+                throw new ArgumentNullException("market");
+
+            if (ReferenceEquals(this, market))
+                return true;
+            
+            if (market.Id != this.Id)
+                throw new Exception("Cannot compare two markets with different Ids");
+
+            if (market.Name != this.Name)
+                return false;
+
+            var isStatusEqual = this.IsPending == market.IsPending &&
+                                this.IsResulted == market.IsResulted &&
+                                this.IsSuspended == market.IsSuspended &&
+                                this.IsActive == market.IsActive;
+
+            if (isStatusEqual)
+            {
+                if (this.HasTag("line") && market.HasTag("line"))
+                {
+                    isStatusEqual = string.Equals(this.GetTagValue("line"), market.GetTagValue("line"));
+                }
+
+
+                if (IsRollingMarket)
+                {
+                    isStatusEqual &= Line == market.Line;
+                }
+
+                isStatusEqual = isStatusEqual && market.Selections.All(s => _selectionStates.ContainsKey(s.Id) && _selectionStates[s.Id].IsEqualTo(s));
+            }
+
+            return isStatusEqual;
+        }
+
+        public bool IsEquivalentTo(Market market, bool checkTags, bool checkSelectionsNumber)
+        {
+            if (market == null)
+                return false;
+
+            if (market.Id != Id)
+                return false;
+
+            if(checkTags)
+            {
+                if (market.TagsCount != TagsCount)
+                    return false;
+
+                if (market.TagKeys.Any(tag => !HasTag(tag) || GetTagValue(tag) != market.GetTagValue(tag)))
+                    return false;
+            }
+
+            if (checkSelectionsNumber && Selections.Count() != market.Selections.Count())
+                return false;
+
+            foreach (var seln in market.Selections)
+            {
+                ISelectionState seln_state = this[seln.Id];
+                if (seln_state == null)
+                    return false;
+
+                if (!seln_state.IsEquivalentTo(seln, checkTags))
+                    return false;
+            }
+
+            var result = IsSuspended == market.IsSuspended &&
+                         IsActive == market.IsActive &&
+                         IsResulted == market.IsResulted &&
+                         IsPending == market.IsPending;
+
+
+            if (IsRollingMarket)
+                result &= Line == ((RollingMarket)market).Line;
+
+            return result;
+        }
+
         #endregion
 
         #region IUpdatableMarketState
 
-        public bool IsEqualTo(IMarketState newMarket)
+        public void Update(Market market, bool fullSnapshot)
         {
-            if (newMarket == null)
-                throw new ArgumentNullException("newMarket");
+            MergeSelectionStates(market, fullSnapshot);
 
-            if (newMarket.Id != this.Id)
-                throw new Exception("Cannot compare two markets with different Ids");
-
-            if (newMarket.Name != this.Name)
-                return false;
-
-            var isStatusEqual = this.IsPending == newMarket.IsPending &&
-                                this.IsResulted == newMarket.IsResulted &&
-                                this.IsSuspended == newMarket.IsSuspended &&
-                                this.IsActive == newMarket.IsActive;
-
-            if (isStatusEqual)
+            if (fullSnapshot)
             {
-                if (this.HasTag("line") && newMarket.HasTag("line"))
-                {
-                    isStatusEqual = string.Equals(this.GetTagValue("line"), newMarket.GetTagValue("line"));
-                }
+                _Tags = new Dictionary<string, string>();
+                foreach (var key in market.TagKeys)
+                    _Tags.Add(key, market.GetTagValue(key));
 
-                isStatusEqual = isStatusEqual && newMarket.Selections.All(s => _selectionStates.ContainsKey(s.Id) && _selectionStates[s.Id].IsEqualTo(s));
+                if (_Tags.ContainsKey("traded_in_play"))
+                    IsTradedInPlay = string.Equals(_Tags["traded_in_play"], "true", StringComparison.OrdinalIgnoreCase);
             }
 
-            return isStatusEqual;
-        } 
+            if (!HasBeenActive && IsActive)
+                HasBeenActive = true;
+
+
+            market.IsPending = IsPending;
+            market.IsActive = IsActive;
+            market.IsResulted = IsResulted;
+            market.IsSuspended = IsSuspended;
+            market.IsTradedInPlay = IsTradedInPlay;
+
+            UpdateLineOnRollingHandicap(market);
+        }
 
         public IUpdatableMarketState Clone()
         {
@@ -276,5 +280,57 @@ namespace SS.Integration.Adapter.MarketRules.Model
         }
 
         #endregion
+
+        private void UpdateLineOnRollingHandicap(Market market)
+        {
+            var rollingHandicap = market as RollingMarket;
+            if (rollingHandicap == null)
+                return;
+
+            var oneLine = _selectionStates.Values.All(s => s.Line == _selectionStates.Values.First().Line);
+
+            if (oneLine)
+                rollingHandicap.Line = rollingHandicap.Selections.First().Line;
+            else
+            {
+                var selectionWithHomeTeam =
+                    _selectionStates.Values.FirstOrDefault(s => s.HasTag("team") && s.GetTagValue("team") == "1");
+                if (selectionWithHomeTeam == null)
+                    throw new ArgumentException(string.Format("Rolling handicap line for market {0} can't be verified", market));
+
+                var homeSelection = rollingHandicap.Selections.FirstOrDefault(s => s.Id == selectionWithHomeTeam.Id);
+
+                //during update we may not receive an update for all selections
+                if (homeSelection != null)
+                {
+                    rollingHandicap.Line = homeSelection.Line;
+                }
+                else
+                {
+                    var selectionWithAwayTeam =
+                        _selectionStates.Values.FirstOrDefault(s => s.HasTag("team") && s.GetTagValue("team") == "2");
+
+                    // invert the line
+                    rollingHandicap.Line = selectionWithAwayTeam.Line * (-1);
+                }
+            }
+
+        }
+
+        private void MergeSelectionStates(Market market, bool fullSnapshot)
+        {
+            if (market.Selections == null)
+                return;
+
+            foreach (var selection in market.Selections)
+            {
+                if (_selectionStates.ContainsKey(selection.Id))
+                    _selectionStates[selection.Id].Update(selection, fullSnapshot);
+                else
+                {
+                    _selectionStates[selection.Id] = new SelectionState(selection, fullSnapshot);
+                }
+            }
+        }
     }
 }

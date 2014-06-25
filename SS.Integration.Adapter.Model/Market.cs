@@ -41,7 +41,7 @@ namespace SS.Integration.Adapter.Model
 
         public Market()
         {
-            _Tags = new Dictionary<string, string>();
+            _Tags = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
             _selections = new List<Selection> ();
         }
 
