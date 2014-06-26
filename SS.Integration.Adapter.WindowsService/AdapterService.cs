@@ -38,7 +38,7 @@ namespace SS.Integration.Adapter.WindowsService
         [Import]
         public IAdapterPlugin PlatformConnector { get; set; }
 
-        [Import]
+        [Import(AllowDefault = true)]
         public IPluginBootstrapper<NinjectModule> PluginBootstrapper { get; set; }
 
         public AdapterService()
