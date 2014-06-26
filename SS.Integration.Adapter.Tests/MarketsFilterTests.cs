@@ -13,9 +13,11 @@
 //limitations under the License.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using FluentAssertions;
 using Moq;
+using Newtonsoft.Json;
 using NUnit.Framework;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.MarketRules;
@@ -23,6 +25,7 @@ using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
+using SS.Integration.Common;
 
 namespace SS.Integration.Adapter.Tests
 {
@@ -696,6 +699,42 @@ namespace SS.Integration.Adapter.Tests
             // STEP 7: the market should not have been filtered out
             fixture.Markets.Count().Should().Be(1);
             fixture.Markets[0].Selections.Count().Should().Be(1);
+        }
+
+        [Test]
+        [Category("MarketRule")]
+        [Category("DeltaRule")]
+        public void DeltaRuleWithRealFixtureTest()
+        {
+            var settings = new Mock<ISettings>();
+            var state = new StateManager(settings.Object);
+
+            List<IMarketRule> rules = new List<IMarketRule> {DeltaRule.Instance};
+
+            MarketRulesManager manager = new MarketRulesManager("nr7B1f7gjMuk2ggCJoMIizHKrfI", state, rules);
+
+            Fixture fixture = TestHelper.GetFixtureFromResource("rugbydata_snapshot_2");
+
+            int mkt_count = fixture.Markets.Count;
+            mkt_count.Should().BeGreaterThan(0);
+
+            // first apply should do anything as there is no state
+            manager.ApplyRules(fixture);
+
+            fixture.Markets.Count().Should().Be(mkt_count);
+
+            // from now on, we have a state
+            manager.CommitChanges();
+
+            Fixture snapshot = TestHelper.GetFixtureFromResource("rugbydata_snapshot_4");
+
+            manager.ApplyRules(snapshot);
+            manager.CommitChanges();
+
+            // snapshot 2 and snapshot-4 have no difference, so everything should have been
+            // remove by the delta rule
+            snapshot.Markets.Count().Should().Be(0); 
+
         }
     }
 }

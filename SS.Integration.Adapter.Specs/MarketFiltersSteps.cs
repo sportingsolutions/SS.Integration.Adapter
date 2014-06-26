@@ -183,7 +183,9 @@ namespace SS.Integration.Adapter.Specs
                 switch (result)
                 {
                     case "E":
-                        intent.EditMarket(mkt, x => x.AddOrUpdateTagValue("name",  x.Name + " - E: " + name));
+                        Action<Market> action = x => x.AddOrUpdateTagValue("name",  x.Name + " - E: " + name);
+                        MarketRuleEditIntent edit_intent = new MarketRuleEditIntent(action, MarketRuleEditIntent.OperationType.CHANGE_DATA);
+                        intent.EditMarket(mkt, edit_intent);
                         break;
                     case "!E":
                         intent.MarkAsUnEditable(mkt);
@@ -193,6 +195,26 @@ namespace SS.Integration.Adapter.Specs
                         break;
                     case "!R":
                         intent.MarkAsUnRemovable(mkt);
+                        break;
+                    case "CS":
+                        Action<Market> edit_seln_action = x => x.Selections.ForEach(y => y.Name = y.Name + name);
+                        MarketRuleEditIntent change_seln_edit_intent = new MarketRuleEditIntent(edit_seln_action, MarketRuleEditIntent.OperationType.CHANGE_SELECTIONS);
+                        intent.EditMarket(mkt, change_seln_edit_intent);
+                        break;
+                    case "CD":
+                        Action<Market> change_data_action = x => x.AddOrUpdateTagValue("name", x.Name + name);
+                        MarketRuleEditIntent change_data_edit_intent = new MarketRuleEditIntent(change_data_action, MarketRuleEditIntent.OperationType.CHANGE_DATA);
+                        intent.EditMarket(mkt, change_data_edit_intent);
+                        break;
+                    case "AS":
+                        Action<Market> add_seln_action = x => x.Selections.Add(new Selection { Name = mkt.Name + (x.Selections.Count() + 1) + name, Id = mkt.Name + x.Selections.Count() + name });
+                        MarketRuleEditIntent add_seln_intent = new MarketRuleEditIntent(add_seln_action, MarketRuleEditIntent.OperationType.ADD_SELECTIONS);
+                        intent.EditMarket(mkt, add_seln_intent);
+                        break;
+                    case "RS":
+                        Action<Market> remove_seln_action = x => x.Selections.Clear();
+                        MarketRuleEditIntent remove_seln_intent = new MarketRuleEditIntent(remove_seln_action, MarketRuleEditIntent.OperationType.REMOVE_SELECTIONS);
+                        intent.EditMarket(mkt, remove_seln_intent);
                         break;
                     default:
                         throw new Exception("Unknow status");
@@ -217,6 +239,17 @@ namespace SS.Integration.Adapter.Specs
                 mkt.AddOrUpdateTagValue("name", row["Name"]);
 
                 fixture.Markets.Add(mkt);
+
+                if (table.ContainsColumn("Selections"))
+                {
+                    int seln_count = Convert.ToInt32(row["Selections"]);
+                    for (int i = 0; i < seln_count; i++)
+                    {
+                        Selection seln = new Selection { Name = row["Name"] + (i + 1) };
+                        seln.Id = seln.Name;
+                        mkt.Selections.Add(seln);
+                    }
+                }
             }
         }
 
@@ -250,5 +283,34 @@ namespace SS.Integration.Adapter.Specs
             }
         }
 
+        [Then(@"I must see these selection changes")]
+        public void ThenIMustSeeTheseSelectionChanges(Table table)
+        {
+            Fixture fixture = ScenarioContext.Current["FIXTURE"] as Fixture;
+            fixture.Should().NotBeNull();
+
+
+            foreach (var row in table.Rows)
+            {
+                var mkt_name = row["Market"];
+               
+                Market mkt = fixture.Markets.First(x => x.Id == mkt_name);
+                var n = row["Name"];
+                mkt.Name.Should().Be(n);
+
+                var n_seln = Convert.ToInt32(row["NumberOfSelections"]);
+                mkt.Selections.Count().Should().Be(n_seln);
+
+                if (n_seln != 0)
+                {
+                    var names = row["Names"];
+
+                    foreach (var name in names.Split(','))
+                    {
+                        mkt.Selections.FirstOrDefault(x => x.Name == name.Trim()).Should().NotBeNull();
+                    }
+                }
+            }
+        }
     }
 }

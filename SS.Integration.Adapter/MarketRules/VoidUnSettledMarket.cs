@@ -82,7 +82,8 @@ namespace SS.Integration.Adapter.MarketRules
                         Name, market.Id, fixture);
 
                     Action<Market> action = x => x.Selections.ForEach(s => s.Status = SelectionStatus.Void);
-                    result.EditMarket(market, action);
+                    MarketRuleEditIntent edit = new MarketRuleEditIntent(action, MarketRuleEditIntent.OperationType.CHANGE_SELECTIONS);
+                    result.EditMarket(market, edit);
                 }
 
             }
