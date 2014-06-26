@@ -51,13 +51,12 @@ namespace SS.Integration.Adapter
         private readonly IStatsHandle _Stats;
         private Timer _trigger;
 
-        public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector, IMappingUpdater mappingUpdater)
+        public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector)
         {
 
             Settings = settings;
             UDAPIService = udapiServiceFacade;
             PlatformConnector = platformConnector;
-            MappingUpdater = mappingUpdater;
             EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
             
             var statemanager = new StateManager(settings);
@@ -88,8 +87,6 @@ namespace SS.Integration.Adapter
         internal IAdapterPlugin PlatformConnector { get; private set; }
 
         internal ISettings Settings { get; private set; }
-
-        internal IMappingUpdater MappingUpdater { get; private set; }
 
         internal IServiceFacade UDAPIService { get; private set; }
 
@@ -179,7 +176,6 @@ namespace SS.Integration.Adapter
                     }
 
                     EventState.WriteToFile();
-                    MappingUpdater.Dispose();
 
                     Task.WaitAll(_creationTasks);
 

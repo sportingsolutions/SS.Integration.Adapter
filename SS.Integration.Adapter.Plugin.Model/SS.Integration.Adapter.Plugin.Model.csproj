@@ -43,14 +43,8 @@
     <Compile Include="HandicapMapping.cs" />
     <Compile Include="IndexMapping.cs" />
     <Compile Include="Interface\IMappingProvider.cs" />
-    <Compile Include="Interface\IMappingsCollection.cs" />
-    <Compile Include="Interface\IMappingsCollectionProvider.cs" />
-    <Compile Include="Interface\IMappingUpdater.cs" />
-    <Compile Include="Interface\IMappingUpdaterFactory.cs" />
     <Compile Include="Interface\ITag.cs" />
     <Compile Include="Mapping.cs" />
-    <Compile Include="MappingsCollection.cs" />
-    <Compile Include="MappingUpdaterConfiguration.cs" />
     <Compile Include="MarketMapping.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Score.cs" />
@@ -60,10 +54,6 @@
     <ProjectReference Include="..\SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj">
       <Project>{29461692-6de2-47fa-acc4-ecaae9462ae3}</Project>
       <Name>SS.Integration.Adapter.Model</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SS.Integration.Common.ConfigSerializer\SS.Integration.Common.ConfigSerializer.csproj">
-      <Project>{1c527842-e5a0-4e7a-a475-efe1f8f892a2}</Project>
-      <Name>SS.Integration.Common.ConfigSerializer</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

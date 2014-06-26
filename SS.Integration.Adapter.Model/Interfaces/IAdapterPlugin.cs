@@ -98,5 +98,6 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// plug-in specific market filtering rules
         /// </summary>
         IEnumerable<IMarketRule> MarketRules { get; }
+
     }
 }

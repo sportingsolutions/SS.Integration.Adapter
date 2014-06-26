@@ -12,11 +12,19 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-namespace SS.Integration.Adapter.Plugin.Model.Interface
+
+namespace SS.Integration.Adapter.Model.Interfaces
 {
-    public interface IMappingsCollection
+    /// <summary>
+    /// an object containing the IoC modules to load
+    /// at the start of the adapter. 
+    /// </summary>
+    /// <typeparam name="TBootstrapModule">the type of the module to load.</typeparam>
+    public interface IPluginBootstrapper<TBootstrapModule>
     {
-        Mapping this[string key] { get; }
-        int Count { get; }
+        /// <summary>
+        /// the IoC modules
+        /// </summary>
+        TBootstrapModule[] BootstrapModules { get; }
     }
 }

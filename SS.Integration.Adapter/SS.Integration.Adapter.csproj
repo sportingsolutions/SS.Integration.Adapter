@@ -65,7 +65,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Adapter.cs" />
-    <Compile Include="Configuration\MappingUpdaterSection.cs" />
     <Compile Include="Configuration\Settings.cs" />
     <Compile Include="FixtureJsonHelper.cs" />
     <Compile Include="Interface\IEventState.cs" />
@@ -117,10 +116,6 @@
     <ProjectReference Include="..\SS.Integration.Adapter.Plugin.Model\SS.Integration.Adapter.Plugin.Model.csproj">
       <Project>{b622855c-9331-4792-9fbf-339f737db982}</Project>
       <Name>SS.Integration.Adapter.Plugin.Model</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SS.Integration.Common.ConfigSerializer\SS.Integration.Common.ConfigSerializer.csproj">
-      <Project>{1c527842-e5a0-4e7a-a475-efe1f8f892a2}</Project>
-      <Name>SS.Integration.Common.ConfigSerializer</Name>
     </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Common\SS.Integration.Common.csproj">
       <Project>{756c25c1-9ff6-4299-8825-eeea5565ac58}</Project>
