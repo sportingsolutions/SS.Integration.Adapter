@@ -14,99 +14,98 @@
 
 using System.Collections.Generic;
 using SS.Integration.Adapter.Model.Interfaces;
-using System;
 
 namespace SS.Integration.Adapter.Model
 {
     public class MarketRuleResultIntent : IMarketRuleResultIntent
     {
-        private readonly List<Market> _MarkedAsRemovable;
-        private readonly List<Market> _MarkedAsUnRemovable;
+        private readonly List<Market> _Removables;
+        private readonly List<Market> _UnRemovables;
         private readonly List<Market> _Added;
-        private readonly List<Market> _MarkedAsUnEditable;
-        private readonly Dictionary<Market, Action<Market>> _Edited;
+        private readonly List<Market> _UnEditables;
+        private readonly Dictionary<Market, MarketRuleEditIntent> _Edited;
 
         public MarketRuleResultIntent()
         {
-            _MarkedAsRemovable = new List<Market>();
-            _MarkedAsUnRemovable = new List<Market>();
-            _MarkedAsUnEditable = new List<Market>();
+            _Removables = new List<Market>();
+            _UnRemovables = new List<Market>();
+            _UnEditables = new List<Market>();
             _Added = new List<Market>();
-            _Edited = new Dictionary<Market, Action<Market>>();
+            _Edited = new Dictionary<Market, MarketRuleEditIntent>();
         }
 
         #region IMarketRuleResultIntent
 
-        public IEnumerable<Market> MarkedAsRemovable
+        public IEnumerable<Market> RemovableMarkets
         {
-            get { return _MarkedAsRemovable; }
+            get { return _Removables; }
         }
 
-        public IEnumerable<Market> MarkedAsUnRemovable
+        public IEnumerable<Market> UnRemovableMarkets
         {
-            get { return _MarkedAsUnRemovable; }
+            get { return _UnRemovables; }
         }
 
-        public IEnumerable<Market> Added
+        public IEnumerable<Market> NewMarkets
         {
             get { return _Added; }
         }
 
-        public IEnumerable<Market> MarkedAsUnEditable
+        public IEnumerable<Market> UnEditableMarkets
         {
-            get { return _MarkedAsUnEditable; }
+            get { return _UnEditables; }
         }
 
-        public IEnumerable<Market> Edited
+        public IEnumerable<Market> EditedMarkets
         {
             get { return _Edited.Keys; }
         }
 
-        public Action<Market> GetEditingAction(Market Market)
+        public MarketRuleEditIntent GetEditingAction(Market market)
         {
-            return _Edited.ContainsKey(Market) ? _Edited[Market] : null;
+            return _Edited.ContainsKey(market) ? _Edited[market] : null;
         }
 
         #endregion
 
-        public void MarkAsRemovable(Market Market)
+        public void MarkAsRemovable(Market market)
         {
-            if (Market == null || _MarkedAsRemovable.Contains(Market))
+            if (market == null || _Removables.Contains(market))
                 return;
 
-            _MarkedAsRemovable.Add(Market);
+            _Removables.Add(market);
         }
 
-        public void MarkAsUnRemovable(Market Market)
+        public void MarkAsUnRemovable(Market market)
         {
-            if (Market == null || _MarkedAsUnRemovable.Contains(Market))
+            if (market == null || _UnRemovables.Contains(market))
                 return;
 
-            _MarkedAsUnRemovable.Add(Market);
+            _UnRemovables.Add(market);
         }
 
-        public void MarkAsUnEditable(Market Market)
+        public void MarkAsUnEditable(Market market)
         {
-            if (Market == null || _MarkedAsUnEditable.Contains(Market))
+            if (market == null || _UnEditables.Contains(market))
                 return;
 
-            _MarkedAsUnEditable.Add(Market);
+            _UnEditables.Add(market);
         }
 
-        public void AddMarket(Market Market)
+        public void AddMarket(Market market)
         {
-            if (Market == null || _Added.Contains(Market))
+            if (market == null || _Added.Contains(market))
                 return;
 
-            _Added.Add(Market);
+            _Added.Add(market);
         }
 
-        public void EditMarket(Market Market, Action<Market> Action)
+        public void EditMarket(Market market, MarketRuleEditIntent action)
         {
-            if (Market == null || _Edited.ContainsKey(Market) || Action == null)
+            if (market == null || _Edited.ContainsKey(market) || action == null)
                 return;
 
-            _Edited[Market] = Action;
+            _Edited[market] = action;
         }
     }
 }

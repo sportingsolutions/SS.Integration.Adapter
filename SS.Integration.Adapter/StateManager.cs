@@ -49,13 +49,19 @@ namespace SS.Integration.Adapter
             _RulesManagers = new Dictionary<string, MarketRulesManager>();
             _Rules = new List<IMarketRule>
             {
-                InactiveMarketsFilteringRule.Instance,
                 VoidUnSettledMarket.Instance
             };
 
+            
             if (settings.DeltaRuleEnabled)
             {
                 _Rules.Add(DeltaRule.Instance);
+            }
+            else
+            {
+                // delta rule supersede th inactive market rule
+                // therefore there is no advantage having both enabled
+                _Rules.Add(InactiveMarketsFilteringRule.Instance);
             }
             
         }

@@ -136,6 +136,8 @@ namespace SS.Integration.Adapter.MarketRules
         }
 
         /// <summary>
+        /// Intents:
+        /// 
         /// E = Editable , !E = NotEditable
         /// R = Removable, !R = NotRemovable
         ///        
@@ -145,7 +147,7 @@ namespace SS.Integration.Adapter.MarketRules
         /// (Rule 1, Rule 2) => Result
         /// (E, R)  => E
         /// (E, !R) => E
-        /// (E, E1) => E + E1
+        /// (E, E1) => See below
         /// (E, !E) => !E    
         /// 
         /// (R, !R) => !R
@@ -157,6 +159,24 @@ namespace SS.Integration.Adapter.MarketRules
         /// 
         /// (!E, !E) => !E
         /// 
+        /// When there are more than one rule that want to edit a specific market, the 
+        /// MarketRuleEditIntent.OperationType is considered.
+        /// 
+        /// OperationType can be: CHANGE_SELECTIONS (CS), ADD_SELECTIONS (AS), REMOVE_SELECTIONS (RS), CHANGE_DATA (CD)
+        /// 
+        /// (CS, AS) => CS + AS (changing operation will be perfomed on the existing selections. Newly added selections will not be edited)
+        /// (CS, RS) => CS
+        /// (CS, CS) => CS + CS (this might cause unexpected results)
+        /// (CS, CD) => CS + CD
+        /// 
+        /// (AS, RS) => RS + AS (existing selection will be removed and only after that the new one are added)
+        /// (AS, CD) => AS + CD
+        /// (AS, AS) => AS + AS
+        /// 
+        /// (CD, CD) => CD + CD (this might cause unexpected results)
+        /// (CD, RS) => CD + RS
+        /// 
+        /// (RS, RS) => RS + RS
         /// </summary>
         /// <param name="fixture"></param>
         /// <param name="intents"></param>
@@ -164,7 +184,7 @@ namespace SS.Integration.Adapter.MarketRules
         {
             Dictionary<Market, bool> toremove = new Dictionary<Market, bool>();
             List<Market> toadd = new List<Market>();
-            Dictionary<Market, Dictionary<Action<Market>, string>> toedit = new Dictionary<Market, Dictionary<Action<Market>, string>>();
+            Dictionary<Market, Dictionary<MarketRuleEditIntent, string>> toedit = new Dictionary<Market, Dictionary<MarketRuleEditIntent, string>>();
 
             foreach (var rule in intents.Keys)
             {
@@ -180,7 +200,7 @@ namespace SS.Integration.Adapter.MarketRules
                  * otherwise.
                  */
 
-                foreach (var mkt in intent.MarkedAsRemovable)
+                foreach (var mkt in intent.RemovableMarkets)
                 {
                     // if it already contains the market, don't do 
                     // anything as the flag could be "false"
@@ -188,7 +208,7 @@ namespace SS.Integration.Adapter.MarketRules
                         toremove.Add(mkt, true);
                 }
 
-                foreach (var mkt in intent.MarkedAsUnRemovable)
+                foreach (var mkt in intent.UnRemovableMarkets)
                 {
                     // if it is already present, then 
                     // set its flag to false
@@ -205,11 +225,11 @@ namespace SS.Integration.Adapter.MarketRules
                  * not-editable
                  */
 
-                foreach (var mkt in intent.Edited)
+                foreach (var mkt in intent.EditedMarkets)
                 {
                     if (!toedit.ContainsKey(mkt))
                     {
-                        toedit.Add(mkt, new Dictionary<Action<Market>, string> {{intent.GetEditingAction(mkt), rule.Name}});
+                        toedit.Add(mkt, new Dictionary<MarketRuleEditIntent, string> { { intent.GetEditingAction(mkt), rule.Name } });
                     }
                     else if (toedit[mkt] != null)
                     {
@@ -217,7 +237,7 @@ namespace SS.Integration.Adapter.MarketRules
                     }
                 }
 
-                foreach (var mkt in intent.MarkedAsUnEditable)
+                foreach (var mkt in intent.UnEditableMarkets)
                 {
                     if (toedit.ContainsKey(mkt))
                         toedit[mkt] = null;
@@ -225,31 +245,59 @@ namespace SS.Integration.Adapter.MarketRules
                         toedit.Add(mkt, null);
                 }
 
-                toadd.AddRange(intent.Added);
+                toadd.AddRange(intent.NewMarkets);
             }
 
-
+            // ADD
             toadd.ForEach(x => _logger.DebugFormat("Adding market {0} to {1} as requested by market rules", x, fixture));
             fixture.Markets.AddRange(toadd);
 
+            // EDIT
+            MergeEditIntents(fixture, toedit);
+            
+            // REMOVE
+            foreach (var mkt in toremove.Keys)
+            {
+                // we need to check that a removable market
+                // wasn't marked as editable or not editable
+                if (toremove[mkt] && !toedit.ContainsKey(mkt))
+                {
+                    _logger.DebugFormat("{0} of {1} will be removed from snapshot due market rules", mkt, fixture);
+                    fixture.Markets.Remove(mkt);
+                }
+            }
+        }
+
+        private void MergeEditIntents(Fixture fixture, Dictionary<Market, Dictionary<MarketRuleEditIntent, string>> toedit)
+        {
             foreach (var mkt in toedit.Keys)
             {
                 if (toedit[mkt] != null)
                 {
                     try
                     {
-                        var count = 0;
-                        var total = toedit[mkt].Count;
-                        foreach (var action in toedit[mkt].Keys)
+                        bool selection_changed = false;
+
+                        // don't change the order of this loop, changing and removing ops must come before adding ops
+                        foreach (var op in new[] {MarketRuleEditIntent.OperationType.CHANGE_SELECTIONS, 
+                                                  MarketRuleEditIntent.OperationType.REMOVE_SELECTIONS,
+                                                  MarketRuleEditIntent.OperationType.ADD_SELECTIONS,
+                                                  MarketRuleEditIntent.OperationType.CHANGE_DATA})
                         {
-                            count++;
+                            foreach (var edit_intent in toedit[mkt].Where(x => x.Key.Operation == op))
+                            {
+                                if (op == MarketRuleEditIntent.OperationType.CHANGE_SELECTIONS)
+                                    selection_changed = true;
 
-                            if(action == null)
-                                continue;
+                                // we can't remove selections if an edit action changed them
+                                if (op == MarketRuleEditIntent.OperationType.REMOVE_SELECTIONS && selection_changed)
+                                    continue;
+                                
+                                _logger.DebugFormat("Performing edit (op={0}) action={1} on {2} of {3} as requested by market rules",
+                                    op, edit_intent.Value, mkt, fixture);
 
-                            _logger.DebugFormat("Performing edit action={0} count={1}/{2} on {3} of {4} as requested by market rules", 
-                                toedit[mkt][action], count, total, mkt, fixture);
-                            action(mkt);
+                                edit_intent.Key.Action(mkt);
+                            }
                         }
 
                         _logger.DebugFormat("Successfully applied edit actions on {0} of {1} as requested by market rules", mkt, fixture);
@@ -265,17 +313,6 @@ namespace SS.Integration.Adapter.MarketRules
 
                         throw;
                     }
-                }
-            }
-
-            foreach (var mkt in toremove.Keys)
-            {
-                // we need to check that a removable market
-                // wasn't marked as editable or not editable
-                if (toremove[mkt] && !toedit.ContainsKey(mkt))
-                {
-                    _logger.DebugFormat("{0} of {1} will be removed from snapshot due market rules", mkt, fixture);
-                    fixture.Markets.Remove(mkt);
                 }
             }
         }

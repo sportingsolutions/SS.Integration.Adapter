@@ -606,16 +606,24 @@ namespace SS.Integration.Adapter.Tests
         }
 
 
+        /// <summary>
+        /// I want to test that DeltaRule correctly
+        /// filters out markets in a fixture
+        /// when they don't differ from the state
+        /// stored in the MarketRuleManager
+        /// </summary>
         [Test]
         [Category("MarketRule")]
         [Category("DeltaRule")]
         public void DeltaRuleTest()
         {
+            // STEP 1: prepare stub data
             var settings = new Mock<ISettings>();
             var stateprovider = new StateManager(settings.Object);
 
             List<IMarketRule> rules = new List<IMarketRule> {DeltaRule.Instance};
 
+            // STEP 2: prepare fixture data
             Fixture fixture = new Fixture {Id = "TestId"};
             fixture.Tags.Add("Sport", "Football");
 
@@ -663,15 +671,31 @@ namespace SS.Integration.Adapter.Tests
 
             fixture.Markets.Add(mkt);
 
-
+            // STEP 3: invoke the delta rule
             MarketRulesManager manager = new MarketRulesManager(fixture.Id, stateprovider, rules);
-            manager.ApplyRules(fixture);
+            
+            manager.ApplyRules(fixture); // this will not have any effect as we don't have any state yet
 
             manager.CommitChanges();
 
+            manager.ApplyRules(fixture); // here is where the delta rule is invoked (note that we haven't changed anything on the fixture)
+
+            manager.CommitChanges();
+
+            // STEP 4: check the results (delta rule should have removed everything)
+            fixture.Markets.Count.Should().Be(0);
+
+            // STEP 5: change a single field
+            seln.Price = 1.2;
+            fixture.Markets.Add(mkt);
+            mkt.Selections.Count().Should().Be(2);
+
+            // STEP 6: apply the delta rule again
             manager.ApplyRules(fixture);
 
-            fixture.Markets.Count.Should().Be(0);
+            // STEP 7: the market should not have been filtered out
+            fixture.Markets.Count().Should().Be(1);
+            fixture.Markets[0].Selections.Count().Should().Be(1);
         }
     }
 }

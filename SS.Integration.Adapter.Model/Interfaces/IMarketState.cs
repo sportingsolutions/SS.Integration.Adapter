@@ -171,9 +171,9 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// </summary>
         /// <param name="market"></param>
         /// <param name="checkTags">If true, tags are checked too</param>
-        /// <param name="checkSelectionNumbers">If true, the methods checks
-        /// also that the number of selections are the same</param>
+        /// <param name="checkSelections">If true, the method also checks
+        /// equivalence for the selections</param>
         /// <returns></returns>
-        bool IsEquivalentTo(Market market, bool checkTags, bool checkSelectionNumbers);
+        bool IsEquivalentTo(Market market, bool checkTags, bool checkSelections);
     }
 }

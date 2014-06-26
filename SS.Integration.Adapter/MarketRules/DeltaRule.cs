@@ -12,6 +12,8 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using log4net;
 using SS.Integration.Adapter.Model;
@@ -53,11 +55,44 @@ namespace SS.Integration.Adapter.MarketRules
             {
                 if (oldState.HasMarket(mkt.Id))
                 {
-                    if (oldState[mkt.Id].IsEquivalentTo(mkt, true, true))
+                    IMarketState state = oldState[mkt.Id];
+
+                    List<Selection> seln_changed = new List<Selection>(); 
+                    foreach (var seln in mkt.Selections)
                     {
-                        _logger.InfoFormat("market rule={0} => {1} of {2} is marked as removable as nothing has changed",
-                            Name, mkt, fixture);
-                        intent.MarkAsRemovable(mkt);
+                        // if we don't have the selection state, we can't
+                        // determine what has changed within the selection,
+                        // so we assume that everything has changed
+                        if (state.HasSelection(seln.Id) && state[seln.Id].IsEquivalentTo(seln, true))
+                            continue;
+
+                        _logger.DebugFormat("market rule={0} => {1} of {2} has changed", Name, seln, mkt);
+                        seln_changed.Add(seln);
+                    }
+
+
+                    if (seln_changed.Count == 0 )
+                    {
+                        if (state.IsEquivalentTo(mkt, true, false))
+                        {
+                            _logger.DebugFormat("market rule={0} => {1} of {2} marked as removable", Name, mkt, fixture);
+                            intent.MarkAsRemovable(mkt);
+                        }
+                        else
+                        {
+                            Action<Market> action = x => x.Selections.Clear();
+                            MarketRuleEditIntent edit = new MarketRuleEditIntent(action, MarketRuleEditIntent.OperationType.REMOVE_SELECTIONS);
+                            intent.EditMarket(mkt, edit);
+                        }
+                    }
+                    else 
+                    {
+                        if (seln_changed.Count() != mkt.Selections.Count())
+                        {
+                            Action<Market> action = x => x.Selections.RemoveAll(y => !seln_changed.Contains(y));
+                            MarketRuleEditIntent edit = new MarketRuleEditIntent(action, MarketRuleEditIntent.OperationType.REMOVE_SELECTIONS);
+                            intent.EditMarket(mkt, edit);
+                        }
                     }
                 }
             }

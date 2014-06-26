@@ -188,7 +188,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
             return isStatusEqual;
         }
 
-        public bool IsEquivalentTo(Market market, bool checkTags, bool checkSelectionsNumber)
+        public bool IsEquivalentTo(Market market, bool checkTags, bool checkSelections)
         {
             if (market == null)
                 return false;
@@ -205,17 +205,20 @@ namespace SS.Integration.Adapter.MarketRules.Model
                     return false;
             }
 
-            if (checkSelectionsNumber && Selections.Count() != market.Selections.Count())
-                return false;
-
-            foreach (var seln in market.Selections)
+            if (checkSelections)
             {
-                ISelectionState seln_state = this[seln.Id];
-                if (seln_state == null)
+                if (Selections.Count() != market.Selections.Count())
                     return false;
 
-                if (!seln_state.IsEquivalentTo(seln, checkTags))
-                    return false;
+                foreach (var seln in market.Selections)
+                {
+                    ISelectionState seln_state = this[seln.Id];
+                    if (seln_state == null)
+                        return false;
+
+                    if (!seln_state.IsEquivalentTo(seln, checkTags))
+                        return false;
+                }
             }
 
             var result = IsSuspended == market.IsSuspended &&

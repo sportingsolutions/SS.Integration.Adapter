@@ -102,8 +102,8 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// object
         /// </summary>
         /// <param name="selection"></param>
-        /// <param name="checkState">If true, tags are also checked</param>
+        /// <param name="checkTags">If true, tags are also checked</param>
         /// <returns></returns>
-        bool IsEquivalentTo(Selection selection, bool checkState);
+        bool IsEquivalentTo(Selection selection, bool checkTags);
     }
 }
