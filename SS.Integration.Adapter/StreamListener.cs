@@ -261,10 +261,10 @@ namespace SS.Integration.Adapter
                 _resource.StreamDisconnected -= ResourceOnStreamDisconnected;
                 _resource.StreamEvent -= ResourceOnStreamEvent;
 
-                _resource.StopStreaming();
-
                 IsStreaming = false;
                 IsConnecting = false;
+
+                _resource.StopStreaming();
             }
         }
 

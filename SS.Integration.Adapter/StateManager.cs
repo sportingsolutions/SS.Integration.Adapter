@@ -66,6 +66,23 @@ namespace SS.Integration.Adapter
             
         }
 
+        internal void OverwriteRuleList(List<IMarketRule> rules)
+        {
+            if (rules != null)
+            {
+                _Rules.Clear();
+                _Rules.AddRange(rules);
+            }
+        }
+
+        internal IEnumerable<IMarketRule> LoadedRules
+        {
+            get
+            {
+                return _Rules;
+            }
+        }
+
         #region IStoredObjectProvider
 
         public IUpdatableMarketStateCollection GetObject(string fixtureId)
