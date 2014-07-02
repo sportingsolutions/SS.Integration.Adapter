@@ -14,48 +14,79 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.Serialization;
 using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Model
 {
+    [Serializable]
+    [DataContract]
     public class Fixture
     {
         public Fixture()
         {
             Tags = new Dictionary<string, object>();
             GameState = new Dictionary<string, object>();
-            Markets = new List<Market>();
             Participants = new List<Participant>();
+            Markets = new List<Market>();
         }
 
+        [DataMember]
         public string FixtureName { get; set; }
-
+        
+        [DataMember]
         public int Epoch { get; set; }
 
+        [DataMember]
         public int[] LastEpochChangeReason { get; set; }
 
+        [DataMember]
         public string Id { get; set; }
 
+        [DataMember]
         public DateTime? StartTime { get; set; }
 
+        [DataMember]
         public int Sequence { get; set; }
 
+        [DataMember]
         public string MatchStatus { get; set; }
 
+        [DataMember]
         public Dictionary<string, object> Tags { get; private set; }
-
+        
+        [DataMember]
         public Dictionary<string, object> GameState { get; private set; }
 
+        [IgnoreDataMember]
         public List<Market> Markets { get; private set; }
 
-        public List<RollingMarket> RollingMarkets
+        [DataMember(Name="Markets")]
+        public ReadOnlyCollection<Market> StandardMarkets
         {
+            get 
+            {
+                return Markets.Where(x => !(x is RollingMarket)).ToList().AsReadOnly();
+            }
+            set
+            {
+                Markets.AddRange(value);
+            }
+        }
+
+        [DataMember]
+        public ReadOnlyCollection<RollingMarket> RollingMarkets
+        {
+            get { return Markets.OfType<RollingMarket>().ToList().AsReadOnly();}
             set { Markets.AddRange(value); }
         }
-        
+
+        [DataMember]
         public List<Participant> Participants { get; private set; }
 
+        [IgnoreDataMember]
         public bool? IsPreMatchOnly
         {
             get
@@ -67,6 +98,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool IsDeleted
         {
             get
@@ -76,6 +108,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool IsStartTimeChanged
         {
             get
@@ -85,6 +118,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool IsMatchStatusChanged
         {
             get
@@ -94,6 +128,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool IsSetup
         {
             get
@@ -102,6 +137,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool IsPreMatch
         {
             get
@@ -110,6 +146,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool IsInPlay
         {
             get
@@ -118,6 +155,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool IsMatchOver
         {
             get
