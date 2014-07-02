@@ -66,21 +66,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AdapterTests.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="DefaultMappingUpdaterTests.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="EventStateTests.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="MarketsFilterTests.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="RegressionTests.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="FixtureSamples.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

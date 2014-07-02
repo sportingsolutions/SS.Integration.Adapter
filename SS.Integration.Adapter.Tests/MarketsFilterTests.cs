@@ -13,11 +13,9 @@
 //limitations under the License.
 
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using FluentAssertions;
 using Moq;
-using Newtonsoft.Json;
 using NUnit.Framework;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.MarketRules;
@@ -25,7 +23,6 @@ using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Common;
 
 namespace SS.Integration.Adapter.Tests
 {
@@ -624,9 +621,19 @@ namespace SS.Integration.Adapter.Tests
             var settings = new Mock<ISettings>();
             var stateprovider = new StateManager(settings.Object);
 
+            DeltaRule.Instance.Severity = DeltaRule.DeltaRuleSeverity.REMOVE_SELECTIONS;
+
             List<IMarketRule> rules = new List<IMarketRule> {DeltaRule.Instance};
 
             // STEP 2: prepare fixture data
+            // Fixture
+            //  - MKT1
+            //  -- SELN_1_1
+            //  -- SELN_1_2
+            //  - MKT2
+            //  -- SELN_2_1
+            //  -- SELN_2_2
+
             Fixture fixture = new Fixture {Id = "TestId"};
             fixture.Tags.Add("Sport", "Football");
 
@@ -709,6 +716,7 @@ namespace SS.Integration.Adapter.Tests
             var settings = new Mock<ISettings>();
             var state = new StateManager(settings.Object);
 
+            DeltaRule.Instance.Severity = DeltaRule.DeltaRuleSeverity.REMOVE_SELECTIONS;
             List<IMarketRule> rules = new List<IMarketRule> {DeltaRule.Instance};
 
             MarketRulesManager manager = new MarketRulesManager("nr7B1f7gjMuk2ggCJoMIizHKrfI", state, rules);
@@ -735,6 +743,102 @@ namespace SS.Integration.Adapter.Tests
             // remove by the delta rule
             snapshot.Markets.Count().Should().Be(0); 
 
+        }
+
+        [Test]
+        [Category("MarketRule")]
+        [Category("DeltaRule")]
+        public void DeltaRuleWithMarketSeverity()
+        {
+            // STEP 1: prepare stub data
+            var settings = new Mock<ISettings>();
+            var stateprovider = new StateManager(settings.Object);
+
+            DeltaRule.Instance.Severity = DeltaRule.DeltaRuleSeverity.REMOVE_MARKETS;
+
+            List<IMarketRule> rules = new List<IMarketRule> { DeltaRule.Instance };
+
+            // STEP 2: prepare fixture data
+            // Fixture
+            //  - MKT1
+            //  -- SELN_1_1
+            //  -- SELN_1_2
+            //  - MKT2
+            //  -- SELN_2_1
+            //  -- SELN_2_2
+
+            Fixture fixture = new Fixture { Id = "TestId" };
+            fixture.Tags.Add("Sport", "Football");
+
+            Market mkt = new Market { Id = "MKT1" };
+            mkt.AddOrUpdateTagValue("name", "mkt1");
+            mkt.AddOrUpdateTagValue("type", "type1");
+
+            Selection seln = new Selection { Id = "SELN_1_1" };
+            seln.AddOrUpdateTagValue("name", "seln_1_1");
+            seln.Tradable = true;
+            seln.Status = SelectionStatus.Active;
+            seln.Price = 0.1;
+
+            mkt.Selections.Add(seln);
+
+            seln = new Selection { Id = "SELN_1_2" };
+            seln.AddOrUpdateTagValue("name", "seln_1_2");
+            seln.Tradable = true;
+            seln.Status = SelectionStatus.Active;
+            seln.Price = 0.2;
+
+            mkt.Selections.Add(seln);
+
+            fixture.Markets.Add(mkt);
+
+            mkt = new Market { Id = "MKT2" };
+            mkt.AddOrUpdateTagValue("name", "mkt2");
+            mkt.AddOrUpdateTagValue("type", "type2");
+
+            seln = new Selection { Id = "SELN_2_1" };
+            seln.AddOrUpdateTagValue("name", "seln_2_1");
+            seln.Tradable = false;
+            seln.Status = SelectionStatus.Pending;
+            seln.Price = null;
+
+            mkt.Selections.Add(seln);
+
+            seln = new Selection { Id = "SELN_2_2" };
+            seln.AddOrUpdateTagValue("name", "seln_2_2");
+            seln.Tradable = false;
+            seln.Status = SelectionStatus.Pending;
+            seln.Price = null;
+
+            mkt.Selections.Add(seln);
+
+            fixture.Markets.Add(mkt);
+
+            // STEP 3: invoke the delta rule
+            MarketRulesManager manager = new MarketRulesManager(fixture.Id, stateprovider, rules);
+
+            manager.ApplyRules(fixture); // this will not have any effect as we don't have any state yet
+
+            manager.CommitChanges();
+
+            manager.ApplyRules(fixture); // here is where the delta rule is invoked (note that we haven't changed anything on the fixture)
+
+            manager.CommitChanges();
+
+            // STEP 4: check the results (delta rule should have removed everything)
+            fixture.Markets.Count.Should().Be(0);
+
+            // STEP 5: change a single field
+            seln.Price = 1.2;
+            fixture.Markets.Add(mkt);
+            mkt.Selections.Count().Should().Be(2);
+
+            // STEP 6: apply the delta rule again
+            manager.ApplyRules(fixture);
+
+            // STEP 7: the market should not have been filtered out
+            fixture.Markets.Count().Should().Be(1);
+            fixture.Markets[0].Selections.Count().Should().Be(2);
         }
     }
 }

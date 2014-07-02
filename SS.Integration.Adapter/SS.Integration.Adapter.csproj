@@ -77,11 +77,6 @@
     <Compile Include="Interface\IStateManager.cs" />
     <Compile Include="Interface\IStoredObjectProvider.cs" />
     <Compile Include="Interface\IStoreProvider.cs" />
-    <Compile Include="Mappings\DefaultMappingsCollectionProvider.cs" />
-    <Compile Include="Mappings\DefaultMappingUpdater.cs" />
-    <Compile Include="Mappings\DefaultMappingUpdaterFactory.cs" />
-    <Compile Include="Mappings\DummyMappingUpdater.cs" />
-    <Compile Include="Mappings\DummyMappingUpdaterFactory.cs" />
     <Compile Include="MarketRules\DeltaRule.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketState.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketStateCollection.cs" />

@@ -32,7 +32,7 @@ namespace SS.Integration.Adapter.Configuration
         private const string DEFAULT_EVENT_STATE_FILE_PATH_VALUE = @"C:\eventState.json";
         private const string DEFAULT_MARKET_STATE_MANAGER_DIRECTORY = @"MarketsState";
         private const int DEFAULT_CACHE_EXPIRY_MINUTES_VALUE = 15;
-        private const bool DEFAULT_ENABLE_DELTA_RULE = true;
+        private const bool DEFAULT_ENABLE_DELTA_RULE = false;
 
 
         public Settings()
