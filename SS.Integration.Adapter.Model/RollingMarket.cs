@@ -21,15 +21,15 @@ namespace SS.Integration.Adapter.Model
     [Serializable]
     public class RollingMarket : Market
     {
-        
-        // <summary>
+
+        /// <summary>
         /// Returns the rolling selections's for this market
         /// as they are contained within the snapshot. 
         /// </summary>
-        // DO NOT CHANGE it to List, as List is mutable and we need to keep 
-        // both base and this object in sync
+        /// DO NOT CHANGE it to List, as List is mutable and we need to keep 
+        /// both base and this object in sync
         public ReadOnlyCollection<RollingSelection> Selections { 
-            get { return _selections.Cast<RollingSelection>().ToList().AsReadOnly(); }
+            get { return _selections.OfType<RollingSelection>().ToList().AsReadOnly(); }
             set { _selections = value.Cast<Selection>().ToList(); } 
         }
 

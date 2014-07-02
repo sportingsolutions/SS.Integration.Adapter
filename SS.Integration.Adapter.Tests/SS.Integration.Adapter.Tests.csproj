@@ -74,6 +74,7 @@
     <Compile Include="AdapterTests.cs" />
     <Compile Include="EventStateTests.cs" />
     <Compile Include="MarketsFilterTests.cs" />
+    <Compile Include="ModelTests.cs" />
     <Compile Include="RegressionTests.cs" />
     <Compile Include="StreamListenerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
