@@ -14,48 +14,66 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.Serialization;
 using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Model
 {
+    [Serializable]
     public class Fixture
     {
         public Fixture()
         {
             Tags = new Dictionary<string, object>();
             GameState = new Dictionary<string, object>();
-            Markets = new List<Market>();
             Participants = new List<Participant>();
+            Markets = new List<Market>();
         }
-
+        
         public string FixtureName { get; set; }
 
         public int Epoch { get; set; }
 
         public int[] LastEpochChangeReason { get; set; }
-
+                
         public string Id { get; set; }
-
+        
         public DateTime? StartTime { get; set; }
-
+        
         public int Sequence { get; set; }
-
+        
         public string MatchStatus { get; set; }
-
+        
         public Dictionary<string, object> Tags { get; private set; }
-
+        
         public Dictionary<string, object> GameState { get; private set; }
 
+        [IgnoreDataMember]
         public List<Market> Markets { get; private set; }
 
-        public List<RollingMarket> RollingMarkets
+        public ReadOnlyCollection<Market> StandardMarkets
         {
+            get 
+            {
+                return Markets.Where(x => !(x is RollingMarket)).ToList().AsReadOnly();
+            }
+            set
+            {
+                Markets.AddRange(value);
+            }
+        }
+
+        public ReadOnlyCollection<RollingMarket> RollingMarkets
+        {
+            get { return Markets.OfType<RollingMarket>().ToList().AsReadOnly();}
             set { Markets.AddRange(value); }
         }
-        
+
         public List<Participant> Participants { get; private set; }
 
+        [IgnoreDataMember]
         public bool? IsPreMatchOnly
         {
             get
@@ -67,6 +85,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool IsDeleted
         {
             get
@@ -76,6 +95,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool IsStartTimeChanged
         {
             get
@@ -85,6 +105,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool IsMatchStatusChanged
         {
             get
@@ -94,6 +115,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool IsSetup
         {
             get
@@ -102,6 +124,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool IsPreMatch
         {
             get
@@ -110,6 +133,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool IsInPlay
         {
             get
@@ -118,6 +142,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool IsMatchOver
         {
             get

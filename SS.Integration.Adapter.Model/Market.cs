@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 
 namespace SS.Integration.Adapter.Model
 {
@@ -49,6 +50,8 @@ namespace SS.Integration.Adapter.Model
         /// Market's name. Not present if 
         /// the snapshot is a delta snapshot
         /// </summary>
+
+        [IgnoreDataMember]
         public string Name
         {
             get
@@ -62,6 +65,7 @@ namespace SS.Integration.Adapter.Model
         /// is not present if this object
         /// is coming from a delta-snapshot.
         /// </summary>
+        [IgnoreDataMember]
         public string Type
         {
             get
@@ -83,6 +87,7 @@ namespace SS.Integration.Adapter.Model
         /// 
         /// Information not available on a delta snapshot
         /// </summary>
+        [IgnoreDataMember]
         public bool IsOverUnder
         {
             get
@@ -187,6 +192,7 @@ namespace SS.Integration.Adapter.Model
         /// <summary>
         /// Returns the list of all tags
         /// </summary>
+        [IgnoreDataMember]
         public IEnumerable<string> TagKeys
         {
             get
@@ -199,6 +205,7 @@ namespace SS.Integration.Adapter.Model
         /// Returns the number of tags contained
         /// within this object.
         /// </summary>
+        [IgnoreDataMember]
         public int TagsCount
         {
             get
