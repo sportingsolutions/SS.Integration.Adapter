@@ -384,7 +384,7 @@ namespace SS.Integration.Adapter.Tests
             List<IMarketRule> rules = new List<IMarketRule> { 
                 VoidUnSettledMarket.Instance, 
                 InactiveMarketsFilteringRule.Instance,
-                new PendingMarketFilteringRule() { AlwaysExcludePendingMarkets = true}
+                new PendingMarketFilteringRule { AlwaysExcludePendingMarkets = true}
             };
 
 

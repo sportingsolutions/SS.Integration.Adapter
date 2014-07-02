@@ -19,6 +19,7 @@ using System.Linq;
 using System.Text;
 using FluentAssertions;
 using NUnit.Framework;
+using SportingSolutions.Udapi.Sdk.Extensions;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.ProcessState;
 
@@ -154,7 +155,19 @@ namespace SS.Integration.Adapter.Tests
             fixture.Markets.FirstOrDefault(x => x.Id == "MKT1").Selections.Count.Should().Be(2);
             fixture.Markets.FirstOrDefault(x => x.Id == "RMKT2").Selections.Count.Should().Be(1);
             fixture.Markets.FirstOrDefault(x => x.Id == "RMKT3").Selections.Count.Should().Be(0);
-            
+
+            fixture = value.FromJson<Fixture>();
+
+            fixture.RollingMarkets.Count().Should().Be(2);
+            fixture.StandardMarkets.Count().Should().Be(1);
+            fixture.Markets.Count().Should().Be(3);
+            fixture.Tags.Count.Should().Be(2);
+            fixture.GameState.Count().Should().Be(2);
+            fixture.Participants.Count().Should().Be(2);
+
+            fixture.Markets.FirstOrDefault(x => x.Id == "MKT1").Selections.Count.Should().Be(2);
+            fixture.Markets.FirstOrDefault(x => x.Id == "RMKT2").Selections.Count.Should().Be(1);
+            fixture.Markets.FirstOrDefault(x => x.Id == "RMKT3").Selections.Count.Should().Be(0);
         }
     }
 }

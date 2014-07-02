@@ -22,6 +22,7 @@ using SS.Integration.Adapter.Model.Enums;
 namespace SS.Integration.Adapter.Model
 {
     [Serializable]
+    [DataContract]
     public class Fixture
     {
         public Fixture()
@@ -31,28 +32,38 @@ namespace SS.Integration.Adapter.Model
             Participants = new List<Participant>();
             Markets = new List<Market>();
         }
-        
-        public string FixtureName { get; set; }
 
+        [DataMember]
+        public string FixtureName { get; set; }
+        
+        [DataMember]
         public int Epoch { get; set; }
 
+        [DataMember]
         public int[] LastEpochChangeReason { get; set; }
-                
+
+        [DataMember]
         public string Id { get; set; }
-        
+
+        [DataMember]
         public DateTime? StartTime { get; set; }
-        
+
+        [DataMember]
         public int Sequence { get; set; }
-        
+
+        [DataMember]
         public string MatchStatus { get; set; }
-        
+
+        [DataMember]
         public Dictionary<string, object> Tags { get; private set; }
         
+        [DataMember]
         public Dictionary<string, object> GameState { get; private set; }
 
         [IgnoreDataMember]
         public List<Market> Markets { get; private set; }
 
+        [DataMember(Name="Markets")]
         public ReadOnlyCollection<Market> StandardMarkets
         {
             get 
@@ -65,12 +76,14 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [DataMember]
         public ReadOnlyCollection<RollingMarket> RollingMarkets
         {
             get { return Markets.OfType<RollingMarket>().ToList().AsReadOnly();}
             set { Markets.AddRange(value); }
         }
 
+        [DataMember]
         public List<Participant> Participants { get; private set; }
 
         [IgnoreDataMember]
