@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.MarketRules;
@@ -29,7 +30,7 @@ namespace SS.Integration.Adapter
 
         private readonly IObjectProvider<IUpdatableMarketStateCollection> _PersistanceLayer;
         private readonly IObjectProvider<IPluginFixtureState> _PluginPersistanceLayer;
-        private readonly Dictionary<string, MarketRulesManager> _RulesManagers;
+        private readonly ConcurrentDictionary<string, MarketRulesManager> _RulesManagers;
         private readonly List<IMarketRule> _Rules;
 
 
@@ -46,7 +47,7 @@ namespace SS.Integration.Adapter
                 new BinaryStoreProvider<IPluginFixtureState>(settings.MarketFiltersDirectory, "PluginStore-{0}.bin"),
                 "MarketFilters", settings.CacheExpiryInMins * 60);
 
-            _RulesManagers = new Dictionary<string, MarketRulesManager>();
+            _RulesManagers = new ConcurrentDictionary<string, MarketRulesManager>();
             _Rules = new List<IMarketRule>
             {
                 VoidUnSettledMarket.Instance
@@ -150,7 +151,7 @@ namespace SS.Integration.Adapter
                 return _RulesManagers[fixtureId];
 
             var rule_manager = new MarketRulesManager(fixtureId, this, _Rules);
-            _RulesManagers.Add(fixtureId, rule_manager);
+            _RulesManagers[fixtureId] = rule_manager;
 
             return rule_manager;
         }
@@ -161,7 +162,10 @@ namespace SS.Integration.Adapter
                 return;
 
             if (_RulesManagers.ContainsKey(fixtureId))
-                _RulesManagers.Remove(fixtureId);
+            {
+                MarketRulesManager dummy;
+                _RulesManagers.TryRemove(fixtureId, out dummy);
+            }
 
             _PersistanceLayer.Remove(fixtureId);
         }

@@ -38,7 +38,7 @@ namespace SS.Integration.Adapter.Tests
         public void ShouldStartAndStopListening()
         {
             var fixtureSnapshot = new Fixture { Id = "TestId", MatchStatus = "30", Sequence = 1 };
-
+            
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
@@ -108,7 +108,7 @@ namespace SS.Integration.Adapter.Tests
             var marketFilterObjectStore = new StateManager(settings.Object);
             int matchStatusDelta = 40;
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(matchStatus: matchStatusDelta);
-
+            
             var fixtureSnapshot = new Fixture { Id = "y9s1fVzAoko805mzTnnTRU_CQy8", Epoch = 1, MatchStatus = "30", Sequence = 1 };
 
             resource.Setup(r => r.MatchStatus).Returns((MatchStatus)matchStatusDelta);
