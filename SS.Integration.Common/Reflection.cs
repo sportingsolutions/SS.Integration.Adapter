@@ -28,6 +28,7 @@ namespace SS.Integration.Common
     /// </summary>
     public class Reflection
     {
+        public class IgnoreAttribute : Attribute { }
 
         public static class PropertyCopy<TTarget> where TTarget : class, new()
         {
@@ -85,10 +86,15 @@ namespace SS.Integration.Common
                     var bindings = new List<MemberBinding>();
                     foreach (PropertyInfo sourceProperty in typeof(TSource).GetProperties())
                     {
+                        
                         if (!sourceProperty.CanRead)
                         {
                             continue;
                         }
+
+                        if (sourceProperty.GetCustomAttribute<IgnoreAttribute>() != null)
+                            continue;
+
                         PropertyInfo targetProperty = typeof(TTarget).GetProperty(sourceProperty.Name);
                         if (targetProperty == null)
                         {

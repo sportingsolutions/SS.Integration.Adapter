@@ -84,6 +84,12 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SS.Integration.Common\SS.Integration.Common.csproj">
+      <Project>{756c25c1-9ff6-4299-8825-eeea5565ac58}</Project>
+      <Name>SS.Integration.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

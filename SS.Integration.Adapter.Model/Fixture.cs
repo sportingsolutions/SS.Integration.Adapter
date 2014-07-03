@@ -18,12 +18,13 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.Serialization;
 using SS.Integration.Adapter.Model.Enums;
+using SS.Integration.Common;
 
 namespace SS.Integration.Adapter.Model
 {
     [Serializable]
     [DataContract]
-    public class Fixture
+    public class Fixture : ICloneable
     {
         public Fixture()
         {
@@ -61,6 +62,7 @@ namespace SS.Integration.Adapter.Model
         public Dictionary<string, object> GameState { get; private set; }
 
         [IgnoreDataMember]
+        [Reflection.Ignore]
         public List<Market> Markets { get; private set; }
 
         [DataMember(Name="Markets")]
@@ -176,5 +178,13 @@ namespace SS.Integration.Adapter.Model
             return string.Format(format, Id, Sequence);
         }
 
+        /// <summary>
+        /// Performs a deep-clone of the object
+        /// </summary>
+        /// <returns></returns>
+        public object Clone()
+        {
+            return Reflection.PropertyCopy<Fixture>.CopyFrom(this);
+        }
     }
 }
