@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 namespace SS.Integration.Adapter.Model
 {
@@ -71,6 +72,7 @@ namespace SS.Integration.Adapter.Model
         /// If not manually set, this field is only valid when the object
         /// is created from a full snapshot.
         /// </summary>
+        [IgnoreDataMember]
         public string Name
         {
             get
@@ -92,6 +94,7 @@ namespace SS.Integration.Adapter.Model
         /// and its value if false, then the selection is 
         /// considered as suspended.
         /// </summary>
+        [IgnoreDataMember]
         public bool IsSuspended
         {
             get
@@ -100,6 +103,7 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
         public bool? IsActive
         {
             get
@@ -113,6 +117,7 @@ namespace SS.Integration.Adapter.Model
 
         #region Tags
 
+        [IgnoreDataMember]
         public IEnumerable<string> TagKeys
         {
             get
@@ -139,6 +144,7 @@ namespace SS.Integration.Adapter.Model
             return HasTag(tagKey) ? _Tags[tagKey] : null;
         }
 
+        [IgnoreDataMember]
         public int TagsCount
         {
             get

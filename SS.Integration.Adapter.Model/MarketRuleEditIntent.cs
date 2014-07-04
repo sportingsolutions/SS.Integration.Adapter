@@ -16,9 +16,27 @@ using System;
 
 namespace SS.Integration.Adapter.Model
 {
-    [Serializable]
-    public class RollingSelection : Selection
+    public class MarketRuleEditIntent
     {
-        public double Line { get; set; }
+        public enum OperationType
+        {
+            REMOVE_SELECTIONS,
+            CHANGE_SELECTIONS,
+            ADD_SELECTIONS,
+            CHANGE_DATA
+        }
+
+        public MarketRuleEditIntent(Action<Market> action, OperationType operationType)
+        {
+            if (action == null)
+                throw new ArgumentNullException("action", "action cannot be null");
+
+            Action = action;
+            Operation = operationType;
+        }
+
+        public Action<Market> Action { get; private set; }
+
+        public OperationType Operation { get; private set; }
     }
 }

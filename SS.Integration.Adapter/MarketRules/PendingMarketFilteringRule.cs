@@ -95,7 +95,7 @@ namespace SS.Integration.Adapter.MarketRules
                     mkt_state = oldState[mkt.Id];
 
                 // if a market is now active (for the first time), then we add all the tags
-                // that we have collected and let the markets goes through the filter
+                // that we have collected so far and let the market go through the filter
                 if (mkt.IsActive && (mkt_state != null && mkt_state.IsPending && !mkt_state.HasBeenActive))
                 {
                     GetTags(mkt, mkt_state);
@@ -105,8 +105,8 @@ namespace SS.Integration.Adapter.MarketRules
                 }
                 else if (mkt.IsPending)
                 {
-                    // otherwise, if it is in a pending state, then we mark it as removable.
-                    // This happens if AlwaysExcludePendingMarkets is true, or, if the markets
+                    // otherwise, if the market is in a pending state, then we mark it as removable.
+                    // This happens if AlwaysExcludePendingMarkets is true, or, if the market
                     // has never been active before
                     if (AlwaysExcludePendingMarkets || (mkt_state != null && !mkt_state.HasBeenActive))
                     {

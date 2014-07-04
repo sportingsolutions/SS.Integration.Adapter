@@ -20,7 +20,7 @@ namespace SS.Integration.Adapter.Configuration
 {
     public class Settings : ISettings
     {
-        private const int DEFAULT_FIXTURE_CHECK_FREQUENCY_VALUE = 60000;        
+        private const int DEFAULT_FIXTURE_CHECK_FREQUENCY_VALUE = 60000;
         private const int DEFAULT_FIXTURE_CREATION_CONCURRENCY_VALUE = 20;
         private const int DEFAULT_STARTING_RETRY_DELAY_VALUE = 500;
         private const int DEFAULT_MAX_RETRY_DELAY_VALUE = 65000;
@@ -32,6 +32,7 @@ namespace SS.Integration.Adapter.Configuration
         private const string DEFAULT_EVENT_STATE_FILE_PATH_VALUE = @"C:\eventState.json";
         private const string DEFAULT_MARKET_STATE_MANAGER_DIRECTORY = @"MarketsState";
         private const int DEFAULT_CACHE_EXPIRY_MINUTES_VALUE = 15;
+        private const bool DEFAULT_ENABLE_DELTA_RULE = false;
 
 
         public Settings()
@@ -60,7 +61,7 @@ namespace SS.Integration.Adapter.Configuration
             EchoInterval = string.IsNullOrEmpty(value) ? DEFAULT_ECHO_INTERVAL_VALUE : Convert.ToInt32(value);
 
             value = ConfigurationManager.AppSettings["echoDelay"];
-            EchoDelay = string.IsNullOrEmpty(value) ? DEFAULT_ECHO_DELAY_VALUE: Convert.ToInt32(value);
+            EchoDelay = string.IsNullOrEmpty(value) ? DEFAULT_ECHO_DELAY_VALUE : Convert.ToInt32(value);
 
             value = ConfigurationManager.AppSettings["suspendAllOnShutdown"];
             SuspendAllMarketsOnShutdown = string.IsNullOrEmpty(value) ? DEFAULT_SUSPEND_ALL_MARKETS_ON_SHUTDOWN_VALUE : string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
@@ -76,6 +77,9 @@ namespace SS.Integration.Adapter.Configuration
 
             value = ConfigurationManager.AppSettings["cacheExpiryInMins"];
             CacheExpiryInMins = string.IsNullOrEmpty(value) ? DEFAULT_CACHE_EXPIRY_MINUTES_VALUE : Convert.ToInt32(value);
+
+            value = ConfigurationManager.AppSettings["deltaRuleEnabled"];
+            DeltaRuleEnabled = string.IsNullOrEmpty(value) ? DEFAULT_ENABLE_DELTA_RULE : Convert.ToBoolean(value);
         }
 
         public string MarketFiltersDirectory { get; private set; }
@@ -107,5 +111,8 @@ namespace SS.Integration.Adapter.Configuration
         public string EventStateFilePath { get; private set; }
 
         public int FixtureCreationConcurrency { get; set; }
+
+        public bool DeltaRuleEnabled { get; set; }
+
     }
 }

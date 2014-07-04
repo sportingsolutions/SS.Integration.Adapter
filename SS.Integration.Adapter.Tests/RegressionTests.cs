@@ -62,7 +62,7 @@ namespace SS.Integration.Adapter.Tests
             var feature = new Mock<IFeature>();
             var resource = new Mock<IResourceFacade>();
             var eventstate = new Mock<IEventState>();
-            var provider = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
+            var provider = new StateManager(settings.Object);
 
             Fixture fixture = new Fixture {Id = "ABC", FixtureName = "ABC", Sequence = 2, MatchStatus = "10" };
             fixture.Tags.Add("Sport", "Football");
@@ -101,7 +101,7 @@ namespace SS.Integration.Adapter.Tests
             Adapter adapter = new Adapter(settings.Object, service.Object, plugin.Object)
             {
                 EventState = eventstate.Object,
-                StateProvider = provider.Object
+                StateManager = provider
             };
 
             adapter.Start();
