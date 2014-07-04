@@ -191,108 +191,6 @@ namespace SS.Integration.Adapter.Tests
             eventState.Verify(es => es.UpdateFixtureState(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<MatchStatus>()), Times.Once());
         }
 
-        [Test]
-        [Category("Adapter")]
-        public void CheckStreamHealthWithInvalidSequenceTest()
-        {
-            var resource = new Mock<IResourceFacade>();
-            var connector = new Mock<IAdapterPlugin>();
-            var eventState = new Mock<IEventState>();
-            var settings = new Mock<ISettings>();
-            var marketFilterObjectStore = new StateManager(settings.Object);
-
-
-            resource.Setup(x => x.GetSnapshot()).Returns(() => TestHelper.GetSnapshotJson(1, 5, 0, 30));
-            resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
-            resource.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);
-            resource.Setup(r => r.Content).Returns(new Summary());
-            resource.Setup(r => r.Id).Returns("TestFixtureId");
-
-            connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()));
-
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
-
-            listener.IsFixtureEnded.Should().BeFalse();
-            listener.IsFixtureSetup.Should().BeFalse();
-
-            listener.Start();
-
-            //current sequence is 19, 21 is invalid
-            listener.CheckStreamHealth(30000, 21);
-
-            connector.Verify(c => c.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never());
-
-            resource.Verify(r => r.GetSnapshot(), Times.Once());
-            resource.Verify(r => r.StopStreaming(), Times.Never());
-        }
-
-        [Test]
-        [Category("Adapter")]
-        public void CheckStreamHealthWithShouldBeSynchronisedWithUpdatesTest()
-        {
-
-            var resource = new Mock<IResourceFacade>();
-            var connector = new Mock<IAdapterPlugin>();
-            var eventState = new Mock<IEventState>();
-            var settings = new Mock<ISettings>();
-            var marketFilterObjectStore = new StateManager(settings.Object);
-
-            resource.Setup(x => x.GetSnapshot()).Returns(() => TestHelper.GetSnapshotJson(1, 18, 0, 30));
-            resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
-            resource.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);
-            resource.Setup(r => r.Content).Returns(new Summary());
-            resource.Setup(r => r.Id).Returns("TestFixtureId");
-
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
-
-            connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()));
-
-            // the Check Health needs to be done while update is still being processed
-            connector.Setup(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()))
-                     .Callback(() => listener.CheckStreamHealth(30000, 23));
-
-            listener.IsFixtureEnded.Should().BeFalse();
-            listener.IsFixtureSetup.Should().BeFalse();
-
-            listener.Start();
-
-            var nextSequenceFixtureDeltaJson = TestHelper.GetRawStreamMessage();
-            resource.Raise(r => r.StreamEvent += null, new StreamEventArgs(nextSequenceFixtureDeltaJson));
-
-            connector.Verify(c => c.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(1));
-
-            resource.Verify(r => r.GetSnapshot(), Times.Once);
-            resource.Verify(r => r.StopStreaming(), Times.Never());
-        }
-
-        [Test]
-        [Category("Adapter")]
-        public void CheckStreamHealthWithValidSequenceTest()
-        {
-
-            var resource = new Mock<IResourceFacade>();
-            var connector = new Mock<IAdapterPlugin>();
-            var eventState = new Mock<IEventState>();
-            var settings = new Mock<ISettings>();
-            var marketFilterObjectStore = new StateManager(settings.Object);
-
-            resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
-            resource.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);
-            resource.Setup(r => r.Content).Returns(new Summary());
-            resource.Setup(r => r.Id).Returns("TestFixtureId");
-
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
-
-            listener.IsFixtureEnded.Should().BeFalse();
-            listener.IsFixtureSetup.Should().BeFalse();
-
-            listener.Start();
-
-            listener.CheckStreamHealth(30000, 19);
-
-            connector.Verify(c => c.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never());
-            resource.Verify(r => r.StopStreaming(), Times.Never());
-        }
 
         [Test]
         [Category("Adapter")]
@@ -610,7 +508,6 @@ namespace SS.Integration.Adapter.Tests
             listener.IsFixtureEnded.Should().BeFalse();
 
             connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Once, "StreamListener did not suspend the fixture");
-            listener.CheckStreamHealth(1, 1).Should().BeFalse();
         }
 
         /// <summary>
@@ -669,7 +566,6 @@ namespace SS.Integration.Adapter.Tests
             // so we need to make sure that is only called once
 
             connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Once, "StreamListener did not suspend the fixture");
-            listener.CheckStreamHealth(1, 1).Should().BeFalse();
         }
 
         /// <summary>
@@ -707,7 +603,6 @@ namespace SS.Integration.Adapter.Tests
             listener.IsFixtureEnded.Should().BeFalse();
 
             resource.Verify(x => x.GetSnapshot(), Times.Never);
-            listener.CheckStreamHealth(1, 1).Should().BeFalse();
 
             // STEP 4: now we want to check something similar....that 
             // if StartStreaming raises an exception, then the streamlistener
@@ -722,8 +617,6 @@ namespace SS.Integration.Adapter.Tests
             listener.IsStreaming.Should().BeFalse();
 
             resource.Verify(x => x.GetSnapshot(), Times.Never);
-            listener.CheckStreamHealth(1, 1).Should().BeFalse();
-
         }
 
         /// <summary>
