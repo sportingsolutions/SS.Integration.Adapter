@@ -30,20 +30,20 @@ namespace SS.Integration.Adapter.MarketRules
     {        
         private readonly ILog _logger = LogManager.GetLogger(typeof(MarketsRulesManager).ToString());
 
-        private readonly string _FixtureId;
-        private readonly IObjectProvider<IUpdatableMarketStateCollection> _StateProvider;
-        private readonly IEnumerable<IMarketRule> _Rules;
-        private IUpdatableMarketStateCollection _CurrentTransaction;
+        private readonly string _fixtureId;
+        private readonly IObjectProvider<IUpdatableMarketStateCollection> _stateProvider;
+        private readonly IEnumerable<IMarketRule> _rules;
+        private IUpdatableMarketStateCollection _currentTransaction;
 
 
         internal MarketsRulesManager(Fixture fixture, IObjectProvider<IUpdatableMarketStateCollection> stateProvider, IEnumerable<IMarketRule> filteringRules)
         {
             _logger.DebugFormat("Initiating market rule manager for {0}", fixture);
             
-            _FixtureId = fixture.Id;
-            _Rules = filteringRules;
+            _fixtureId = fixture.Id;
+            _rules = filteringRules;
 
-            _StateProvider = stateProvider;
+            _stateProvider = stateProvider;
 
             _logger.DebugFormat("Market rule manager initiated successfully for {0}", fixture);
 
@@ -51,16 +51,16 @@ namespace SS.Integration.Adapter.MarketRules
 
         public void CommitChanges()
         {
-            if (_CurrentTransaction == null)
+            if (_currentTransaction == null)
                 return;
 
-            _StateProvider.SetObject(_FixtureId, _CurrentTransaction);
-            _CurrentTransaction = null;
+            _stateProvider.SetObject(_fixtureId, _currentTransaction);
+            _currentTransaction = null;
         }
 
         public void RollbackChanges()
         {
-            _CurrentTransaction = null;
+            _currentTransaction = null;
         }
 
         private void BeginTransaction(IUpdatableMarketStateCollection oldState, Fixture fixture)
@@ -73,7 +73,7 @@ namespace SS.Integration.Adapter.MarketRules
             var clone = new MarketStateCollection(oldState);
             clone.Update(fixture, fixture.Tags != null && fixture.Tags.Any());
                
-            _CurrentTransaction = clone;
+            _currentTransaction = clone;
         }
 
         /// <summary>
@@ -93,13 +93,13 @@ namespace SS.Integration.Adapter.MarketRules
             if (fixture == null)
                 throw new ArgumentNullException("fixture");
 
-            if (fixture.Id != _FixtureId)
+            if (fixture.Id != _fixtureId)
             {
-                throw new ArgumentException("MarketsRulesManager has been created for fixtureId=" + _FixtureId +
+                throw new ArgumentException("MarketsRulesManager has been created for fixtureId=" + _fixtureId +
                     " You cannot pass in fixtureId=" + fixture.Id);
             }
 
-            var oldstate = _StateProvider.GetObject(fixture.Id);
+            var oldstate = _stateProvider.GetObject(fixture.Id);
             BeginTransaction(oldstate, fixture);
 
             ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount};
@@ -107,7 +107,7 @@ namespace SS.Integration.Adapter.MarketRules
             // we create a temp dictionary so we can apply the rules in parallel 
             // without accessing (writing to) any shared variables
             Dictionary<IMarketRule, IMarketRuleResultIntent> tmp = new Dictionary<IMarketRule, IMarketRuleResultIntent>();
-            foreach (var rule in _Rules)
+            foreach (var rule in _rules)
                 tmp[rule] = null;
 
 
@@ -116,7 +116,7 @@ namespace SS.Integration.Adapter.MarketRules
             Parallel.ForEach(tmp.Keys.ToList(), options, rule =>
                 {                    
                     _logger.DebugFormat("Filtering markets with rule={0}", rule.Name);
-                    tmp[rule] = rule.Apply(fixture, oldstate, _CurrentTransaction);
+                    tmp[rule] = rule.Apply(fixture, oldstate, _currentTransaction);
                     _logger.DebugFormat("Filtering market with rule={0} completed", rule.Name);
                 }
             );
@@ -245,7 +245,7 @@ namespace SS.Integration.Adapter.MarketRules
                         _logger.DebugFormat("Successfully applied edit actions on {0} of {1} as requested by market rules", mkt, fixture);
 
                         // as we might have changed import details of the market, we need to update the market state
-                        ((IUpdatableMarketState)_CurrentTransaction[mkt.Id]).Update(mkt, false);
+                        ((IUpdatableMarketState)_currentTransaction[mkt.Id]).Update(mkt, false);
 
                         _logger.DebugFormat("Updating market state for {0} of {1}", mkt, fixture);
                     }
@@ -281,19 +281,23 @@ namespace SS.Integration.Adapter.MarketRules
 
         public void Clear()
         {
-            _StateProvider.Remove(_FixtureId);
+            _stateProvider.Remove(_fixtureId);
         }
 
 
         public Fixture GenerateAllMarketsSuspenssion(int sequence = -1)
         {
-            var fixture = new Fixture { Id = _FixtureId, MatchStatus = ((int)MatchStatus.Ready).ToString(), Sequence = sequence };
+            var fixture = new Fixture { Id = _fixtureId, MatchStatus = ((int)MatchStatus.Ready).ToString(), Sequence = sequence };
 
-            if (_CurrentTransaction == null)
+            if (_stateProvider.GetObject(_fixtureId) == null)
                 return fixture;
 
-            foreach (var mkt_id in _CurrentTransaction.Markets)
-                fixture.Markets.Add(CreateSuspendedMarket(_CurrentTransaction[mkt_id]));
+            var marketsCollections = _stateProvider.GetObject(_fixtureId);
+
+            foreach (var mkt_id in marketsCollections.Markets)
+            {
+                fixture.Markets.Add(CreateSuspendedMarket(marketsCollections[mkt_id]));
+            }
 
             return fixture;
         }
