@@ -52,7 +52,7 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// </summary>
         double? Price { get; }
 
-        double Line { get; }
+        double? Line { get; }
 
         #region Tags
 
@@ -89,11 +89,21 @@ namespace SS.Integration.Adapter.Model.Interfaces
         #endregion
 
         /// <summary>
-        /// Determines if the given selection state
+        /// Determines if the given ISelectionState
         /// is equal to the current object
         /// </summary>
         /// <param name="state"></param>
         /// <returns></returns>
         bool IsEqualTo(ISelectionState state);
+
+        /// <summary>
+        /// Determines if the given Selection object
+        /// is equivalent to the current ISelectionState
+        /// object
+        /// </summary>
+        /// <param name="selection"></param>
+        /// <param name="checkTags">If true, tags are also checked</param>
+        /// <returns></returns>
+        bool IsEquivalentTo(Selection selection, bool checkTags);
     }
 }

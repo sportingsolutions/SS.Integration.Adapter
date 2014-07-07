@@ -233,3 +233,49 @@ Scenario: Market rule solver must resolve correctly any conflicts
 	| 9      | Nine               | true   |
 
 
+Scenario: Market rule solver must resolve correctly any edit conflicts
+	Given a fixture with the following markets
+	| Market | Name  | Selections |
+	| 1      | One   | 3          |
+	| 2      | Two   | 2          |
+	| 3      | Three | 1          |
+	| 4      | Four  | 1          |
+	| 5      | Five  | 0          |
+	| 6      | Six   | 0          |
+	| 7      | Seven | 0          |
+	And A market rule with the have the following rules
+	| Rule |
+	| A    |
+	| B    |
+	| C    |
+	| D    |
+	And the market rules return the following intents
+	| Rule | Market | Result |
+	| A    | 1      | CS     |
+	| B    | 1      | AS     |
+	| C    | 1      | RS     |
+	| D    | 1      | CD     |
+	| A    | 2      | CS     |
+	| B    | 2      | RS     |
+	| A    | 3      | CS     |
+	| B    | 3      | CD     |
+	| A    | 4      | AS     |
+	| B    | 4      | RS     |
+	| A    | 5      | AS     |
+	| B    | 5      | CD     |
+	| A    | 6      | CD     |
+	| B    | 6      | RS     |
+	| A    | 7      | RS     |
+	| B    | 7      | RS     |
+	When I apply the rules
+	Then I must see these selection changes
+	| Market | Name   | NumberOfSelections | Names                      |
+	| 1      | OneD   | 4                  | One1A, One2A, One3A, One4B |
+	| 2      | Two    | 2                  | Two1A, Two2A               |
+	| 3      | ThreeB | 1                  | Three1A                    |
+	| 4      | Four   | 1                  | Four1A                     |
+	| 5      | FiveB  | 1                  | Five1A                     |
+	| 6      | SixA   | 0                  |                            |
+	| 7      | Seven  | 0                  |                            |
+
+

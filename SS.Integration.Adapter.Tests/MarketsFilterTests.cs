@@ -17,6 +17,7 @@ using System.Linq;
 using FluentAssertions;
 using Moq;
 using NUnit.Framework;
+using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.MarketRules;
 using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
@@ -36,7 +37,7 @@ namespace SS.Integration.Adapter.Tests
 
         private Mock<Market> _market3;
 
-        private IObjectProvider<IUpdatableMarketStateCollection> _objectProvider;
+        private IStoredObjectProvider _objectProvider;
 
         private IUpdatableMarketStateCollection _marketStorage;
             
@@ -47,8 +48,8 @@ namespace SS.Integration.Adapter.Tests
             _objectProvider = null;
 
             SetUpSnapshotAndMarkets();
-            
-            var objectProviderMock = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
+
+            var objectProviderMock = new Mock<IStoredObjectProvider>();
 
             // if there's a better way of assigning parameter let me know
             objectProviderMock.Setup(x => x.SetObject(It.IsAny<string>(), It.IsAny<IUpdatableMarketStateCollection>()))
@@ -97,7 +98,8 @@ namespace SS.Integration.Adapter.Tests
         {
             // 1) Filter is created with initial snapshot
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
-            var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+
+            var filteredMarkets = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
 
             filteredMarkets.ApplyRules(_snapshot);
             filteredMarkets.CommitChanges();
@@ -117,7 +119,7 @@ namespace SS.Integration.Adapter.Tests
         {
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+            var filteredMarkets = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
 
 
             // 2) AllMarkets are already created and first update arrives
@@ -161,7 +163,7 @@ namespace SS.Integration.Adapter.Tests
         {
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var filteredMarkets = new MarketsRulesManager(_snapshot,_objectProvider, rules);
+            var filteredMarkets = new MarketRulesManager(_snapshot.Id,_objectProvider, rules);
 
             // 2) AllMarkets are already created and first update arrives with a change in name for inactive market2
             _market2.Object.AddOrUpdateTagValue("name", "Market Two with new name");
@@ -178,7 +180,7 @@ namespace SS.Integration.Adapter.Tests
         {
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var filteredMarkets = new MarketsRulesManager(_snapshot,_objectProvider, rules);
+            var filteredMarkets = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
 
             _market2.Setup(x => x.Selections).Returns(GetSelections(true, true));
             filteredMarkets.ApplyRules(_snapshot);
@@ -194,7 +196,7 @@ namespace SS.Integration.Adapter.Tests
         {
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var filteredMarkets = new MarketsRulesManager(_snapshot,_objectProvider, rules);
+            var filteredMarkets = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
 
             _market2.Setup(x => x.Selections).Returns(GetSelections(true, false));    
 
@@ -210,7 +212,7 @@ namespace SS.Integration.Adapter.Tests
         {
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var filteredMarkets = new MarketsRulesManager(_snapshot,_objectProvider, rules);
+            var filteredMarkets = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
             _snapshot.MatchStatus = "40";
             _market2.Object.AddOrUpdateTagValue("name", "newName");
             //_market2.Setup(x => x.Name).Returns("NewName");
@@ -225,7 +227,7 @@ namespace SS.Integration.Adapter.Tests
 
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var marketsFilter = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+            var marketsFilter = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
 
             marketsFilter.ApplyRules(_snapshot);
 
@@ -253,7 +255,7 @@ namespace SS.Integration.Adapter.Tests
         {
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var marketsFilter = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+            var marketsFilter = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
             _snapshot.MatchStatus = "10";
 
             marketsFilter.ApplyRules(_snapshot);
@@ -278,7 +280,7 @@ namespace SS.Integration.Adapter.Tests
         {
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var marketsFilter = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+            var marketsFilter = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
 
             marketsFilter.ApplyRules(_snapshot);
             marketsFilter.CommitChanges();
@@ -304,14 +306,13 @@ namespace SS.Integration.Adapter.Tests
             _snapshot.Markets.Exists(m => m.Id == _market1.Object.Id).Should().BeFalse();
         }
 
-
         [Test]
         public void AutoVoidingEverythingThatWasntVoided()
         {
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
 
             // 1) Filter is created with initial snapshot
-            var marketsFilter = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+            var marketsFilter = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
 
             _market1.Setup(x => x.Selections).Returns(GetSettledSelections());
             
@@ -345,13 +346,13 @@ namespace SS.Integration.Adapter.Tests
         {
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var marketsFilter = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+            var marketsFilter = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
             _market1.Setup(x => x.Selections).Returns(GetSelections(true, false));
             _market2.Setup(x => x.Selections).Returns(GetSelections(true, false));
             _market3.Setup(x => x.Selections).Returns(GetSelections(true, false));
 
             marketsFilter.ApplyRules(_snapshot);
-            marketsFilter.CommitChanges();
+            //marketsFilter.CommitChanges();
 
             _snapshot.Markets.Count.Should().Be(3);
             foreach (var mkt in _snapshot.Markets)
@@ -375,7 +376,7 @@ namespace SS.Integration.Adapter.Tests
         {
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
             // 1) Filter is created with initial snapshot
-            var marketsFilter = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+            var marketsFilter = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
             _market1.Setup(x => x.Selections).Returns(GetSelections(true, false));
             _market2.Setup(x => x.Selections).Returns(GetSelections(true, false));
             _market3.Setup(x => x.Selections).Returns(GetSelections(true, false));
@@ -389,8 +390,37 @@ namespace SS.Integration.Adapter.Tests
             _snapshot.Markets.Count.Should().Be(0);
 
             marketsFilter.ApplyRules(_snapshot);
+
+            var snapshotWithAllMarketsSuspended = marketsFilter.GenerateAllMarketsSuspenssion();
+
+            snapshotWithAllMarketsSuspended.Markets.Count.Should().Be(3);
+            snapshotWithAllMarketsSuspended.Markets.All(m => m.IsSuspended).Should().BeTrue();
+
+            foreach (var mkt in snapshotWithAllMarketsSuspended.Markets)
+            {
+                mkt.Selections.All(x => x.Tradable.HasValue && !x.Tradable.Value).Should().BeTrue();
+            }
+        }
+
+
+        [Test]
+        public void SuspendAllMarketsWithOutCallingApplyRulesTest()
+        {
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
+            // 1) Filter is created with initial snapshot
+            var marketsFilter = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
+            _market1.Setup(x => x.Selections).Returns(GetSelections(true, false));
+            _market2.Setup(x => x.Selections).Returns(GetSelections(true, false));
+            _market3.Setup(x => x.Selections).Returns(GetSelections(true, false));
+
+            marketsFilter.ApplyRules(_snapshot);
             marketsFilter.CommitChanges();
 
+            _snapshot.Markets.Clear();
+            _snapshot.MatchStatus = ((int)MatchStatus.InRunning).ToString();
+
+            _snapshot.Markets.Count.Should().Be(0);
+            
             var snapshotWithAllMarketsSuspended = marketsFilter.GenerateAllMarketsSuspenssion();
 
             snapshotWithAllMarketsSuspended.Markets.Count.Should().Be(3);
@@ -420,11 +450,11 @@ namespace SS.Integration.Adapter.Tests
             List<IMarketRule> rules = new List<IMarketRule> { 
                 VoidUnSettledMarket.Instance, 
                 InactiveMarketsFilteringRule.Instance,
-                new PendingMarketFilteringRule() { AlwaysExcludePendingMarkets = true}
+                new PendingMarketFilteringRule { AlwaysExcludePendingMarkets = true}
             };
 
 
-            var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+            var filteredMarkets = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
 
             
             filteredMarkets.ApplyRules(_snapshot);
@@ -460,7 +490,7 @@ namespace SS.Integration.Adapter.Tests
             };
 
 
-            var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+            var filteredMarkets = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
 
             filteredMarkets.ApplyRules(_snapshot);
 
@@ -496,7 +526,7 @@ namespace SS.Integration.Adapter.Tests
             };
 
 
-            var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+            var filteredMarkets = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
 
             filteredMarkets.ApplyRules(_snapshot);
             filteredMarkets.CommitChanges();
@@ -543,7 +573,7 @@ namespace SS.Integration.Adapter.Tests
             _market2.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
             _market3.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Active, true));
 
-            var filteredMarkets = new MarketsRulesManager(_snapshot, _objectProvider, rules);
+            var filteredMarkets = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
 
 
             filteredMarkets.ApplyRules(_snapshot);
@@ -639,6 +669,242 @@ namespace SS.Integration.Adapter.Tests
         private List<Selection> GetSelections(bool isActive, bool isSuspended)
         {
             return GetSelections(isActive ? SelectionStatus.Active : SelectionStatus.Pending, isSuspended);
+        }
+
+
+        /// <summary>
+        /// I want to test that DeltaRule correctly
+        /// filters out markets in a fixture
+        /// when they don't differ from the state
+        /// stored in the MarketRuleManager
+        /// </summary>
+        [Test]
+        [Category("MarketRule")]
+        [Category("DeltaRule")]
+        public void DeltaRuleTest()
+        {
+            // STEP 1: prepare stub data
+            var settings = new Mock<ISettings>();
+            var stateprovider = new StateManager(settings.Object);
+
+            DeltaRule.Instance.Severity = DeltaRule.DeltaRuleSeverity.REMOVE_SELECTIONS;
+
+            List<IMarketRule> rules = new List<IMarketRule> {DeltaRule.Instance};
+
+            // STEP 2: prepare fixture data
+            // Fixture
+            //  - MKT1
+            //  -- SELN_1_1
+            //  -- SELN_1_2
+            //  - MKT2
+            //  -- SELN_2_1
+            //  -- SELN_2_2
+
+            Fixture fixture = new Fixture {Id = "TestId"};
+            fixture.Tags.Add("Sport", "Football");
+
+            Market mkt = new Market {Id = "MKT1"};
+            mkt.AddOrUpdateTagValue("name", "mkt1");
+            mkt.AddOrUpdateTagValue("type", "type1");
+
+            Selection seln = new Selection {Id = "SELN_1_1"};
+            seln.AddOrUpdateTagValue("name", "seln_1_1");
+            seln.Tradable = true;
+            seln.Status = SelectionStatus.Active;
+            seln.Price = 0.1;
+
+            mkt.Selections.Add(seln);
+
+            seln = new Selection { Id = "SELN_1_2" };
+            seln.AddOrUpdateTagValue("name", "seln_1_2");
+            seln.Tradable = true;
+            seln.Status = SelectionStatus.Active;
+            seln.Price = 0.2;
+
+            mkt.Selections.Add(seln);
+
+            fixture.Markets.Add(mkt);
+
+            mkt = new Market { Id = "MKT2" };
+            mkt.AddOrUpdateTagValue("name", "mkt2");
+            mkt.AddOrUpdateTagValue("type", "type2");
+
+            seln = new Selection { Id = "SELN_2_1" };
+            seln.AddOrUpdateTagValue("name", "seln_2_1");
+            seln.Tradable = false;
+            seln.Status = SelectionStatus.Pending;
+            seln.Price = null;
+
+            mkt.Selections.Add(seln);
+
+            seln = new Selection { Id = "SELN_2_2" };
+            seln.AddOrUpdateTagValue("name", "seln_2_2");
+            seln.Tradable = false;
+            seln.Status = SelectionStatus.Pending;
+            seln.Price = null;
+
+            mkt.Selections.Add(seln);
+
+            fixture.Markets.Add(mkt);
+
+            // STEP 3: invoke the delta rule
+            MarketRulesManager manager = new MarketRulesManager(fixture.Id, stateprovider, rules);
+            
+            manager.ApplyRules(fixture); // this will not have any effect as we don't have any state yet
+
+            manager.CommitChanges();
+
+            manager.ApplyRules(fixture); // here is where the delta rule is invoked (note that we haven't changed anything on the fixture)
+
+            manager.CommitChanges();
+
+            // STEP 4: check the results (delta rule should have removed everything)
+            fixture.Markets.Count.Should().Be(0);
+
+            // STEP 5: change a single field
+            seln.Price = 1.2;
+            fixture.Markets.Add(mkt);
+            mkt.Selections.Count().Should().Be(2);
+
+            // STEP 6: apply the delta rule again
+            manager.ApplyRules(fixture);
+
+            // STEP 7: the market should not have been filtered out
+            fixture.Markets.Count().Should().Be(1);
+            fixture.Markets[0].Selections.Count().Should().Be(1);
+        }
+
+        [Test]
+        [Category("MarketRule")]
+        [Category("DeltaRule")]
+        public void DeltaRuleWithRealFixtureTest()
+        {
+            var settings = new Mock<ISettings>();
+            var state = new StateManager(settings.Object);
+
+            DeltaRule.Instance.Severity = DeltaRule.DeltaRuleSeverity.REMOVE_SELECTIONS;
+            List<IMarketRule> rules = new List<IMarketRule> {DeltaRule.Instance};
+
+            MarketRulesManager manager = new MarketRulesManager("nr7B1f7gjMuk2ggCJoMIizHKrfI", state, rules);
+
+            Fixture fixture = TestHelper.GetFixtureFromResource("rugbydata_snapshot_2");
+
+            int mkt_count = fixture.Markets.Count;
+            mkt_count.Should().BeGreaterThan(0);
+
+            // first apply should do anything as there is no state
+            manager.ApplyRules(fixture);
+
+            fixture.Markets.Count().Should().Be(mkt_count);
+
+            // from now on, we have a state
+            manager.CommitChanges();
+
+            Fixture snapshot = TestHelper.GetFixtureFromResource("rugbydata_snapshot_4");
+
+            manager.ApplyRules(snapshot);
+            manager.CommitChanges();
+
+            // snapshot 2 and snapshot-4 have no difference, so everything should have been
+            // remove by the delta rule
+            snapshot.Markets.Count().Should().Be(0); 
+
+        }
+
+        [Test]
+        [Category("MarketRule")]
+        [Category("DeltaRule")]
+        public void DeltaRuleWithMarketSeverity()
+        {
+            // STEP 1: prepare stub data
+            var settings = new Mock<ISettings>();
+            var stateprovider = new StateManager(settings.Object);
+
+            DeltaRule.Instance.Severity = DeltaRule.DeltaRuleSeverity.REMOVE_MARKETS;
+
+            List<IMarketRule> rules = new List<IMarketRule> { DeltaRule.Instance };
+
+            // STEP 2: prepare fixture data
+            // Fixture
+            //  - MKT1
+            //  -- SELN_1_1
+            //  -- SELN_1_2
+            //  - MKT2
+            //  -- SELN_2_1
+            //  -- SELN_2_2
+
+            Fixture fixture = new Fixture { Id = "TestId" };
+            fixture.Tags.Add("Sport", "Football");
+
+            Market mkt = new Market { Id = "MKT1" };
+            mkt.AddOrUpdateTagValue("name", "mkt1");
+            mkt.AddOrUpdateTagValue("type", "type1");
+
+            Selection seln = new Selection { Id = "SELN_1_1" };
+            seln.AddOrUpdateTagValue("name", "seln_1_1");
+            seln.Tradable = true;
+            seln.Status = SelectionStatus.Active;
+            seln.Price = 0.1;
+
+            mkt.Selections.Add(seln);
+
+            seln = new Selection { Id = "SELN_1_2" };
+            seln.AddOrUpdateTagValue("name", "seln_1_2");
+            seln.Tradable = true;
+            seln.Status = SelectionStatus.Active;
+            seln.Price = 0.2;
+
+            mkt.Selections.Add(seln);
+
+            fixture.Markets.Add(mkt);
+
+            mkt = new Market { Id = "MKT2" };
+            mkt.AddOrUpdateTagValue("name", "mkt2");
+            mkt.AddOrUpdateTagValue("type", "type2");
+
+            seln = new Selection { Id = "SELN_2_1" };
+            seln.AddOrUpdateTagValue("name", "seln_2_1");
+            seln.Tradable = false;
+            seln.Status = SelectionStatus.Pending;
+            seln.Price = null;
+
+            mkt.Selections.Add(seln);
+
+            seln = new Selection { Id = "SELN_2_2" };
+            seln.AddOrUpdateTagValue("name", "seln_2_2");
+            seln.Tradable = false;
+            seln.Status = SelectionStatus.Pending;
+            seln.Price = null;
+
+            mkt.Selections.Add(seln);
+
+            fixture.Markets.Add(mkt);
+
+            // STEP 3: invoke the delta rule
+            MarketRulesManager manager = new MarketRulesManager(fixture.Id, stateprovider, rules);
+
+            manager.ApplyRules(fixture); // this will not have any effect as we don't have any state yet
+
+            manager.CommitChanges();
+
+            manager.ApplyRules(fixture); // here is where the delta rule is invoked (note that we haven't changed anything on the fixture)
+
+            manager.CommitChanges();
+
+            // STEP 4: check the results (delta rule should have removed everything)
+            fixture.Markets.Count.Should().Be(0);
+
+            // STEP 5: change a single field
+            seln.Price = 1.2;
+            fixture.Markets.Add(mkt);
+            mkt.Selections.Count().Should().Be(2);
+
+            // STEP 6: apply the delta rule again
+            manager.ApplyRules(fixture);
+
+            // STEP 7: the market should not have been filtered out
+            fixture.Markets.Count().Should().Be(1);
+            fixture.Markets[0].Selections.Count().Should().Be(2);
         }
     }
 }

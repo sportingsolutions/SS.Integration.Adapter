@@ -69,11 +69,15 @@
     <Compile Include="FixtureJsonHelper.cs" />
     <Compile Include="Interface\IEventState.cs" />
     <Compile Include="Interface\IListener.cs" />
+    <Compile Include="Interface\IMarketRuleManager.cs" />
     <Compile Include="Interface\IReconnectStrategy.cs" />
     <Compile Include="Interface\IResourceFacade.cs" />
     <Compile Include="Interface\IServiceFacade.cs" />
     <Compile Include="Interface\ISettings.cs" />
+    <Compile Include="Interface\IStateManager.cs" />
+    <Compile Include="Interface\IStoredObjectProvider.cs" />
     <Compile Include="Interface\IStoreProvider.cs" />
+    <Compile Include="MarketRules\DeltaRule.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketState.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketStateCollection.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableSelectionState.cs" />
@@ -83,6 +87,7 @@
     <Compile Include="ProcessState\EventState.cs" />
     <Compile Include="ProcessState\FileStoreProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StateManager.cs" />
     <Compile Include="StreamMessage.cs" />
     <Compile Include="MarketRules\InactiveMarketsFilteringRule.cs" />
     <Compile Include="MarketRules\MarketsRulesManager.cs" />

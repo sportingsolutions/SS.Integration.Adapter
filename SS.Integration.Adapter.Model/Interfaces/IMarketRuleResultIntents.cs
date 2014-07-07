@@ -12,23 +12,22 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
 using System.Collections.Generic;
 
 namespace SS.Integration.Adapter.Model.Interfaces
 {
     public interface IMarketRuleResultIntent
     {
-        IEnumerable<Market> MarkedAsRemovable { get; }
+        IEnumerable<Market> RemovableMarkets { get; }
 
-        IEnumerable<Market> MarkedAsUnRemovable { get; }
+        IEnumerable<Market> UnRemovableMarkets { get; }
         
-        IEnumerable<Market> MarkedAsUnEditable { get; }
+        IEnumerable<Market> UnEditableMarkets { get; }
 
-        IEnumerable<Market> Added { get; }
+        IEnumerable<Market> NewMarkets { get; }
 
-        IEnumerable<Market> Edited { get; }
+        IEnumerable<Market> EditedMarkets { get; }
 
-        Action<Market> GetEditingAction(Market Market);
+        MarketRuleEditIntent GetEditingAction(Market Market);
     }
 }

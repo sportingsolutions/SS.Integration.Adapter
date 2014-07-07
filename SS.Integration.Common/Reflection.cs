@@ -14,16 +14,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 // License is located at: http://www.yoda.arachsys.com/csharp/miscutil/licence.txt
 namespace SS.Integration.Common
 {
-    // <summary>
+    /// <summary>
     /// Generic class which copies to its target type from a source
     /// type specified in the Copy method. The types are specified
     /// separately to take advantage of type inference on generic
@@ -31,6 +28,7 @@ namespace SS.Integration.Common
     /// </summary>
     public class Reflection
     {
+        public class IgnoreAttribute : Attribute { }
 
         public static class PropertyCopy<TTarget> where TTarget : class, new()
         {
@@ -42,7 +40,7 @@ namespace SS.Integration.Common
             {
                 return PropertyCopier<TSource>.Copy(source);
             }
-            
+
             /// <summary>
             /// Static class to efficiently store the compiled delegate which can
             /// do the copying. We need a bit of work to ensure that exceptions are
@@ -53,8 +51,8 @@ namespace SS.Integration.Common
             {
                 private static readonly Func<TSource, TTarget> copier;
                 private static readonly Exception initializationException;
-                
-                internal static TTarget Copy(TSource source,bool ignoreReadOnly = false)
+
+                internal static TTarget Copy(TSource source, bool ignoreReadOnly = false)
                 {
                     if (initializationException != null)
                     {
@@ -83,40 +81,46 @@ namespace SS.Integration.Common
 
                 private static Func<TSource, TTarget> BuildCopier()
                 {
-                    ParameterExpression sourceParameter = Expression.Parameter(typeof (TSource), "source");
-                   
+                    ParameterExpression sourceParameter = Expression.Parameter(typeof(TSource), "source");
+
                     var bindings = new List<MemberBinding>();
-                    foreach (PropertyInfo sourceProperty in typeof (TSource).GetProperties())
+                    foreach (PropertyInfo sourceProperty in typeof(TSource).GetProperties())
                     {
+                        
                         if (!sourceProperty.CanRead)
                         {
                             continue;
                         }
-                        PropertyInfo targetProperty = typeof (TTarget).GetProperty(sourceProperty.Name);
+
+                        if (sourceProperty.GetCustomAttribute<IgnoreAttribute>() != null)
+                            continue;
+
+                        PropertyInfo targetProperty = typeof(TTarget).GetProperty(sourceProperty.Name);
                         if (targetProperty == null)
                         {
                             throw new ArgumentException("Property " + sourceProperty.Name +
-                                                        " is not present and accessible in " + typeof (TTarget).FullName);
+                                                        " is not present and accessible in " + typeof(TTarget).FullName);
                         }
 
                         if (!targetProperty.CanWrite && !sourceProperty.CanWrite)
                             continue;
-                        else if(!targetProperty.CanWrite) 
+
+                        if (!targetProperty.CanWrite)
                         {
                             throw new ArgumentException("Property " + sourceProperty.Name + " is not writable in " +
-                                                        typeof (TTarget).FullName);
+                                                        typeof(TTarget).FullName);
                         }
 
                         if (!targetProperty.PropertyType.IsAssignableFrom(sourceProperty.PropertyType))
                         {
                             throw new ArgumentException("Property " + sourceProperty.Name +
-                                                        " has an incompatible type in " + typeof (TTarget).FullName);
+                                                        " has an incompatible type in " + typeof(TTarget).FullName);
                         }
                         bindings.Add(Expression.Bind(targetProperty,
                                                      Expression.Property(sourceParameter, sourceProperty)));
                     }
 
-                    Expression initializer = Expression.MemberInit(Expression.New(typeof (TTarget)), bindings);
+                    Expression initializer = Expression.MemberInit(Expression.New(typeof(TTarget)), bindings);
                     return Expression.Lambda<Func<TSource, TTarget>>(initializer, sourceParameter).Compile();
                 }
 

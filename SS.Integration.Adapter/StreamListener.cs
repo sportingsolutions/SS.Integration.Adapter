@@ -13,15 +13,12 @@
 //limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Interface;
-using SS.Integration.Adapter.MarketRules;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Events;
 using SportingSolutions.Udapi.Sdk.Extensions;
-using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Exceptions;
@@ -46,10 +43,9 @@ namespace SS.Integration.Adapter
         private IResourceFacade _resource;
         private readonly IAdapterPlugin _platformConnector;
         private readonly IEventState _eventState;
-        private readonly IObjectProvider<IUpdatableMarketStateCollection> _stateProvider;
+        private readonly IStateManager _stateManager;
         private readonly IStatsHandle _Stats;
-        
-        private MarketsRulesManager _marketsRuleManager;
+        private readonly IMarketRulesManager _marketsRuleManager;
 
         private int _currentSequence;
         private int _currentEpoch;
@@ -58,7 +54,7 @@ namespace SS.Integration.Adapter
         private bool _isFirstSnapshotProcessed;
         private bool _isProcessingFirstSnapshot;
 
-        public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IObjectProvider<IUpdatableMarketStateCollection> stateProvider)
+        public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IStateManager stateManager)
         {
 
             if (resource == null)
@@ -73,7 +69,7 @@ namespace SS.Integration.Adapter
             _resource = resource;
             _platformConnector = platformConnector;
             _eventState = eventState;
-            _stateProvider = stateProvider;
+            _stateManager = stateManager;
 
             _currentSequence = resource.Content.Sequence;
             _lastSequenceProcessedInSnapshot = -1;
@@ -81,6 +77,8 @@ namespace SS.Integration.Adapter
             _hasRecoveredFromError = true;
             _isFirstSnapshotProcessed = false;
             _isProcessingFirstSnapshot = false;
+
+            _marketsRuleManager = stateManager.CreateNewMarketRuleManager(resource.Id);
 
             IsStreaming = false;
             IsConnecting = false;
@@ -263,10 +261,10 @@ namespace SS.Integration.Adapter
                 _resource.StreamDisconnected -= ResourceOnStreamDisconnected;
                 _resource.StreamEvent -= ResourceOnStreamEvent;
 
-                _resource.StopStreaming();
-
                 IsStreaming = false;
                 IsConnecting = false;
+
+                _resource.StopStreaming();
             }
         }
 
@@ -315,13 +313,6 @@ namespace SS.Integration.Adapter
                 _platformConnector.Suspend(_resource.Id);
                 if (!fixtureLevelOnly)
                 {
-                    if (_marketsRuleManager == null)
-                    {
-                        _logger.WarnFormat("Cannot perform a full suspension of {0} as no state information is currently available", _resource);
-                        return;
-                    }
-
-
                     var suspendedSnapshot = _marketsRuleManager.GenerateAllMarketsSuspenssion(_currentSequence);
                     _platformConnector.ProcessStreamUpdate(suspendedSnapshot);
                 }
@@ -801,7 +792,7 @@ namespace SS.Integration.Adapter
             {
                 _logger.DebugFormat("Applying market rules for {0}", _resource);
 
-                ApplyMarketRules(snapshot);
+                _marketsRuleManager.ApplyRules(snapshot);
 
                 _logger.DebugFormat("Sending snapshot for {0} to plugin with has_epoch_changed={1}", snapshot, hasEpochChanged);
 
@@ -864,26 +855,6 @@ namespace SS.Integration.Adapter
 
             _currentSequence = snapshot.Sequence;
             _Stats.SetValue(StreamListenerKeys.LAST_SEQUENCE, _currentSequence);
-        }
-
-        private void ApplyMarketRules(Fixture fixture)
-        {
-            if (_marketsRuleManager == null)
-            {
-                _logger.DebugFormat("Instantiating market rule manager for {0}", _resource);
-
-                List<IMarketRule> rules = new List<IMarketRule> 
-                { 
-                    InactiveMarketsFilteringRule.Instance,
-                    VoidUnSettledMarket.Instance
-                };
-
-                rules.AddRange(_platformConnector.MarketRules);
-
-                _marketsRuleManager = new MarketsRulesManager(fixture, _stateProvider, rules);
-            }
-
-            _marketsRuleManager.ApplyRules(fixture);
         }
 
         public bool CheckStreamHealth(int maxPeriodWithoutMessage, int receivedSequence)
@@ -949,9 +920,8 @@ namespace SS.Integration.Adapter
                 SuspendAndReprocessSnapshot(true);
 
                 this.IsFixtureEnded = true;
-                
-                if(_marketsRuleManager != null)
-                    _marketsRuleManager.Clear();
+
+                _stateManager.ClearState(_resource.Id);
             }
             catch (Exception e)
             {

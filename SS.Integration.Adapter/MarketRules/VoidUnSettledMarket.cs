@@ -25,15 +25,15 @@ namespace SS.Integration.Adapter.MarketRules
     internal class VoidUnSettledMarket : IMarketRule
     {
         private const string NAME = "VoidUnSettled_Markets";
-        private static readonly ILog _Logger = LogManager.GetLogger(typeof(VoidUnSettledMarket));
-        private static VoidUnSettledMarket _Instance;
+        private static readonly ILog _logger = LogManager.GetLogger(typeof(VoidUnSettledMarket));
+        private static VoidUnSettledMarket _instance;
 
         private VoidUnSettledMarket() { }
 
 
         public static VoidUnSettledMarket Instance
         {
-            get { lock (typeof(VoidUnSettledMarket)) { return _Instance ?? (_Instance = new VoidUnSettledMarket()); } }
+            get { lock (typeof(VoidUnSettledMarket)) { return _instance ?? (_instance = new VoidUnSettledMarket()); } }
         }
 
         public string Name { get { return NAME; } }
@@ -46,7 +46,7 @@ namespace SS.Integration.Adapter.MarketRules
             if (!fixture.IsMatchOver || oldState == null)
                 return result;
 
-            _Logger.DebugFormat("Applying market rule={0} for {1}", Name, fixture);
+            _logger.DebugFormat("Applying market rule={0} for {1}", Name, fixture);
 
             var markets = fixture.Markets.ToDictionary(m => m.Id);
 
@@ -64,7 +64,7 @@ namespace SS.Integration.Adapter.MarketRules
             {
                 if (mkt_state.HasBeenActive)
                 {
-                    _Logger.WarnFormat("market rule={0} => marketId={1} of {2} was priced during the fixture lifetime but has NOT been settled on match over.", 
+                    _logger.WarnFormat("market rule={0} => marketId={1} of {2} was priced during the fixture lifetime but has NOT been settled on match over.", 
                         Name, mkt_state.Id, fixture);
                     continue;
                 }
@@ -72,17 +72,18 @@ namespace SS.Integration.Adapter.MarketRules
                 var market = fixture.Markets.FirstOrDefault(m => m.Id == mkt_state.Id);
                 if (market == null)
                 {
-                    _Logger.DebugFormat("market rule={0} => marketId={1} of {2} is marked to be voided", Name, mkt_state.Id, fixture);
+                    _logger.DebugFormat("market rule={0} => marketId={1} of {2} is marked to be voided", Name, mkt_state.Id, fixture);
 
                     result.AddMarket(CreateSettledMarket(mkt_state));
                 }
                 else
                 {
-                    _Logger.WarnFormat("market rule={0} => marketId={1} of {2} that was in the snapshot but wasn't resulted is marked to be voided", 
+                    _logger.WarnFormat("market rule={0} => marketId={1} of {2} that was in the snapshot but wasn't resulted is marked to be voided", 
                         Name, market.Id, fixture);
 
                     Action<Market> action = x => x.Selections.ForEach(s => s.Status = SelectionStatus.Void);
-                    result.EditMarket(market, action);
+                    MarketRuleEditIntent edit = new MarketRuleEditIntent(action, MarketRuleEditIntent.OperationType.CHANGE_SELECTIONS);
+                    result.EditMarket(market, edit);
                 }
 
             }

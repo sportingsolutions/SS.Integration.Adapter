@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -12,23 +12,16 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
-using System.Collections.Generic;
-
-namespace SS.Integration.Adapter.Model
+namespace SS.Integration.Adapter.Model.Interfaces
 {
-    [Serializable]
-    public class Participant
+    public interface IStateProvider
     {
-        public Participant()
-        {
-            Tags = new Dictionary<string, object>();
-        }
+        IMarketStateCollection GetMarketsState(string fixtureId);
 
-        public int Id { get; set; }
+        T GetPluginFixtureState<T>(string fixtureId) where T : IPluginFixtureState;
 
-        public string Name { get; set; }
+        IPluginFixtureState GetPluginFixtureState(string fixtureId);
 
-        public Dictionary<string, object> Tags { get; private set; }
+        void AddOrUpdatePluginFixtureState(IPluginFixtureState state);
     }
 }

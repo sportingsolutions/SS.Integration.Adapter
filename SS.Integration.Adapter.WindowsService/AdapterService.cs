@@ -21,7 +21,6 @@ using System.ServiceProcess;
 using System.Threading.Tasks;
 using Ninject.Modules;
 using SS.Integration.Adapter.Interface;
-using SS.Integration.Adapter.Plugin.Model.Interface;
 using log4net;
 using Ninject;
 using SS.Integration.Adapter.Model.Interfaces;
@@ -136,7 +135,7 @@ namespace SS.Integration.Adapter.WindowsService
 
             if (PluginBootstrapper != null)
             {
-                _logger.InfoFormat("Plugin Bootstrapper found of type {0}", PluginBootstrapper.GetType().Name);
+                _logger.InfoFormat("Plugin Bootstrapper found of type={0}", PluginBootstrapper.GetType().Name);
                 modules.AddRange(PluginBootstrapper.BootstrapModules);
             }
 
@@ -144,14 +143,13 @@ namespace SS.Integration.Adapter.WindowsService
             _iocContainer.Settings.InjectNonPublic = true;
 
             _iocContainer.Inject(PlatformConnector);
-
-            var connector = PlatformConnector;
-            connector.Initialise();
+            
 
             var settings = _iocContainer.Get<ISettings>();
             var service = _iocContainer.Get<IServiceFacade>();
 
-            _adapter = new Adapter(settings, service, connector);
+            _adapter = new Adapter(settings, service, PlatformConnector);
+
 
             _adapter.Start();
 
