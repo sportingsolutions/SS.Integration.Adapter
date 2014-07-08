@@ -44,9 +44,10 @@ namespace SS.Integration.Adapter.Tests
         [SetUp]
         public void SetUp()
         {
-            SetUpSnapshotAndMarkets();
-
             _marketStorage = null;
+            _objectProvider = null;
+
+            SetUpSnapshotAndMarkets();
 
             var objectProviderMock = new Mock<IStoredObjectProvider>();
 
@@ -351,6 +352,7 @@ namespace SS.Integration.Adapter.Tests
             _market3.Setup(x => x.Selections).Returns(GetSelections(true, false));
 
             marketsFilter.ApplyRules(_snapshot);
+            //marketsFilter.CommitChanges();
 
             _snapshot.Markets.Count.Should().Be(3);
             foreach (var mkt in _snapshot.Markets)
@@ -368,6 +370,70 @@ namespace SS.Integration.Adapter.Tests
                 mkt.Selections.All(x => x.Tradable.HasValue && !x.Tradable.Value).Should().BeTrue();
             }
         }
+
+        [Test]
+        public void SuspendAllMarketsWithEmptySnapshotTest()
+        {
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
+            // 1) Filter is created with initial snapshot
+            var marketsFilter = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
+            _market1.Setup(x => x.Selections).Returns(GetSelections(true, false));
+            _market2.Setup(x => x.Selections).Returns(GetSelections(true, false));
+            _market3.Setup(x => x.Selections).Returns(GetSelections(true, false));
+
+            marketsFilter.ApplyRules(_snapshot);
+            marketsFilter.CommitChanges();
+
+            _snapshot.Markets.Clear();
+            _snapshot.MatchStatus = ((int) MatchStatus.InRunning).ToString();
+
+            _snapshot.Markets.Count.Should().Be(0);
+
+            marketsFilter.ApplyRules(_snapshot);
+
+            var snapshotWithAllMarketsSuspended = marketsFilter.GenerateAllMarketsSuspenssion();
+
+            snapshotWithAllMarketsSuspended.Markets.Count.Should().Be(3);
+            snapshotWithAllMarketsSuspended.Markets.All(m => m.IsSuspended).Should().BeTrue();
+
+            foreach (var mkt in snapshotWithAllMarketsSuspended.Markets)
+            {
+                mkt.Selections.All(x => x.Tradable.HasValue && !x.Tradable.Value).Should().BeTrue();
+            }
+        }
+
+
+        [Test]
+        public void SuspendAllMarketsWithOutCallingApplyRulesTest()
+        {
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
+            // 1) Filter is created with initial snapshot
+            var marketsFilter = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
+            _market1.Setup(x => x.Selections).Returns(GetSelections(true, false));
+            _market2.Setup(x => x.Selections).Returns(GetSelections(true, false));
+            _market3.Setup(x => x.Selections).Returns(GetSelections(true, false));
+
+            marketsFilter.ApplyRules(_snapshot);
+            marketsFilter.CommitChanges();
+
+            _snapshot.Markets.Clear();
+            _snapshot.MatchStatus = ((int)MatchStatus.InRunning).ToString();
+
+            _snapshot.Markets.Count.Should().Be(0);
+            
+            var snapshotWithAllMarketsSuspended = marketsFilter.GenerateAllMarketsSuspenssion();
+
+            snapshotWithAllMarketsSuspended.Markets.Count.Should().Be(3);
+            snapshotWithAllMarketsSuspended.Markets.All(m => m.IsSuspended).Should().BeTrue();
+
+            foreach (var mkt in snapshotWithAllMarketsSuspended.Markets)
+            {
+                mkt.Selections.All(x => x.Tradable.HasValue && !x.Tradable.Value).Should().BeTrue();
+            }
+        }
+
+
+
 
         [Test]
         public void RemovePendingMarketsTest()
