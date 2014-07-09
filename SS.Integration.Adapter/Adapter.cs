@@ -20,7 +20,6 @@ using System.Threading;
 using System.Linq;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
-using SS.Integration.Adapter.Plugin.Model.Interface;
 using SS.Integration.Adapter.ProcessState;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Interfaces;
@@ -61,6 +60,9 @@ namespace SS.Integration.Adapter
             
             var statemanager = new StateManager(settings);
             StateManager = statemanager;
+
+            // we just need the initialisation
+            new SuspensionManager(statemanager, PlatformConnector);
 
             platformConnector.Initialise();
 
@@ -206,15 +208,7 @@ namespace SS.Integration.Adapter
             Parallel.ForEach(
                 _listeners.Values,
                 new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-                listener =>
-                {
-                    if (Settings.SuspendAllMarketsOnShutdown)
-                    {
-                        listener.SuspendMarkets();
-                    }
-
-                    listener.Dispose();
-                });
+                listener => listener.Dispose());
         }
 
         /// <summary>

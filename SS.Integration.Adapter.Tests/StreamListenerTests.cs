@@ -937,7 +937,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object);
+            var provider = new StateManager(settings.Object);
+            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
 
             // Please note Sequence = 1
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
