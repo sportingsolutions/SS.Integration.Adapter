@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+	<VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+  </PropertyGroup>
+
+  <UsingTask TaskName="TransformXml"
+             AssemblyFile="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Web\Microsoft.Web.Publishing.Tasks.dll" />
+
+  <Target Name="TransformAllAppConfigTransformFiles" BeforeTargets="AssignTargetPaths">
+
+    <ItemGroup>
+      <AppConfigTransformFile Include="@(None);@(Content)" Condition="'%(Extension)'=='.octopus'" />  
+    </ItemGroup>
+
+    <TransformXml Source="app.config" Destination="$(OutputPath)\$(TargetFileName).config.transformed" Transform="@(AppConfigTransformFile)"
+                  Condition="'@(AppConfigTransformFile)'!=''" />
+
+  </Target>
+
+</Project>
