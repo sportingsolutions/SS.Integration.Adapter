@@ -585,7 +585,11 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object);
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+
+            var provider = new StateManager(settings.Object);
+
+            var supsensionManager = new SuspensionManager(provider, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
 
@@ -609,7 +613,7 @@ namespace SS.Integration.Adapter.Tests
             listener.IsStreaming.Should().BeFalse();
             listener.IsFixtureEnded.Should().BeFalse();
 
-            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Once, "StreamListener did not suspend the fixture");
+            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once, "StreamListener did not suspend the fixture");
             listener.CheckStreamHealth(1, 1).Should().BeFalse();
         }
 
@@ -628,7 +632,10 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object);
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            var provider = new StateManager(settings.Object);
+
+            var suspensionManager = new SuspensionManager(provider, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
             Fixture update = new Fixture
@@ -668,7 +675,8 @@ namespace SS.Integration.Adapter.Tests
             // suspend is called when the stream listener correctly handles the "IsFixtureEnded" case, 
             // so we need to make sure that is only called once
 
-            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Once, "StreamListener did not suspend the fixture");
+            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once);
+            
             listener.CheckStreamHealth(1, 1).Should().BeFalse();
         }
 
@@ -879,8 +887,11 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object);
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            var provider = new StateManager(settings.Object);
 
+            var suspensionManager = new SuspensionManager(provider, connector.Object);
+            
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
 
             Fixture update = new Fixture
@@ -911,9 +922,8 @@ namespace SS.Integration.Adapter.Tests
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
 
 
-            // STEP 5: check that ProcessStreamUpdate is never called!
-            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
-            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Once);
+            // STEP 5: check that ProcessStreamUpdate is called only once (for suspension)!
+            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once);
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The streamlistener was supposed to acquire a new snapshot");
         }
@@ -937,7 +947,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object);
+            var provider = new StateManager(settings.Object);
+            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
 
             // Please note Sequence = 1
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
@@ -969,9 +980,8 @@ namespace SS.Integration.Adapter.Tests
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
 
 
-            // STEP 5: check that ProcessStreamUpdate is never called!
-            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
-            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Once);
+            // STEP 5: check that ProcessStreamUpdate is called only once (due suspension)!
+            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>( y => y.Markets.Count == 0), It.IsAny<bool>()));
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The streamlistener was supposed to acquire a new snapshot");
         }
@@ -1035,7 +1045,10 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object);
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            var provider = new StateManager(settings.Object);
+
+            var suspensionManager = new SuspensionManager(provider, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
 
@@ -1068,8 +1081,7 @@ namespace SS.Integration.Adapter.Tests
 
 
             // STEP 5: check that ProcessSnapshot is called only twice (first snapshot and when the fixture is ended, we get another one)!
-            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
-            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Once);
+            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once);            
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The StreamListener was supposed to acquire a new snapshot");
         }
@@ -1090,7 +1102,11 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object);
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+
+            var provider = new StateManager(settings.Object);
+
+            var suspensionManager = new SuspensionManager(provider, connector.Object);
 
             resource.Setup(x => x.Id).Returns("ABC");
             resource.Setup(x => x.Content).Returns(new Summary());
@@ -1109,8 +1125,7 @@ namespace SS.Integration.Adapter.Tests
             // STEP 3: check the result
 
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The StreamListener was supposed to acquire 2 snasphots");
-            connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
-            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Exactly(2));
+            connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);            
         }
 
         /// <summary>
@@ -1129,12 +1144,15 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object);
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            var provider = new StateManager(settings.Object);
 
-            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+            var suspensionManager = new SuspensionManager(provider, connector.Object);
+
+            Fixture fixture = new Fixture { Id = "ABCD", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
             Fixture update = new Fixture
             {
-                Id = "ABC",
+                Id = "ABCD",
                 Sequence = 2,
                 MatchStatus = ((int)MatchStatus.MatchOver).ToString(),
                 Epoch = 2,
@@ -1143,7 +1161,7 @@ namespace SS.Integration.Adapter.Tests
 
             StreamMessage message = new StreamMessage { Content = update };
 
-            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Id).Returns("ABCD");
             resource.Setup(x => x.Content).Returns(new Summary());
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
@@ -1161,7 +1179,6 @@ namespace SS.Integration.Adapter.Tests
 
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The StreamListener was supposed to acquire 2 snasphots");
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
-            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Exactly(2));
 
             // here we are in an error state...
 

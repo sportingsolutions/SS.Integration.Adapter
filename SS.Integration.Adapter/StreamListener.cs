@@ -80,10 +80,12 @@ namespace SS.Integration.Adapter
 
             _marketsRuleManager = stateManager.CreateNewMarketRuleManager(resource.Id);
 
+            FixtureId = resource.Id;
             IsStreaming = false;
             IsConnecting = false;
             SequenceOnStreamingAvailable = _currentSequence;
 
+            IsDisposing = false;
             IsErrored = false;
             IsIgnored = false;
             IsFixtureDeleted = false;
@@ -100,6 +102,11 @@ namespace SS.Integration.Adapter
             SetupListener();
         }
 
+
+        public string FixtureId
+        {
+            get; private set;
+        }
 
         /// <summary>
         /// Returns true if the match is over and the fixture is ended.
@@ -231,6 +238,14 @@ namespace SS.Integration.Adapter
             set;
         }
 
+        private bool IsDisposing
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get;
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            set;
+        }
+
         /// <summary>
         /// Starts the listener. 
         /// </summary>
@@ -250,10 +265,7 @@ namespace SS.Integration.Adapter
             if (_resource == null)
                 return;
 
-            _logger.InfoFormat("Stopping Listener for {0} sport={1}", _resource, _resource.Sport);
-
-            if (IsErrored)
-                SuspendMarkets();
+            _logger.InfoFormat("Stopping Listener for {0} sport={1}", FixtureId, _resource.Sport);
 
             if (IsStreaming)
             {
@@ -294,41 +306,15 @@ namespace SS.Integration.Adapter
         }
 
         /// <summary>
-        /// Allows to send a suspension requests for all
-        /// the markets associated to the fixture.
+        /// Allows to send a suspension request
         ///        
         /// </summary>
-        /// <param name="fixtureLevelOnly">If true, the object will send
-        /// a fixture suspend request instead of a set of market suspend requests
-        /// </param>
-        public void SuspendMarkets(bool fixtureLevelOnly = true)
+        /// <param name="reason">The reason of the suspension</param>
+        private void SuspendFixture(SuspensionReason reason)
         {
-            if (_resource == null)
-                return;
-
-            _logger.InfoFormat("Suspending Markets for {0} with fixtureLevelOnly={1}", _resource, fixtureLevelOnly);
-
-            try
-            {
-                _platformConnector.Suspend(_resource.Id);
-                if (!fixtureLevelOnly)
-                {
-                    var suspendedSnapshot = _marketsRuleManager.GenerateAllMarketsSuspenssion(_currentSequence);
-                    _platformConnector.ProcessStreamUpdate(suspendedSnapshot);
-                }
-
-            }
-            catch (AggregateException ex)
-            {
-                foreach (var innerException in ex.InnerExceptions)
-                {
-                    _logger.Error(string.Format("Error while suspending markets for {0}", _resource), innerException);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(string.Format("Error while suspending markets for {0}", _resource), ex);
-            }
+            _logger.InfoFormat("Suspending fixtureId={0} due reason={1}", FixtureId, reason);
+            
+            SuspensionManager.Instance.Suspend(FixtureId, reason);
         }
 
         private void SetupListener()
@@ -441,7 +427,7 @@ namespace SS.Integration.Adapter
                 _hasRecoveredFromError = false;
 
                 // make sure markets are suspended
-                SuspendMarkets(); 
+                SuspendFixture(SuspensionReason.FIXTURE_ERRORED);
                 _logger.ErrorFormat("Streming for {0} is still in an error state even after trying to recover with a full snapshot", _resource);
                 return;
             }
@@ -467,6 +453,12 @@ namespace SS.Integration.Adapter
                 var fixtureDelta = deltaMessage.GetContent<Fixture>();
 
                 _logger.InfoFormat("{0} streaming update arrived", fixtureDelta);
+
+                if (IsDisposing)
+                {
+                    _logger.InfoFormat("StreamListener for {0} is disposing - skipping current update");
+                    return;
+                }
 
                 // if there was an error from which we haven't recovered yet
                 // it might be that with a new sequence, we might recover.
@@ -584,7 +576,12 @@ namespace SS.Integration.Adapter
                 _logger.WarnFormat("Stream disconnected for {0}, suspending markets, will try reconnect soon", _resource);
                 _Stats.AddMessage(GlobalKeys.CAUSE, "Stream disconnected").SetValue(StreamListenerKeys.STATUS, "Error");
 
-                SuspendMarkets();
+                // do not send a suspend request if we are disposing the StreamListener
+                // (otherwise we send it twice)...note that this should not occure
+                // as the event is removed before calling StopStreaming() 
+                // however, there might be other cases where the disconnect event is raised...
+                if(!IsDisposing)
+                    SuspendFixture(SuspensionReason.DISCONNECT_EVENT);
             }
             else
             {
@@ -666,7 +663,7 @@ namespace SS.Integration.Adapter
         /// <param name="hasEpochChanged"></param>
         private void SuspendAndReprocessSnapshot(bool hasEpochChanged = false)
         {
-            SuspendMarkets();
+            SuspendFixture(SuspensionReason.SUSPENSION);
             RetrieveAndProcessSnapshot(hasEpochChanged);
         }
 
@@ -881,7 +878,7 @@ namespace SS.Integration.Adapter
             {
                 _logger.WarnFormat("Stream for {0} has not received a message in span={1}, suspending markets, will try to reconnect soon", 
                     _resource.Id, timespan.TotalSeconds);
-                SuspendMarkets();
+                SuspendFixture(SuspensionReason.SUSPENSION);
                 return false;
             }
 
@@ -896,7 +893,7 @@ namespace SS.Integration.Adapter
 
             try
             {
-                SuspendMarkets(false);
+                SuspendFixture(SuspensionReason.SUSPENSION);
                 _platformConnector.ProcessFixtureDeletion(fixtureDelta);
             }
             catch (Exception e)
@@ -934,7 +931,11 @@ namespace SS.Integration.Adapter
         /// </summary>
         public void Dispose()
         {
+            IsDisposing = true;
+
             Stop();
+
+            SuspendFixture(SuspensionReason.ADAPTER_DISPOSING);
 
             // free the resource instantiated by the SDK
             _resource = null;

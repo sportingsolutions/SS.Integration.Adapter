@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using System.Collections.Generic;
+using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Model.Interfaces
 {
@@ -23,6 +24,21 @@ namespace SS.Integration.Adapter.Model.Interfaces
     /// </summary>
     public interface IMarketStateCollection
     {
+        /// <summary>
+        /// Returns the fixture's id
+        /// </summary>
+        string FixtureId { get; }
+
+        /// <summary>
+        /// Returns the current fixture state
+        /// </summary>
+        MatchStatus FixtureStatus { get; }
+
+        /// <summary>
+        /// Returns the last seen sequence 
+        /// </summary>
+        int FixtureSequence { get; }
+
         /// <summary>
         /// Return true if this collection contains
         /// the market with the given MarketId

@@ -112,7 +112,7 @@ namespace SS.Integration.Adapter.Specs
         [Given(@"MarketStates collection is set up")]
         public void GivenMarketStatesCollectionIsSetUp()
         {
-            _marketStateCollection = new MarketStateCollection();
+            _marketStateCollection = new MarketStateCollection("TEST");
         }
 
 

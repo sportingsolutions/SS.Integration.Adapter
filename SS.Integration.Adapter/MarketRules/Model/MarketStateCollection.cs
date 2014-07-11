@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
+using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.MarketRules.Model
@@ -26,13 +27,19 @@ namespace SS.Integration.Adapter.MarketRules.Model
     {
         private readonly Dictionary<string, IUpdatableMarketState> _States;
 
-        public MarketStateCollection()
+        private MarketStateCollection()
         {
             _States = new Dictionary<string, IUpdatableMarketState>();
         }
 
-        public MarketStateCollection(IUpdatableMarketStateCollection collection)
+        public MarketStateCollection(string fixtureId)
             : this()
+        {
+            FixtureId = fixtureId;
+        }
+
+        public MarketStateCollection(string fixtureId, IUpdatableMarketStateCollection collection)
+            : this(fixtureId)
         {
 
             if (collection == null)
@@ -56,6 +63,24 @@ namespace SS.Integration.Adapter.MarketRules.Model
         }
 
         #region IMarketStateCollection
+
+        public string FixtureId
+        {
+            get;
+            private set;
+        }
+
+        public MatchStatus FixtureStatus
+        {
+            get;
+            private set;
+        }
+
+        public int FixtureSequence
+        {
+            get;
+            private set;
+        }
 
         public bool HasMarket(string MarketId)
         {
@@ -94,6 +119,9 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public void Update(Fixture Fixture, bool fullSnapshot)
         {
+            FixtureSequence = Fixture.Sequence;
+            FixtureStatus = (MatchStatus)Enum.Parse(typeof(MatchStatus), Fixture.MatchStatus);
+
             foreach (var market in Fixture.Markets)
             {
                 IUpdatableMarketState mkt_state = null;
@@ -111,5 +139,6 @@ namespace SS.Integration.Adapter.MarketRules.Model
         }
 
         #endregion
+
     }
 }

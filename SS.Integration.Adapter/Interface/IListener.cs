@@ -33,10 +33,7 @@ namespace SS.Integration.Adapter.Interface
 
         void UpdateResourceState(IResourceFacade resource);
 
-        void SuspendMarkets(bool fixtureLevelOnly = true);
-
         bool CheckStreamHealth(int maxPeriodWithoutMessage, int currentSequence = -1);
 
-        void Dispose();
     }
 }

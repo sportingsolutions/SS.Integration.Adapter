@@ -24,14 +24,14 @@ namespace SS.Integration.Adapter.MarketRules.Model
     [Serializable]
     internal class SelectionState : IUpdatableSelectionState
     {
-        private Dictionary<string, string> _Tags;        
+        private Dictionary<string, string> _tags;        
 
         /// <summary>
         /// DO NOT USE - this constructor is for copying object only
         /// </summary>
         public SelectionState() 
         {
-            _Tags = new Dictionary<string, string>();
+            _tags = new Dictionary<string, string>();
         }
 
         public SelectionState(Selection selection, bool fullSnapshot)
@@ -62,22 +62,22 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public IEnumerable<string> TagKeys
         {
-            get { return _Tags.Keys; }
+            get { return _tags.Keys; }
         }
 
         public string GetTagValue(string tagKey)
         {
-            return _Tags.ContainsKey(tagKey) ? _Tags[tagKey] : null;
+            return _tags.ContainsKey(tagKey) ? _tags[tagKey] : null;
         }
 
         public int TagsCount
         {
-            get { return _Tags.Count; }
+            get { return _tags.Count; }
         }
 
         public bool HasTag(string tagKey)
         {
-            return !string.IsNullOrEmpty(tagKey) && _Tags.ContainsKey(tagKey);
+            return !string.IsNullOrEmpty(tagKey) && _tags.ContainsKey(tagKey);
         }
 
         #endregion
@@ -150,10 +150,10 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
             if (fullSnapshot)
             {
-                _Tags = new Dictionary<string, string>();
+                _tags = new Dictionary<string, string>();
 
                 foreach (var key in selection.TagKeys)
-                    _Tags.Add(key, selection.GetTagValue(key));
+                    _tags.Add(key, selection.GetTagValue(key));
 
                 Name = selection.Name;
             }
@@ -184,7 +184,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
             };
 
             foreach (var key in this.TagKeys)
-                clone._Tags.Add(key, this.GetTagValue(key));
+                clone._tags.Add(key, this.GetTagValue(key));
 
             return clone;
         }

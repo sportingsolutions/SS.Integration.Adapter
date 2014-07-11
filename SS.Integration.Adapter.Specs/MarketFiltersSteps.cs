@@ -230,7 +230,7 @@ namespace SS.Integration.Adapter.Specs
         {
             ScenarioContext.Current.Clear();
 
-            Fixture fixture = new Fixture { Id = "Test" };
+            Fixture fixture = new Fixture { Id = "Test", MatchStatus = "40" };
             ScenarioContext.Current.Add("FIXTURE", fixture);
 
             foreach (var row in table.Rows)

@@ -164,7 +164,6 @@ namespace SS.Integration.Adapter.WindowsService
             _adapterWorkerThread.Wait();
             _adapterWorkerThread.ContinueWith(task => _logger.InfoFormat("Adapter successfully stopped"));
 
-            LogManager.Shutdown();
         }
 
         private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)

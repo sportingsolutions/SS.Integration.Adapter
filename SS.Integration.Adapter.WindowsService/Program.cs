@@ -60,7 +60,7 @@ namespace SS.Integration.Adapter.WindowsService
                 {
                     foreach (var service in servicesToRun)
                     {
-                        method.Invoke(service, null);
+                        onstop.Invoke(service, null);
                     }
                 }
             }

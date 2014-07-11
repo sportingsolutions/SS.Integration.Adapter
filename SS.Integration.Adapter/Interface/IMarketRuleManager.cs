@@ -39,7 +39,5 @@ namespace SS.Integration.Adapter.Interface
         void CommitChanges();
 
         IMarketStateCollection CurrentState { get; }
-
-        Fixture GenerateAllMarketsSuspenssion(int sequence = -1);
     }
 }

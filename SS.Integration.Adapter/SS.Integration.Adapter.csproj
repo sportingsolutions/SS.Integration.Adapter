@@ -96,6 +96,7 @@
     <Compile Include="MarketRules\Model\SelectionState.cs" />
     <Compile Include="StreamListener.cs" />
     <Compile Include="DefaultReconnectStrategy.cs" />
+    <Compile Include="SuspensionManager.cs" />
     <Compile Include="UdapiClient\UdapiResourceFacade.cs" />
     <Compile Include="UdapiClient\UdapiServiceFacade.cs" />
     <Compile Include="UdapiClient\UdapiSessionContainer.cs" />
