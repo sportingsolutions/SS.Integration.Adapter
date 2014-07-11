@@ -55,11 +55,9 @@ namespace SS.Integration.Adapter
 
             BuildDefaultStrategies();
 
-            _error = SuspendInPlayMarketsStrategy;
             _disposing = SuspendInPlayMarketsStrategy;
-            _disconnected = SuspendInPlayMarketsStrategy;
-
-            // default and fixture deleted... we suspend everything
+            _error = SuspendAllMarketsStrategy;
+            _disconnected = SuspendAllMarketsStrategy;
             _default = SuspendAllMarketsStrategy;
             _fixtureDeleted = SuspendAllMarketsStrategy;
 
@@ -183,7 +181,7 @@ namespace SS.Integration.Adapter
                     var fixture = new Fixture 
                     { 
                         Id = x.FixtureId, 
-                        MatchStatus = x.FixtureStatus.ToString(),
+                        MatchStatus = ((int)x.FixtureStatus).ToString(),
                         Sequence = x.FixtureSequence 
                     };
 
@@ -202,7 +200,7 @@ namespace SS.Integration.Adapter
                     var fixture = new Fixture
                     {
                         Id = x.FixtureId,
-                        MatchStatus = x.FixtureStatus.ToString(),
+                        MatchStatus = ((int)x.FixtureStatus).ToString(),
                         Sequence = x.FixtureSequence
                     };
 
