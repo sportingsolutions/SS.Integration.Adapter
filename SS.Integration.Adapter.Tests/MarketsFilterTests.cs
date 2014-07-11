@@ -44,9 +44,10 @@ namespace SS.Integration.Adapter.Tests
         [SetUp]
         public void SetUp()
         {
-            SetUpSnapshotAndMarkets();
-
             _marketStorage = null;
+            _objectProvider = null;
+
+            SetUpSnapshotAndMarkets();
 
             var objectProviderMock = new Mock<IStoredObjectProvider>();
 
@@ -340,10 +341,18 @@ namespace SS.Integration.Adapter.Tests
             _snapshot.Markets.First(m => m.Id == _market3.Object.Id).IsResulted.Should().BeFalse();
         }
 
-        /*[Test]
+        [Test]
         public void SuspendAllMarketsTest()
         {
             List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
+            
+            var settings = new Mock<ISettings>();
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+
+            var stateManager = new StateManager(settings.Object);
+            var plugin = new Mock<IAdapterPlugin>();
+            var suspensionManager = new SuspensionManager(stateManager, plugin.Object);
+
             // 1) Filter is created with initial snapshot
             var marketsFilter = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
             _market1.Setup(x => x.Selections).Returns(GetSelections(true, false));
@@ -351,6 +360,7 @@ namespace SS.Integration.Adapter.Tests
             _market3.Setup(x => x.Selections).Returns(GetSelections(true, false));
 
             marketsFilter.ApplyRules(_snapshot);
+            //marketsFilter.CommitChanges();
 
             _snapshot.Markets.Count.Should().Be(3);
             foreach (var mkt in _snapshot.Markets)
@@ -358,16 +368,89 @@ namespace SS.Integration.Adapter.Tests
                 mkt.Selections.All(y => y.Tradable.HasValue && y.Tradable.Value).Should().BeTrue();
             }
 
-            var snapshotWithAllMarketsSuspended = marketsFilter.GenerateAllMarketsSuspension();
+            suspensionManager.SuspendAllMarketsStrategy(marketsFilter.CurrentState);
 
-            snapshotWithAllMarketsSuspended.Markets.Count.Should().Be(3);
-            snapshotWithAllMarketsSuspended.Markets.All(m => m.IsSuspended).Should().BeTrue();
+            plugin.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
+                    y => y.Markets.Count == 3 &&
+                        // check selections tradability on each market
+                    !y.Markets.Any(z => z.Selections.Any(k => !k.Tradable.HasValue || k.Tradable.Value))),
+                    It.IsAny<bool>()));
+        }
 
-            foreach (var mkt in snapshotWithAllMarketsSuspended.Markets)
-            {
-                mkt.Selections.All(x => x.Tradable.HasValue && !x.Tradable.Value).Should().BeTrue();
-            }
-        }*/
+        [Test]
+        public void SuspendAllMarketsWithEmptySnapshotTest()
+        {
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
+
+            var settings = new Mock<ISettings>();
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+
+            var stateManager = new StateManager(settings.Object);
+            var plugin = new Mock<IAdapterPlugin>();
+            var suspensionManager = new SuspensionManager(stateManager, plugin.Object);
+
+            // 1) Filter is created with initial snapshot
+            var marketsFilter = new MarketRulesManager(_snapshot.Id, stateManager, rules);
+            _market1.Setup(x => x.Selections).Returns(GetSelections(true, false));
+            _market2.Setup(x => x.Selections).Returns(GetSelections(true, false));
+            _market3.Setup(x => x.Selections).Returns(GetSelections(true, false));
+
+            marketsFilter.ApplyRules(_snapshot);
+            marketsFilter.CommitChanges();
+
+            var mkt_count = _snapshot.Markets.Count;
+            _snapshot.Markets.Clear();
+            _snapshot.MatchStatus = ((int) MatchStatus.InRunning).ToString();
+
+            _snapshot.Markets.Count.Should().Be(0);
+
+            marketsFilter.ApplyRules(_snapshot);
+
+            suspensionManager.SuspendAllMarketsStrategy(marketsFilter.CurrentState);
+
+            plugin.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
+                    y => y.Markets.Count == mkt_count &&
+                    // check selections tradability on each market
+                    !y.Markets.Any(z => z.Selections.Any(k => !k.Tradable.HasValue || k.Tradable.Value))),
+                    It.IsAny<bool>()));
+        }
+
+        [Test]
+        public void SuspendAllMarketsWithOutCallingApplyRulesTest()
+        {
+            List<IMarketRule> rules = new List<IMarketRule> { VoidUnSettledMarket.Instance, InactiveMarketsFilteringRule.Instance };
+
+            var settings = new Mock<ISettings>();
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+
+            var stateManager = new StateManager(settings.Object);
+            var plugin = new Mock<IAdapterPlugin>();
+            var suspensionManager = new SuspensionManager(stateManager, plugin.Object);
+
+            // 1) Filter is created with initial snapshot
+            var marketsFilter = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
+            _market1.Setup(x => x.Selections).Returns(GetSelections(true, false));
+            _market2.Setup(x => x.Selections).Returns(GetSelections(true, false));
+            _market3.Setup(x => x.Selections).Returns(GetSelections(true, false));
+
+            marketsFilter.ApplyRules(_snapshot);
+            marketsFilter.CommitChanges();
+
+            var mkt_count = _snapshot.Markets.Count;
+
+            _snapshot.Markets.Clear();
+            _snapshot.MatchStatus = ((int)MatchStatus.InRunning).ToString();
+
+            _snapshot.Markets.Count.Should().Be(0);
+
+            suspensionManager.SuspendAllMarketsStrategy(marketsFilter.CurrentState);
+
+            plugin.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
+                    y => y.Markets.Count == mkt_count &&
+                        // check selections tradability on each market
+                    !y.Markets.Any(z => z.Selections.Any(k => !k.Tradable.HasValue || k.Tradable.Value))),
+                    It.IsAny<bool>()));
+        }
 
         [Test]
         public void RemovePendingMarketsTest()

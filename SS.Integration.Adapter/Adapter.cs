@@ -78,7 +78,8 @@ namespace SS.Integration.Adapter
             _creationTasks = new Task[settings.FixtureCreationConcurrency];
 
             _Stats = StatsManager.Instance["Adapter"].GetHandle();
-            _Stats.SetValue(AdapterKeys.STATUS, "Created");          
+            _Stats.SetValue(AdapterKeys.STATUS, "Created");
+
         }
 
 
@@ -159,6 +160,7 @@ namespace SS.Integration.Adapter
                     _trigger = null;
 
                     _creationQueueCancellationToken.Cancel(false);
+                    Task.WaitAll(_creationTasks);
 
                     if (_listeners != null)
                     {
@@ -170,16 +172,18 @@ namespace SS.Integration.Adapter
                         {
                             foreach (var exception in ax.InnerExceptions)
                             {
-                                _logger.Error(exception);
+                                _logger.Error("Error during listener disposing", exception);
                             }
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.Error("Error during listener disposing", e);
                         }
 
                         _listeners.Clear();
                     }
 
                     EventState.WriteToFile();
-
-                    Task.WaitAll(_creationTasks);
 
                     _resourceCreationQueue.Dispose();
                     _creationQueueCancellationToken.Dispose();

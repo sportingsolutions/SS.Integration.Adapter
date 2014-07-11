@@ -17,7 +17,9 @@ using System;
 using System.Linq;
 using FluentAssertions;
 using Moq;
+using Newtonsoft.Json;
 using NUnit.Framework;
+using SportingSolutions.Udapi.Sdk.Events;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
@@ -179,7 +181,11 @@ namespace SS.Integration.Adapter.Tests
 
         }
 
-
+        /// <summary>
+        /// I want to test that when the StreamListener
+        /// receives a disconnect event, it suspends
+        /// the fixture
+        /// </summary>
         [Test]
         [Category("Suspension")]
         public void SuspendFixtureOnDisconnectTest()
@@ -200,6 +206,7 @@ namespace SS.Integration.Adapter.Tests
 
             // STEP 3: prepare the fixture data
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+            fixture.Tags.Add("Sport", "Football"); // add at least one tags, so the MarketsRulesManager recognize it as a full-snapshot
 
             fixture.Markets.Add(new Market("MKT-1"));
             var mkt = new Market("MKT-2");
@@ -231,6 +238,214 @@ namespace SS.Integration.Adapter.Tests
                      y.Markets.FirstOrDefault(z => z.Id == "MKT-1") != null &&
                      y.Markets.FirstOrDefault(z => z.Id == "MKT-2") == null),
                 It.IsAny<bool>()));
+
+        }
+
+        /// <summary>
+        /// I want to test that when the StreamListener
+        /// receives a disconnect event, and the fixture
+        /// is ended, it does not suspend
+        /// the fixture
+        /// </summary>
+        [Test]
+        [Category("Suspension")]
+        public void DoNotSuspendFixtureOnDisconnectIfMatchOverTest()
+        {
+            // STEP 1: prepare stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+            var provider = new StateManager(settings.Object);
+
+
+            // STEP 2: make sure that we use the SuspendInPlayMarketsStrategy
+            // if a suspension request with reason = disconnect arrives
+            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
+
+            suspension.RegisterAction(suspension.SuspendInPlayMarketsStrategy, SuspensionReason.DISCONNECT_EVENT);
+
+            // STEP 3: prepare the fixture data
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+            fixture.Tags.Add("Sport", "Football"); // add at least one tags, so the MarketsRulesManager recognize it as a full-snapshot
+
+            fixture.Markets.Add(new Market("MKT-1"));
+            var mkt = new Market("MKT-2");
+            mkt.AddOrUpdateTagValue("traded_in_play", "false");
+            fixture.Markets.Add(mkt);
+
+            // ...and MatchStatus=MatchOver
+            Fixture update = new Fixture
+            {
+                Id = "ABC",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.MatchOver).ToString(),
+                Epoch = 2,
+                LastEpochChangeReason = new[] {(int)EpochChangeReason.MatchStatus}
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+
+
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 4: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            // STEP 5: send the update
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+
+            // STEP 6: check the result, note tha MKT-2 is not in-play
+            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
+                y => y.Id == "ABC" &&
+                     y.Markets.Count == 2 &&
+                     y.Markets.FirstOrDefault(z => z.Id == "MKT-1") != null &&
+                     y.Markets.FirstOrDefault(z => z.Id == "MKT-2") != null),
+                It.IsAny<bool>()));
+
+        }
+
+        /// <summary>
+        /// I want to test that when the StreamListener
+        /// receives a disconnect event, and the fixture
+        /// is ended, it does not suspend
+        /// the fixture
+        /// </summary>
+        [Test]
+        [Category("Suspension")]
+        public void DoNotSuspendFixtureOnDisconeectIfDeletedTest()
+        {
+            // STEP 1: prepare stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+            var provider = new StateManager(settings.Object);
+
+
+            // STEP 2: make sure that we use the SuspendInPlayMarketsStrategy
+            // if a suspension request with reason = disconnect arrives
+            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
+
+            suspension.RegisterAction(suspension.SuspendInPlayMarketsStrategy, SuspensionReason.DISCONNECT_EVENT);
+
+            // STEP 3: prepare the fixture data
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+            fixture.Tags.Add("Sport", "Football"); // add at least one tags, so the MarketsRulesManager recognize it as a full-snapshot
+
+            fixture.Markets.Add(new Market("MKT-1"));
+            var mkt = new Market("MKT-2");
+            mkt.AddOrUpdateTagValue("traded_in_play", "false");
+            fixture.Markets.Add(mkt);
+
+            // ...and MatchStatus=MatchOver
+            Fixture update = new Fixture
+            {
+                Id = "ABC",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.InRunning).ToString(),
+                Epoch = 2,
+                LastEpochChangeReason = new[] {(int)EpochChangeReason.Deleted}
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+
+
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.StopStreaming()).Raises(x => x.StreamDisconnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 4: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            // STEP 5: send the update
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+
+            // STEP 6: check the result, note tha MKT-2 is not in-play
+            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
+                y => y.Id == "ABC" &&
+                     y.Markets.Count == 2 &&
+                     y.Markets.FirstOrDefault(z => z.Id == "MKT-1") != null &&
+                     y.Markets.FirstOrDefault(z => z.Id == "MKT-2") != null),
+                It.IsAny<bool>()));
+
+        }
+
+
+        /// <summary>
+        /// I want to test that when a StreamListener
+        /// object is disposed, a proper suspension 
+        /// request is sent
+        /// </summary>
+        [Test]
+        [Category("Suspension")]
+        public void SuspendFixtureOnStreamListenerDisposeTest()
+        {
+            // STEP 1: prepare stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+            var provider = new StateManager(settings.Object);
+
+
+            // STEP 2: make sure that we use the SuspendInPlayMarketsStrategy
+            // if a suspension request with reason = disconnect arrives
+            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
+
+            suspension.RegisterAction(suspension.SuspendInPlayMarketsStrategy, SuspensionReason.DISCONNECT_EVENT);
+
+            // STEP 3: prepare the fixture data
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+            fixture.Tags.Add("Sport", "Football"); // add at least one tags, so the MarketsRulesManager recognize it as a full-snapshot
+
+            fixture.Markets.Add(new Market("MKT-1"));
+            var mkt = new Market("MKT-2");
+            mkt.AddOrUpdateTagValue("traded_in_play", "false");
+            fixture.Markets.Add(mkt);
+
+
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.StopStreaming()).Raises(x => x.StreamDisconnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 4: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
+
+            listener.Dispose();
+
+            // STEP 5: check the result, note tha MKT-2 is not in-play
+            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
+                y => y.Id == "ABC" &&
+                     y.Markets.Count == 1 &&
+                     y.Markets.FirstOrDefault(z => z.Id == "MKT-1") != null),
+                It.IsAny<bool>()), Times.Once);
 
         }
     }

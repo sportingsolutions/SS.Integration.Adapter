@@ -25,7 +25,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
     internal class MarketState : IUpdatableMarketState
     {
         private readonly Dictionary<string, IUpdatableSelectionState> _selectionStates;
-        private Dictionary<string, string> _Tags;
+        private Dictionary<string, string> _tags;
 
         /// <summary>
         /// DO NOT USE it's for copying object purpose only!
@@ -33,7 +33,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
         public MarketState() 
         {
             _selectionStates = new Dictionary<string, IUpdatableSelectionState>();
-            _Tags = new Dictionary<string, string>();
+            _tags = new Dictionary<string, string>();
         }
 
         internal MarketState(string Id)
@@ -106,23 +106,23 @@ namespace SS.Integration.Adapter.MarketRules.Model
         {
             get
             {
-                return _Tags.Keys;
+                return _tags.Keys;
             }
         }
 
         public bool HasTag(string TagKey)
         {
-            return _Tags.ContainsKey(TagKey);
+            return _tags.ContainsKey(TagKey);
         }
 
         public string GetTagValue(string TagKey)
         {
-            return _Tags.ContainsKey(TagKey) ? _Tags[TagKey] : null;
+            return _tags.ContainsKey(TagKey) ? _tags[TagKey] : null;
         }
 
         public int TagsCount
         {
-            get { return _Tags.Count; }
+            get { return _tags.Count; }
         }
 
         #endregion
@@ -243,12 +243,12 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
             if (fullSnapshot)
             {
-                _Tags = new Dictionary<string, string>();
+                _tags = new Dictionary<string, string>();
                 foreach (var key in market.TagKeys)
-                    _Tags.Add(key, market.GetTagValue(key));
+                    _tags.Add(key, market.GetTagValue(key));
 
-                if (_Tags.ContainsKey("traded_in_play"))
-                    IsTradedInPlay = string.Equals(_Tags["traded_in_play"], "true", StringComparison.OrdinalIgnoreCase);
+                if (_tags.ContainsKey("traded_in_play"))
+                    IsTradedInPlay = string.Equals(_tags["traded_in_play"], "true", StringComparison.OrdinalIgnoreCase);
             }
 
             if (!HasBeenActive && IsActive)
@@ -274,7 +274,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
             };
 
             foreach(var key in this.TagKeys)
-                clone._Tags.Add(key, this.GetTagValue(key));
+                clone._tags.Add(key, this.GetTagValue(key));
 
             foreach (var seln in this._selectionStates.Values)
                 clone._selectionStates.Add(seln.Id, seln.Clone());

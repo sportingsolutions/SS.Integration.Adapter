@@ -56,10 +56,12 @@ namespace SS.Integration.Adapter
             BuildDefaultStrategies();
 
             _error = SuspendInPlayMarketsStrategy;
-            _fixtureDeleted = SuspendInPlayMarketsStrategy;
             _disposing = SuspendInPlayMarketsStrategy;
             _disconnected = SuspendInPlayMarketsStrategy;
-            _default = SuspendInPlayMarketsStrategy;
+
+            // default and fixture deleted... we suspend everything
+            _default = SuspendAllMarketsStrategy;
+            _fixtureDeleted = SuspendAllMarketsStrategy;
 
             // Not really a singleton
             Instance = this;
@@ -212,7 +214,7 @@ namespace SS.Integration.Adapter
                         // to suspend more markets, than less
                         IMarketState state = x[mkt_id];
                         if (state.HasTag("traded_in_play") && 
-                            state.GetTagValue("traded_in_play") == "false")
+                            string.Equals(state.GetTagValue("traded_in_play"), "false", StringComparison.OrdinalIgnoreCase))
                         {
                             continue;
                         }

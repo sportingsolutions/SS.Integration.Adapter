@@ -85,6 +85,7 @@ namespace SS.Integration.Adapter
             IsConnecting = false;
             SequenceOnStreamingAvailable = _currentSequence;
 
+            IsDisposing = false;
             IsErrored = false;
             IsIgnored = false;
             IsFixtureDeleted = false;
@@ -237,6 +238,14 @@ namespace SS.Integration.Adapter
             set;
         }
 
+        private bool IsDisposing
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get;
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            set;
+        }
+
         /// <summary>
         /// Starts the listener. 
         /// </summary>
@@ -306,36 +315,6 @@ namespace SS.Integration.Adapter
             _logger.InfoFormat("Suspending fixtureId={0} due reason={1}", FixtureId, reason);
             
             SuspensionManager.Instance.Suspend(FixtureId, reason);
-
-
-            /*
-            if (_resource == null)
-                return;
-
-            _logger.InfoFormat("Suspending Markets for {0} with fixtureLevelOnly={1}", _resource, fixtureLevelOnly);
-
-            try
-            {
-                _platformConnector.Suspend(_resource.Id);
-                if (!fixtureLevelOnly)
-                {
-                    var suspendedSnapshot = _marketsRuleManager.GenerateAllMarketsSuspension(_currentSequence);
-                    _platformConnector.ProcessStreamUpdate(suspendedSnapshot);
-                }
-
-            }
-            catch (AggregateException ex)
-            {
-                foreach (var innerException in ex.InnerExceptions)
-                {
-                    _logger.Error(string.Format("Error while suspending markets for {0}", _resource), innerException);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(string.Format("Error while suspending markets for {0}", _resource), ex);
-            }
-             */
         }
 
         private void SetupListener()
@@ -475,6 +454,12 @@ namespace SS.Integration.Adapter
 
                 _logger.InfoFormat("{0} streaming update arrived", fixtureDelta);
 
+                if (IsDisposing)
+                {
+                    _logger.InfoFormat("StreamListener for {0} is disposing - skipping current update");
+                    return;
+                }
+
                 // if there was an error from which we haven't recovered yet
                 // it might be that with a new sequence, we might recover.
                 // So in this case, ignore the update and grab a new 
@@ -591,7 +576,12 @@ namespace SS.Integration.Adapter
                 _logger.WarnFormat("Stream disconnected for {0}, suspending markets, will try reconnect soon", _resource);
                 _Stats.AddMessage(GlobalKeys.CAUSE, "Stream disconnected").SetValue(StreamListenerKeys.STATUS, "Error");
 
-                SuspendFixture(SuspensionReason.DISCONNECT_EVENT);
+                // do not send a suspend request if we are disposing the StreamListener
+                // (otherwise we send it twice)...note that this should not occure
+                // as the event is removed before calling StopStreaming() 
+                // however, there might be other cases where the disconnect event is raised...
+                if(!IsDisposing)
+                    SuspendFixture(SuspensionReason.DISCONNECT_EVENT);
             }
             else
             {
@@ -941,6 +931,8 @@ namespace SS.Integration.Adapter
         /// </summary>
         public void Dispose()
         {
+            IsDisposing = true;
+
             Stop();
 
             SuspendFixture(SuspensionReason.ADAPTER_DISPOSING);
