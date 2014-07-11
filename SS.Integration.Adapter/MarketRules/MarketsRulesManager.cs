@@ -20,7 +20,6 @@ using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
-using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 using log4net;
 
@@ -97,21 +96,6 @@ namespace SS.Integration.Adapter.MarketRules
             MergeIntents(fixture, tmp);
         }
 
-        public Fixture GenerateAllMarketsSuspenssion(int sequence = -1)
-        {
-            var fixture = new Fixture { Id = _fixtureId, MatchStatus = ((int)MatchStatus.Ready).ToString(), Sequence = sequence };
-
-            if (CurrentState == null)
-                return fixture;
-            
-            foreach (var mkt_id in CurrentState.Markets)
-            {
-                fixture.Markets.Add(CreateSuspendedMarket(CurrentState[mkt_id]));
-            }
-
-            return fixture;
-        }
-        
         public IMarketStateCollection CurrentState
         {
             get { return _currentTransaction ?? _stateProvider.GetObject(_fixtureId); }
@@ -131,7 +115,7 @@ namespace SS.Integration.Adapter.MarketRules
             // and then updating it with the new info coming within
             // the snapshot
 
-            var clone = new MarketStateCollection(oldState);
+            var clone = new MarketStateCollection(fixture.Id, oldState);
             clone.Update(fixture, fixture.Tags != null && fixture.Tags.Any());
                
             _currentTransaction = clone;
@@ -318,15 +302,5 @@ namespace SS.Integration.Adapter.MarketRules
                 }
             }
         }
-
-        private static Market CreateSuspendedMarket(IMarketState marketState)
-        {
-            var market = new Market (marketState.Id) { IsSuspended = true };
-            foreach (var seln in marketState.Selections)
-                market.Selections.Add(new Selection { Id = seln.Id, Tradable = false });
-
-            return market;
-        }
-
     }
 }

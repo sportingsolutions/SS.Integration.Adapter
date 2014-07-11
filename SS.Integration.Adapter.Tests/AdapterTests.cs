@@ -22,7 +22,6 @@ using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Adapter.Plugin.Model.Interface;
 
 namespace SS.Integration.Adapter.Tests
 {
@@ -87,7 +86,7 @@ namespace SS.Integration.Adapter.Tests
             connector.Verify(c => c.Suspend(It.IsAny<string>()), Times.Never());
         }
 
-        [Category("Adapter")]
+        /*[Category("Adapter")]
         [Ignore]
         public void ShouldStartAndStopWithFewSportsAndFixtures()
         {
@@ -157,7 +156,7 @@ namespace SS.Integration.Adapter.Tests
             eventState.Verify(es => es.RemoveInactiveFixtures("Football", It.IsAny<List<IResourceFacade>>()), Times.Once());
             eventState.Verify(es => es.RemoveInactiveFixtures("Tennis", It.IsAny<List<IResourceFacade>>()), Times.Once());
             eventState.Verify(es => es.RemoveInactiveFixtures("Rugby", It.IsAny<List<IResourceFacade>>()), Times.Never());
-        }
+        }*/
 
         [Test]
         [Category("Adapter")]

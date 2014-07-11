@@ -16,6 +16,7 @@ namespace SS.Integration.Adapter.Model.Interfaces
 {
     public interface IStateProvider
     {
+
         IMarketStateCollection GetMarketsState(string fixtureId);
 
         T GetPluginFixtureState<T>(string fixtureId) where T : IPluginFixtureState;
