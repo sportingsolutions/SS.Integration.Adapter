@@ -102,7 +102,7 @@
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="App.Transform.octopus">
+    <None Include="App.octopus.config">
       <DependentUpon>App.config</DependentUpon>
       <SubType>Designer</SubType>
     </None>
@@ -142,11 +142,18 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <Import Project="$(SolutionDir)\transformation.targets" Condition="Exists('$(SolutionDir)\transformation.targets')" />
+  
+  <Target Name="AfterBuild">
+	<Copy SourceFiles="app.octopus.config" DestinationFiles="$(OutputPath)\$(TargetFileName).octopus.config" />
+  </Target>
+  
+  
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>
   <Target Name="AfterBuild">
+	<Copy SourceFiles="app.octopus.config" DestinationFiles="$(OutputPath)\$(TargetFileName).octopus.config" />
   </Target>
   -->
 </Project>

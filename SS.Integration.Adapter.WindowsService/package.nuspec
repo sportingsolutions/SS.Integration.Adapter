@@ -13,7 +13,7 @@
 	</metadata>
 	<files>
 		<file src="bin\Release\**\*.*" exclude="**\*.pdb;**\*.xml;**\*.vshost.*;**\*.config" target="lib\net45" />
-		<file src="bin\Release\SS.Integration.Adapter.WindowsService.exe.config"  target="lib\net45" />
+		<file src="bin\Release\SS.Integration.Adapter.WindowsService.exe*"  target="lib\net45" />
 		<file src="..\LICENCE.txt" target="lib\net45" />
 	</files>
 </package>
