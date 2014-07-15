@@ -324,7 +324,7 @@ namespace SS.Integration.Adapter
             _resource.StreamEvent += ResourceOnStreamEvent;
         }
 
-        private void StartStreaming()
+        private void  StartStreaming()
         {
   
             // Only start streaming if fixture is not Setup/Ready
@@ -835,7 +835,7 @@ namespace SS.Integration.Adapter
 
         private void UpdateState(Fixture snapshot, bool isSnapshot = false)
         {
-            _logger.DebugFormat("Updating state for {0} with isSnapshot={1}", _resource, isSnapshot);
+            _logger.DebugFormat("Updating state for {0} with isSnapshot={1}", snapshot, isSnapshot);
 
             _marketsRuleManager.CommitChanges();
 

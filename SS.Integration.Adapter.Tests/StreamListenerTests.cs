@@ -13,6 +13,8 @@
 //limitations under the License.
 
 using System;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -32,6 +34,15 @@ namespace SS.Integration.Adapter.Tests
     {
 
         public string _fixtureId = "y9s1fVzAoko805mzTnnTRU_CQy8";
+
+        [SetUp]
+        public void SetupSuspensionManager()
+        {
+            var stateManager = new Mock<IStateProvider>();
+            var plugin = new Mock<IAdapterPlugin>();
+
+            new SuspensionManager(stateManager.Object, plugin.Object);
+        }
 
         [Category("Adapter")]
         [Test]
@@ -1035,6 +1046,76 @@ namespace SS.Integration.Adapter.Tests
             connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Never);
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once);
             resource.Verify(x => x.GetSnapshot(), Times.Once, "The streamlistener was NOT supposed to acquire a new snapshot");
+        }
+
+        /// <summary>
+        /// I want to test stream listener generates full suspenssion 
+        /// even if it missed fixture deletion
+        /// </summary>
+        [Test]
+        [Category("StreamListener")]
+        public void GenerateSuspensionEvenWhenMissedDeletion()
+        {
+
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+            IStateManager provider = new StateManager(settings.Object);
+
+            var firstSnapshot = TestHelper.GetFixtureFromResource("rugbydata_snapshot_2");
+            var secondSnapshot = TestHelper.GetFixtureFromResource("rugbydata_snapshot_withRemovedMarkets_5");
+
+            var update = new Fixture
+            {
+                Id = firstSnapshot.Id,
+                //invalid sequence
+                Sequence = firstSnapshot.Sequence + 2,
+                MatchStatus = firstSnapshot.MatchStatus
+            };
+            
+
+            StreamMessage message = new StreamMessage { Content =  update };
+            
+            resource.Setup(x => x.Id).Returns(firstSnapshot.Id);
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.SetupSequence(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(firstSnapshot)).Returns(FixtureJsonHelper.ToJson(secondSnapshot));
+            
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            // STEP 4: send the update containing a wrong sequence number
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+            
+
+            
+            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
+            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Never);
+            connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The streamlistener is supposed to send second");
+
+            var marketComparer = new GenericComparerHelper<Market, string>(m => m.Id);
+            
+            var marketsRemoved = firstSnapshot.Markets.Where(m => !secondSnapshot.Markets.Exists(m2 => m.Id == m2.Id)).ToList();
+            
+            connector.Verify(
+                x =>
+                    x.ProcessSnapshot(
+                        It.Is<Fixture>(
+                            f =>
+                                f.Sequence == secondSnapshot.Sequence 
+                                //&& f.Markets.Count == firstSnapshot.Markets.Count),
+                                //f.Markets.All(
+                                //    m => marketsRemoved.Exists(mRemoved => mRemoved.Id == m.Id && mRemoved.IsSuspended))),
+                                ),
+                        It.IsAny<bool>()), Times.Once);
         }
 
         [Test]
