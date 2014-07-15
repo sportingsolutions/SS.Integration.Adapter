@@ -14,7 +14,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Interface;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Events;
@@ -852,37 +851,6 @@ namespace SS.Integration.Adapter
 
             _currentSequence = snapshot.Sequence;
             _Stats.SetValue(StreamListenerKeys.LAST_SEQUENCE, _currentSequence);
-        }
-
-        public bool CheckStreamHealth(int maxPeriodWithoutMessage, int receivedSequence)
-        {
-            if (IsFixtureSetup || IsFixtureDeleted)
-            {
-                // Stream has not yet started as fixture is Setup/Ready
-                return true;
-            }
-
-            if (!IsStreaming)
-                return false;
-
-            var streamStatistics = _resource as IStreamStatistics;
-
-            // No message has ever been received
-            if (streamStatistics == null || streamStatistics.LastMessageReceived == DateTime.MinValue)
-            {
-                return true;
-            }
-
-            var timespan = DateTime.UtcNow - streamStatistics.LastMessageReceived;
-            if (timespan.TotalMilliseconds >= maxPeriodWithoutMessage)
-            {
-                _logger.WarnFormat("Stream for {0} has not received a message in span={1}, suspending markets, will try to reconnect soon", 
-                    _resource.Id, timespan.TotalSeconds);
-                SuspendFixture(SuspensionReason.SUSPENSION);
-                return false;
-            }
-
-            return true;
         }
 
         private void ProcessFixtureDelete(Fixture fixtureDelta)
