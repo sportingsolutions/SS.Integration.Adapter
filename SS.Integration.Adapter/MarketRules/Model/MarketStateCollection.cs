@@ -14,11 +14,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
+using SS.Integration.Common.Extensions;
 
 namespace SS.Integration.Adapter.MarketRules.Model
 {
@@ -117,12 +120,19 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         #region IUpdatableMarketStateCollection
 
-        public void Update(Fixture Fixture, bool fullSnapshot)
+        public void Update(Fixture fixture, bool fullSnapshot)
         {
-            FixtureSequence = Fixture.Sequence;
-            FixtureStatus = (MatchStatus)Enum.Parse(typeof(MatchStatus), Fixture.MatchStatus);
+            FixtureSequence = fixture.Sequence;
+            FixtureStatus = (MatchStatus) Enum.Parse(typeof (MatchStatus), fixture.MatchStatus);
 
-            foreach (var market in Fixture.Markets)
+            if (fullSnapshot)
+            {
+                var marketsLookUp = fixture.Markets.ToDictionary(m => m.Id);
+                Markets.Where(marketId => !marketsLookUp.ContainsKey(marketId)).ForEach(marketId=> this[marketId].IsDeleted = true);
+
+            }
+
+            foreach (var market in fixture.Markets)
             {
                 IUpdatableMarketState mkt_state = null;
                 if (HasMarket(market.Id))

@@ -1004,9 +1004,9 @@ namespace SS.Integration.Adapter.Tests
                         It.Is<Fixture>(
                             f =>
                                 f.Sequence == secondSnapshot.Sequence 
-                                //&& f.Markets.Count == firstSnapshot.Markets.Count),
-                                //f.Markets.All(
-                                //    m => marketsRemoved.Exists(mRemoved => mRemoved.Id == m.Id && mRemoved.IsSuspended))),
+                                && f.Markets.Count == firstSnapshot.Markets.Count
+                                && f.Markets.All(
+                                    m => marketsRemoved.Exists(mRemoved => mRemoved.Id == m.Id && mRemoved.IsSuspended))
                                 ),
                         It.IsAny<bool>()), Times.Once);
         }

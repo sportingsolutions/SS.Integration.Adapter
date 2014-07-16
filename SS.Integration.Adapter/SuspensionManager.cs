@@ -60,7 +60,7 @@ namespace SS.Integration.Adapter
             _disconnected = SuspendAllMarketsStrategy;
             _default = SuspendAllMarketsStrategy;
             _fixtureDeleted = SuspendAllMarketsStrategy;
-
+            
             // Not really a singleton
             Instance = this;
         }

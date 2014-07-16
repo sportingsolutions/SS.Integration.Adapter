@@ -632,7 +632,7 @@ namespace SS.Integration.Adapter
 
             if (fixtureDelta.Epoch < _currentEpoch)
             {
-                _logger.WarnFormat("Unexpected Epoch={0} when current={1} for {2}", fixtureDelta.Epoch, _currentEpoch, _resource);
+                _logger.WarnFormat("Unexpected Epoch={0} when current={1} for {2}", fixtureDelta.Epoch, _currentEpoch, fixtureDelta);
                 return false;
             }
             
@@ -640,13 +640,13 @@ namespace SS.Integration.Adapter
                 return true;
 
             // Cases for fixtureDelta.Epoch > _currentEpoch
-            _logger.InfoFormat("Epoch changed for {0} from={1} to={2}", _resource, _currentEpoch, fixtureDelta.Epoch);
+            _logger.InfoFormat("Epoch changed for {0} from={1} to={2}", fixtureDelta, _currentEpoch, fixtureDelta.Epoch);
 
             _currentEpoch = fixtureDelta.Epoch;
 
             if (fixtureDelta.IsStartTimeChanged)
             {
-                _logger.InfoFormat("{0} has had its start time changed", _resource);
+                _logger.InfoFormat("{0} has had its start time changed", fixtureDelta);
                 return true;
             }
 
@@ -786,9 +786,12 @@ namespace SS.Integration.Adapter
 
             try
             {
-                _logger.DebugFormat("Applying market rules for {0}", _resource);
-
+                _logger.DebugFormat("Applying market rules for {0}", snapshot);
                 _marketsRuleManager.ApplyRules(snapshot);
+                
+                _logger.InfoFormat("Checking if any markets should be suspended {0}",snapshot);
+                //TODO: Some suspension needs to take place her
+
 
                 _logger.DebugFormat("Sending snapshot for {0} to plugin with has_epoch_changed={1}", snapshot, hasEpochChanged);
 

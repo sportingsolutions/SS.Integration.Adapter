@@ -27,8 +27,8 @@ namespace SS.Integration.Adapter.MarketRules.Interfaces
         /// updated with the correct information.
         /// 
         /// </summary>
-        /// <param name="Fixture"></param>
+        /// <param name="fixture"></param>
         /// <param name="fullSnapshot">True if the Fixture object comes from a full snapshot</param>
-        void Update(Fixture Fixture, bool fullSnapshot);
+        void Update(Fixture fixture, bool fullSnapshot);
     }
 }

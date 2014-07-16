@@ -154,6 +154,8 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// </summary>
         int TagsCount { get; }
 
+        bool IsDeleted { get; set; }
+
         #endregion
 
         /// <summary>

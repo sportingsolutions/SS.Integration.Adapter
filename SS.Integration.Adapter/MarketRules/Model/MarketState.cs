@@ -125,6 +125,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
             get { return _tags.Count; }
         }
 
+        public bool IsDeleted { get; set; }
+
         #endregion
 
         #region Selections
