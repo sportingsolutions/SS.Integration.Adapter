@@ -128,8 +128,9 @@ namespace SS.Integration.Adapter.MarketRules.Model
             if (fullSnapshot)
             {
                 var marketsLookUp = fixture.Markets.ToDictionary(m => m.Id);
-                Markets.Where(marketId => !marketsLookUp.ContainsKey(marketId)).ForEach(marketId=> this[marketId].IsDeleted = true);
 
+                //if market doesn't exist in the snapshot the definition must have been changed
+                Markets.Where(marketId => !marketsLookUp.ContainsKey(marketId)).ForEach(marketId=> this[marketId].IsDeleted = true);
             }
 
             foreach (var market in fixture.Markets)

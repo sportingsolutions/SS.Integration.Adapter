@@ -59,7 +59,7 @@ namespace SS.Integration.Adapter
             _error = SuspendAllMarketsStrategy;
             _disconnected = SuspendAllMarketsStrategy;
             _default = SuspendAllMarketsStrategy;
-            _fixtureDeleted = SuspendAllMarketsStrategy;
+            _fixtureDeleted = SuspendAllMarketsAndSetMatchStatusDeleted;
             
             // Not really a singleton
             Instance = this;
@@ -101,6 +101,13 @@ namespace SS.Integration.Adapter
             get;
             private set;
         }
+
+        public Action<IMarketStateCollection> SuspendAllMarketsAndSetMatchStatusDeleted
+        {
+            get;
+            private set;
+        }
+
 
         public void RegisterAction(Action<IMarketStateCollection> action, SuspensionReason reason)
         {
@@ -178,22 +185,21 @@ namespace SS.Integration.Adapter
 
             SuspendAllMarketsStrategy = x =>
                 {
-                    var fixture = new Fixture 
-                    { 
-                        Id = x.FixtureId, 
-                        MatchStatus = ((int)x.FixtureStatus).ToString(),
-                        Sequence = x.FixtureSequence 
-                    };
-
-                    foreach (var mkt_id in x.Markets)
-                    {
-                        fixture.Markets.Add(CreateSuspendedMarket(x[mkt_id]));
-                    }
+                    var fixture = GetFixtureWithSuspendedMarkets(x);
 
 
                     _logger.DebugFormat("Sending suspension command through the plugin for fixtureId={0}", x.FixtureId);
                     _plugin.ProcessStreamUpdate(fixture);
                 };
+
+            SuspendAllMarketsAndSetMatchStatusDeleted = x =>
+            {
+                var fixture = GetFixtureWithSuspendedMarkets(x);
+                fixture.MatchStatus = ((int)MatchStatus.Deleted).ToString();
+
+                _logger.DebugFormat("Sending suspension command through the plugin for fixtureId={0}", x.FixtureId);
+                _plugin.ProcessStreamUpdate(fixture);
+            };
 
             SuspendInPlayMarketsStrategy = x =>
                 {
@@ -224,6 +230,24 @@ namespace SS.Integration.Adapter
                     _logger.DebugFormat("Sending suspension command through the plugin for in-play markets of fixtureId={0}", x.FixtureId);
                     _plugin.ProcessStreamUpdate(fixture);
                 };
+        }
+
+        
+
+        private static Fixture GetFixtureWithSuspendedMarkets(IMarketStateCollection x)
+        {
+            var fixture = new Fixture
+            {
+                Id = x.FixtureId,
+                MatchStatus = ((int) x.FixtureStatus).ToString(),
+                Sequence = x.FixtureSequence
+            };
+
+            foreach (var mkt_id in x.Markets)
+            {
+                fixture.Markets.Add(CreateSuspendedMarket(x[mkt_id]));
+            }
+            return fixture;
         }
 
         private static Market CreateSuspendedMarket(IMarketState marketState)

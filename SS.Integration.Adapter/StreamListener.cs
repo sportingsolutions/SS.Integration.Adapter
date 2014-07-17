@@ -788,11 +788,7 @@ namespace SS.Integration.Adapter
             {
                 _logger.DebugFormat("Applying market rules for {0}", snapshot);
                 _marketsRuleManager.ApplyRules(snapshot);
-                
-                _logger.InfoFormat("Checking if any markets should be suspended {0}",snapshot);
-                //TODO: Some suspension needs to take place her
-
-
+           
                 _logger.DebugFormat("Sending snapshot for {0} to plugin with has_epoch_changed={1}", snapshot, hasEpochChanged);
 
                 if (isFullSnapshot)

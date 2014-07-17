@@ -152,39 +152,41 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         #endregion
 
-        public bool IsEqualTo(IMarketState market)
+        public bool IsEqualTo(IMarketState marketState)
         {
-            if (market == null)
+            if (marketState == null)
                 throw new ArgumentNullException("market");
 
-            if (ReferenceEquals(this, market))
+            if (ReferenceEquals(this, marketState))
                 return true;
             
-            if (market.Id != this.Id)
+            if (marketState.Id != this.Id)
                 throw new Exception("Cannot compare two markets with different Ids");
 
-            if (market.Name != this.Name)
+            if (marketState.Name != this.Name)
                 return false;
 
-            var isStatusEqual = this.IsPending == market.IsPending &&
-                                this.IsResulted == market.IsResulted &&
-                                this.IsSuspended == market.IsSuspended &&
-                                this.IsActive == market.IsActive;
+            var isStatusEqual = this.IsPending == marketState.IsPending &&
+                                this.IsResulted == marketState.IsResulted &&
+                                this.IsSuspended == marketState.IsSuspended &&
+                                this.IsActive == marketState.IsActive &&
+                                this.IsDeleted == marketState.IsDeleted;
+            
 
             if (isStatusEqual)
             {
-                if (this.HasTag("line") && market.HasTag("line"))
+                if (this.HasTag("line") && marketState.HasTag("line"))
                 {
-                    isStatusEqual = string.Equals(this.GetTagValue("line"), market.GetTagValue("line"));
+                    isStatusEqual = string.Equals(this.GetTagValue("line"), marketState.GetTagValue("line"));
                 }
 
 
                 if (IsRollingMarket)
                 {
-                    isStatusEqual &= Line == market.Line;
+                    isStatusEqual &= Line == marketState.Line;
                 }
 
-                isStatusEqual = isStatusEqual && market.Selections.All(s => _selectionStates.ContainsKey(s.Id) && _selectionStates[s.Id].IsEqualTo(s));
+                isStatusEqual = isStatusEqual && marketState.Selections.All(s => _selectionStates.ContainsKey(s.Id) && _selectionStates[s.Id].IsEqualTo(s));
             }
 
             return isStatusEqual;
@@ -272,7 +274,10 @@ namespace SS.Integration.Adapter.MarketRules.Model
             {
                 Id = this.Id,
                 HasBeenActive = this.HasBeenActive,
-                IsTradedInPlay = this.IsTradedInPlay
+                IsTradedInPlay = this.IsTradedInPlay,
+                IsRollingMarket = this.IsRollingMarket,
+                IsDeleted = this.IsDeleted,
+                Line = this.Line
             };
 
             foreach(var key in this.TagKeys)
@@ -336,6 +341,11 @@ namespace SS.Integration.Adapter.MarketRules.Model
                     _selectionStates[selection.Id] = new SelectionState(selection, fullSnapshot);
                 }
             }
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Market marketId={0} marketName={1}", Id, Name);
         }
     }
 }

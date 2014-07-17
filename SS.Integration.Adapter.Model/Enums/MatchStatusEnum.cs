@@ -18,6 +18,7 @@ namespace SS.Integration.Adapter.Model.Enums
     public enum MatchStatus
     {
         NotApplicable = 0,
+        Deleted = 5,
         Setup = 10,
         Ready = 20,
         Prematch = 30,
