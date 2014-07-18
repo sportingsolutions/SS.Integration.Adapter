@@ -37,7 +37,8 @@ namespace SS.Integration.Adapter.ProcessState
 
         private string GetPath(string id)
         {
-            return string.Format(_pathFormatString, id);
+            return GetFullPath(string.Format(_pathFormatString,id));
+            //return string.Format(_pathFormatString, id);
         }
 
         public T GetObject(string id)

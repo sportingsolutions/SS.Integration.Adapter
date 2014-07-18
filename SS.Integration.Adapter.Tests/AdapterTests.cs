@@ -262,7 +262,7 @@ namespace SS.Integration.Adapter.Tests
             lock (adapter)
             {
                 Monitor.PulseAll(adapter);
-                state.Verify(x => x.GetFixtureState("ABC"), Times.Once);
+                state.Verify(x => x.GetFixtureState("ABC"), Times.AtLeastOnce());
             }
 
             adapter.Stop();

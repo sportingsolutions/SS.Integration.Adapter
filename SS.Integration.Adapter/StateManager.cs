@@ -50,7 +50,8 @@ namespace SS.Integration.Adapter
             _RulesManagers = new ConcurrentDictionary<string, MarketRulesManager>();
             _Rules = new List<IMarketRule>
             {
-                VoidUnSettledMarket.Instance
+                VoidUnSettledMarket.Instance,
+                DeletedMarketsRule.Instance
             };
 
             
