@@ -78,7 +78,7 @@ namespace SS.Integration.Adapter.MarketRules
 
             if (_Stats == null)
             {
-                var key = string.Concat("adapter.core.fixture", CurrentState.Sport, ".", fixture.FixtureName);
+                var key = string.Concat("adapter.core.fixture.", CurrentState.Sport, ".", fixture.FixtureName);
                 _Stats = StatsManager.Instance[key].GetHandle();
             }
 
@@ -334,7 +334,7 @@ namespace SS.Integration.Adapter.MarketRules
                     foreach (var mkt in CurrentState.Markets)
                     {
                         IMarketState state = CurrentState[mkt];
-                        var key = string.Concat(".market.", state.Name, ".");
+                        var key = string.Concat("market.", state.Name, ".");
 
                         _Stats.SetValueUnsafe(key + AdapterCoreKeys.MARKET_IS_ACTIVE, state.IsActive ? "1" : "0");
                         _Stats.SetValueUnsafe(key + AdapterCoreKeys.MARKET_IS_RESULTED, state.IsResulted ? "1" : "0");
