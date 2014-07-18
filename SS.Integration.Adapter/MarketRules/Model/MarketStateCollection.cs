@@ -14,12 +14,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Common.Stats.Interface;
+using SS.Integration.Common.Extensions;
 
 namespace SS.Integration.Adapter.MarketRules.Model
 {
@@ -113,11 +114,19 @@ namespace SS.Integration.Adapter.MarketRules.Model
         public void Update(Fixture fixture, bool fullSnapshot)
         {
             FixtureSequence = fixture.Sequence;
-            FixtureStatus = (MatchStatus)Enum.Parse(typeof(MatchStatus), fixture.MatchStatus);
             FixtureName = fixture.FixtureName;
+            FixtureStatus = (MatchStatus) Enum.Parse(typeof (MatchStatus), fixture.MatchStatus);
 
-            if (fullSnapshot && fixture.Tags.ContainsKey("Sport"))
-                Sport = fixture.Tags["Sport"].ToString();
+            if (fullSnapshot)
+            {
+                if(fixture.Tags.ContainsKey("Sport"))
+                    Sport = fixture.Tags["Sport"].ToString();
+
+                var marketsLookUp = fixture.Markets.ToDictionary(m => m.Id);
+
+                //if market doesn't exist in the snapshot the definition must have been changed
+                Markets.Where(marketId => !marketsLookUp.ContainsKey(marketId)).ForEach(marketId=> this[marketId].IsDeleted = true);
+            }
 
             foreach (var market in fixture.Markets)
             {

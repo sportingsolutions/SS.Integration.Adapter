@@ -83,6 +83,16 @@ namespace SS.Integration.Adapter.Tests {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
+        internal static byte[] rugbydata_snapshot_withRemovedMarkets_5 {
+            get {
+                object obj = ResourceManager.GetObject("rugbydata_snapshot_withRemovedMarkets_5", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
         internal static byte[] rugbydata_update_3 {
             get {
                 object obj = ResourceManager.GetObject("rugbydata_update_3", resourceCulture);

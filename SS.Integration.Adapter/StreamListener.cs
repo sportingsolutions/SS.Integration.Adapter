@@ -15,7 +15,6 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Interface;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Events;
@@ -90,8 +89,12 @@ namespace SS.Integration.Adapter
             IsErrored = false;
             IsIgnored = false;
             IsFixtureDeleted = false;
-            
-            IsFixtureEnded = _resource.IsMatchOver;
+
+            var fixtureState = _eventState.GetFixtureState(resource.Id);
+            IsFixtureEnded = fixtureState != null
+                ? fixtureState.MatchStatus == MatchStatus.MatchOver
+                : _resource.IsMatchOver;
+
             IsFixtureSetup = (_resource.MatchStatus == MatchStatus.Setup ||
                               _resource.MatchStatus == MatchStatus.Ready);
 
@@ -325,7 +328,7 @@ namespace SS.Integration.Adapter
             _resource.StreamEvent += ResourceOnStreamEvent;
         }
 
-        private void StartStreaming()
+        private void  StartStreaming()
         {
   
             // Only start streaming if fixture is not Setup/Ready
@@ -622,7 +625,7 @@ namespace SS.Integration.Adapter
 
             if (fixtureDelta.Epoch < _currentEpoch)
             {
-                _logger.WarnFormat("Unexpected Epoch={0} when current={1} for {2}", fixtureDelta.Epoch, _currentEpoch, _resource);
+                _logger.WarnFormat("Unexpected Epoch={0} when current={1} for {2}", fixtureDelta.Epoch, _currentEpoch, fixtureDelta);
                 return false;
             }
             
@@ -630,13 +633,13 @@ namespace SS.Integration.Adapter
                 return true;
 
             // Cases for fixtureDelta.Epoch > _currentEpoch
-            _logger.InfoFormat("Epoch changed for {0} from={1} to={2}", _resource, _currentEpoch, fixtureDelta.Epoch);
+            _logger.InfoFormat("Epoch changed for {0} from={1} to={2}", fixtureDelta, _currentEpoch, fixtureDelta.Epoch);
 
             _currentEpoch = fixtureDelta.Epoch;
 
             if (fixtureDelta.IsStartTimeChanged)
             {
-                _logger.InfoFormat("{0} has had its start time changed", _resource);
+                _logger.InfoFormat("{0} has had its start time changed", fixtureDelta);
                 return true;
             }
 
@@ -797,10 +800,10 @@ namespace SS.Integration.Adapter
 
                 _Stats.AddValue(AdapterCoreKeys.FIXTURE_MARKETS_IN_SNAPSHOT, snapshot.Markets.Count.ToString());
 
-                _logger.DebugFormat("Applying market rules for {0}", _resource);
+                _logger.DebugFormat("Applying market rules for {0}", snapshot);
 
                 _marketsRuleManager.ApplyRules(snapshot);
-
+           
                 _logger.DebugFormat("Sending snapshot for {0} to plugin with has_epoch_changed={1}", snapshot, hasEpochChanged);
 
                 if (isFullSnapshot)
@@ -859,7 +862,7 @@ namespace SS.Integration.Adapter
 
         private void UpdateState(Fixture snapshot, bool isSnapshot = false)
         {
-            _logger.DebugFormat("Updating state for {0} with isSnapshot={1}", _resource, isSnapshot);
+            _logger.DebugFormat("Updating state for {0} with isSnapshot={1}", snapshot, isSnapshot);
 
             _marketsRuleManager.CommitChanges();
 
@@ -874,37 +877,6 @@ namespace SS.Integration.Adapter
             }
 
             _currentSequence = snapshot.Sequence;
-        }
-
-        public bool CheckStreamHealth(int maxPeriodWithoutMessage, int receivedSequence)
-        {
-            if (IsFixtureSetup || IsFixtureDeleted)
-            {
-                // Stream has not yet started as fixture is Setup/Ready
-                return true;
-            }
-
-            if (!IsStreaming)
-                return false;
-
-            var streamStatistics = _resource as IStreamStatistics;
-
-            // No message has ever been received
-            if (streamStatistics == null || streamStatistics.LastMessageReceived == DateTime.MinValue)
-            {
-                return true;
-            }
-
-            var timespan = DateTime.UtcNow - streamStatistics.LastMessageReceived;
-            if (timespan.TotalMilliseconds >= maxPeriodWithoutMessage)
-            {
-                _logger.WarnFormat("Stream for {0} has not received a message in span={1}, suspending markets, will try to reconnect soon", 
-                    _resource.Id, timespan.TotalSeconds);
-                SuspendFixture(SuspensionReason.SUSPENSION);
-                return false;
-            }
-
-            return true;
         }
 
         private void ProcessFixtureDelete(Fixture fixtureDelta)

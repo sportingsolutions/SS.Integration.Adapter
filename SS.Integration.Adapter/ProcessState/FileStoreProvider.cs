@@ -55,14 +55,14 @@ namespace SS.Integration.Adapter.ProcessState
             }
         }
 
-        private string GetFullDirectoryPath(string subDirectory)
+        protected string GetFullDirectoryPath(string subDirectory)
         {
             var path = Assembly.GetExecutingAssembly().Location;
             var directory = Path.GetDirectoryName(path);
-            return Path.Combine(directory,subDirectory);
+            return Path.Combine(directory, subDirectory);
         }
 
-        private string GetFullPath(string pathFileName)
+        protected string GetFullPath(string pathFileName)
         {
             if (Path.IsPathRooted(pathFileName))
                 return pathFileName;

@@ -26,7 +26,7 @@ using SS.Integration.Adapter.ProcessState;
 namespace SS.Integration.Adapter.Tests
 {
     [TestFixture]
-    class ModelTests
+    public class ModelTests
     {
 
         [Test]
@@ -37,7 +37,7 @@ namespace SS.Integration.Adapter.Tests
             {
                 FixtureName = "TEST-NAME",
                 Epoch = 10,
-                LastEpochChangeReason = new[] {10, 20},
+                LastEpochChangeReason = new[] { 10, 20 },
                 Id = "TEST-ID",
                 StartTime = new DateTime(2000, 01, 01),
                 Sequence = 12,
@@ -48,16 +48,16 @@ namespace SS.Integration.Adapter.Tests
             fixture.GameState.Add("TEST-STATE-1", 1);
             fixture.GameState.Add("TEST-STATE-2", "2");
 
-            Participant p1 = new Participant {Id = 1, Name = "P1"};
+            Participant p1 = new Participant { Id = 1, Name = "P1" };
             p1.Tags.Add("TEST-TAG-1", "1");
             p1.Tags.Add("TEST-TAG-2", 2);
 
-            Participant p2 = new Participant {Id = 2, Name = "P2"};
+            Participant p2 = new Participant { Id = 2, Name = "P2" };
 
             fixture.Participants.Add(p1);
             fixture.Participants.Add(p2);
 
-            Market mkt1 = new Market {Id = "MKT1"};
+            Market mkt1 = new Market { Id = "MKT1" };
             mkt1.AddOrUpdateTagValue("name", "MKT1");
 
             Selection seln1 = new Selection
@@ -83,7 +83,7 @@ namespace SS.Integration.Adapter.Tests
             mkt1.Selections.Add(seln1);
             mkt1.Selections.Add(seln2);
 
-            RollingMarket mkt2 = new RollingMarket {Id = "RMKT2", Line = 2.0};
+            RollingMarket mkt2 = new RollingMarket { Id = "RMKT2", Line = 2.0 };
             mkt2.AddOrUpdateTagValue("name", "RMKT2");
 
             RollingSelection seln3 = new RollingSelection
@@ -169,5 +169,6 @@ namespace SS.Integration.Adapter.Tests
             fixture.Markets.FirstOrDefault(x => x.Id == "RMKT2").Selections.Count.Should().Be(1);
             fixture.Markets.FirstOrDefault(x => x.Id == "RMKT3").Selections.Count.Should().Be(0);
         }
+
     }
 }

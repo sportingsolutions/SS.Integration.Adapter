@@ -376,9 +376,10 @@ namespace SS.Integration.Adapter
 
             if(!CanProcessResource(resource))
                 return;
-            
+
             if (_listeners.ContainsKey(resource.Id))
             {
+                _logger.DebugFormat("StreamListener already exists for {0}", resource);
 
                 IListener listener = _listeners[resource.Id];
 
@@ -394,38 +395,30 @@ namespace SS.Integration.Adapter
                 }
                 else
                 {
-                    if (StopListenerIfFixtureEnded(sport, resource))
-                    {
-                        MarkResourceAsProcessable(resource);
-                        return;
-                    }
-
-                    // if the stream is valid, update its status
-                    if (ValidateStream(resource))
+                    if (!StopListenerIfFixtureEnded(sport, resource))
                     {
                         _listeners[resource.Id].UpdateResourceState(resource);
-                        MarkResourceAsProcessable(resource);
-                        return;
                     }
-
-                    _logger.WarnFormat("Removed resource for {0}, it will be recreated from scratch during next resource pull from API", resource);
-                    RemoveAndStopListener(resource.Id);
                 }
-            }
 
-            // Check fixture is not yet over, ignore if over
-            var fixtureState = EventState.GetFixtureState(resource.Id);
-            if (resource.IsMatchOver && (fixtureState == null || fixtureState.MatchStatus == resource.MatchStatus))
-            {
-                _logger.InfoFormat("{0} has finished. Will not process", resource);
                 MarkResourceAsProcessable(resource);
-                return;
             }
+            else
+            {
+                // Check fixture is not yet over, ignore if over
+                var fixtureState = EventState.GetFixtureState(resource.Id);
+                if (resource.IsMatchOver && (fixtureState == null || fixtureState.MatchStatus == resource.MatchStatus))
+                {
+                    _logger.InfoFormat("{0} has finished. Will not process", resource);
+                    MarkResourceAsProcessable(resource);
+                    return;
+                }
 
 
-            _logger.DebugFormat("Adding {0} to the queue ", resource);
-            _resourceCreationQueue.Add(resource);
-            _logger.InfoFormat("Added {0} to the queue", resource);
+                _logger.DebugFormat("Adding {0} to the queue ", resource);
+                _resourceCreationQueue.Add(resource);
+                _logger.InfoFormat("Added {0} to the queue", resource);
+            }
 
         }
 
@@ -494,17 +487,6 @@ namespace SS.Integration.Adapter
             return listener != null;
         }
 
-        private bool ValidateStream(IResourceFacade resource)
-        {
-            // already removed
-            if (!_listeners.ContainsKey(resource.Id)) 
-                return true;
-
-            var listener = _listeners[resource.Id];
-            var maxPeriodWithoutMessage = Settings.EchoInterval * 3;
-
-            return listener.CheckStreamHealth(maxPeriodWithoutMessage, resource.Content.Sequence);
-        }
 
         /// <summary>
         /// Stops and remove the listener if the fixture is over.
