@@ -197,7 +197,7 @@ namespace SS.Integration.Adapter
                 var fixture = GetFixtureWithSuspendedMarkets(x);
                 fixture.MatchStatus = ((int)MatchStatus.Deleted).ToString();
 
-                _logger.DebugFormat("Sending suspension command through the plugin for fixtureId={0}", x.FixtureId);
+                _logger.DebugFormat("Fixture has been deleted. Sending suspension command through the plugin for fixtureId={0}", x.FixtureId);
                 _plugin.ProcessStreamUpdate(fixture);
             };
 

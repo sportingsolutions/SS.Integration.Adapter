@@ -864,7 +864,7 @@ namespace SS.Integration.Adapter
 
             try
             {
-                SuspendFixture(SuspensionReason.SUSPENSION);
+                SuspendFixture(SuspensionReason.FIXTURE_DELETED);
                 _platformConnector.ProcessFixtureDeletion(fixtureDelta);
             }
             catch (Exception e)
