@@ -32,9 +32,7 @@ namespace SS.Integration.Adapter.MarketRules
 
             if (oldState == null)
                 return result;
-
-            var test = oldState["_3z0qZjBERuS8kLYiqhuESaDZDM"].IsDeleted;
-
+            
             var deletedMarkets =
                 newState.Markets.Select(marketId => newState[marketId])
                     .Where(marketState => marketState.IsDeleted && oldState.HasMarket(marketState.Id) && !oldState[marketState.Id].IsDeleted)

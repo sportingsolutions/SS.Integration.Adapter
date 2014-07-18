@@ -88,8 +88,12 @@ namespace SS.Integration.Adapter
             IsErrored = false;
             IsIgnored = false;
             IsFixtureDeleted = false;
-            
-            IsFixtureEnded = _resource.IsMatchOver;
+
+            var fixtureState = _eventState.GetFixtureState(resource.Id);
+            IsFixtureEnded = fixtureState != null
+                ? fixtureState.MatchStatus == MatchStatus.MatchOver
+                : _resource.IsMatchOver;
+
             IsFixtureSetup = (_resource.MatchStatus == MatchStatus.Setup ||
                               _resource.MatchStatus == MatchStatus.Ready);
 
