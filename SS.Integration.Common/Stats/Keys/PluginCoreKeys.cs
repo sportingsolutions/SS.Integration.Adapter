@@ -17,11 +17,12 @@ namespace SS.Integration.Common.Stats.Keys
 {
     public class PluginCoreKeys
     {
-        public static readonly string PLUGIN_SNAPSHOT_PROCESSING_PROCESSING_TIME = "performance.snapshot_processing_time";
+        public static readonly string PLUGIN_SNAPSHOT_PROCESSING_TIME = "performance.snapshot_processing_time";
         public static readonly string PLUGIN_DELTA_SNASPHOT_PROCESSING_TIME = "performance.update_processing_time";
         public static readonly string PLUGIN_ERRORED_REQUESTS = "error.requests_errored";
         public static readonly string PLUGIN_REQUEST_SERVICE_UNAVAILABLE = "error.503";
         public static readonly string PLUGIN_PROCESSED_REQUESTS = "performance.requests_processed";
+        public static readonly string PLUGING_REQUEST_PROCESSING_TIME = "performance.request_processing_time";
 
         public static readonly string PLUGING_SCHEDULER_UPDATE_QUEUE_SIZE = "scheduler.queue.update";
         public static readonly string PLUGING_SCHEDULER_INSERT_QUEUE_SIZE = "scheduler.queue.insert";
