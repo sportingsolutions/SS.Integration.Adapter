@@ -20,65 +20,67 @@ namespace SS.Integration.Common.Stats.Interface
        
         /// <summary>
         /// Increment the value associated to the given key.
-        /// This is a thread-safe method.
-        /// If no value is associated with the given key, 
-        /// then after the call, the associated value is 0.
-        /// 
-        /// Only integer increment is supported
         /// </summary>
         /// <param name="key"></param>
         void IncrementValue(string key);
 
         /// <summary>
-        /// Decreases the value associated to the given key.
-        /// This is a threa-safe method.
-        /// If not value is associated with the given key,
-        /// then after the call, the associated value is -1.
-        /// </summary>
-        /// <param name="key"></param>
-        void DecrementValue(string key);
-
-        /// <summary>
-        /// Opposite of AddValue
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        void RemoveValue(string key, object value);
-
-        /// <summary>
-        /// This is similar to SetValue, but 
-        /// it appends a GlobalKeys.ADD_ITEM message
-        /// before calling SetValue. 
-        /// It is useful when the we want to store
-        /// list of objects
+        /// Define a value for the given key.
+        /// 
+        /// This method should be used when the
+        /// aim of the metric is to define
+        /// a specific value for the key.
+        /// In other words, the focus should be 
+        /// on the definition of a value
+        /// for the key rather than on how
+        /// the values have changed
+        /// during the time (for which AddValue
+        /// is more appropriated).
+        /// 
+        /// 
         /// </summary>
         /// <param name="key"></param>
         /// <param name="value"></param>
-        void AddValue(string key, object value);
+        void SetValue(string key, string value);
 
         /// <summary>
         /// Allows to specify a specific value associated
         /// to a key.
+        /// 
+        /// This method should be used when the focus
+        /// is on how values for the key changed
+        /// during the time
+        /// 
         /// </summary>
         /// <param name="key"></param>
         /// <param name="value"></param>
-        void SetValue(string key, object value);
+        void AddValue(string key, string value);
 
         /// <summary>
-        /// As SetValue but may throws exception
+        /// As SetValue but may raise exceptions
         /// that have to be handled by the caller.
         /// Usefull on batches.
         /// </summary>
         /// <param name="key"></param>
         /// <param name="value"></param>
-        void SetValueUnsafe(string key, object value);
+        void SetValueUnsafe(string key, string value);
 
         /// <summary>
-        /// Allows to add a message before writing the item
+        /// As AddValue but may raise exceptions
+        /// that have to be handled by the caller.
+        /// Usefull on batches.
         /// </summary>
-        /// <param name="messagekey">A key to identify the message type</param>
-        /// <param name="value">The actual message</param>
-        /// <returns>This object, so to concatenate more messages in a easy way</returns>
-        IStatsHandle AddMessage(string messagekey, object value);
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        void AddValueUnsafe(string key, string value);
+
+        /// <summary>
+        /// As IncrementValue but may raise exceptions
+        /// that have to be handled by the caller.
+        /// Usefull on batches.
+        /// </summary>
+        /// <param name="key"></param>
+        void IncrementValueUnsafe(string key);
+
     }
 }

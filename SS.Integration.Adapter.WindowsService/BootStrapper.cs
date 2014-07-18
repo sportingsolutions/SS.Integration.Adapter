@@ -12,26 +12,22 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
 using Ninject.Modules;
 using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.UdapiClient;
-using System.Configuration;
 using log4net;
 
 namespace SS.Integration.Adapter.WindowsService
 {
     public class BootStrapper : NinjectModule
     {
-        private readonly ILog _logger = LogManager.GetLogger(typeof(BootStrapper).ToString());
-
+        
         public override void Load()
         {
             Bind<ISettings>().To<Settings>().InSingletonScope();
             Bind<IReconnectStrategy>().To<DefaultReconnectStrategy>().InSingletonScope();
             Bind<IServiceFacade>().To<UdapiServiceFacade>();
-
         }
     }
 }

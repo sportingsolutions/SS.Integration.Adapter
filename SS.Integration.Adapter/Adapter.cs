@@ -61,6 +61,9 @@ namespace SS.Integration.Adapter
             var statemanager = new StateManager(settings);
             StateManager = statemanager;
 
+            if (settings.StatsEnabled)
+                StatsManager.Configure();
+
             // we just need the initialisation
             new SuspensionManager(statemanager, PlatformConnector);
 
@@ -77,9 +80,7 @@ namespace SS.Integration.Adapter
             
             _creationTasks = new Task[settings.FixtureCreationConcurrency];
 
-            _Stats = StatsManager.Instance["Adapter"].GetHandle();
-            _Stats.SetValue(AdapterKeys.STATUS, "Created");
-
+            _Stats = StatsManager.Instance["adapter.core"].GetHandle();
         }
 
 
@@ -108,9 +109,7 @@ namespace SS.Integration.Adapter
 
                 UDAPIService.Connect();
                 if (!UDAPIService.IsConnected)
-                    return;
-
-                _Stats.SetValue(AdapterKeys.STATUS, "Connected");
+                    return;                
 
                 _logger.Debug("Initialising adapter...");
 
@@ -127,12 +126,11 @@ namespace SS.Integration.Adapter
                 _trigger = new Timer(timerAutoEvent => TimerEvent(), null, 0, Settings.FixtureCheckerFrequency);
 
                 _logger.InfoFormat("Adapter initialised");
-                _Stats.SetValue(AdapterKeys.STATUS, "Started");
+                _Stats.SetValue(AdapterCoreKeys.ADAPTER_STARTED, "1");
             }
             catch (Exception ex)
             {
                 _logger.Fatal("A fatal error has occurred and the Adapater cannot start. You can try a manual restart", ex);
-                _Stats.AddMessage(GlobalKeys.CAUSE, ex).SetValue(AdapterKeys.STATUS, "Error");                
                 throw;
             }
         }
@@ -146,7 +144,6 @@ namespace SS.Integration.Adapter
         /// </summary>
         public void Stop()
         {
-            _Stats.SetValue(AdapterKeys.STATUS, "Closing");
             _logger.InfoFormat("Adapter is stopping");
 
             try
@@ -198,10 +195,8 @@ namespace SS.Integration.Adapter
             {
                 _logger.Error("An error occured while disposing the adapter", e);
             }
-
-            _Stats.SetValue(AdapterKeys.STOP_TIME, DateTime.Now.ToUniversalTime().ToString());
-            _Stats.SetValue(AdapterKeys.STATUS, "Stopped");
-
+            
+            _Stats.SetValue(AdapterCoreKeys.ADAPTER_STARTED, "0");
             _logger.InfoFormat("Adapter stopped");
         }
 
@@ -257,7 +252,6 @@ namespace SS.Integration.Adapter
 
         private void ReconnectAPI()
         {
-            _Stats.SetValue(AdapterKeys.STATUS, "Disconnected");
             var success = false;
             var attempts = 0;
             while (!success || attempts > Settings.MaxRetryAttempts)
@@ -269,8 +263,6 @@ namespace SS.Integration.Adapter
                         UDAPIService.Connect();
                         success = true;
                     }
-
-                    _Stats.SetValue(AdapterKeys.STATUS, "Connected");
                 }
                 catch (Exception ex)
                 {
@@ -297,9 +289,10 @@ namespace SS.Integration.Adapter
 
             try
             {
-                _Stats.SetValueUnsafe(AdapterKeys.QUEUE_SIZE, queueSize);
-                _Stats.SetValueUnsafe(AdapterKeys.TOTAL_MEMORY, GC.GetTotalMemory(false).ToString());
-                _Stats.SetValueUnsafe(AdapterKeys.RUNNING_THREADS, Process.GetCurrentProcess().Threads.Count);
+                _Stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_QUEUE_SIZE, queueSize.ToString());
+                _Stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_TOTAL_MEMORY, GC.GetTotalMemory(false).ToString());
+                _Stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_RUNNING_THREADS, Process.GetCurrentProcess().Threads.Count.ToString());
+                _Stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_HEALTH_CHECK, "1");
             }
             catch { }
 
@@ -453,7 +446,6 @@ namespace SS.Integration.Adapter
 
                         var listener = new StreamListener(resource, PlatformConnector, EventState, StateManager);
 
-                        _Stats.AddValue(AdapterKeys.STREAMS, resource.Id);
                         listener.Start();
                         _listeners.TryAdd(resource.Id, listener);
 
@@ -496,7 +488,6 @@ namespace SS.Integration.Adapter
 
             if (listener != null)
             {
-                _Stats.RemoveValue(AdapterKeys.STREAMS, fixtureId);                
                 listener.Dispose();
             }
 
@@ -569,9 +560,6 @@ namespace SS.Integration.Adapter
             var s = sdkVersion.ToString();
 
             _logger.InfoFormat("Sporting Solutions Adapter version={0} using Sporting Solutions SDK version={1}", e, s);
-
-            _Stats.SetValue(AdapterKeys.HOST_NAME, Environment.MachineName);
-            _Stats.SetValue(AdapterKeys.START_TIME, DateTime.Now.ToUniversalTime().ToString());
         }
 
         private bool CanProcessResource(IResourceFacade resource)

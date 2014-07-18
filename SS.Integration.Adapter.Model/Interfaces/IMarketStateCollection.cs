@@ -30,6 +30,11 @@ namespace SS.Integration.Adapter.Model.Interfaces
         string FixtureId { get; }
 
         /// <summary>
+        /// Returns the fixture's sport
+        /// </summary>
+        string Sport { get; }
+
+        /// <summary>
         /// Returns the current fixture state
         /// </summary>
         MatchStatus FixtureStatus { get; }
@@ -38,6 +43,11 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// Returns the last seen sequence 
         /// </summary>
         int FixtureSequence { get; }
+
+        /// <summary>
+        /// Returns the fixture's name
+        /// </summary>
+        string FixtureName { get; }
 
         /// <summary>
         /// Return true if this collection contains

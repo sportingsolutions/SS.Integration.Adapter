@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -12,15 +12,25 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-
-namespace SS.Integration.Common.Stats.Keys
+namespace SS.Integration.Common.Stats.Interface
 {
-    public class SelectionKeys
+    public interface IStatsConsumer
     {
-        public static readonly string ID = "SELN_ID";
-        public static readonly string STATUS = "SELN_STATUS";
-        public static readonly string NAME = "SELN_NAME";
-        public static readonly string PRICES = "SELN_PRICES";
-        public static readonly string LASTPROCESSEDSEQUENCE = "SELN_LPS";
+
+        string Name { get; set; }
+
+        bool IsEnabled { get; set; }
+
+        void AddSettingProperty(string key, string value);
+
+        string GetSettingProperty(string key);
+
+        void AddValue(string key, string value);
+
+        void SetValue(string key, string value);
+
+        void IncrementValue(string key);
+
+        void Configure();
     }
 }

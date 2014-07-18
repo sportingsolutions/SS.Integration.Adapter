@@ -19,6 +19,7 @@ using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
+using SS.Integration.Common.Stats.Interface;
 
 namespace SS.Integration.Adapter.MarketRules.Model
 {
@@ -64,23 +65,15 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         #region IMarketStateCollection
 
-        public string FixtureId
-        {
-            get;
-            private set;
-        }
+        public string FixtureId { get; private set; }
 
-        public MatchStatus FixtureStatus
-        {
-            get;
-            private set;
-        }
+        public MatchStatus FixtureStatus { get; private set; }
 
-        public int FixtureSequence
-        {
-            get;
-            private set;
-        }
+        public int FixtureSequence { get; private set; }
+
+        public string FixtureName { get; private set; }
+
+        public string Sport { get; private set; }
 
         public bool HasMarket(string MarketId)
         {
@@ -117,12 +110,16 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         #region IUpdatableMarketStateCollection
 
-        public void Update(Fixture Fixture, bool fullSnapshot)
+        public void Update(Fixture fixture, bool fullSnapshot)
         {
-            FixtureSequence = Fixture.Sequence;
-            FixtureStatus = (MatchStatus)Enum.Parse(typeof(MatchStatus), Fixture.MatchStatus);
+            FixtureSequence = fixture.Sequence;
+            FixtureStatus = (MatchStatus)Enum.Parse(typeof(MatchStatus), fixture.MatchStatus);
+            FixtureName = fixture.FixtureName;
 
-            foreach (var market in Fixture.Markets)
+            if (fullSnapshot && fixture.Tags.ContainsKey("Sport"))
+                Sport = fixture.Tags["Sport"].ToString();
+
+            foreach (var market in fixture.Markets)
             {
                 IUpdatableMarketState mkt_state = null;
                 if (HasMarket(market.Id))

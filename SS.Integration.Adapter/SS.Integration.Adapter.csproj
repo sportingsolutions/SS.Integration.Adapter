@@ -102,6 +102,9 @@
     <Compile Include="UdapiClient\UdapiSessionContainer.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="stats.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

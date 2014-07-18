@@ -38,7 +38,14 @@
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.5.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="StatsdClient">
+      <HintPath>..\packages\StatsdClient.1.0.0.16\lib\net35\StatsdClient.dll</HintPath>
+    </Reference>
+    <Reference Include="StatsdClient.Configuration">
+      <HintPath>..\packages\StatsdClient.1.0.0.16\lib\net35\StatsdClient.Configuration.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -54,28 +61,15 @@
     <Compile Include="PerformanceCounterBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Reflection.cs" />
-    <Compile Include="StatsAnalyser\Buckets\MessageBucket.cs" />
-    <Compile Include="StatsAnalyser\Buckets\MessageBucketPropertyHistoryType.cs" />
-    <Compile Include="StatsAnalyser\Buckets\MessageBucketPropertyType.cs" />
-    <Compile Include="StatsAnalyser\Buckets\Properties\ListableProperty.cs" />
-    <Compile Include="StatsAnalyser\Buckets\Properties\Property.cs" />
-    <Compile Include="StatsAnalyser\Buckets\Properties\SingleValueProperty.cs" />
-    <Compile Include="StatsAnalyser\LogWatcher.cs" />
-    <Compile Include="StatsAnalyser\Message.cs" />
-    <Compile Include="StatsAnalyser\MessageDispatcher.cs" />
-    <Compile Include="StatsAnalyser\MessageWatcherConfiguration.cs" />
+    <Compile Include="Stats\Configuration\StatsConfigurationSection.cs" />
+    <Compile Include="Stats\Configuration\StatsSettings.cs" />
+    <Compile Include="Stats\Consumer\LoggerConsumer.cs" />
+    <Compile Include="Stats\Consumer\StatsdConsumer.cs" />
+    <Compile Include="Stats\Interface\IStatsConsumer.cs" />
     <Compile Include="Stats\Interface\IStatsHandle.cs" />
-    <Compile Include="Stats\Keys\AdapterKeys.cs" />
-    <Compile Include="Stats\Keys\FixtureKeys.cs" />
-    <Compile Include="Stats\Keys\GlobalKeys.cs" />
-    <Compile Include="Stats\Keys\MarketKeys.cs" />
-    <Compile Include="Stats\Keys\PerformanceKeys.cs" />
-    <Compile Include="Stats\Keys\SchedulingKeys.cs" />
-    <Compile Include="Stats\Keys\SelectionKeys.cs" />
-    <Compile Include="Stats\Keys\StreamListenerKeys.cs" />
+    <Compile Include="Stats\Keys\AdapterCoreKeys.cs" />
+    <Compile Include="Stats\Keys\PluginCoreKeys.cs" />
     <Compile Include="Stats\StatsHandle.cs" />
-    <Compile Include="Stats\StatsLogger.cs" />
-    <Compile Include="Stats\StatsLoggerAppender.cs" />
     <Compile Include="Stats\StatsManager.cs" />
     <Compile Include="TimePerformanceCounter.cs" />
   </ItemGroup>

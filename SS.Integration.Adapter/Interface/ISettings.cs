@@ -107,6 +107,11 @@ namespace SS.Integration.Adapter.Interface
         /// <summary>
         /// True to enable DeltaRule
         /// </summary>
-        bool DeltaRuleEnabled { get; set; }
+        bool DeltaRuleEnabled { get; }
+
+        /// <summary>
+        /// True to collect statistics
+        /// </summary>
+        bool StatsEnabled { get; }
     }
 }
