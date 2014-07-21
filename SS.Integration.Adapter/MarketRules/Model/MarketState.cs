@@ -149,6 +149,10 @@ namespace SS.Integration.Adapter.MarketRules.Model
             return _selectionStates.ContainsKey(selectionId);
         }
 
+        public int SelectionsCount
+        {
+            get { return _selectionStates.Count; }
+        }
 
         #endregion
 

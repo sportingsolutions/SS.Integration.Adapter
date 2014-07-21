@@ -12,153 +12,70 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Collections.Generic;
 using SS.Integration.Common.Stats.Interface;
-using SS.Integration.Common.Stats.Keys;
 
 namespace SS.Integration.Common.Stats
 {
     internal class StatsHandle : IStatsHandle
     {
-        private readonly StatsLogger _Logger;
-        private readonly string _Id;
-        private readonly Dictionary<object, int> _Increments;
-        private readonly Dictionary<string, string> _Messages;
 
-        public StatsHandle(string id, StatsLogger Logger)
+        internal StatsHandle(StatsManager manager)
         {
-            _Increments = new Dictionary<object, int>();
-            _Messages = new Dictionary<string, string>();
-            _Logger = Logger;
-            _Id = id;
+            Manager = manager;
         }
 
-        public void SetValue(string key, object value)
-        {
-            if (string.IsNullOrEmpty(key))
-                return;
 
-            if (value == null)
-                value = "";
+        public StatsManager Manager { get; private set; }
+
+        public void SetValue(string key, string value)
+        {
             try
             {
-                _Logger.Write(_Id, key, value.ToString(), _Messages);
+                SetValueUnsafe(key, value);
             }
             catch { }
-            finally
+        }
+
+        public void SetValueUnsafe(string key, string value)
+        {
+            foreach (var consumer in Manager.Consumers)
             {
-                _Messages.Clear();
+                consumer.SetValue(string.Concat(Manager.Code, ".", key), value);
             }
-        }
-
-
-        public void SetValueUnsafe(string key, object value)
-        {
-            if (string.IsNullOrEmpty(key))
-                return;
-
-            if (value == null)
-                value = "";
-
-            _Logger.Write(_Id, key, value.ToString(), _Messages);
-            _Messages.Clear();
-        }
-
-        public IStatsHandle AddMessage(string messagekey, object value)
-        {
-            if (messagekey == null)
-                return this;
-
-            if (value == null)
-                value = "";
-
-            _Messages[messagekey] = value.ToString();
-            return this;
         }
 
         public void IncrementValue(string key)
         {
-            if (key == null)
-                return;
-
-            string value;
             try
             {
-                lock (this)
-                {
-                    if (!_Increments.ContainsKey(key))
-                        _Increments.Add(key, 0);
-
-                    _Increments[key]++;
-                    value = _Increments[key].ToString();
-                }
-
-                _Logger.Write(_Id, key, value, _Messages);
+                IncrementValueUnsafe(key);
             }
             catch { }
-            finally
+        }
+
+        public void IncrementValueUnsafe(string key)
+        {
+            foreach (var consumer in Manager.Consumers)
             {
-                _Messages.Clear();
+                consumer.IncrementValue(string.Concat(Manager.Code, ".", key));
             }
         }
 
-        public void DecrementValue(string key)
+        public void AddValue(string key, string value)
         {
-            if (key == null)
-                return;
-
+            
             try
             {
-                string value;
-                lock (this)
-                {
-                    if (!_Increments.ContainsKey(key))
-                        _Increments.Add(key, 0);
-
-                    _Increments[key]--;
-                    value = _Increments[key].ToString();
-                }
-
-                _Logger.Write(_Id, key, value, _Messages);
+                AddValueUnsafe(key, value);
             }
             catch { }
-            finally
-            {
-                _Messages.Clear();
-            }
         }
 
-        public void RemoveValue(string key, object value)
+        public void AddValueUnsafe(string key, string value)
         {
-            if (value == null || key == null)
-                return;
-
-            try
+            foreach (var consumer in Manager.Consumers)
             {
-                _Messages.Add(GlobalKeys.REMOVE_ITEM, "");
-                _Logger.Write(_Id, key, value.ToString(), _Messages);
-            }
-            catch { }
-            finally
-            {
-                _Messages.Clear();
-            }
-        }
-
-        public void AddValue(string key, object value)
-        {
-            if (value == null || key == null)
-                return;
-
-            try
-            {
-                _Messages.Add(GlobalKeys.ADD_ITEM, "");
-                _Logger.Write(_Id, key, value.ToString(), _Messages);
-            }
-            catch { }
-            finally
-            {
-                _Messages.Clear();
+                consumer.AddValue(string.Concat(Manager.Code, ".", key), value);
             }
         }
     }

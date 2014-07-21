@@ -120,6 +120,11 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// <returns></returns>
         bool HasSelection(string selectionId);
 
+        /// <summary>
+        /// Returns the number of selection in this market
+        /// </summary>
+        int SelectionsCount { get; }
+
         #endregion
 
         #region Tags

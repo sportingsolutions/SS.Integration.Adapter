@@ -33,7 +33,7 @@ namespace SS.Integration.Adapter.Configuration
         private const string DEFAULT_MARKET_STATE_MANAGER_DIRECTORY = @"MarketsState";
         private const int DEFAULT_CACHE_EXPIRY_MINUTES_VALUE = 15;
         private const bool DEFAULT_ENABLE_DELTA_RULE = false;
-
+        private const bool DEFAULT_USE_STATS = false;
 
         public Settings()
         {
@@ -80,6 +80,9 @@ namespace SS.Integration.Adapter.Configuration
 
             value = ConfigurationManager.AppSettings["deltaRuleEnabled"];
             DeltaRuleEnabled = string.IsNullOrEmpty(value) ? DEFAULT_ENABLE_DELTA_RULE : Convert.ToBoolean(value);
+
+            value = ConfigurationManager.AppSettings["statsEnabled"];
+            StatsEnabled = string.IsNullOrEmpty(value) ? DEFAULT_USE_STATS : Convert.ToBoolean(value);
         }
 
         public string MarketFiltersDirectory { get; private set; }
@@ -114,5 +117,6 @@ namespace SS.Integration.Adapter.Configuration
 
         public bool DeltaRuleEnabled { get; set; }
 
+        public bool StatsEnabled { get; set; }
     }
 }

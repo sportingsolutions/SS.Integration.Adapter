@@ -15,7 +15,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
@@ -67,23 +66,15 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         #region IMarketStateCollection
 
-        public string FixtureId
-        {
-            get;
-            private set;
-        }
+        public string FixtureId { get; private set; }
 
-        public MatchStatus FixtureStatus
-        {
-            get;
-            private set;
-        }
+        public MatchStatus FixtureStatus { get; private set; }
 
-        public int FixtureSequence
-        {
-            get;
-            private set;
-        }
+        public int FixtureSequence { get; private set; }
+
+        public string FixtureName { get; private set; }
+
+        public string Sport { get; private set; }
 
         public bool HasMarket(string MarketId)
         {
@@ -123,10 +114,14 @@ namespace SS.Integration.Adapter.MarketRules.Model
         public void Update(Fixture fixture, bool fullSnapshot)
         {
             FixtureSequence = fixture.Sequence;
+            FixtureName = fixture.FixtureName;
             FixtureStatus = (MatchStatus) Enum.Parse(typeof (MatchStatus), fixture.MatchStatus);
 
             if (fullSnapshot)
             {
+                if(fixture.Tags.ContainsKey("Sport"))
+                    Sport = fixture.Tags["Sport"].ToString();
+
                 var marketsLookUp = fixture.Markets.ToDictionary(m => m.Id);
 
                 //if market doesn't exist in the snapshot the definition must have been changed

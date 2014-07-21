@@ -12,65 +12,134 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using log4net;
+using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.IO;
+using System.Reflection;
+using System.Xml;
+using SS.Integration.Common.Stats.Configuration;
 using SS.Integration.Common.Stats.Interface;
 
 namespace SS.Integration.Common.Stats
 {
     public class StatsManager
     {
-        private static readonly ILog _Logger = LogManager.GetLogger("StatsManager");
-        private static StatsManager _Instance;
-        private readonly string _Name;
-        private readonly Dictionary<string, StatsManager> _Managers;
-        private readonly Dictionary<string, IStatsHandle> _Handles;
-        private readonly StatsLogger _LogWrapper;
+        private const string DEFAULT_CONF_FILE_NAME = "stats.config";
+        private static StatsManager _instance;
+
+        private readonly StatsSettings _settings;
+        private readonly Dictionary<string, StatsManager> _managers;
+        
+        private IStatsHandle _handle;
 
 
-        private StatsManager(string name)
+        private StatsManager(string code, StatsSettings settings)
         {
-            _Name = name;
-            _Managers = new Dictionary<string, StatsManager>();
-            _LogWrapper = new StatsLogger(_Logger, name);
-            _Handles = new Dictionary<string, IStatsHandle>();
+            Code = code;
+            _managers = new Dictionary<string, StatsManager>();
+            _settings = settings;
         }
 
         public static StatsManager Instance
         {
-            get { return _Instance ?? (_Instance = new StatsManager("Root")); }
+            get { return _instance ?? (_instance = new StatsManager("Root", null)); }
         }
 
-        public string Name { get { return _Name; } }
+        public static void Configure(string filename = DEFAULT_CONF_FILE_NAME)
+        {
+            var settings = GetSettings(filename);
+            if (settings != null && settings.IsEnabled)
+            {
+                _instance = new StatsManager("Root", settings);
+            }
+        }
 
-        public StatsManager this[string name] 
+        public string Code { get; private set; }
+
+        public IEnumerable<IStatsConsumer> Consumers
+        {
+            get
+            {
+                if (_settings != null)
+                {
+                    foreach (var consumer_name in _settings.Consumers)
+                    {
+                        IStatsConsumer consumer = _settings.GetConsumer(consumer_name);
+                        if (consumer != null && consumer.IsEnabled)
+                            yield return consumer;
+                    }
+                }
+            }
+        }
+
+        public IStatsConsumer GetConsumer(string name)
+        {
+            if (_settings != null)
+                _settings.GetConsumer(name);
+
+            return null;
+        }
+
+        public StatsManager this[string code] 
         {
             get{
 
-                if(string.IsNullOrEmpty(name))
+                if(string.IsNullOrEmpty(code))
                     return this;
 
-                if (!_Managers.ContainsKey(name))
-                    _Managers.Add(name, new StatsManager(name));
+                if (!_managers.ContainsKey(code))
+                    _managers.Add(code, new StatsManager(code, _settings));
     
-                return _Managers[name];                
+                return _managers[code];
             }
         }
 
         public IStatsHandle GetHandle()
         {
-            return GetHandle("");
+            return _handle ?? (_handle = new StatsHandle(this));
         }
 
-        public IStatsHandle GetHandle(string id)
+        private static StatsSettings GetSettings(string filename)
         {
-            if (id == null)
-                id = "";
+            try
+            {
+                var filepath = filename;
+                if (!Path.IsPathRooted(filename))
+                {
+                    Assembly ass = Assembly.GetCallingAssembly();
 
-            if (!_Handles.ContainsKey(id))
-                _Handles.Add(id, new StatsHandle(id, _LogWrapper));
+                    filepath = Path.Combine(Path.GetDirectoryName(ass.Location), filename);
+                }
 
-            return _Handles[id];
+                if (!File.Exists(filepath))
+                    return null;
+
+                var fileMap = new ExeConfigurationFileMap { ExeConfigFilename = filepath };
+                var configuration = ConfigurationManager.OpenMappedExeConfiguration(fileMap, ConfigurationUserLevel.None);
+
+                ConfigurationSection section = section = configuration.GetSection("StatsSettings");
+                if (section == null)
+                    return null;
+
+                string xml = section.SectionInformation.GetRawXml();
+                Type type = Type.GetType(section.SectionInformation.Type);
+
+                if (typeof(IConfigurationSectionHandler).IsAssignableFrom(type))
+                {
+                    XmlDocument doc = new XmlDocument();
+                    doc.Load(XmlReader.Create(new StringReader(xml)));
+
+                    IConfigurationSectionHandler configSectionHandlerHandle = Activator.CreateInstance(type) as IConfigurationSectionHandler;
+                    if (configSectionHandlerHandle != null)
+                    {
+                        return configSectionHandlerHandle.Create(null, null, doc) as StatsSettings;
+                    }
+                }
+            }
+            catch { }
+            
+            return null;
         }
     }
 }

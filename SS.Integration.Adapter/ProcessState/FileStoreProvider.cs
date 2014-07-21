@@ -59,7 +59,7 @@ namespace SS.Integration.Adapter.ProcessState
         {
             var path = Assembly.GetExecutingAssembly().Location;
             var directory = Path.GetDirectoryName(path);
-            return Path.Combine(directory,subDirectory);
+            return Path.Combine(directory, subDirectory);
         }
 
         protected string GetFullPath(string pathFileName)
