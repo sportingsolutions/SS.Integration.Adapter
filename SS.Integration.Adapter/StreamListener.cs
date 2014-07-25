@@ -431,7 +431,7 @@ namespace SS.Integration.Adapter
 
                 // make sure markets are suspended
                 SuspendFixture(SuspensionReason.FIXTURE_ERRORED);
-                _logger.ErrorFormat("Streming for {0} is still in an error state even after trying to recover with a full snapshot", _resource);
+                _logger.ErrorFormat("Streaming for {0} is still in an error state even after trying to recover with a full snapshot", _resource);
                 return;
             }
 
@@ -668,10 +668,15 @@ namespace SS.Integration.Adapter
                 var snapshotJson = _resource.GetSnapshot();
 
                 if (string.IsNullOrEmpty(snapshotJson))
-                    throw new Exception("Received empty snapshot");
+                    throw new Exception(string.Format("Received empty snapshot for {0}",_resource));
+
+                var snapshot = FixtureJsonHelper.GetFromJson(snapshotJson);
+                if(snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id))
+                    throw new Exception(string.Format("Received a snapshot that resulted in an empty snapshot object {0}",_resource));
 
                 _Stats.IncrementValue(AdapterCoreKeys.FIXTURE_SNAPSHOT_COUNTER);
-                return FixtureJsonHelper.GetFromJson(snapshotJson);
+
+                return snapshot;
             }
             catch (Exception e)
             {
@@ -682,7 +687,7 @@ namespace SS.Integration.Adapter
                 else
                     throw;
             }
-
+            
             return null;
         }
 
@@ -711,14 +716,16 @@ namespace SS.Integration.Adapter
             bool tmp = false;
             try
             {
-                ProcessSnapshot(RetrieveSnapshot(false), true, false, false);
+                ProcessSnapshot(RetrieveSnapshot(), true, false);
 
                 tmp = true;
             }
-            catch
+            catch(Exception ex)
             {
                 // No need to raise up the exception
                 // we will try again later
+                _logger.WarnFormat("Exception occured when trying to process the first snapshot for {0}. Error: ",_resource, ex);
+                SetErrorState();
             }
             finally
             {
@@ -785,8 +792,8 @@ namespace SS.Integration.Adapter
 
         private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool setErrorState = true)
         {
-            if (snapshot == null)
-                return;
+            if (snapshot == null || (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id)))
+                throw new ArgumentException(string.Format("StreamListener received empty snapshot for {0}",_resource));
 
             _logger.DebugFormat("Processing snapshot for {0} with isFullSnapshot={1}", snapshot, isFullSnapshot);
 
