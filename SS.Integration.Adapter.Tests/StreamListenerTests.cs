@@ -947,6 +947,62 @@ namespace SS.Integration.Adapter.Tests
         }
 
         /// <summary>
+        /// I want to test that if, for some reasons,
+        /// we get an empty snapshot
+        /// </summary>
+        [Test]
+        [Category("StreamListener")]
+        public void ShouldGetAnotherSnapshotInCaseEmptySnapshotWasGenerated()
+        {
+
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+            var provider = new StateManager(settings.Object);
+            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
+
+            // Please note Sequence = 1
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.Prematch).ToString() };
+
+            // ...and Sequence = 3
+            Fixture update = new Fixture
+            {
+                Id = "ABC",
+                Sequence = 3,
+                MatchStatus = ((int)MatchStatus.InRunning).ToString()
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+            
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.SetupSequence(x => x.GetSnapshot())
+                .Returns(FixtureJsonHelper.ToJson(fixture))
+                .Returns(FixtureJsonHelper.ToJson(new Fixture()))
+                .Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            // STEP 4: send the update containing a wrong sequence number
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+
+            // STEP 5: check that ProcessStreamUpdate is called only once (due suspension)!
+            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(y => y.Markets.Count == 0), It.IsAny<bool>()));
+            connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(3), "The streamlistener was supposed to acquire a new snapshot");
+        }
+
+        /// <summary>
         /// I want to test stream listener generates full suspenssion 
         /// even if it missed fixture deletion
         /// </summary>
@@ -1281,12 +1337,12 @@ namespace SS.Integration.Adapter.Tests
             // make sure that the listener has not call StartStreaming
             // but has instead hit the procedure to acquire the first snapshot
             resource.Verify(x => x.StartStreaming(), Times.Never);
-            resource.Verify(x => x.GetSnapshot(), Times.Once);
+            
+            // GetSnapshot should immediatelly retry when the first snapshot failed
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(2));
 
-            // we need to make sure that even if GetSnapshot raised an exception
-            // the stream listener is not on an error state (as that state
-            // is only reached if we are streaming)
-            listener.IsErrored.Should().BeFalse();
+            //if the first snapshot fails it will be marked as errored unless a second one 
+            listener.IsErrored.Should().BeTrue();
 
             listener.Stop();
 
@@ -1304,7 +1360,7 @@ namespace SS.Integration.Adapter.Tests
 
                 // check that GetSnapshot is only called once!
                 // 2 = this test + previous one
-                resource.Verify(x => x.GetSnapshot(), Times.Exactly(2));
+                resource.Verify(x => x.GetSnapshot(), Times.Exactly(3));
             }
             );
 
@@ -1312,7 +1368,7 @@ namespace SS.Integration.Adapter.Tests
             listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
 
             listener.Start();
-
+            
             listener.IsErrored.Should().BeFalse();
 
 
@@ -1335,22 +1391,23 @@ namespace SS.Integration.Adapter.Tests
             // an exception is raised while we process the first snapshot
             listener.Start();
 
-            listener.IsErrored.Should().BeFalse();
+            listener.IsErrored.Should().BeTrue();
 
-            resource.Verify(x => x.GetSnapshot(), Times.Exactly(3));
+            //3 calls to get snapshot + 2 retries
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(3+2));
 
             // ...clear the callback so we don't raise any exception
             connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>())).Callback(() => { });
 
             // ... retry....and it should be fine
             listener.UpdateResourceState(resource.Object);
-
-            resource.Verify(x => x.GetSnapshot(), Times.Exactly(4));
+            
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(5));
 
             // ... retry again but this time the stream listener should not do anything
             listener.UpdateResourceState(resource.Object);
 
-            resource.Verify(x => x.GetSnapshot(), Times.Exactly(4));
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(5));
         }
 
     }
