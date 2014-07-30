@@ -64,7 +64,7 @@ namespace SS.Integration.Adapter
                 throw new Exception("Resource does not contain any content");
 
 
-            _logger.DebugFormat("Instantiating StreamListener for {0} with sequence={1}", resource, resource.Content.Sequence);
+            _logger.DebugFormat("Instantiating Listener for {0} with sequence={1}", resource, resource.Content.Sequence);
 
             _resource = resource;
             _platformConnector = platformConnector;
@@ -102,6 +102,8 @@ namespace SS.Integration.Adapter
             _Stats = StatsManager.Instance[string.Concat("adapter.core.fixture.", resource.Sport, ".", resource.Name)].GetHandle();
 
             SetupListener();
+            _logger.DebugFormat("Listener instantiated for {0}", resource);
+
         }
 
 
@@ -298,6 +300,7 @@ namespace SS.Integration.Adapter
             if (_resource == null)
                 return;
 
+
             IsFixtureSetup = (resource.MatchStatus == MatchStatus.Setup ||
                               resource.MatchStatus == MatchStatus.Ready);
 
@@ -334,7 +337,7 @@ namespace SS.Integration.Adapter
             // Only start streaming if fixture is not Setup/Ready
             if (!IsFixtureSetup)
             {
-                _logger.InfoFormat("{0} sport={1} attempts to start streaming", _resource, _resource.Sport);
+                _logger.DebugFormat("{0} sport={1} attempts to start streaming", _resource, _resource.Sport);
                 ConnectToStreamServer();
             }
             else
@@ -360,14 +363,14 @@ namespace SS.Integration.Adapter
             {
                 if (IsFixtureEnded)
                 {
-                    _logger.DebugFormat("Listener will not start for {0} as it is marked as ended", _resource);
+                    _logger.DebugFormat("Listener will not start for {0} as the resource is marked as ended", _resource);
                     return;
                 }
 
                 // do not start streaming twice
                 if (IsStreaming || IsConnecting)
                 {
-                    _logger.DebugFormat("Listener will not start for {0} as it is already streaming/connection", _resource);
+                    _logger.DebugFormat("Listener will not start for {0} as it is already streaming/connecting", _resource);
                     return;
                 }
 
@@ -389,9 +392,8 @@ namespace SS.Integration.Adapter
                 // If the SDK's threading model changes, this 
                 // class must be revisited
 
-                _logger.DebugFormat("Starting streaming for {0} - sequence on connection will be {1}", _resource, sequence);
-                _resource.StartStreaming();
-                _logger.DebugFormat("Streaming started for {0}", _resource);
+                _logger.DebugFormat("Starting streaming for {0} - resource has sequence={1}", _resource, sequence);
+                _resource.StartStreaming();                
             }
             catch (Exception ex)
             {
@@ -435,7 +437,7 @@ namespace SS.Integration.Adapter
                 return;
             }
 
-            _logger.InfoFormat("Streaming for {0} entered the error state - going to acquire a new snapshot", _resource);
+            _logger.DebugFormat("Streaming for {0} entered the error state - going to acquire a new snapshot", _resource);
 
             _hasRecoveredFromError = true;
             IsErrored = true;
@@ -459,7 +461,7 @@ namespace SS.Integration.Adapter
 
                 if (IsDisposing)
                 {
-                    _logger.InfoFormat("StreamListener for {0} is disposing - skipping current update", _resource);
+                    _logger.InfoFormat("Listener for {0} is disposing - skipping current update", _resource);
                     return;
                 }
 
@@ -469,7 +471,7 @@ namespace SS.Integration.Adapter
                 // snapshot.
                 if (IsErrored)
                 {
-                    _logger.InfoFormat("Streaming was in an error state for {0} - skipping update and grabbing a new snapshot", _resource);
+                    _logger.DebugFormat("Streaming was in an error state for {0} - skipping update and grabbing a new snapshot", _resource);
                     IsErrored = false;
                     RetrieveAndProcessSnapshot();
                     return;
@@ -479,13 +481,13 @@ namespace SS.Integration.Adapter
 
                 if (!IsSequenceValid(fixtureDelta))
                 {
-                    _logger.InfoFormat("Stream update {0} will not be processed because sequence was not valid", fixtureDelta);
+                    _logger.DebugFormat("Stream update {0} will not be processed because sequence was not valid", fixtureDelta);
                     
                     // if snapshot was already processed with higher sequence no need to process this sequence
                     // THIS should never happen!!
                     if (fixtureDelta.Sequence <= _lastSequenceProcessedInSnapshot)
                     {
-                        _logger.FatalFormat("Stream update {0} will be ignored because snapshot with higher sequence={1} was already processed",
+                        _logger.WarnFormat("Stream update {0} will be ignored because snapshot with higher sequence={1} was already processed",
                             fixtureDelta, _lastSequenceProcessedInSnapshot);
                         return;
                     }
@@ -506,7 +508,7 @@ namespace SS.Integration.Adapter
 
                     if (fixtureDelta.IsMatchStatusChanged && !string.IsNullOrEmpty(fixtureDelta.MatchStatus))
                     {
-                        _logger.InfoFormat("{0} has changed matchStatus={1}", _resource, Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus));
+                        _logger.DebugFormat("{0} has changed matchStatus={1}", _resource, Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus));
                         _platformConnector.ProcessMatchStatus(fixtureDelta);
                     }
 
@@ -566,7 +568,7 @@ namespace SS.Integration.Adapter
             if (!this.IsFixtureEnded && !IsFixtureDeleted)
             {
 
-                _logger.WarnFormat("Stream disconnected for {0}, suspending markets, will try reconnect soon", _resource);
+                _logger.WarnFormat("Listener for {0} disconnected from the streaming server, will try reconnect soon", _resource);
 
                 // do not send a suspend request if we are disposing the StreamListener
                 // (otherwise we send it twice)...note that this should not occure
@@ -577,7 +579,7 @@ namespace SS.Integration.Adapter
             }
             else
             {
-                _logger.InfoFormat("Stream disconnected for {0} - fixture is over/deleted", _resource);
+                _logger.InfoFormat("Listener disconnected for {0} - fixture is over/deleted", _resource);
             }
 
             _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_STREAMING, "0");
@@ -592,7 +594,8 @@ namespace SS.Integration.Adapter
             // directly
             _isFirstSnapshotProcessed = true; 
 
-            _logger.InfoFormat("Stream connected for {0}", _resource);
+
+            _logger.InfoFormat("Listener for {0} is now connected to the streaming server", _resource);
             _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_STREAMING, "1");
 
             RetrieveAndProcessSnapshotIfNeeded();
@@ -602,14 +605,14 @@ namespace SS.Integration.Adapter
         {
             if(fixtureDelta.Sequence < _currentSequence)
             {
-                _logger.InfoFormat("sequence={0} is less than currentSequence={1} in {2}", 
+                _logger.DebugFormat("sequence={0} is less than current_sequence={1} in {2}", 
                     fixtureDelta.Sequence, _currentSequence, fixtureDelta);
                 return false;
             }
             
             if (fixtureDelta.Sequence - _currentSequence > 1)
             {
-                _logger.WarnFormat("equence={0} is more than one greater that currentSequence={1} in {2} ", 
+                _logger.DebugFormat("sequence={0} is more than one greater that current_sequence={1} in {2} ", 
                     fixtureDelta.Sequence, _currentSequence, fixtureDelta);
                 return false;
             }
@@ -639,7 +642,7 @@ namespace SS.Integration.Adapter
 
             if (fixtureDelta.IsStartTimeChanged)
             {
-                _logger.InfoFormat("{0} has had its start time changed", fixtureDelta);
+                _logger.DebugFormat("{0} has had its start time changed", fixtureDelta);
                 return true;
             }
 
@@ -712,6 +715,8 @@ namespace SS.Integration.Adapter
 
                 _isProcessingFirstSnapshot = true;
             }
+
+            _logger.InfoFormat("Processing first snapshot for {0}", _resource);
 
             bool tmp = false;
             try
@@ -795,7 +800,7 @@ namespace SS.Integration.Adapter
             if (snapshot == null || (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id)))
                 throw new ArgumentException(string.Format("StreamListener received empty snapshot for {0}",_resource));
 
-            _logger.DebugFormat("Processing snapshot for {0} with isFullSnapshot={1}", snapshot, isFullSnapshot);
+            _logger.InfoFormat("Processing snapshot for {0}", snapshot);
 
             Stopwatch timer = new Stopwatch();
             timer.Start();
@@ -810,8 +815,6 @@ namespace SS.Integration.Adapter
                 _logger.DebugFormat("Applying market rules for {0}", snapshot);
 
                 _marketsRuleManager.ApplyRules(snapshot);
-           
-                _logger.DebugFormat("Sending snapshot for {0} to plugin with has_epoch_changed={1}", snapshot, hasEpochChanged);
 
                 if (isFullSnapshot)
                     _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);

@@ -163,7 +163,7 @@ namespace SS.Integration.Adapter
                 return;
             }
 
-            _logger.DebugFormat("Performing suspension for fixtureId={0} due reason={1}", fixtureId, reason);
+            _logger.InfoFormat("Performing suspension for fixtureId={0} due reason={1}", fixtureId, reason);
 
             try
             {
@@ -171,7 +171,7 @@ namespace SS.Integration.Adapter
             }
             catch (Exception e)
             {
-                _logger.Warn(string.Format("An error occured while performing suspend action on fixtureId={0}", fixtureId), e);
+                _logger.Error(string.Format("An error occured while performing suspend action on fixtureId={0}", fixtureId), e);
             }
         }
 

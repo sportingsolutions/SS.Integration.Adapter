@@ -12,17 +12,17 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+
 using Ninject.Modules;
 using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.UdapiClient;
-using log4net;
 
 namespace SS.Integration.Adapter.WindowsService
 {
     public class BootStrapper : NinjectModule
     {
-        
+
         public override void Load()
         {
             Bind<ISettings>().To<Settings>().InSingletonScope();

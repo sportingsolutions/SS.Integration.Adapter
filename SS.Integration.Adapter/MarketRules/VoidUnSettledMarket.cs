@@ -46,8 +46,6 @@ namespace SS.Integration.Adapter.MarketRules
             if (!fixture.IsMatchOver || oldState == null)
                 return result;
 
-            _logger.DebugFormat("Applying market rule={0} for {1}", Name, fixture);
-
             var markets = fixture.Markets.ToDictionary(m => m.Id);
 
             // get list of markets which are either no longer in snapshot or are in the snapshot and are not resulted

@@ -82,7 +82,7 @@ namespace SS.Integration.Adapter.MarketRules
 
                 if (_ExcludedMarketType.Contains(mkt.Type))
                 {
-                    _Logger.InfoFormat("market rule={0} => {1} of {2} is marked as un-removable due its type={3}", 
+                    _Logger.DebugFormat("market rule={0} => {1} of {2} is marked as un-removable due its type={3}", 
                         Name, mkt, fixture, mkt.Type);
 
                     result.MarkAsUnRemovable(mkt);
@@ -101,7 +101,7 @@ namespace SS.Integration.Adapter.MarketRules
                     GetTags(mkt, mkt_state);
                     result.MarkAsUnRemovable(mkt);
 
-                    _Logger.InfoFormat("market rule={0} => assigned tags to {1} of {2}", Name, mkt, fixture);
+                    _Logger.DebugFormat("market rule={0} => assigned tags to {1} of {2}", Name, mkt, fixture);
                 }
                 else if (mkt.IsPending)
                 {
@@ -110,7 +110,7 @@ namespace SS.Integration.Adapter.MarketRules
                     // has never been active before
                     if (AlwaysExcludePendingMarkets || (mkt_state != null && !mkt_state.HasBeenActive))
                     {
-                        _Logger.InfoFormat("market rule={0} => {1} of {2} is marked as removable", Name, mkt, fixture);
+                        _Logger.DebugFormat("market rule={0} => {1} of {2} is marked as removable", Name, mkt, fixture);
 
                         result.MarkAsRemovable(mkt);
                     }

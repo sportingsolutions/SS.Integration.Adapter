@@ -47,8 +47,6 @@ namespace SS.Integration.Adapter.WindowsService
             TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;    
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
 
-
-
             Compose();
         }
 
@@ -71,6 +69,7 @@ namespace SS.Integration.Adapter.WindowsService
 
         private void Compose()
         {
+            _logger.Info("Adapter Service is looking for a plugin");
             CompositionContainer container = null;
 
             try
@@ -130,8 +129,7 @@ namespace SS.Integration.Adapter.WindowsService
                 return;
             }
 
-            List<NinjectModule> modules = new List<NinjectModule>();
-            modules.Add(new BootStrapper());
+            List<NinjectModule> modules = new List<NinjectModule> {new BootStrapper()};
 
             if (PluginBootstrapper != null)
             {

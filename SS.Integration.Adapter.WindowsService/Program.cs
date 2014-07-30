@@ -53,7 +53,7 @@ namespace SS.Integration.Adapter.WindowsService
                     method.Invoke(service, new object[] { null });
                 }
 
-                logger.Debug(@"Service Started! - Press any key to stop");
+                logger.Info(@"Service Started! - Press any key to stop");
                 Console.ReadLine();
 
                 if (onstop != null)

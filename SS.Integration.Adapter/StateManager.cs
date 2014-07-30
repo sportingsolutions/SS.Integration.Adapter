@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using log4net;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.MarketRules;
 using SS.Integration.Adapter.MarketRules.Interfaces;
@@ -27,6 +28,7 @@ namespace SS.Integration.Adapter
     internal class StateManager : IStoredObjectProvider, IStateManager, IStateProvider
     {
         private const string PLUGIN_STORE_PREFIX = "plugin_";
+        private static readonly ILog _logger = LogManager.GetLogger(typeof(StateManager));
 
         private readonly IObjectProvider<IUpdatableMarketStateCollection> _PersistanceLayer;
         private readonly IObjectProvider<IPluginFixtureState> _PluginPersistanceLayer;
@@ -64,6 +66,11 @@ namespace SS.Integration.Adapter
                 // delta rule supersede th inactive market rule
                 // therefore there is no advantage having both enabled
                 _Rules.Add(InactiveMarketsFilteringRule.Instance);
+            }
+
+            foreach (var rule in _Rules)
+            {
+                _logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
             }
             
         }
@@ -161,6 +168,8 @@ namespace SS.Integration.Adapter
         {
             if (string.IsNullOrEmpty(fixtureId))
                 return;
+
+            _logger.DebugFormat("Clearing data state for fixtureId={0}", fixtureId);
 
             if (_RulesManagers.ContainsKey(fixtureId))
             {
