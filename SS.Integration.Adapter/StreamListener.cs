@@ -459,7 +459,7 @@ namespace SS.Integration.Adapter
 
                 if (IsDisposing)
                 {
-                    _logger.InfoFormat("StreamListener for {0} is disposing - skipping current update");
+                    _logger.InfoFormat("StreamListener for {0} is disposing - skipping current update", _resource);
                     return;
                 }
 
@@ -724,7 +724,7 @@ namespace SS.Integration.Adapter
             {
                 // No need to raise up the exception
                 // we will try again later
-                _logger.WarnFormat("Exception occured when trying to process the first snapshot for {0}. Error: ",_resource, ex);
+                _logger.Error(string.Format("Exception occured when trying to process the first snapshot for {0}", _resource), ex);
                 SetErrorState();
             }
             finally
@@ -802,7 +802,6 @@ namespace SS.Integration.Adapter
 
             try
             {
-
                 _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_IN_PLAY,
                     (string.Equals(snapshot.MatchStatus, ((int)MatchStatus.InRunning).ToString(), StringComparison.OrdinalIgnoreCase) ? "1" : "0"));
 
