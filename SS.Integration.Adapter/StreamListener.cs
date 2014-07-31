@@ -253,12 +253,14 @@ namespace SS.Integration.Adapter
         /// <summary>
         /// Starts the listener. 
         /// </summary>
-        public void Start()
+        public bool Start()
         {
             if (_resource == null)
                 throw new ObjectDisposedException("StreamListener");
 
             StartStreaming();
+
+            return !IsErrored;
         }
 
         /// <summary>
@@ -324,7 +326,6 @@ namespace SS.Integration.Adapter
 
         private void SetupListener()
         {
-
             _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_STREAMING, "0");
             _resource.StreamConnected += ResourceOnStreamConnected;
             _resource.StreamDisconnected += ResourceOnStreamDisconnected;
@@ -399,8 +400,9 @@ namespace SS.Integration.Adapter
             {
                 IsConnecting = false;
                 IsStreaming = false;
+                IsErrored = true;
 
-                _logger.Error(string.Format("An error has occured when trying to connect to stream server for {0}", _resource), ex);
+                _logger.Error(string.Format("An error has occured when trying to connect to stream server for {0}. Stream listener is market as errored.", _resource), ex);
             }
         }
 
@@ -739,6 +741,8 @@ namespace SS.Integration.Adapter
                     _isFirstSnapshotProcessed = tmp;
                     _isProcessingFirstSnapshot = false;
                 }
+
+
             }
         }
 
@@ -746,7 +750,7 @@ namespace SS.Integration.Adapter
         {
             var snapshot = RetrieveSnapshot();
             if (snapshot != null)
-                ProcessSnapshot(snapshot, true, hasEpochChanged);
+                ProcessSnapshot(snapshot, true, hasEpochChanged,!IsErrored);
         }
 
         private void RetrieveAndProcessSnapshotIfNeeded()
@@ -887,7 +891,6 @@ namespace SS.Integration.Adapter
             }
 
             _currentSequence = snapshot.Sequence;
-
         }
 
         private void ProcessFixtureDelete(Fixture fixtureDelta)

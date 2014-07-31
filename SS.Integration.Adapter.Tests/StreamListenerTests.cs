@@ -1367,8 +1367,7 @@ namespace SS.Integration.Adapter.Tests
 
             listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
 
-            listener.Start();
-            
+            listener.Start().Should().BeTrue();
             listener.IsErrored.Should().BeFalse();
 
 
@@ -1379,17 +1378,13 @@ namespace SS.Integration.Adapter.Tests
             // until the procedure of getting and processing the first snapshot is over,
             // no other snapshots should be acquired. To check this, we try to acquire 
             // a new snapshot while we are processing the previous one.
-            connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>())).Callback(() =>
-            {
-                throw new Exception("While processing the first snapshot, the plugin raised an exception");
-            }
-            );
-
-
+            connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()))
+                .Throws(new Exception("While processing the first snapshot, the plugin raised an exception"));
+            
             listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
 
             // an exception is raised while we process the first snapshot
-            listener.Start();
+            listener.Start().Should().BeFalse();
 
             listener.IsErrored.Should().BeTrue();
 
@@ -1402,13 +1397,98 @@ namespace SS.Integration.Adapter.Tests
             // ... retry....and it should be fine
             listener.UpdateResourceState(resource.Object);
             
-            resource.Verify(x => x.GetSnapshot(), Times.Exactly(5));
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(6));
 
             // ... retry again but this time the stream listener should not do anything
             listener.UpdateResourceState(resource.Object);
 
-            resource.Verify(x => x.GetSnapshot(), Times.Exactly(5));
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(6));
         }
 
+
+        /// <summary>
+        /// I want to test that when the first snapshot errors 
+        /// on setup fixture, streamlistener does NOT start streaming 
+        /// </summary>
+        [Test]
+        [Category("StreamListener")]
+        public void ShouldTakeASnapshotOnFirstTimeAndNotStartStreamingIfErrored()
+        {
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+            IStateManager provider = new StateManager(settings.Object);
+
+            Fixture fixture = new Fixture {Id = "ABC", Sequence = 1, MatchStatus = ((int) MatchStatus.Setup).ToString()};
+
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Setup);
+
+            // FIRST TEST -> if an error is raised, don't reach the error state
+
+            // with returning an empty string we force the stream listener to raise an exception
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+            connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>())).Throws<Exception>();
+
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener.Start().Should().BeFalse();
+
+            // make sure that the listener has not call StartStreaming
+            // but has instead hit the procedure to acquire the first snapshot
+            resource.Verify(x => x.StartStreaming(), Times.Never);
+
+            // GetSnapshot should immediatelly retry when the first snapshot failed
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(2));
+
+            //if the first snapshot fails it will be marked as errored unless a second one 
+            listener.IsErrored.Should().BeTrue();
+
+            resource.Verify(x=> x.StartStreaming(It.IsAny<int>(),It.IsAny<int>()),Times.Never);
+        }
+
+        /// <summary>
+        /// I want to test that when the first snapshot errors 
+        /// on prematch fixture, streamlistener does NOT start streaming 
+        /// </summary>
+        [Test]
+        [Category("StreamListener")]
+        public void ShouldNotStartStreamingPrematchIfErroredOnSnapshot()
+        {
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+            IStateManager provider = new StateManager(settings.Object);
+
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.Prematch).ToString() };
+
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Setup);
+
+            // FIRST TEST -> if an error is raised, don't reach the error state
+
+            // with returning an empty string we force the stream listener to raise an exception
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+            connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>())).Throws<Exception>();
+
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener.Start().Should().BeFalse();
+
+            // make sure that the listener has not call StartStreaming
+            // but has instead hit the procedure to acquire the first snapshot
+            resource.Verify(x => x.StartStreaming(), Times.Never);
+
+            // GetSnapshot should immediatelly retry when the first snapshot failed
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(2));
+
+            //if the first snapshot fails it will be marked as errored unless a second one 
+            listener.IsErrored.Should().BeTrue();
+            resource.Verify(x => x.StartStreaming(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+        }
     }
 }
