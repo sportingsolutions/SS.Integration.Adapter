@@ -27,7 +27,7 @@ namespace SS.Integration.Adapter.Interface
 
         bool IsStreaming { get; }
 
-        void Start();
+        bool Start();
 
         void Stop();
 

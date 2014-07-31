@@ -442,7 +442,12 @@ namespace SS.Integration.Adapter
 
                         var listener = new StreamListener(resource, PlatformConnector, EventState, StateManager);
 
-                        listener.Start();
+                        if (!listener.Start())
+                        {
+                            _logger.WarnFormat("Couldn't start stream listener for {0}",resource);
+                            continue;
+                        }
+
                         _listeners.TryAdd(resource.Id, listener);
 
                         OnStreamCreated();
