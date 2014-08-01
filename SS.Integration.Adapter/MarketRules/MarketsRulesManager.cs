@@ -105,7 +105,7 @@ namespace SS.Integration.Adapter.MarketRules
 
             MergeIntents(fixture, tmp);
 
-            GatherMetrics();
+            //GatherMetrics();
 
             _logger.InfoFormat("Market state update for {0}", fixture);
         }
