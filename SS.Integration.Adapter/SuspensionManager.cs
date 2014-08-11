@@ -25,7 +25,7 @@ namespace SS.Integration.Adapter
         SUSPENSION,
         DISCONNECT_EVENT,
         FIXTURE_DELETED,
-        ADAPTER_DISPOSING,
+        FIXTURE_DISPOSING,
         FIXTURE_ERRORED
     }
 
@@ -113,7 +113,7 @@ namespace SS.Integration.Adapter
         {
             switch (reason)
             {
-                case SuspensionReason.ADAPTER_DISPOSING:
+                case SuspensionReason.FIXTURE_DISPOSING:
                     _disposing = action;
                     break;
                 case SuspensionReason.DISCONNECT_EVENT:
@@ -133,12 +133,12 @@ namespace SS.Integration.Adapter
             _logger.DebugFormat("Suspend action for reason={0} has a new custom strategy", reason);
         }
 
-        public void Suspend(string fixtureId, SuspensionReason reason = SuspensionReason.ADAPTER_DISPOSING)
+        public void Suspend(string fixtureId, SuspensionReason reason = SuspensionReason.FIXTURE_DISPOSING)
         {
             Action<IMarketStateCollection> action;
             switch (reason)
             {
-                case SuspensionReason.ADAPTER_DISPOSING:
+                case SuspensionReason.FIXTURE_DISPOSING:
                     action = _disposing;
                     break;
                 case SuspensionReason.DISCONNECT_EVENT:

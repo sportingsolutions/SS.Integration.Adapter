@@ -121,6 +121,13 @@ namespace SS.Integration.Adapter.MarketRules
             _currentTransaction = null;
         }
 
+        public void OnFixtureUnPublished()
+        {
+            var current = CurrentState as MarketStateCollection;
+            if (current != null)
+                current.OnFixtureUnPublished();
+        }
+
         #endregion
 
         private void BeginTransaction(IUpdatableMarketStateCollection oldState, Fixture fixture)
@@ -367,5 +374,6 @@ namespace SS.Integration.Adapter.MarketRules
             });
 
         }
+
     }
 }

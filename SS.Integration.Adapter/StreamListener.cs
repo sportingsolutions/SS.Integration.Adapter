@@ -91,9 +91,7 @@ namespace SS.Integration.Adapter
             IsFixtureDeleted = false;
 
             var fixtureState = _eventState.GetFixtureState(resource.Id);
-            IsFixtureEnded = fixtureState != null
-                ? fixtureState.MatchStatus == MatchStatus.MatchOver
-                : _resource.IsMatchOver;
+            IsFixtureEnded = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.MatchOver : _resource.IsMatchOver;
 
             IsFixtureSetup = (_resource.MatchStatus == MatchStatus.Setup ||
                               _resource.MatchStatus == MatchStatus.Ready);
@@ -774,7 +772,7 @@ namespace SS.Integration.Adapter
             {
                 RetrieveAndProcessSnapshot();
 
-                if (!IsErrored && !fixture_created)
+                if (!IsErrored && !IsIgnored && !fixture_created)
                 {
                     _Stats.SetValue(AdapterCoreKeys.FIXTURE_CREATED, "1");
                 }
@@ -829,7 +827,7 @@ namespace SS.Integration.Adapter
             }
             catch (FixtureIgnoredException ie)
             {
-                _logger.InfoFormat("{0} received a FixtureIgnoredException. Stopping listener", _resource);
+                _logger.InfoFormat("{0} received a FixtureIgnoredException", _resource);
                 _logger.Error("FixtureIgnoredException", ie);
                 IsIgnored = true;
 
@@ -913,6 +911,7 @@ namespace SS.Integration.Adapter
             var status = (MatchStatus)Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus);
             
             //reset event state
+            _marketsRuleManager.OnFixtureUnPublished();
             _eventState.UpdateFixtureState(_resource.Sport, fixtureDelta.Id, -1, status);
         }
 
@@ -945,7 +944,7 @@ namespace SS.Integration.Adapter
 
             Stop();
 
-            SuspendFixture(SuspensionReason.ADAPTER_DISPOSING);
+            SuspendFixture(SuspensionReason.FIXTURE_DISPOSING);
 
             // free the resource instantiated by the SDK
             _resource = null;
