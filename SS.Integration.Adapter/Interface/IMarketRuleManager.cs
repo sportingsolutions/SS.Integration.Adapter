@@ -39,5 +39,7 @@ namespace SS.Integration.Adapter.Interface
         void CommitChanges();
 
         IMarketStateCollection CurrentState { get; }
+
+        void OnFixtureUnPublished();
     }
 }

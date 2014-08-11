@@ -107,6 +107,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
             get { return _States.Count; }
         }
 
+        public bool FixtureUnPublished { get; private set;}
+
         #endregion
 
         #region IUpdatableMarketStateCollection
@@ -125,7 +127,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 var marketsLookUp = fixture.Markets.ToDictionary(m => m.Id);
 
                 //if market doesn't exist in the snapshot the definition must have been changed
-                Markets.Where(marketId => !marketsLookUp.ContainsKey(marketId)).ForEach(marketId=> this[marketId].IsDeleted = true);
+                Markets.Where(marketId => !marketsLookUp.ContainsKey(marketId)).ForEach(marketId => this[marketId].IsDeleted = true);
             }
 
             foreach (var market in fixture.Markets)
@@ -144,7 +146,11 @@ namespace SS.Integration.Adapter.MarketRules.Model
             }
         }
 
-        #endregion
+        public void OnFixtureUnPublished()
+        {
+            FixtureUnPublished = true;
+        }
 
+        #endregion
     }
 }
