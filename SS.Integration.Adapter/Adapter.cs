@@ -290,10 +290,18 @@ namespace SS.Integration.Adapter
 
             try
             {
-                _Stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_QUEUE_SIZE, queueSize.ToString());
-                _Stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_TOTAL_MEMORY, GC.GetTotalMemory(false).ToString());
-                _Stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_RUNNING_THREADS, Process.GetCurrentProcess().Threads.Count.ToString());
+                _Stats.AddValueUnsafe(AdapterCoreKeys.ADAPTER_TOTAL_MEMORY, GC.GetTotalMemory(false).ToString());
+                _Stats.AddValueUnsafe(AdapterCoreKeys.ADAPTER_RUNNING_THREADS, Process.GetCurrentProcess().Threads.Count.ToString());
                 _Stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_HEALTH_CHECK, "1");
+                _Stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_FIXTURE_TOTAL, currentlyConnected.ToString());
+
+                foreach (var sport in _listeners.Values.GroupBy(x => x.Sport))
+                {
+                    var sportStatsHandle = StatsManager.Instance["adapter.core.fixture." + sport.Key].GetHandle();
+                    sportStatsHandle.SetValueUnsafe(AdapterCoreKeys.SPORT_FIXTURE_TOTAL, sport.Count().ToString());
+                    sportStatsHandle.SetValueUnsafe(AdapterCoreKeys.SPORT_FIXTURE_STREAMING_TOTAL, sport.Count(x => x.IsStreaming).ToString());
+                    sportStatsHandle.SetValueUnsafe(AdapterCoreKeys.SPORT_FIXTURE_IN_PLAY_TOTAL, sport.Count(x => x.IsInPlay).ToString());
+                }
             }
             catch { }
 
