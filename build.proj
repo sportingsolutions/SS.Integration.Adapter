@@ -37,7 +37,8 @@
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.dll;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.exe;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.exe.config;
-						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.pdb;"
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.pdb;
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\stats.config"
 				Exclude="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.json;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.vshost.*"
 			/>

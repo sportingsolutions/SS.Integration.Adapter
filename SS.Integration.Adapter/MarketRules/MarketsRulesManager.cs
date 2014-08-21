@@ -105,7 +105,7 @@ namespace SS.Integration.Adapter.MarketRules
 
             MergeIntents(fixture, tmp);
 
-            GatherMetrics();
+            //GatherMetrics();
 
             _logger.InfoFormat("Market state update for {0}", fixture);
         }
@@ -119,6 +119,13 @@ namespace SS.Integration.Adapter.MarketRules
         {
             _logger.DebugFormat("Rolling back changes made to the market state");
             _currentTransaction = null;
+        }
+
+        public void OnFixtureUnPublished()
+        {
+            var current = CurrentState as MarketStateCollection;
+            if (current != null)
+                current.OnFixtureUnPublished();
         }
 
         #endregion
@@ -277,6 +284,7 @@ namespace SS.Integration.Adapter.MarketRules
             if (_Stats != null)
             {
                 _Stats.AddValue(AdapterCoreKeys.FIXTURE_FILTERED_MARKETS, filtered.ToString());
+                _Stats.SetValue(AdapterCoreKeys.FIXTURE_TOTAL_MARKETS, CurrentState.MarketCount.ToString());
             }
         }
 
@@ -338,7 +346,6 @@ namespace SS.Integration.Adapter.MarketRules
             {
                 try
                 {
-                    _Stats.SetValueUnsafe(AdapterCoreKeys.FIXTURE_TOTAL_MARKETS, CurrentState.MarketCount.ToString());
 
                     foreach (var mkt in CurrentState.Markets)
                     {
@@ -354,11 +361,11 @@ namespace SS.Integration.Adapter.MarketRules
                         {
                             var seln_key = string.Concat(key, "selection.", seln.Name, ".");
 
-                            _Stats.SetValue(seln_key + AdapterCoreKeys.SELECTION_IS_ACTIVE, seln.Status == SelectionStatus.Active ? "1" : "0");
-                            _Stats.SetValue(seln_key + AdapterCoreKeys.SELECTION_IS_SETTLED, seln.Status == SelectionStatus.Settled ? "1" : "0");
+                            _Stats.SetValueUnsafe(seln_key + AdapterCoreKeys.SELECTION_IS_ACTIVE, seln.Status == SelectionStatus.Active ? "1" : "0");
+                            _Stats.SetValueUnsafe(seln_key + AdapterCoreKeys.SELECTION_IS_SETTLED, seln.Status == SelectionStatus.Settled ? "1" : "0");
 
                             if(seln.Price.HasValue)
-                                _Stats.AddValue(seln_key + AdapterCoreKeys.SELECTION_PRICE, seln.Price.Value.ToString());
+                                _Stats.AddValueUnsafe(seln_key + AdapterCoreKeys.SELECTION_PRICE, seln.Price.Value.ToString());
                         }
 
                     }
@@ -367,5 +374,6 @@ namespace SS.Integration.Adapter.MarketRules
             });
 
         }
+
     }
 }

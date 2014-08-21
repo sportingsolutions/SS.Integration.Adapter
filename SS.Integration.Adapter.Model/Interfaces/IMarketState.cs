@@ -93,6 +93,8 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// </summary>
         double? Line { get; }
 
+        bool IsDeleted { get; set; }
+
         #region Selections 
 
         /// <summary>
@@ -158,8 +160,6 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// to this market state.
         /// </summary>
         int TagsCount { get; }
-
-        bool IsDeleted { get; set; }
 
         #endregion
 

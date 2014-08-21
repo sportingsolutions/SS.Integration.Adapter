@@ -57,6 +57,13 @@ namespace SS.Integration.Adapter.MarketRules
             if (fixture.Tags == null || !fixture.Tags.Any() || oldState == null)
                 return intent;
 
+            if (oldState.FixtureUnPublished)
+            {
+                _logger.DebugFormat("Skipping rule={0} as fixture was firstly un-published and the re-published");
+                return intent;
+            }
+
+
             foreach (var mkt in fixture.Markets)
             {
                 if (oldState.HasMarket(mkt.Id))

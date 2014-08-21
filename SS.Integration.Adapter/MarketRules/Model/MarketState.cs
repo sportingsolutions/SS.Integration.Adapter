@@ -100,6 +100,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public double? Line { get; set; }
 
+        public bool IsDeleted { get; set; }
+
         #region Tags
 
         public IEnumerable<string> TagKeys
@@ -124,8 +126,6 @@ namespace SS.Integration.Adapter.MarketRules.Model
         {
             get { return _tags.Count; }
         }
-
-        public bool IsDeleted { get; set; }
 
         #endregion
 

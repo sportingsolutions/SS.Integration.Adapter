@@ -81,6 +81,7 @@ namespace SS.Integration.Adapter
             _marketsRuleManager = stateManager.CreateNewMarketRuleManager(resource.Id);
 
             FixtureId = resource.Id;
+            Sport = resource.Sport;
             IsStreaming = false;
             IsConnecting = false;
             SequenceOnStreamingAvailable = _currentSequence;
@@ -91,13 +92,12 @@ namespace SS.Integration.Adapter
             IsFixtureDeleted = false;
 
             var fixtureState = _eventState.GetFixtureState(resource.Id);
-            IsFixtureEnded = fixtureState != null
-                ? fixtureState.MatchStatus == MatchStatus.MatchOver
-                : _resource.IsMatchOver;
+            IsFixtureEnded = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.MatchOver : _resource.IsMatchOver;
 
             IsFixtureSetup = (_resource.MatchStatus == MatchStatus.Setup ||
                               _resource.MatchStatus == MatchStatus.Ready);
 
+            IsInPlay = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.InRunning : _resource.MatchStatus == MatchStatus.InRunning;
 
             _Stats = StatsManager.Instance[string.Concat("adapter.core.fixture.", resource.Sport, ".", resource.Name)].GetHandle();
 
@@ -112,6 +112,16 @@ namespace SS.Integration.Adapter
             get;
             private set;
         }
+
+        public bool IsInPlay
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get;
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            private set; 
+        }
+
+        public string Sport { get; private set; }
 
         /// <summary>
         /// Returns true if the match is over and the fixture is ended.
@@ -784,11 +794,9 @@ namespace SS.Integration.Adapter
 
             FixtureState state = _eventState.GetFixtureState(_resource.Id);
             int sequence_number = -1;
-            bool fixture_created = false;
             if (state != null)
             {
                 sequence_number = state.Sequence;
-                fixture_created = true;
             }
 
 
@@ -799,11 +807,6 @@ namespace SS.Integration.Adapter
             if (sequence_number == -1 || resource_sequence != sequence_number)
             {
                 RetrieveAndProcessSnapshot();
-
-                if (!IsErrored && !fixture_created)
-                {
-                    _Stats.SetValue(AdapterCoreKeys.FIXTURE_CREATED, "1");
-                }
             }
             else
             {
@@ -834,12 +837,13 @@ namespace SS.Integration.Adapter
 
             Stopwatch timer = new Stopwatch();
             timer.Start();
-
+            
             try
             {
-                _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_IN_PLAY,
-                    (string.Equals(snapshot.MatchStatus, ((int)MatchStatus.InRunning).ToString(), StringComparison.OrdinalIgnoreCase) ? "1" : "0"));
+                bool is_inplay = string.Equals(snapshot.MatchStatus, ((int)MatchStatus.InRunning).ToString(), StringComparison.OrdinalIgnoreCase);
+                IsInPlay = is_inplay;
 
+                _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_IN_PLAY, is_inplay ? "1" : "0");
                 _Stats.AddValue(AdapterCoreKeys.FIXTURE_MARKETS_IN_SNAPSHOT, snapshot.Markets.Count.ToString());
 
                 _logger.DebugFormat("Applying market rules for {0}", snapshot);
@@ -857,7 +861,7 @@ namespace SS.Integration.Adapter
             }
             catch (FixtureIgnoredException ie)
             {
-                _logger.InfoFormat("{0} received a FixtureIgnoredException. Stopping listener", _resource);
+                _logger.InfoFormat("{0} received a FixtureIgnoredException", _resource);
                 _logger.Error("FixtureIgnoredException", ie);
                 IsIgnored = true;
 
@@ -941,6 +945,7 @@ namespace SS.Integration.Adapter
             var status = (MatchStatus)Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus);
 
             //reset event state
+            _marketsRuleManager.OnFixtureUnPublished();
             _eventState.UpdateFixtureState(_resource.Sport, fixtureDelta.Id, -1, status);
         }
 
@@ -973,7 +978,7 @@ namespace SS.Integration.Adapter
 
             Stop();
 
-            SuspendFixture(SuspensionReason.ADAPTER_DISPOSING);
+            SuspendFixture(SuspensionReason.FIXTURE_DISPOSING);
 
             // free the resource instantiated by the SDK
             _resource = null;

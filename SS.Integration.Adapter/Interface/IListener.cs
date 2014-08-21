@@ -27,6 +27,12 @@ namespace SS.Integration.Adapter.Interface
 
         bool IsStreaming { get; }
 
+        bool IsInPlay { get; }
+
+        string Sport { get; }
+
+        string FixtureId { get; }
+
         bool Start();
 
         void Stop();
