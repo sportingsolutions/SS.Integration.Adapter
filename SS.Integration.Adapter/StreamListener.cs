@@ -581,13 +581,7 @@ namespace SS.Integration.Adapter
                 // this is for when Dispose() was called
                 if (_resource == null)
                     return;
-
-                IsStreaming = false;
-
-                // for when a disconnect event is raised due a failed attempt to connect 
-                // (in other words, when we didn't receive a connect event)
-                IsConnecting = false;
-
+                
                 if (!this.IsFixtureEnded && !IsFixtureDeleted)
                 {
 
@@ -604,6 +598,12 @@ namespace SS.Integration.Adapter
                 {
                     _logger.InfoFormat("Listener disconnected for {0} - fixture is over/deleted", _resource);
                 }
+
+                IsStreaming = false;
+
+                // for when a disconnect event is raised due a failed attempt to connect 
+                // (in other words, when we didn't receive a connect event)
+                IsConnecting = false;
 
                 _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_STREAMING, "0");
 
