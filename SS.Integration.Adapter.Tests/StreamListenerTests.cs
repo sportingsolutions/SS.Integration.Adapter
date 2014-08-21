@@ -1358,7 +1358,7 @@ namespace SS.Integration.Adapter.Tests
                 resource.Verify(x => x.StartStreaming(), Times.Never);
 
                 // check that GetSnapshot is only called once!
-                // 2 = this test + previous one
+                // 3 = this test + previous one
                 resource.Verify(x => x.GetSnapshot(), Times.Exactly(3));
             }
             );
