@@ -12,6 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System.Collections.Generic;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 
@@ -31,6 +32,12 @@ namespace SS.Integration.Adapter.MarketRules.Interfaces
         /// <param name="fullSnapshot">True if the Fixture object comes from a full snapshot</param>
         void Update(Fixture fixture, bool fullSnapshot);
 
-        void OnFixtureUnPublished();
+        /// <summary>
+        /// Allows to force the the suspension state on the given market.
+        /// When a market is forced on a suspended state, the 
+        /// IMarketState.IsForcedSuspended property will return true
+        /// </summary>
+        /// <param name="markets"></param>
+        void OnMarketsForcedSuspension(IEnumerable<IMarketState> markets);
     }
 }

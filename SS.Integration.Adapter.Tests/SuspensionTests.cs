@@ -244,8 +244,7 @@ namespace SS.Integration.Adapter.Tests
         /// <summary>
         /// I want to test that when the StreamListener
         /// receives a disconnect event, and the fixture
-        /// is ended, it does not suspend
-        /// the fixture
+        /// is ended, it does not suspend the fixture
         /// </summary>
         [Test]
         [Category("Suspension")]
@@ -303,15 +302,14 @@ namespace SS.Integration.Adapter.Tests
             // STEP 5: send the update
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
 
+            // check that the fixture got suspended
+            connector.Verify(x => x.Suspend(It.Is<string>(y => y == "ABC")));
 
-            // STEP 6: check the result, note tha MKT-2 is not in-play
-            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
-                y => y.Id == "ABC" &&
-                     y.Markets.Count == 2 &&
-                     y.Markets.FirstOrDefault(z => z.Id == "MKT-1") != null &&
-                     y.Markets.FirstOrDefault(z => z.Id == "MKT-2") != null),
-                It.IsAny<bool>()));
+            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
 
+            listener.ResourceOnStreamDisconnected(this, EventArgs.Empty);
+
+            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
         }
 
         /// <summary>

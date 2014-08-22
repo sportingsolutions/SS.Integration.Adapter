@@ -35,5 +35,12 @@ namespace SS.Integration.Adapter.MarketRules.Interfaces
         /// </summary>
         /// <returns></returns>
         IUpdatableMarketState Clone();
+
+        /// <summary>
+        /// Allows to force the suspension state on a market.
+        /// When called, the IMarketState.IsForcedSuspension
+        /// property will return true.
+        /// </summary>
+        void SetForcedSuspensionState();
     }
 }

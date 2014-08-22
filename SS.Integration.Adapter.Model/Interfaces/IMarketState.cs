@@ -87,6 +87,16 @@ namespace SS.Integration.Adapter.Model.Interfaces
         bool HasBeenActive { get; }
 
         /// <summary>
+        /// True if the market has been forcely
+        /// suspended by the adapter.
+        /// 
+        /// This is different from IsSuspended
+        /// which only looks at the tradability
+        /// of the market
+        /// </summary>
+        bool IsForcedSuspended { get; }
+
+        /// <summary>
         /// Returns the line of the market.
         /// Only valid if the market is an
         /// handicap/rolling market

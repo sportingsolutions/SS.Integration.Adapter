@@ -109,10 +109,6 @@
       <Project>{1ad0b149-3a7b-4725-abde-9455d953f036}</Project>
       <Name>SS.Integration.Adapter</Name>
     </ProjectReference>
-    <ProjectReference Include="..\SS.Integration.Common.ConfigSerializer\SS.Integration.Common.ConfigSerializer.csproj">
-      <Project>{1C527842-E5A0-4E7A-A475-EFE1F8F892A2}</Project>
-      <Name>SS.Integration.Common.ConfigSerializer</Name>
-    </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Common\SS.Integration.Common.csproj">
       <Project>{756c25c1-9ff6-4299-8825-eeea5565ac58}</Project>
       <Name>SS.Integration.Common</Name>
