@@ -334,8 +334,6 @@ namespace SS.Integration.Adapter.Tests
             // if a suspension request with reason = disconnect arrives
             SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
 
-            suspension.RegisterAction(suspension.SuspendInPlayMarketsStrategy, SuspensionReason.DISCONNECT_EVENT);
-
             // STEP 3: prepare the fixture data
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
             fixture.Tags.Add("Sport", "Football"); // add at least one tags, so the MarketsRulesManager recognize it as a full-snapshot
@@ -377,12 +375,7 @@ namespace SS.Integration.Adapter.Tests
 
 
             // STEP 6: check the result, note tha MKT-2 is not in-play
-            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
-                y => y.Id == "ABC" &&
-                     y.Markets.Count == 2 &&
-                     y.Markets.FirstOrDefault(z => z.Id == "MKT-1") != null &&
-                     y.Markets.FirstOrDefault(z => z.Id == "MKT-2") != null),
-                It.IsAny<bool>()));
+            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(y => y.Id == "ABC" && y.Markets.Count == 0), It.IsAny<bool>()));
 
         }
 

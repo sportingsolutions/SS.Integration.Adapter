@@ -61,7 +61,7 @@ namespace SS.Integration.Adapter
             _error = SuspendFixtureStrategy;
             _disconnected = SuspendFixtureStrategy;
             _default = SuspendFixtureStrategy;
-            _fixtureDeleted = SuspendAllMarketsAndSetMatchStatusDeleted;
+            _fixtureDeleted = SuspendFixtureAndSetMatchStatusDeleted;
             
             // Not really a singleton
             Instance = this;
@@ -110,6 +110,11 @@ namespace SS.Integration.Adapter
             private set;
         }
 
+        public Action<IMarketStateCollection> SuspendFixtureAndSetMatchStatusDeleted
+        {
+            get;
+            private set;
+        }
 
         public void RegisterAction(Action<IMarketStateCollection> action, SuspensionReason reason)
         {
@@ -210,6 +215,22 @@ namespace SS.Integration.Adapter
 
                 _logger.InfoFormat("Marking markets for fixtureId={0} as suspended", x.FixtureId);
                 ((IUpdatableMarketStateCollection)x).OnMarketsForcedSuspension(includedMarketStates);
+            };
+
+            SuspendFixtureAndSetMatchStatusDeleted = x =>
+            {
+                var fixture = new Fixture
+                {
+                    Id = x.FixtureId,
+                    MatchStatus = ((int)MatchStatus.Deleted).ToString(),
+                    Sequence = x.FixtureSequence
+                };
+
+                
+                _logger.DebugFormat("Sending suspension command through the plugin for fixtureId={0} and setting its MatchStatus as deleted", x.FixtureId);
+                _plugin.ProcessStreamUpdate(fixture);
+
+                _logger.InfoFormat("Marking markets for fixtureId={0} as suspended", x.FixtureId);
             };
 
             SuspendInPlayMarketsStrategy = x =>
