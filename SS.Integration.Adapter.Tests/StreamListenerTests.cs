@@ -1628,5 +1628,140 @@ namespace SS.Integration.Adapter.Tests
             var fixtureState = provider.CreateNewMarketRuleManager("ABCDE").CurrentState;
             fixtureState.Markets.All(x => fixtureState[x].IsForcedSuspended).Should().BeFalse();
         }
+
+        /// <summary>
+        /// I want to test that when a fixture gets deleted
+        /// or it reach the match over status, a call on 
+        /// StreamListener.Dispose() doesn't generate 
+        /// suspend commands (suspends commands are 
+        /// generated while the deleted/matchover updates
+        /// are processed)
+        /// </summary>
+        [Test]
+        [Category("StreamListener")]
+        public void DontSendSuspensionOnDisposingIfFixtureEndedOrDeletedTest()
+        {
+            // STEP 1: prepare data
+
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+
+
+            var provider = new StateManager(settings.Object);
+            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
+
+            bool disposed = false;
+            bool matchover = false;
+            bool deleted = false;
+
+            Action<IMarketStateCollection> disponsing_strategy = (x) => {disposed = true;};
+            Action<IMarketStateCollection> matchover_strategy = (x) => { matchover = true; };
+            Action<IMarketStateCollection> deleted_strategy = (x) => { deleted = true; };
+
+            suspension.RegisterAction(disponsing_strategy, SuspensionReason.FIXTURE_DISPOSING);
+            suspension.RegisterAction(deleted_strategy, SuspensionReason.FIXTURE_DELETED);
+            suspension.RegisterAction(matchover_strategy, SuspensionReason.SUSPENSION);
+           
+
+            Fixture fixture = new Fixture { Id = "ABCDE", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString(), Epoch = 1 };
+
+            Market mkt = new Market { Id = "MKT" };
+
+            fixture.Markets.Add(mkt);
+
+            Fixture update = new Fixture
+            {
+                Id = "ABCDE",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.InRunning).ToString(),
+                Epoch = 2,
+                LastEpochChangeReason = new[] { (int)EpochChangeReason.Deleted }
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+
+            resource.Setup(x => x.Id).Returns("ABCDE");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            disposed.Should().BeFalse();
+            matchover.Should().BeFalse();
+            deleted.Should().BeFalse();
+
+            // STEP 3: send a delete command and check the result
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+            disposed.Should().BeFalse();
+            matchover.Should().BeFalse();
+            deleted.Should().BeTrue();
+
+            // STEP 4: reset the flags and send the dispose command
+            // (no other suspension commands should be raised);
+            disposed = false;
+            matchover = false;
+            deleted = false;
+
+            listener.Dispose();
+
+            deleted.Should().BeFalse();
+            disposed.Should().BeFalse();
+            matchover.Should().BeFalse();
+
+            // STEP 5: do the same, but for MatchOver 
+            disposed = false;
+            matchover = false;
+            deleted = false;
+
+            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            disposed.Should().BeFalse();
+            matchover.Should().BeFalse();
+            deleted.Should().BeFalse();
+
+            update = new Fixture
+            {
+                Id = "ABCDE",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.MatchOver).ToString(),
+                Epoch = 2,
+                LastEpochChangeReason = new[] { (int)EpochChangeReason.MatchStatus }
+            };
+
+            message = new StreamMessage { Content = update };
+
+            // STEP 3: send a delete command and check the result
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+            disposed.Should().BeFalse();
+            matchover.Should().BeTrue();
+            deleted.Should().BeFalse();
+
+            // STEP 4: reset the flags and send the dispose command
+            // (no other suspension commands should be raised);
+            disposed = false;
+            matchover = false;
+            deleted = false;
+
+            listener.Dispose();
+
+            deleted.Should().BeFalse();
+            disposed.Should().BeFalse();
+            matchover.Should().BeFalse();
+        }
     }
 }
