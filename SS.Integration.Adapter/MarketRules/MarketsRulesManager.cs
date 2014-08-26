@@ -123,9 +123,7 @@ namespace SS.Integration.Adapter.MarketRules
 
         public void OnFixtureUnPublished()
         {
-            var current = CurrentState as MarketStateCollection;
-            if (current != null)
-                current.OnFixtureUnPublished();
+            _stateProvider.SetObject(_fixtureId, CurrentState as IUpdatableMarketStateCollection);
         }
 
         #endregion

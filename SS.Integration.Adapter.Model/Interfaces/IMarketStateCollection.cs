@@ -50,12 +50,6 @@ namespace SS.Integration.Adapter.Model.Interfaces
         string FixtureName { get; }
 
         /// <summary>
-        /// Returns true if the fixture
-        /// has been un-published
-        /// </summary>
-        bool FixtureUnPublished { get; }
-
-        /// <summary>
         /// Return true if this collection contains
         /// the market with the given MarketId
         /// </summary>

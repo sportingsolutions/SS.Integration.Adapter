@@ -96,6 +96,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public bool HasBeenActive { get; set; }
 
+        public bool IsForcedSuspended { get; private set; }
+
         public bool IsRollingMarket { get; private set; }
 
         public double? Line { get; set; }
@@ -159,7 +161,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
         public bool IsEqualTo(IMarketState marketState)
         {
             if (marketState == null)
-                throw new ArgumentNullException("market");
+                throw new ArgumentNullException("marketState");
 
             if (ReferenceEquals(this, marketState))
                 return true;
@@ -174,7 +176,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
                                 this.IsResulted == marketState.IsResulted &&
                                 this.IsSuspended == marketState.IsSuspended &&
                                 this.IsActive == marketState.IsActive &&
-                                this.IsDeleted == marketState.IsDeleted;
+                                this.IsDeleted == marketState.IsDeleted &&
+                                this.IsForcedSuspended == marketState.IsForcedSuspended;
             
 
             if (isStatusEqual)
@@ -238,6 +241,12 @@ namespace SS.Integration.Adapter.MarketRules.Model
             if (IsRollingMarket)
                 result &= Line == ((RollingMarket)market).Line;
 
+            // the only case we really should pay attention
+            // is when we have forced the suspension
+            // when the market was active
+            if(IsForcedSuspended)
+                result &= market.IsSuspended;
+            
             return result;
         }
 
@@ -262,6 +271,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
             if (!HasBeenActive && IsActive)
                 HasBeenActive = true;
 
+            // always set to false at each update
+            IsForcedSuspended = false;
 
             market.IsPending = IsPending;
             market.IsActive = IsActive;
@@ -281,7 +292,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 IsTradedInPlay = this.IsTradedInPlay,
                 IsRollingMarket = this.IsRollingMarket,
                 IsDeleted = this.IsDeleted,
-                Line = this.Line
+                Line = this.Line,
+                IsForcedSuspended = this.IsForcedSuspended
             };
 
             foreach(var key in this.TagKeys)
@@ -291,6 +303,11 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 clone._selectionStates.Add(seln.Id, seln.Clone());
 
             return clone;
+        }
+
+        public void SetForcedSuspensionState()
+        {
+            IsForcedSuspended = true;
         }
 
         #endregion

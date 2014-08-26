@@ -13,7 +13,9 @@
 //limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using log4net;
+using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
@@ -56,9 +58,9 @@ namespace SS.Integration.Adapter
             BuildDefaultStrategies();
 
             _disposing = SuspendInPlayMarketsStrategy;
-            _error = SuspendAllMarketsStrategy;
-            _disconnected = SuspendAllMarketsStrategy;
-            _default = SuspendAllMarketsStrategy;
+            _error = SuspendFixtureStrategy;
+            _disconnected = SuspendFixtureStrategy;
+            _default = SuspendFixtureStrategy;
             _fixtureDeleted = SuspendAllMarketsAndSetMatchStatusDeleted;
             
             // Not really a singleton
@@ -185,24 +187,35 @@ namespace SS.Integration.Adapter
 
             SuspendAllMarketsStrategy = x =>
                 {
-                    var fixture = GetFixtureWithSuspendedMarkets(x);
-
+                    IEnumerable<IMarketState> includedMarketStates;
+                    var fixture = GetFixtureWithSuspendedMarkets(x, out includedMarketStates);
 
                     _logger.DebugFormat("Sending suspension command through the plugin for fixtureId={0}", x.FixtureId);
+
                     _plugin.ProcessStreamUpdate(fixture);
+
+                    _logger.InfoFormat("Marking markets for fixtureId={0} as suspended", x.FixtureId);
+                    ((IUpdatableMarketStateCollection)x).OnMarketsForcedSuspension(includedMarketStates);
                 };
 
             SuspendAllMarketsAndSetMatchStatusDeleted = x =>
             {
-                var fixture = GetFixtureWithSuspendedMarkets(x);
+                IEnumerable<IMarketState> includedMarketStates;
+                
+                var fixture = GetFixtureWithSuspendedMarkets(x, out includedMarketStates);
                 fixture.MatchStatus = ((int)MatchStatus.Deleted).ToString();
 
-                _logger.DebugFormat("Fixture has been deleted. Sending suspension command through the plugin for fixtureId={0}", x.FixtureId);
+                _logger.DebugFormat("Sending suspension command through the plugin for fixtureId={0} and setting its MatchStatus as deleted", x.FixtureId);
                 _plugin.ProcessStreamUpdate(fixture);
+
+                _logger.InfoFormat("Marking markets for fixtureId={0} as suspended", x.FixtureId);
+                ((IUpdatableMarketStateCollection)x).OnMarketsForcedSuspension(includedMarketStates);
             };
 
             SuspendInPlayMarketsStrategy = x =>
                 {
+                    List<IMarketState> includedMarketStates = new List<IMarketState>();
+
                     var fixture = new Fixture
                     {
                         Id = x.FixtureId,
@@ -223,19 +236,25 @@ namespace SS.Integration.Adapter
                             continue;
                         }
 
+                        includedMarketStates.Add(state);
                         fixture.Markets.Add(CreateSuspendedMarket(x[mkt_id]));
                     }
 
 
                     _logger.DebugFormat("Sending suspension command through the plugin for in-play markets of fixtureId={0}", x.FixtureId);
                     _plugin.ProcessStreamUpdate(fixture);
+
+                    _logger.InfoFormat("Marking markets for fixtureId={0} as suspended", x.FixtureId);
+                    ((IUpdatableMarketStateCollection)x).OnMarketsForcedSuspension(includedMarketStates);
                 };
         }
 
         
 
-        private static Fixture GetFixtureWithSuspendedMarkets(IMarketStateCollection x)
+        private static Fixture GetFixtureWithSuspendedMarkets(IMarketStateCollection x, out IEnumerable<IMarketState> includedMarketStates)
         {
+            includedMarketStates = new List<IMarketState>();
+
             var fixture = new Fixture
             {
                 Id = x.FixtureId,
@@ -245,8 +264,10 @@ namespace SS.Integration.Adapter
 
             foreach (var mkt_id in x.Markets)
             {
+                ((List<IMarketState>)includedMarketStates).Add(x[mkt_id]);
                 fixture.Markets.Add(CreateSuspendedMarket(x[mkt_id]));
             }
+
             return fixture;
         }
 

@@ -27,6 +27,7 @@ using SS.Integration.Adapter.Model.Enums;
 using SportingSolutions.Udapi.Sdk.Events;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
+using SS.Integration.Common.Extensions;
 
 namespace SS.Integration.Adapter.Tests
 {
@@ -526,7 +527,7 @@ namespace SS.Integration.Adapter.Tests
             listener.IsStreaming.Should().BeFalse();
             listener.IsFixtureEnded.Should().BeFalse();
 
-            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once, "StreamListener did not suspend the fixture");
+            connector.Verify(x => x.Suspend(It.Is<string>(y => y == "ABC")), "StreamListener did not suspend the fixture");
         }
 
         /// <summary>
@@ -587,7 +588,7 @@ namespace SS.Integration.Adapter.Tests
             // suspend is called when the stream listener correctly handles the "IsFixtureEnded" case, 
             // so we need to make sure that is only called once
 
-            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once);
+            connector.Verify(x => x.Suspend(It.Is<string>(y => y == "ABC")));
             
         }
 
@@ -831,7 +832,7 @@ namespace SS.Integration.Adapter.Tests
 
 
             // STEP 5: check that ProcessStreamUpdate is called only once (for suspension)!
-            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once);
+            connector.Verify(x => x.Suspend(It.Is<string>(y => y == "ABC")));
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The streamlistener was supposed to acquire a new snapshot");
         }
@@ -889,7 +890,7 @@ namespace SS.Integration.Adapter.Tests
 
 
             // STEP 5: check that ProcessStreamUpdate is called only once (due suspension)!
-            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>( y => y.Markets.Count == 0), It.IsAny<bool>()));
+            connector.Verify(x => x.Suspend(It.Is<string>(y => y == "ABC")));
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The streamlistener was supposed to acquire a new snapshot");
         }
@@ -996,7 +997,7 @@ namespace SS.Integration.Adapter.Tests
 
 
             // STEP 5: check that ProcessStreamUpdate is called only once (due suspension)!
-            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(y => y.Markets.Count == 0), It.IsAny<bool>()));
+            connector.Verify(x => x.Suspend(It.Is<string>(y => y == "ABC")));
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(3), "The streamlistener was supposed to acquire a new snapshot");
         }
@@ -1188,7 +1189,7 @@ namespace SS.Integration.Adapter.Tests
 
 
             // STEP 5: check that ProcessSnapshot is called only twice (first snapshot and when the fixture is ended, we get another one)!
-            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once);            
+            connector.Verify(x => x.Suspend(It.Is<string>(y => y == "ABC")));
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The StreamListener was supposed to acquire a new snapshot");
         }
@@ -1490,7 +1491,12 @@ namespace SS.Integration.Adapter.Tests
             resource.Verify(x => x.StartStreaming(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
         }
 
-
+        /// <summary>
+        /// I want to test that when a fixture
+        /// got un-published and re-published
+        /// (without any change on the fixture data)
+        /// the delta-rule doesn't remove any market
+        /// </summary>
         [Test]
         [Category("StreamListener")]
         public void MarkFixtureAsUnpublishedTest()
@@ -1504,10 +1510,9 @@ namespace SS.Integration.Adapter.Tests
             var provider = new StateManager(settings.Object);
             SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
 
-            var suspended = false;
-            Action<IMarketStateCollection> suspension_strategy = x => {suspended = true;};
-            
-            suspension.RegisterAction(suspension_strategy, SuspensionReason.FIXTURE_DELETED);
+            //var suspended = false;
+            //Action<IMarketStateCollection> suspension_strategy = x => {suspended = true;};
+            //suspension.RegisterAction(suspension_strategy, SuspensionReason.FIXTURE_DELETED);
 
             // Please note Sequence = 1
             Fixture fixture = new Fixture { Id = "ABCDE", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString(), Epoch = 1 };
@@ -1544,13 +1549,11 @@ namespace SS.Integration.Adapter.Tests
             // STEP 3: let create at lea
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
 
-            suspended.Should().BeTrue();
-
-            provider.CreateNewMarketRuleManager("ABCDE").CurrentState.FixtureUnPublished.Should().BeTrue();
+            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(y => y.Markets.All(k => k.IsSuspended)), It.IsAny<bool>()));
 
             update = new Fixture
             {
-                Id = "ABC",
+                Id = "ABCDE",
                 Sequence = 3,
                 MatchStatus = ((int)MatchStatus.MatchOver).ToString(), 
                 Epoch = 2
@@ -1568,6 +1571,62 @@ namespace SS.Integration.Adapter.Tests
 
             // STEP 4: if the delta rule was executed, the market would have been removed
             fixture.Markets.FirstOrDefault(x => x.Id == "MKT").Should().NotBeNull();
+        }
+
+        [Test]
+        [Category("StreamListener")]
+        public void MarkMarkedAsForcedSuspended()
+        {
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+            settings.Setup(x => x.DeltaRuleEnabled).Returns(true);
+            var provider = new StateManager(settings.Object);
+            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
+            suspension.RegisterAction(suspension.SuspendAllMarketsStrategy, SuspensionReason.SUSPENSION);
+
+            //var suspended = false;
+            //Action<IMarketStateCollection> suspension_strategy = x => {suspended = true;};
+            //suspension.RegisterAction(suspension_strategy, SuspensionReason.FIXTURE_DELETED);
+
+            // Please note Sequence = 1
+            Fixture fixture = new Fixture { Id = "ABCDE", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString(), Epoch = 1 };
+
+            Market mkt = new Market { Id = "MKT" };
+
+            fixture.Markets.Add(mkt);
+
+            // ...and Sequence = 3
+            Fixture update = new Fixture
+            {
+                Id = "ABCDE",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.MatchOver).ToString(),
+                Epoch = 2,
+                LastEpochChangeReason = new[] { (int)EpochChangeReason.BaseVariables }
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+
+            resource.Setup(x => x.Id).Returns("ABCDE");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            // STEP 3: let create at lea
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+            var fixtureState = provider.CreateNewMarketRuleManager("ABCDE").CurrentState;
+            fixtureState.Markets.All(x => fixtureState[x].IsForcedSuspended).Should().BeFalse();
         }
     }
 }

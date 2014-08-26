@@ -107,8 +107,6 @@ namespace SS.Integration.Adapter.MarketRules.Model
             get { return _States.Count; }
         }
 
-        public bool FixtureUnPublished { get; private set;}
-
         #endregion
 
         #region IUpdatableMarketStateCollection
@@ -146,9 +144,15 @@ namespace SS.Integration.Adapter.MarketRules.Model
             }
         }
 
-        public void OnFixtureUnPublished()
+        public void OnMarketsForcedSuspension(IEnumerable<IMarketState> markets)
         {
-            FixtureUnPublished = true;
+            if (markets == null)
+                return;
+
+            foreach (var mkt in markets)
+            {
+                _States[mkt.Id].SetForcedSuspensionState();
+            }
         }
 
         #endregion
