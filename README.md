@@ -47,6 +47,7 @@ In order to create a new plug-in, several steps are necessary. In general, these
 2. Add the adapter dll (or .NET project) as a dependency of the newly created project
 3. Create a new class that implements IAdapterPlugin interface
 4. Fill the IAdapterPlugin's methods with your specific business-logic.
+5. Copy the plugin binary and its dependencies into the adapters installation directory
 
 ### Plug-in configuration
 
