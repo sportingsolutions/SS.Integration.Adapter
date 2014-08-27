@@ -56,6 +56,7 @@
     <Compile Include="Exceptions\FixtureIgnoredException.cs" />
     <Compile Include="Fixture.cs" />
     <Compile Include="FixtureState.cs" />
+    <Compile Include="GameState\FootballGameState.cs" />
     <Compile Include="Interfaces\IPluginFixtureState.cs" />
     <Compile Include="Interfaces\IStateProvider.cs" />
     <Compile Include="Interfaces\IPluginBootstrapper.cs" />
