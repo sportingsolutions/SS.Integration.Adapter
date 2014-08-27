@@ -75,6 +75,7 @@
     </Compile>
     <Compile Include="AdapterTests.cs" />
     <Compile Include="EventStateTests.cs" />
+    <Compile Include="GameState\FootballGameStateTest.cs" />
     <Compile Include="GenericComparerHelper.cs" />
     <Compile Include="MarketsFilterTests.cs" />
     <Compile Include="ModelTests.cs" />
