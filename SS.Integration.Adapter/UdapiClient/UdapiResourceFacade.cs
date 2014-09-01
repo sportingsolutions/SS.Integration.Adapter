@@ -25,11 +25,7 @@ namespace SS.Integration.Adapter.UdapiClient
     public class UdapiResourceFacade : IResourceFacade, IStreamStatistics
     {
         private readonly ILog _logger = LogManager.GetLogger(typeof(UdapiResourceFacade));
-
-        public event EventHandler StreamConnected;
-        public event EventHandler StreamDisconnected;
-        public event EventHandler<StreamEventArgs> StreamEvent;
-
+        
         private readonly IResource _udapiResource;
 
         private readonly string _featureName;
@@ -115,10 +111,6 @@ namespace SS.Integration.Adapter.UdapiClient
         {
             try
             {
-                _udapiResource.StreamConnected += StreamConnected;
-                _udapiResource.StreamDisconnected += StreamDisconnected;
-                _udapiResource.StreamEvent += StreamEvent;
-
                 if (echoInterval == -1)
                 {
                     _reconnectStrategy.ReconnectOnException(x => x.StartStreaming(), _udapiResource);
@@ -165,10 +157,6 @@ namespace SS.Integration.Adapter.UdapiClient
         {
             try
             {
-                _udapiResource.StreamConnected -= StreamConnected;
-                _udapiResource.StreamDisconnected -= StreamDisconnected;
-                _udapiResource.StreamEvent -= StreamEvent;
-
                 _reconnectStrategy.ReconnectOnException(x => x.StopStreaming(), _udapiResource);
             }
             catch (Exception)
@@ -199,6 +187,49 @@ namespace SS.Integration.Adapter.UdapiClient
         }
 
         #endregion
+
+        public event EventHandler StreamConnected
+        {
+            add
+            {
+                if(_udapiResource != null)
+                    _udapiResource.StreamConnected += value;
+            }
+            remove
+            {
+                if (_udapiResource != null)
+                    _udapiResource.StreamConnected -= value;
+            }
+        }
+
+        public event EventHandler StreamDisconnected
+        {
+            add
+            {
+                if (_udapiResource != null)
+                    _udapiResource.StreamDisconnected += value;
+            }
+            remove
+            {
+                if (_udapiResource != null)
+                    _udapiResource.StreamDisconnected -= value;
+            }
+        }
+        
+        public event EventHandler<StreamEventArgs> StreamEvent
+        {
+            add
+            {
+                if (_udapiResource != null)
+                    _udapiResource.StreamEvent += value;
+            }
+            remove
+            {
+                if (_udapiResource != null)
+                    _udapiResource.StreamEvent -= value;
+            }
+        }
+
 
         #region IStreamStatistics Implementation
 

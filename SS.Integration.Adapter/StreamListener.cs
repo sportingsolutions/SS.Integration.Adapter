@@ -204,6 +204,19 @@ namespace SS.Integration.Adapter
         }
 
         /// <summary>
+        /// Returns true if the listener is in the process of stopping a stream
+        /// Thread-safe property
+        /// </summary>
+        internal bool IsStopping
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get;
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            private set;
+        }
+
+
+        /// <summary>
         /// Returns true if the listener
         /// is in the process of connecting
         /// itself to the stream server.
@@ -345,6 +358,11 @@ namespace SS.Integration.Adapter
 
         private void StartStreaming()
         {
+            if (IsDisposing || IsStopping)
+            {
+                _logger.InfoFormat("Start streaming requested by adapter for fixture {0} but it won't be executed because the stream listener is already shutting down. ",_resource);
+                return;
+            }
 
             // Only start streaming if fixture is not Setup/Ready
             if (!IsFixtureSetup)
@@ -577,6 +595,7 @@ namespace SS.Integration.Adapter
         {
             try
             {
+                IsStopping = true;
 
                 // this is for when Dispose() was called
                 if (_resource == null)
@@ -618,7 +637,6 @@ namespace SS.Integration.Adapter
         {
             try
             {
-
                 IsStreaming = true;
                 IsConnecting = false;
 
@@ -975,10 +993,11 @@ namespace SS.Integration.Adapter
         public void Dispose()
         {
             IsDisposing = true;
-
+            IsStreaming = false;
+            
             Stop();
 
-            if(!IsFixtureDeleted && !IsFixtureDeleted)
+            if(!IsFixtureDeleted)
                 SuspendFixture(SuspensionReason.FIXTURE_DISPOSING);
 
             // free the resource instantiated by the SDK
