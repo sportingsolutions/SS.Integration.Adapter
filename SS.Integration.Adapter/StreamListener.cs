@@ -495,7 +495,7 @@ namespace SS.Integration.Adapter
                 var deltaMessage = streamEventArgs.Update.FromJson<StreamMessage>();
                 var fixtureDelta = deltaMessage.GetContent<Fixture>();
 
-                _logger.InfoFormat("{0} streaming update arrived", fixtureDelta);
+                _logger.InfoFormat("{0} stream update arrived", fixtureDelta);
 
                 if (IsDisposing)
                 {
@@ -848,10 +848,12 @@ namespace SS.Integration.Adapter
 
         private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool setErrorState = true)
         {
-            if (snapshot == null || (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id)))
-                throw new ArgumentException(string.Format("StreamListener received empty snapshot for {0}", _resource));
+            var logString = isFullSnapshot ? "snapshot" : "stream update";
 
-            _logger.InfoFormat("Processing snapshot for {0}", snapshot);
+            if (snapshot == null || (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id)))
+                throw new ArgumentException(string.Format("StreamListener received empty {0} for {1}", logString,_resource));
+
+            _logger.InfoFormat("Processing {0} for {1}",logString, snapshot);
 
             Stopwatch timer = new Stopwatch();
             timer.Start();
@@ -891,7 +893,7 @@ namespace SS.Integration.Adapter
 
                 foreach (var innerException in ex.InnerExceptions)
                 {
-                    _logger.Error(string.Format("There has been an aggregate error while trying to process snapshot {0}", snapshot), innerException);
+                    _logger.Error(string.Format("There has been an aggregate error while trying to process {0} {1}",logString, snapshot), innerException);
                 }
 
                 _Stats.IncrementValue(AdapterCoreKeys.FIXTURE_ERRORS_COUNTER);
@@ -907,7 +909,7 @@ namespace SS.Integration.Adapter
 
                 _Stats.IncrementValue(AdapterCoreKeys.FIXTURE_ERRORS_COUNTER);
 
-                _logger.Error(string.Format("An error occured while trying to process snapshot {0}", snapshot), e);
+                _logger.Error(string.Format("An error occured while trying to process {0} {1}",logString, snapshot), e);
 
                 if (setErrorState)
                     SetErrorState();
