@@ -64,7 +64,12 @@ namespace SS.Integration.Adapter.Plugin.Model
 
         private bool TagEquals(string selectionIndexTag, KeyValuePair<string, string> tag, Selection selection)
         {
-            var output = tag.Key == selectionIndexTag
+            var output = 
+                //ignore selectiongroupid   
+                tag.Key == "selectiongroupid" 
+                //ignore index tag
+                   || tag.Key == selectionIndexTag 
+                //do comparison on all other tags (when they are passed in)
                    || (selection.Tags.ContainsKey(tag.Key) && string.Equals(selection.Tags[tag.Key], tag.Value, StringComparison.OrdinalIgnoreCase));
 
             return output;
