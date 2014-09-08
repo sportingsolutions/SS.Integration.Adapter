@@ -999,7 +999,7 @@ namespace SS.Integration.Adapter
             
             Stop();
 
-            if(!IsFixtureDeleted)
+            if(!IsFixtureDeleted && !IsFixtureEnded)
                 SuspendFixture(SuspensionReason.FIXTURE_DISPOSING);
 
             // free the resource instantiated by the SDK
