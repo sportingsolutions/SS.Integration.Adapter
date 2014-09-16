@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{756C25C1-9FF6-4299-8825-EEEA5565AC58}</ProjectGuid>
+    <ProjectGuid>{7C471272-0AE9-4E16-B292-07747CDC330D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SS.Integration.Common</RootNamespace>
-    <AssemblyName>SS.Integration.Common</AssemblyName>
+    <RootNamespace>SS.Integration.Adapter.Statsd</RootNamespace>
+    <AssemblyName>SS.Integration.Adapter.Statsd</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
@@ -32,15 +32,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="log4net, Version=1.2.13.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+    <Reference Include="StatsdClient, Version=1.0.0.16, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
+      <HintPath>..\packages\StatsdClient.1.0.0.16\lib\net35\StatsdClient.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\packages\Newtonsoft.Json.5.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="StatsdClient.Configuration">
+      <HintPath>..\packages\StatsdClient.1.0.0.16\lib\net35\StatsdClient.Configuration.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -49,28 +48,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Extensions\IDictionaryExtension.cs" />
-    <Compile Include="Extensions\IEnumerableExtensions.cs" />
-    <Compile Include="FixtureDateTimeJsonConverter.cs" />
-    <Compile Include="IncrementPerformanceCounter.cs" />
-    <Compile Include="PerformanceCounterBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Reflection.cs" />
-    <Compile Include="Stats\Configuration\StatsConfigurationSection.cs" />
-    <Compile Include="Stats\Configuration\StatsSettings.cs" />
-    <Compile Include="Stats\Consumer\LoggerConsumer.cs" />
-    <Compile Include="Stats\Interface\IStatsConsumer.cs" />
-    <Compile Include="Stats\Interface\IStatsHandle.cs" />
-    <Compile Include="Stats\Keys\AdapterCoreKeys.cs" />
-    <Compile Include="Stats\Keys\PluginCoreKeys.cs" />
-    <Compile Include="Stats\StatsHandle.cs" />
-    <Compile Include="Stats\StatsManager.cs" />
-    <Compile Include="TimePerformanceCounter.cs" />
+    <Compile Include="StatsdConsumer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
+    <ProjectReference Include="..\SS.Integration.Common\SS.Integration.Common.csproj">
+      <Project>{756c25c1-9ff6-4299-8825-eeea5565ac58}</Project>
+      <Name>SS.Integration.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />

@@ -2,6 +2,9 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter", "SS.Integration.Adapter\SS.Integration.Adapter.csproj", "{1AD0B149-3A7B-4725-ABDE-9455D953F036}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7C471272-0AE9-4E16-B292-07747CDC330D} = {7C471272-0AE9-4E16-B292-07747CDC330D}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Tests", "SS.Integration.Adapter.Tests\SS.Integration.Adapter.Tests.csproj", "{D46E4B4A-A3C0-4128-91E5-A5DEB238C5B2}"
 EndProject
@@ -36,6 +39,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Plugin.Logger", "SS.Integration.Adapter.Plugin.Logger\SS.Integration.Adapter.Plugin.Logger.csproj", "{BF7E4403-53DA-43C9-868A-C7510584D207}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Specs", "SS.Integration.Adapter.Specs\SS.Integration.Adapter.Specs.csproj", "{FFDE838C-859F-4BCE-B791-53B8697175D1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Statsd", "SS.Integration.Adapter.Statsd\SS.Integration.Adapter.Statsd.csproj", "{7C471272-0AE9-4E16-B292-07747CDC330D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -127,6 +132,16 @@ Global
 		{FFDE838C-859F-4BCE-B791-53B8697175D1}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{FFDE838C-859F-4BCE-B791-53B8697175D1}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{FFDE838C-859F-4BCE-B791-53B8697175D1}.Release|x86.ActiveCfg = Release|Any CPU
+		{7C471272-0AE9-4E16-B292-07747CDC330D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C471272-0AE9-4E16-B292-07747CDC330D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C471272-0AE9-4E16-B292-07747CDC330D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{7C471272-0AE9-4E16-B292-07747CDC330D}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{7C471272-0AE9-4E16-B292-07747CDC330D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7C471272-0AE9-4E16-B292-07747CDC330D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C471272-0AE9-4E16-B292-07747CDC330D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C471272-0AE9-4E16-B292-07747CDC330D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{7C471272-0AE9-4E16-B292-07747CDC330D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{7C471272-0AE9-4E16-B292-07747CDC330D}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

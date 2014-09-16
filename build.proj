@@ -38,7 +38,9 @@
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.exe;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.exe.config;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.pdb;
-						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\stats.config"
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\stats.config;
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Statsd\bin\$(Configuration)\StatsdClient*.dll;
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Statsd\bin\$(Configuration)\SS.Integration.Adapter.Statsd*"
 				Exclude="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.json;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.vshost.*"
 			/>
@@ -60,7 +62,9 @@
 	<Target Name="PrepareForZip" DependsOnTargets="CleanFolder">
 		<ItemGroup>
 			<Library
-				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*"
+				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*;
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Statsd\bin\$(Configuration)\StatsdClient*.dll;
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Statsd\bin\$(Configuration)\SS.Integration.Adapter.Statsd*"
 				Exclude="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.pdb;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.json;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.vshost*;

@@ -63,7 +63,8 @@ namespace SS.Integration.Common.Stats.Configuration
                 {
 
                     Type consumer_type = Type.GetType(attribute.Value);
-                    consumer_obj = Activator.CreateInstance(consumer_type) as IStatsConsumer;
+                    if(consumer_type != null)
+                        consumer_obj = Activator.CreateInstance(consumer_type) as IStatsConsumer;
                 }
                 catch {}
 
@@ -84,8 +85,13 @@ namespace SS.Integration.Common.Stats.Configuration
                     consumer_obj.AddSettingProperty(setting.Key, setting.Value);
                 }
 
-                consumer_obj.Configure();
-                configuration.AddConsumer(consumer_obj);
+
+                try
+                {
+                    consumer_obj.Configure();
+                    configuration.AddConsumer(consumer_obj);
+                }
+                catch { }
             }
 
             return configuration;

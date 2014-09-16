@@ -18,7 +18,7 @@ using System.Collections.Generic;
 using SS.Integration.Common.Stats.Interface;
 using StatsdClient;
 
-namespace SS.Integration.Common.Stats.Consumer
+namespace SS.Integration.Adapter.Statsd
 {
     public class StatsdConsumer : IStatsConsumer
     {
