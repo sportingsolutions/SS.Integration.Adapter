@@ -15,15 +15,14 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using FluentAssertions;
 using Moq;
 using NUnit.Framework;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Interface;
-using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Adapter.Plugin.Model.Interface;
 
 namespace SS.Integration.Adapter.Tests
 {
@@ -126,6 +125,43 @@ namespace SS.Integration.Adapter.Tests
             Thread.Sleep(3000);
 
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(2));
+        }
+
+        /// <summary>
+        /// See CINT-280
+        /// </summary>
+        [Test]
+        public void AllowReconnectionAfterDisconnection()
+        {
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+
+            var provider = new StateManager(settings.Object);
+            var instance = new SuspensionManager(provider, connector.Object);
+
+            Fixture fixture = new Fixture { Id = "Reconnect", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(r => r.Id).Returns("Reconnect");
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            listener.ResourceOnStreamDisconnected(this, EventArgs.Empty);
+
+            listener.IsStreaming.Should().BeFalse();
+
+            listener.UpdateResourceState(resource.Object);
+
+            listener.IsStreaming.Should().BeTrue();
         }
     }
 }
