@@ -1006,11 +1006,11 @@ namespace SS.Integration.Adapter
         /// Dispose the current stream listener
         /// </summary>
         public void Dispose()
-        {
-            IsDisposing = true;
-
+        {   
             try
             {
+                _logger.InfoFormat("Disposing listener for {0}", _resource);
+                IsDisposing = true;
                 IsStreaming = false;
 
                 Stop();
@@ -1025,6 +1025,7 @@ namespace SS.Integration.Adapter
             finally
             {
                 IsDisposing = false;
+                _logger.InfoFormat("Listener for {0} disposed", _resource);
             }
         }
     }
