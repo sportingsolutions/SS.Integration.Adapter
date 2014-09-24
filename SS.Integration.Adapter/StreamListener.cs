@@ -82,21 +82,20 @@ namespace SS.Integration.Adapter
 
             FixtureId = resource.Id;
             Sport = resource.Sport;
-            IsStreaming = false;
-            IsConnecting = false;
             SequenceOnStreamingAvailable = _currentSequence;
 
+            IsStreaming = false;
+            IsConnecting = false;
             IsDisposing = false;
             IsErrored = false;
             IsIgnored = false;
-            IsFixtureDeleted = false;
+            IsStopping = false;
 
             var fixtureState = _eventState.GetFixtureState(resource.Id);
+            
             IsFixtureEnded = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.MatchOver : _resource.IsMatchOver;
-
-            IsFixtureSetup = (_resource.MatchStatus == MatchStatus.Setup ||
-                              _resource.MatchStatus == MatchStatus.Ready);
-
+            IsFixtureSetup = (_resource.MatchStatus == MatchStatus.Setup || _resource.MatchStatus == MatchStatus.Ready);
+            IsFixtureDeleted = false;
             IsInPlay = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.InRunning : _resource.MatchStatus == MatchStatus.InRunning;
 
             _Stats = StatsManager.Instance[string.Concat("adapter.core.fixture.", resource.Sport, ".", resource.Name)].GetHandle();
@@ -204,8 +203,11 @@ namespace SS.Integration.Adapter
         }
 
         /// <summary>
-        /// Returns true if the listener is in the process of stopping a stream
-        /// Thread-safe property
+        /// Returns true if the listener is in the process of stopping a stream.
+        /// It is used to prevent establishing a connection to the stream server while
+        /// the disconnect event handler is being executed.
+        /// 
+        /// Thread-safe property.
         /// </summary>
         internal bool IsStopping
         {
@@ -214,7 +216,6 @@ namespace SS.Integration.Adapter
             [MethodImpl(MethodImplOptions.Synchronized)]
             private set;
         }
-
 
         /// <summary>
         /// Returns true if the listener
@@ -266,6 +267,13 @@ namespace SS.Integration.Adapter
             set;
         }
 
+        /// <summary>
+        /// Returns true if the listener is in the process of being disposed.
+        /// It is used to prevent sending more than one time the suspendion
+        /// command.
+        /// 
+        /// Thread-safe property.
+        /// </summary>
         private bool IsDisposing
         {
             [MethodImpl(MethodImplOptions.Synchronized)]
@@ -360,7 +368,7 @@ namespace SS.Integration.Adapter
         {
             if (IsDisposing || IsStopping)
             {
-                _logger.InfoFormat("Start streaming requested by adapter for fixture {0} but it won't be executed because the stream listener is already shutting down. ",_resource);
+                _logger.InfoFormat("Start streaming requested by adapter for fixture {0} but it won't be executed because the stream listener is shutting down. ", _resource);
                 return;
             }
 
@@ -406,6 +414,8 @@ namespace SS.Integration.Adapter
 
                 IsErrored = false;
                 IsStreaming = false;
+                IsStopping = false;
+                IsDisposing = false;
                 IsConnecting = true;
                 sequence = SequenceOnStreamingAvailable;
             }
@@ -600,7 +610,7 @@ namespace SS.Integration.Adapter
                 // this is for when Dispose() was called
                 if (_resource == null)
                     return;
-                
+
                 if (!this.IsFixtureEnded && !IsFixtureDeleted)
                 {
 
@@ -618,18 +628,21 @@ namespace SS.Integration.Adapter
                     _logger.InfoFormat("Listener disconnected for {0} - fixture is over/deleted", _resource);
                 }
 
-                IsStreaming = false;
-
-                // for when a disconnect event is raised due a failed attempt to connect 
-                // (in other words, when we didn't receive a connect event)
-                IsConnecting = false;
-
                 _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_STREAMING, "0");
 
             }
             catch (Exception ex)
             {
                 _logger.ErrorFormat("Error while processing OnStreamDisconnected event: {0}", ex);
+            }
+            finally
+            {
+                // for when a disconnect event is raised due a failed attempt to connect 
+                // (in other words, when we didn't receive a connect event)
+                IsConnecting = false;
+
+                IsStreaming = false;
+                IsStopping = false;   
             }
         }
 
@@ -993,17 +1006,27 @@ namespace SS.Integration.Adapter
         /// Dispose the current stream listener
         /// </summary>
         public void Dispose()
-        {
-            IsDisposing = true;
-            IsStreaming = false;
-            
-            Stop();
+        {   
+            try
+            {
+                _logger.InfoFormat("Disposing listener for {0}", _resource);
+                IsDisposing = true;
+                IsStreaming = false;
 
-            if(!IsFixtureDeleted && !IsFixtureEnded)
-                SuspendFixture(SuspensionReason.FIXTURE_DISPOSING);
+                Stop();
 
-            // free the resource instantiated by the SDK
-            _resource = null;
+                if (!IsFixtureDeleted && !IsFixtureEnded)
+                    SuspendFixture(SuspensionReason.FIXTURE_DISPOSING);
+
+                // free the resource instantiated by the SDK
+                _resource = null;
+
+            }
+            finally
+            {
+                IsDisposing = false;
+                _logger.InfoFormat("Listener for {0} disposed", _resource);
+            }
         }
     }
 }
