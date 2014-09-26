@@ -20,7 +20,6 @@ using System.Text;
 using FluentAssertions;
 using NUnit.Framework;
 using SportingSolutions.Udapi.Sdk.Extensions;
-using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.ProcessState;
 

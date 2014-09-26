@@ -1011,10 +1011,10 @@ namespace SS.Integration.Adapter
             {
                 _logger.InfoFormat("Disposing listener for {0}", _resource);
                 IsDisposing = true;
-                IsStreaming = false;
 
                 Stop();
 
+                // this is for not sending twice the suspension command
                 if (!IsFixtureDeleted && !IsFixtureEnded)
                     SuspendFixture(SuspensionReason.FIXTURE_DISPOSING);
 
@@ -1024,6 +1024,8 @@ namespace SS.Integration.Adapter
             }
             finally
             {
+                IsConnecting = false;
+                IsStreaming = false;
                 IsDisposing = false;
                 _logger.InfoFormat("Listener for {0} disposed", _resource);
             }
