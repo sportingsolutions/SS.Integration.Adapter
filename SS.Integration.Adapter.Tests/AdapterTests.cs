@@ -12,6 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -21,6 +22,7 @@ using Moq;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
+using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Tests
@@ -35,6 +37,7 @@ namespace SS.Integration.Adapter.Tests
             var settings = new Mock<ISettings>();
             settings.Setup(x => x.EventStateFilePath).Returns(".");
             var service = new Mock<IServiceFacade>();
+            service.Setup(x => x.IsConnected).Returns(true);
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
 
@@ -62,6 +65,7 @@ namespace SS.Integration.Adapter.Tests
             var settings = new Mock<ISettings>();
             settings.Setup(x => x.EventStateFilePath).Returns(".");
             var service = new Mock<IServiceFacade>();
+            service.Setup(x => x.IsConnected).Returns(true);
             var connector = new Mock<IAdapterPlugin>();
             var listener = new Mock<IListener>();
 
@@ -86,78 +90,6 @@ namespace SS.Integration.Adapter.Tests
             connector.Verify(c => c.Suspend(It.IsAny<string>()), Times.Never());
         }
 
-        /*[Category("Adapter")]
-        [Ignore]
-        public void ShouldStartAndStopWithFewSportsAndFixtures()
-        {
-            var settings = new Mock<ISettings>();
-            settings.Setup(x => x.EventStateFilePath).Returns(".");
-            var service = new Mock<IServiceFacade>();
-            var connector = new Mock<IAdapterPlugin>();
-            var listener = new Mock<IListener>();
-            var eventState = new Mock<IEventState>();
-            //*********************
-            //a semaphore is included to ensure that every 3 threads
-            //are finished. this test works but once every ~5/6 tries it fails with a weird 
-            //"IndexOutOfRangeException". I actually find out that there's a problem in Moq on multi-threading tests
-            //(see https://code.google.com/p/moq/issues/detail?id=249 and https://github.com/Moq/moq4/pull/3.).
-            //Update 06/06/2013: the issue related to the link above is solved, but the Moq team can't merge the fix
-            //because it causes another issue (see https://github.com/Moq/moq4/issues/47).
-            //basically we still need news from the Moq team
-            //*********************
-            var semaphore = new SemaphoreSlim(3,3);
-
-            listener.Setup(x => x.SuspendMarkets(true)).Callback(() => semaphore.Release(1));
-
-            settings.Setup(s => s.FixtureCheckerFrequency).Returns(10000);
-            settings.Setup(s => s.SuspendAllMarketsOnShutdown).Returns(true);
-            service.Setup(s => s.Connect());
-
-            var footballFixtureOne = new Mock<IResourceFacade>();
-            var footballfixtureTwo = new Mock<IResourceFacade>();
-            var tennisFixtureOne = new Mock<IResourceFacade>();
-
-            footballFixtureOne.Setup(f => f.Id).Returns("1");
-            footballFixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetRawStreamMessage());
-            footballfixtureTwo.Setup(f => f.Id).Returns("2");
-            footballfixtureTwo.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetRawStreamMessage());
-            tennisFixtureOne.Setup(f => f.Id).Returns("3");
-            tennisFixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetRawStreamMessage());
-
-            service.Setup(s => s.GetResources("Football"))
-                   .Returns(new List<IResourceFacade> { footballFixtureOne.Object, footballfixtureTwo.Object });
-            service.Setup(s => s.GetResources("Tennis")).Returns(new List<IResourceFacade> { tennisFixtureOne.Object });
-
-            var adapter = new Adapter(
-                settings.Object,
-                service.Object,
-                connector.Object);
-
-
-            foreach (var sport in this.Sports(ListOfSports.GiveMeFew))
-                adapter.AddSport(sport);
-
-            adapter.Start();
-
-            Thread.Sleep(1000);
-            
-            adapter.Stop();
-
-            semaphore.Wait();
-            semaphore.Wait();
-            semaphore.Wait();
-
-            Thread.Sleep(2500);
-
-            service.VerifyAll();
-            listener.Verify(l => l.Start(), Times.Exactly(3));
-            listener.Verify(l => l.Stop(), Times.Exactly(3));
-            listener.Verify(l => l.SuspendMarkets(true), Times.Exactly(3));
-            eventState.Verify(es => es.RemoveInactiveFixtures("Football", It.IsAny<List<IResourceFacade>>()), Times.Once());
-            eventState.Verify(es => es.RemoveInactiveFixtures("Tennis", It.IsAny<List<IResourceFacade>>()), Times.Once());
-            eventState.Verify(es => es.RemoveInactiveFixtures("Rugby", It.IsAny<List<IResourceFacade>>()), Times.Never());
-        }*/
-
         [Test]
         [Category("Adapter")]
         public void ShouldCreateListeners()
@@ -165,6 +97,7 @@ namespace SS.Integration.Adapter.Tests
             var settings = new Mock<ISettings>();
             settings.Setup(x => x.EventStateFilePath).Returns(".");
             var service = new Mock<IServiceFacade>();
+            service.Setup(x => x.IsConnected).Returns(true);
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
 
@@ -203,7 +136,6 @@ namespace SS.Integration.Adapter.Tests
             
             eventState.Verify(es => es.RemoveFixture(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
         }
-
 
         /// <summary>
         /// Here I want to test that when a resource
@@ -290,6 +222,7 @@ namespace SS.Integration.Adapter.Tests
 
             service.Setup(x => x.GetSports()).Returns(new List<IFeature> { sport.Object });
             service.Setup(x => x.GetResources(It.IsAny<string>())).Returns(new List<IResourceFacade> { resource.Object });
+            service.Setup(x => x.IsConnected).Returns(true);
 
 
             Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object);
@@ -328,7 +261,82 @@ namespace SS.Integration.Adapter.Tests
             error.Should().BeFalse();
         }
 
-        private static void adapter_StreamCreated(object sender, System.EventArgs e)
+        /// <summary>
+        /// I want to make sure that the adapter only
+        /// disposes a StreamListener object if the fixture
+        /// doesn't appear on Connect for
+        /// "LISTENER_DISPOSING_SAFE_GUARD" times
+        /// </summary>
+        [Test]
+        [Category("Adapter")]
+        public void DisposeStreamListenerSafeGuardTest()
+        {
+            var settings = new Mock<ISettings>();
+            settings.Setup(x => x.EventStateFilePath).Returns(".");
+            settings.Setup(x => x.FixtureCreationConcurrency).Returns(2);
+            settings.Setup(x => x.FixtureCheckerFrequency).Returns(1200000); 
+
+            var service = new Mock<IServiceFacade>();
+            var connector = new Mock<IAdapterPlugin>();
+            var fixtureOne = new Mock<IResourceFacade>();
+            var fixtureTwo = new Mock<IResourceFacade>();
+
+            int created = 0;            
+
+            fixtureOne.Setup(f => f.Id).Returns("1");
+            fixtureOne.Setup(f => f.Sport).Returns("Football");
+            fixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetSnapshotJson());
+            fixtureOne.Setup(f => f.Content).Returns(new Summary { Id = "1", Date = "23/05/2012", StartTime = "10:20", MatchStatus = (int)MatchStatus.Setup });
+
+            fixtureTwo.Setup(f => f.Id).Returns("2");
+            fixtureTwo.Setup(f => f.Sport).Returns("Football");
+            fixtureTwo.Setup(f => f.GetSnapshot()).Returns(string.Empty);
+            fixtureTwo.Setup(f => f.Content).Returns(new Summary { Id = "2", Date = "23/05/2012", StartTime = "10:30", MatchStatus = (int)MatchStatus.Setup });
+
+            service.Setup(x => x.GetResources("Football")).Returns(() => new List<IResourceFacade> { fixtureOne.Object, fixtureTwo.Object });
+            service.Setup(x => x.IsConnected).Returns(false);
+
+            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object);
+            adapter.AddSport("Football");
+
+            adapter.StreamCreated += new EventHandler(delegate(object sender, EventArgs e)
+                {
+                    created++;
+                }
+            );
+
+            adapter.StreamRemoved += new EventHandler(delegate(object sender, EventArgs e)
+                {
+                    created--;
+                }
+            );
+
+            adapter.Start();
+
+            adapter.TimerEvent();
+
+            Thread.Sleep(500);
+
+            created.Should().Be(2);
+
+            service.Setup(s => s.GetResources("Football")).Returns(() => 
+            {
+                return new List<IResourceFacade> {fixtureTwo.Object}; 
+            });
+
+            adapter.TimerEvent();
+
+            Thread.Sleep(500);
+            created.Should().Be(2);
+
+            adapter.TimerEvent();
+            Thread.Sleep(500);
+
+            created.Should().Be(1);
+            
+        }
+
+        private static void adapter_StreamCreated(object sender, EventArgs e)
         {
             lock (sender)
             {
