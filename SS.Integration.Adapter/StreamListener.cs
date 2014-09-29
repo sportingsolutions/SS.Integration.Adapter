@@ -1027,7 +1027,7 @@ namespace SS.Integration.Adapter
                 IsConnecting = false;
                 IsStreaming = false;
                 IsDisposing = false;
-                _logger.InfoFormat("Listener for {0} disposed", _resource);
+                _logger.Info("Listener disposed");
             }
         }
     }
