@@ -409,7 +409,7 @@ namespace SS.Integration.Adapter
                 {
                     int dummy;
                     _listenerDisposingQueue.TryRemove(fixture.Key, out dummy);
-                    _logger.DebugFormat("Fixture with fixtureId={0} was marked to be deleted, but it appered on Connect again", fixture.Key);
+                    _logger.DebugFormat("Fixture with fixtureId={0} was marked as deleted, but it appered on Connect again", fixture.Key);
                 }
             }
         }
