@@ -55,24 +55,21 @@ namespace SS.Integration.Adapter
                 VoidUnSettledMarket.Instance,
                 DeletedMarketsRule.Instance
             };
-
             
             if (settings.DeltaRuleEnabled)
             {
                 _Rules.Add(DeltaRule.Instance);
             }
-            else
-            {
-                // delta rule supersede th inactive market rule
-                // therefore there is no advantage having both enabled
-                _Rules.Add(InactiveMarketsFilteringRule.Instance);
-            }
 
+            // delta rule supersede th inactive market rule
+            // therefore there is no advantage having both enabled
+            _Rules.Add(InactiveMarketsFilteringRule.Instance);
+            
             foreach (var rule in _Rules)
             {
                 _logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
             }
-            
+
         }
 
         internal void OverwriteRuleList(List<IMarketRule> rules)
@@ -115,7 +112,7 @@ namespace SS.Integration.Adapter
 
         IMarketStateCollection IStateProvider.GetMarketsState(string fixtureId)
         {
-            if(string.IsNullOrEmpty(fixtureId))
+            if (string.IsNullOrEmpty(fixtureId))
                 throw new ArgumentNullException("fixtureId", "fixtureId cannot be null");
 
             return _RulesManagers.ContainsKey(fixtureId) ? _RulesManagers[fixtureId].CurrentState : null;
@@ -137,7 +134,7 @@ namespace SS.Integration.Adapter
 
         public void AddOrUpdatePluginFixtureState(IPluginFixtureState state)
         {
-            if(state == null)
+            if (state == null)
                 return;
 
             if (string.IsNullOrEmpty(state.FixtureId))
