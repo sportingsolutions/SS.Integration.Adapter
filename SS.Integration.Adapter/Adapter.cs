@@ -62,6 +62,7 @@ namespace SS.Integration.Adapter
             
             var statemanager = new StateManager(settings);
             StateManager = statemanager;
+            StateProviderProxy.Init(statemanager);
 
             if (settings.StatsEnabled)
                 StatsManager.Configure();
@@ -70,6 +71,7 @@ namespace SS.Integration.Adapter
             new SuspensionManager(statemanager, PlatformConnector);
 
             platformConnector.Initialise();
+            statemanager.AddRules(platformConnector.MarketRules);
 
 
             ThreadPool.SetMinThreads(500, 500);

@@ -76,6 +76,23 @@ namespace SS.Integration.Adapter
             {
                 _Rules.Clear();
                 _Rules.AddRange(rules);
+
+                foreach (var rule in _Rules)
+                {
+                    _logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
+                }
+            }
+        }
+
+        internal void AddRules(IEnumerable<IMarketRule> rules)
+        {
+            if (rules == null)
+                return;
+
+            foreach (var rule in rules)
+            {
+                _Rules.Add(rule);
+                _logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
             }
         }
 
