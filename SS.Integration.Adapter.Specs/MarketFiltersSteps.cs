@@ -53,7 +53,7 @@ namespace SS.Integration.Adapter.Specs
             objectProviderMock.Setup(x => x.SetObject(It.IsAny<string>(), It.IsAny<IUpdatableMarketStateCollection>()))
                 .Callback<string, IUpdatableMarketStateCollection>((s, newState) => _marketsCache = newState);
 
-            List<IMarketRule> rules = new List<IMarketRule> { InactiveMarketsFilteringRule.Instance, VoidUnSettledMarket.Instance };
+            List<IMarketRule> rules = new List<IMarketRule> { InactiveMarketsFilteringRule.Instance, DeletedMarketsRule.Instance, VoidUnSettledMarket.Instance };
 
             _marketFilters = new MarketRulesManager(_fixture.Id, objectProviderMock.Object, rules);
         }
@@ -94,12 +94,13 @@ namespace SS.Integration.Adapter.Specs
         {
             _marketFilters.CommitChanges();
         }
-        
-        [When(@"Request voiding")]
-        public void WhenRequestVoiding()
+
+        [When(@"Fixture has no markets")]
+        public void WhenFixtureHasNoMarkets()
         {
-            _marketFilters.ApplyRules(_fixture);           
+            _fixture.Markets.Clear();
         }
+        
 
         [Then(@"Market Voided=(.*)")]
         public void ThenMarketVoidedFalse(bool isVoid)
@@ -312,5 +313,13 @@ namespace SS.Integration.Adapter.Specs
                 }
             }
         }
+
+        [Then(@"Market is not duplicated")]
+        public void ThenMarketIsNotDuplicated()
+        {
+            var market = _fixture.Markets.GroupBy(m => m.Id).All(x => x.Count() == 1).Should().BeTrue();
+
+        }
+
     }
 }

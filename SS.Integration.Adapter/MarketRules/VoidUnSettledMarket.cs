@@ -72,7 +72,7 @@ namespace SS.Integration.Adapter.MarketRules
                 {
                     _logger.DebugFormat("market rule={0} => marketId={1} of {2} is marked to be voided", Name, mkt_state.Id, fixture);
 
-                    result.AddMarket(CreateSettledMarket(mkt_state));
+                    result.AddMarket(CreateSettledMarket(mkt_state),new MarketRuleAddIntent(MarketRuleAddIntent.OperationType.SETTLE_SELECTIONS));
                 }
                 else
                 {
