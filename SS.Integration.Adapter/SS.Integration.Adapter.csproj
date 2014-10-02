@@ -78,20 +78,15 @@
     <Compile Include="Interface\IStateManager.cs" />
     <Compile Include="Interface\IStoredObjectProvider.cs" />
     <Compile Include="Interface\IStoreProvider.cs" />
-    <Compile Include="MarketRules\DeletedMarketsRule.cs" />
-    <Compile Include="MarketRules\DeltaRule.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketState.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketStateCollection.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableSelectionState.cs" />
-    <Compile Include="MarketRules\PendingMarketFilteringRule.cs" />
-    <Compile Include="MarketRules\VoidUnSettledMarket.cs" />
     <Compile Include="ProcessState\BinaryStoreProvider.cs" />
     <Compile Include="ProcessState\EventState.cs" />
     <Compile Include="ProcessState\FileStoreProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StateManager.cs" />
     <Compile Include="StreamMessage.cs" />
-    <Compile Include="MarketRules\InactiveMarketsFilteringRule.cs" />
     <Compile Include="MarketRules\MarketsRulesManager.cs" />
     <Compile Include="MarketRules\Model\MarketState.cs" />
     <Compile Include="MarketRules\Model\MarketStateCollection.cs" />
@@ -111,6 +106,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SS.Integration.Adapter.MarketRules\SS.Integration.Adapter.MarketRules.csproj">
+      <Project>{5cadd732-a519-4006-8370-52efc8aa97b8}</Project>
+      <Name>SS.Integration.Adapter.MarketRules</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj">
       <Project>{29461692-6DE2-47FA-ACC4-ECAAE9462AE3}</Project>
       <Name>SS.Integration.Adapter.Model</Name>

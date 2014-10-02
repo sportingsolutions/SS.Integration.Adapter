@@ -22,7 +22,7 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.MarketRules
 {
-    internal class VoidUnSettledMarket : IMarketRule
+    public class VoidUnSettledMarket : IMarketRule
     {
         private const string NAME = "VoidUnSettled_Markets";
         private static readonly ILog _logger = LogManager.GetLogger(typeof(VoidUnSettledMarket));

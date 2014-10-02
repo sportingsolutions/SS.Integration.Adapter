@@ -20,7 +20,7 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.MarketRules
 {
-    internal class InactiveMarketsFilteringRule : IMarketRule
+    public class InactiveMarketsFilteringRule : IMarketRule
     {
         private const string NAME = "Inactive_Markets";
         private static readonly ILog _Logger = LogManager.GetLogger(typeof(InactiveMarketsFilteringRule));

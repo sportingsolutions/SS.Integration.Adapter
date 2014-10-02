@@ -36,7 +36,7 @@ namespace SS.Integration.Adapter.MarketRules
 
         private DeltaRule() { Severity = DeltaRuleSeverity.REMOVE_MARKETS;  }
 
-        internal DeltaRuleSeverity Severity { get; set; }
+        public DeltaRuleSeverity Severity { get; set; }
 
         public static DeltaRule Instance
         {

@@ -98,6 +98,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SS.Integration.Adapter.MarketRules\SS.Integration.Adapter.MarketRules.csproj">
+      <Project>{5cadd732-a519-4006-8370-52efc8aa97b8}</Project>
+      <Name>SS.Integration.Adapter.MarketRules</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj">
       <Project>{29461692-6de2-47fa-acc4-ecaae9462ae3}</Project>
       <Name>SS.Integration.Adapter.Model</Name>

@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{FFDE838C-859F-4BCE-B791-53B8697175D1}</ProjectGuid>
+    <ProjectGuid>{5CADD732-A519-4006-8370-52EFC8AA97B8}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SS.Integration.Adapter.Specs</RootNamespace>
-    <AssemblyName>SS.Integration.Adapter.Specs</AssemblyName>
+    <RootNamespace>SS.Integration.Adapter.MarketRules</RootNamespace>
+    <AssemblyName>SS.Integration.Adapter.MarketRules</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
@@ -32,15 +32,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="FluentAssertions">
-      <HintPath>..\packages\FluentAssertions.2.0.1\lib\net45\FluentAssertions.dll</HintPath>
-    </Reference>
-    <Reference Include="Moq">
-      <HintPath>..\packages\Moq.4.2.1402.2112\lib\net40\Moq.dll</HintPath>
-    </Reference>
-    <Reference Include="nunit.framework, Version=2.6.2.12296, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NUnit.2.6.2\lib\nunit.framework.dll</HintPath>
+    <Reference Include="log4net">
+      <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -49,51 +42,23 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="TechTalk.SpecFlow">
-      <HintPath>..\packages\SpecFlow.1.9.0\lib\net35\TechTalk.SpecFlow.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Helper.cs" />
-    <Compile Include="MarketFilters.feature.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>MarketFilters.feature</DependentUpon>
-    </Compile>
-    <Compile Include="MarketFiltersSteps.cs" />
-    <Compile Include="MarketState.feature.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>MarketState.feature</DependentUpon>
-    </Compile>
-    <Compile Include="MarketStateSteps.cs" />
+    <Compile Include="DeletedMarketsRule.cs" />
+    <Compile Include="DeltaRule.cs" />
+    <Compile Include="InactiveMarketsFilteringRule.cs" />
+    <Compile Include="PendingMarketFilteringRule.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="VoidUnSettledMarket.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
-    <None Include="MarketFilters.feature">
-      <Generator>SpecFlowSingleFileGenerator</Generator>
-      <LastGenOutput>MarketFilters.feature.cs</LastGenOutput>
-    </None>
-    <None Include="MarketState.feature">
-      <Generator>SpecFlowSingleFileGenerator</Generator>
-      <LastGenOutput>MarketState.feature.cs</LastGenOutput>
-    </None>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\SS.Integration.Adapter.MarketRules\SS.Integration.Adapter.MarketRules.csproj">
-      <Project>{5cadd732-a519-4006-8370-52efc8aa97b8}</Project>
-      <Name>SS.Integration.Adapter.MarketRules</Name>
-    </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj">
       <Project>{29461692-6de2-47fa-acc4-ecaae9462ae3}</Project>
       <Name>SS.Integration.Adapter.Model</Name>
     </ProjectReference>
-    <ProjectReference Include="..\SS.Integration.Adapter\SS.Integration.Adapter.csproj">
-      <Project>{1ad0b149-3a7b-4725-abde-9455d953f036}</Project>
-      <Name>SS.Integration.Adapter</Name>
-    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
