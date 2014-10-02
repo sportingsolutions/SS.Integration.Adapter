@@ -81,6 +81,7 @@
     <Compile Include="Result.cs" />
     <Compile Include="Rule4.cs" />
     <Compile Include="SelectionStatus.cs" />
+    <Compile Include="Sports.cs" />
     <Compile Include="StateProviderProxy.cs" />
     <Compile Include="Summary.cs" />
   </ItemGroup>
