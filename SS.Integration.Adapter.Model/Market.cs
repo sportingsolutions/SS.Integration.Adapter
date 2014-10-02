@@ -133,6 +133,18 @@ namespace SS.Integration.Adapter.Model
         public bool IsResulted { get; set; }
 
         /// <summary>
+        /// Determines if the market has at least
+        /// one voided selection.
+        /// 
+        /// The value is always present and it is
+        /// computed by looking at all the selections'
+        /// states (included selections that are
+        /// not currently contained within this
+        /// object)
+        /// </summary>
+        public bool IsVoided { get; set; }
+
+        /// <summary>
         /// Determines if the market is in a pending state.
         /// 
         /// This information is always present and it is

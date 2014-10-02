@@ -53,7 +53,8 @@ namespace SS.Integration.Adapter
             _Rules = new List<IMarketRule>
             {
                 VoidUnSettledMarket.Instance,
-                DeletedMarketsRule.Instance
+                DeletedMarketsRule.Instance,
+                InactiveMarketsFilteringRule.Instance
             };
             
             if (settings.DeltaRuleEnabled)
@@ -61,9 +62,6 @@ namespace SS.Integration.Adapter
                 _Rules.Add(DeltaRule.Instance);
             }
 
-            // delta rule supersede th inactive market rule
-            // therefore there is no advantage having both enabled
-            _Rules.Add(InactiveMarketsFilteringRule.Instance);
             
             foreach (var rule in _Rules)
             {

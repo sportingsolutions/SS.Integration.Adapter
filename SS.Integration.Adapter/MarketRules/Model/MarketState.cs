@@ -88,8 +88,16 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 // alternatively all selections need to be void
                 return (Selections.Any(x => x.Status == SelectionStatus.Settled && x.Price == 1.0) &&
                         Selections.All(x => x.Status == SelectionStatus.Settled || x.Status == SelectionStatus.Void)) ||
-                        Selections.All(x => x.Status == SelectionStatus.Void);
+                        IsVoided;
             } 
+        }
+
+        public bool IsVoided
+        {
+            get
+            {
+                return Selections.All(x => x.Status == SelectionStatus.Void);
+            }
         }
 
         public bool IsTradedInPlay { get; set; }
@@ -177,7 +185,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
                                 this.IsSuspended == marketState.IsSuspended &&
                                 this.IsActive == marketState.IsActive &&
                                 this.IsDeleted == marketState.IsDeleted &&
-                                this.IsForcedSuspended == marketState.IsForcedSuspended;
+                                this.IsForcedSuspended == marketState.IsForcedSuspended &&
+                                this.IsVoided == marketState.IsVoided;
             
 
             if (isStatusEqual)
@@ -235,7 +244,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
             var result = IsSuspended == market.IsSuspended &&
                          IsActive == market.IsActive &&
                          IsResulted == market.IsResulted &&
-                         IsPending == market.IsPending;
+                         IsPending == market.IsPending &&
+                         IsVoided == market.IsVoided;
 
 
             if (IsRollingMarket)
@@ -279,6 +289,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
             market.IsResulted = IsResulted;
             market.IsSuspended = IsSuspended;
             market.IsTradedInPlay = IsTradedInPlay;
+            market.IsVoided = IsVoided;
 
             UpdateLineOnRollingHandicap(market);
         }

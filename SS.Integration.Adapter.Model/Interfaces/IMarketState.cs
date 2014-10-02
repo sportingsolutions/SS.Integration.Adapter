@@ -69,6 +69,12 @@ namespace SS.Integration.Adapter.Model.Interfaces
         bool IsResulted { get; }
 
         /// <summary>
+        /// Determines if all the selecions within
+        /// this market have been voided.
+        /// </summary>
+        bool IsVoided { get; }
+
+        /// <summary>
         /// Is the market in a pending state?
         /// 
         /// A pending state means that the market
