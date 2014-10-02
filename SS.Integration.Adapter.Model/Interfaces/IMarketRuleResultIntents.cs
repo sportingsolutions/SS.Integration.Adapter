@@ -29,5 +29,6 @@ namespace SS.Integration.Adapter.Model.Interfaces
         IEnumerable<Market> EditedMarkets { get; }
 
         MarketRuleEditIntent GetEditingAction(Market Market);
+        MarketRuleAddIntent GetAddAction(Market mkt);
     }
 }

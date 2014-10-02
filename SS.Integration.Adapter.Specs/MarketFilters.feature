@@ -160,7 +160,7 @@ Scenario: Voiding markets should not be applied markets that were previously act
 	When Market filters are initiated
 	And Market filters are applied
 	And Fixture is over
-	And Request voiding
+	And Market filters are applied
 	Then Market Voided=false
 
 Scenario: Voiding markets should be applied to markets which have never been active
@@ -173,9 +173,24 @@ Scenario: Voiding markets should be applied to markets which have never been act
 	And Market filters are applied
 	And Commit change
 	And Fixture is over
-	And Request voiding
+	And Market filters are applied
 	Then Market Voided=true
 
+Scenario: Voiding markets should be applied even when deleted market rule is applied
+	Given Market with the following selections
+	| Id | Name | Status | Tradable	|
+	| 1  | Home | 0      | false        |
+	| 2  | Away | 0      | false        |
+	| 3  | Draw | 0      | false        |	
+	When Market filters are initiated
+	And Market filters are applied
+	And Commit change
+	And Fixture is over
+	And Fixture has no markets
+	And Market filters are applied	
+	And Commit change
+	Then Market Voided=true
+	And Market is not duplicated
 
 Scenario: Market rule solver must resolve correctly any conflicts
 	Given a fixture with the following markets

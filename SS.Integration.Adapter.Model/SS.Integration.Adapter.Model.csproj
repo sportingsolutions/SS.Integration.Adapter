@@ -65,6 +65,7 @@
     <Compile Include="Interfaces\IMarketState.cs" />
     <Compile Include="Interfaces\IMarketStateCollection.cs" />
     <Compile Include="Interfaces\ISelectionState.cs" />
+    <Compile Include="MarketRuleAddIntent.cs" />
     <Compile Include="MarketRuleEditIntent.cs" />
     <Compile Include="MarketRuleResultIntent.cs" />
     <Compile Include="ModuleConfigurationProvider.cs" />

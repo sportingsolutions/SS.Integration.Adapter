@@ -57,7 +57,7 @@ namespace SS.Integration.Adapter.MarketRules
                 newDeletedMarketState.ForEach(m =>
                 {
                     _logger.DebugFormat("market rule={0} => {1} of {2} was deleted from the Connect platform - it will be suspended", Name, m, fixture);
-                    result.AddMarket(m);
+                    result.AddMarket(m,new MarketRuleAddIntent(MarketRuleAddIntent.OperationType.CHANGE_SELECTIONS));
                 });
             }
             

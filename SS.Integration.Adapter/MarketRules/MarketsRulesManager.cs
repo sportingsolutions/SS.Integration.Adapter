@@ -13,8 +13,10 @@
 //limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.MarketRules.Interfaces;
@@ -22,6 +24,7 @@ using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 using log4net;
+using SS.Integration.Common.Extensions;
 using SS.Integration.Common.Stats;
 using SS.Integration.Common.Stats.Interface;
 using SS.Integration.Common.Stats.Keys;
@@ -192,8 +195,16 @@ namespace SS.Integration.Adapter.MarketRules
         /// <param name="intents"></param>
         private void MergeIntents(Fixture fixture, Dictionary<IMarketRule, IMarketRuleResultIntent> intents)
         {
-            Dictionary<Market, bool> toremove = new Dictionary<Market, bool>();
-            List<Market> toadd = new List<Market>();
+            Dictionary<Market, bool> toRemove = new Dictionary<Market, bool>();
+
+            //this creates empty dictionary the object there is only to generate the type
+            var toAdd = Anonymous.CreateDictionaryWithAnonymousObject(String.Empty,
+                new
+                {
+                    Market = new Market(),
+                    Intent = new MarketRuleAddIntent(MarketRuleAddIntent.OperationType.ADD_SELECTIONS)
+                });
+            
             Dictionary<Market, Dictionary<MarketRuleEditIntent, string>> toedit = new Dictionary<Market, Dictionary<MarketRuleEditIntent, string>>();
 
             foreach (var rule in intents.Keys)
@@ -214,18 +225,18 @@ namespace SS.Integration.Adapter.MarketRules
                 {
                     // if it already contains the market, don't do 
                     // anything as the flag could be "false"
-                    if (!toremove.ContainsKey(mkt)) 
-                        toremove.Add(mkt, true);
+                    if (!toRemove.ContainsKey(mkt)) 
+                        toRemove.Add(mkt, true);
                 }
 
                 foreach (var mkt in intent.UnRemovableMarkets)
                 {
                     // if it is already present, then 
                     // set its flag to false
-                    if (toremove.ContainsKey(mkt))
-                        toremove[mkt] = false;
+                    if (toRemove.ContainsKey(mkt))
+                        toRemove[mkt] = false;
                     else
-                        toremove.Add(mkt, false);
+                        toRemove.Add(mkt, false);
                 }
 
                 /* For "editable" markets we follow the same 
@@ -234,7 +245,6 @@ namespace SS.Integration.Adapter.MarketRules
                  * or null if a rule marked the market to be
                  * not-editable
                  */
-
                 foreach (var mkt in intent.EditedMarkets)
                 {
                     if (!toedit.ContainsKey(mkt))
@@ -255,23 +265,44 @@ namespace SS.Integration.Adapter.MarketRules
                         toedit.Add(mkt, null);
                 }
 
-                toadd.AddRange(intent.NewMarkets);
+                foreach (var mkt in intent.NewMarkets)
+                {
+                    if (toAdd.ContainsKey(mkt.Id))
+                    {
+                        var firstAddition = toAdd[mkt.Id];
+                        if (ShouldKeepFirstMarket(firstAddition.Intent, intent.GetAddAction(mkt)))
+                            continue;                    
+                    }
+
+                    toAdd[mkt.Id] = new {Market = mkt, Intent = intent.GetAddAction(mkt)};
+                }
             }
 
             // ADD
-            toadd.ForEach(x => _logger.DebugFormat("Adding market {0} to {1} as requested by market rules", x, fixture));
-            fixture.Markets.AddRange(toadd);
+            foreach (var addItem in toAdd)
+            {
+                var market = addItem.Value.Market;
+
+                _logger.DebugFormat("Adding market {0} to {1} as requested by market rules", market, fixture);
+                
+                // as we might have changed import details of the market, we need to update the market state
+                var marketState = _currentTransaction[market.Id];
+                if(marketState != null)
+                    ((IUpdatableMarketState)marketState).Update(market, false);
+
+                fixture.Markets.Add(market);    
+            }
 
             // EDIT
             MergeEditIntents(fixture, toedit);
 
             int filtered = 0;
             // REMOVE
-            foreach (var mkt in toremove.Keys)
+            foreach (var mkt in toRemove.Keys)
             {
                 // we need to check that a removable market
                 // wasn't marked as editable or not editable
-                if (toremove[mkt] && !toedit.ContainsKey(mkt))
+                if (toRemove[mkt] && !toedit.ContainsKey(mkt))
                 {
                     _logger.DebugFormat("{0} of {1} will be removed from snapshot due market rules", mkt, fixture);
                     fixture.Markets.Remove(mkt);
@@ -284,6 +315,14 @@ namespace SS.Integration.Adapter.MarketRules
                 _Stats.AddValue(AdapterCoreKeys.FIXTURE_FILTERED_MARKETS, filtered.ToString());
                 _Stats.SetValue(AdapterCoreKeys.FIXTURE_TOTAL_MARKETS, CurrentState.MarketCount.ToString());
             }
+        }
+
+        private bool ShouldKeepFirstMarket(MarketRuleAddIntent firstIntent, MarketRuleAddIntent secondIntent)
+        {
+            if (firstIntent.Operation >= secondIntent.Operation)
+                return true;
+
+            return false;
         }
 
         private void MergeEditIntents(Fixture fixture, Dictionary<Market, Dictionary<MarketRuleEditIntent, string>> toedit)
