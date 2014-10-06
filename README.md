@@ -127,7 +127,7 @@ The following is a list of available settings.
 - StatsEnabled - This should be set to false. It may be used in future for statistics generation.
 - DeltaRuleEnabled - Set to true to turn on the delta rule. This will remove any markets and selections from a snapshot that have not changed since the last successfully processed sequence number
 
-Adapter Market Rule
+Adapter Market Rules
 ----------------------
 
 The adapter contains a basic rules engine that allows markets to be edited or removed before being sent onto any plugin. One optional rule will filter out any market that is pending and has never been active.
