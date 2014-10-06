@@ -28,7 +28,6 @@ namespace SS.Integration.Adapter.Configuration
         private const int DEFAULT_ECHO_INTERVAL_VALUE = 10000;
         private const int DEFAULT_ECHO_DELAY_VALUE = 3000;
         private const bool DEFAULT_SUSPEND_ALL_MARKETS_ON_SHUTDOWN_VALUE = true;
-        private const int DEFAULT_HEARTBEAT_INTERVAL_VALUE = 60;
         private const string DEFAULT_EVENT_STATE_FILE_PATH_VALUE = @"C:\eventState.json";
         private const string DEFAULT_MARKET_STATE_MANAGER_DIRECTORY = @"MarketsState";
         private const int DEFAULT_CACHE_EXPIRY_MINUTES_VALUE = 15;
@@ -65,9 +64,6 @@ namespace SS.Integration.Adapter.Configuration
 
             value = ConfigurationManager.AppSettings["suspendAllOnShutdown"];
             SuspendAllMarketsOnShutdown = string.IsNullOrEmpty(value) ? DEFAULT_SUSPEND_ALL_MARKETS_ON_SHUTDOWN_VALUE : string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
-
-            value = ConfigurationManager.AppSettings["heartBeatIntervalSeconds"];
-            HeartBeatIntervalSeconds = string.IsNullOrEmpty(value) ? DEFAULT_HEARTBEAT_INTERVAL_VALUE : Convert.ToInt32(value);
 
             value = ConfigurationManager.AppSettings["eventStateFilePath"];
             EventStateFilePath = string.IsNullOrEmpty(value) ? DEFAULT_EVENT_STATE_FILE_PATH_VALUE : Convert.ToString(value);

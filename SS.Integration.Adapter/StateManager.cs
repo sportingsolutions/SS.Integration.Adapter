@@ -33,7 +33,7 @@ namespace SS.Integration.Adapter
         private readonly IObjectProvider<IUpdatableMarketStateCollection> _PersistanceLayer;
         private readonly IObjectProvider<IPluginFixtureState> _PluginPersistanceLayer;
         private readonly ConcurrentDictionary<string, MarketRulesManager> _RulesManagers;
-        private readonly List<IMarketRule> _Rules;
+        private readonly HashSet<IMarketRule> _Rules;
 
 
         public StateManager(ISettings settings)
@@ -50,7 +50,7 @@ namespace SS.Integration.Adapter
                 "MarketFilters", settings.CacheExpiryInMins * 60);
 
             _RulesManagers = new ConcurrentDictionary<string, MarketRulesManager>();
-            _Rules = new List<IMarketRule>
+            _Rules = new HashSet<IMarketRule>
             {
                 VoidUnSettledMarket.Instance,
                 DeletedMarketsRule.Instance,
@@ -62,7 +62,6 @@ namespace SS.Integration.Adapter
                 _Rules.Add(DeltaRule.Instance);
             }
 
-            
             foreach (var rule in _Rules)
             {
                 _logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
@@ -70,12 +69,12 @@ namespace SS.Integration.Adapter
 
         }
 
-        internal void OverwriteRuleList(List<IMarketRule> rules)
+        internal void OverwriteRuleList(IEnumerable<IMarketRule> rules)
         {
             if (rules != null)
             {
                 _Rules.Clear();
-                _Rules.AddRange(rules);
+                _Rules.UnionWith(rules);
 
                 foreach (var rule in _Rules)
                 {
@@ -91,8 +90,14 @@ namespace SS.Integration.Adapter
 
             foreach (var rule in rules)
             {
-                _Rules.Add(rule);
-                _logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
+                if (_Rules.Add(rule))
+                {
+                    _logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
+                }
+                else
+                {
+                    _logger.DebugFormat("Rule {0} already loaded", rule.Name);
+                }
             }
         }
 

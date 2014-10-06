@@ -105,6 +105,29 @@ SS.Integration.Adapter.Model.ModuleConfigurationProvider.GetModuleConfiguration(
 
 this will allow the plug-in to obtain a System.Configuration.Configuration object that represents the config file. 
 
+Adapter Configuration Settings
+----------------------
+
+The adapter comes with a number of app settings found inside the adapters app.config. In the large majority of cases the default value will be fine, however in some cases you may wish to change some value.
+The following is a list of available settings.
+- User - The username to authenticate with the Connect platform
+- Password - The password to authenticate with the Connect platform
+- URL - The url for the api of the Connect platform
+- NewFixtureCheckerFrequency - The interval in milliseconds between checks for new fixtures in the feed
+- StartingRetryDelay - The adapter operates a retry fallback strategy on failed HTTP requests. This is the time in milliseconds it will wait before retrying the failed request for the first time
+- MaxRetryDelay - The adapter operates a retry fallback strategy on failed HTTP requests. This is the maximum amount of time in milliseconds it will wait after multiple failed attempts
+- MaxRetryAttempts - The adapter operates a retry fallback strategy on failed HTTP requests. This is the maximum number of attempts before throwing an exception
+- EchoInterval - The interval in milliseconds between the sending of echo messages to the connect platform
+- EchoDelay - The maximum amount of time in milliseconds that will be allowed for an echo message to arrive
+- FixtureCreationConcurrency - The maximum number of concurrent threads used to create fixtures
+- SuspendAllOnShutdown - Suspend all fixtures when the Adapter is shutdown correctly e.g. Stop as a windows service
+- EventStateFilePath - The path and filename of the eventstate file. This is used to store fixture sequence numbers so that the adapter can work out if it has missed updates.
+- MarketFilterState - The path to the folder that holds the MarketFilterState. This is where the current state of each market is held.
+- CacheExpiryInMins - The number of minutes that a markets state will be held in memory after being read. The timer is set back to this value and restarts the coutdown on each read.
+- StatsEnabled - This should be set to false. It may be used in future for statistics generation.
+- DeltaRuleEnabled - Set to true to turn on the delta rule. This will remove any markets and selections from a snapshot that have not changed since the last successfully processed sequence number
+
+
 Modules
 ----------------------
 
@@ -113,7 +136,11 @@ The adapter solution comes with these packages:
 - SS.Integration.Adapter.WindowService - containing the adapter's entry point as a windows service
 - SS.Integration.Adapter.Adapter - adapter core package
 - SS.Integration.Adapter.Model
+- SS.Integration.Adapter.MarketRules  - Default Rules used to filter markets from the feed
 - SS.Integration.Adapter.Plugin.Model - these two packages define data structures that can be used by plug-ins
 - SS.Integration.Common - utility and extra common functionalities
 - SS.Integration.Adapter.Plugin.Logger - Default plug-in
 - SS.Integration.Adapter.Tests - Adapter's test package 
+
+
+

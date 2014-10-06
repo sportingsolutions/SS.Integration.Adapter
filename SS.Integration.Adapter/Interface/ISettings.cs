@@ -81,11 +81,6 @@ namespace SS.Integration.Adapter.Interface
         bool SuspendAllMarketsOnShutdown { get; }
 
         /// <summary>
-        /// Heartbeat interval
-        /// </summary>
-        int HeartBeatIntervalSeconds { get; }
-
-        /// <summary>
         /// Returns the path for
         /// the events' state storage file
         /// </summary>
