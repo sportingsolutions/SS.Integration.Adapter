@@ -99,7 +99,7 @@ Most of the time plug-ins need specific configuration files. As the plug-in is n
 3. Fill this file with all the necessary parameters
 4. On the plug-in code, call:
 
-```
+```c#
 SS.Integration.Adapter.Model.ModuleConfigurationProvider.GetModuleConfiguration("MyCompanyPlugin.config"). 
 ```
 
@@ -127,6 +127,19 @@ The following is a list of available settings.
 - StatsEnabled - This should be set to false. It may be used in future for statistics generation.
 - DeltaRuleEnabled - Set to true to turn on the delta rule. This will remove any markets and selections from a snapshot that have not changed since the last successfully processed sequence number
 
+Adapter Market Rule
+----------------------
+
+The adapter contains a basic rules engine that allows markets to be edited or removed before being sent onto any plugin. One optional rule will filter out any market that is pending and has never been active.
+This effectively means that a market will not appear to the plugin until it becomes active for the first time. To turn this rule on for Football and not apply it to match winner markets you will need to add the following code to your plugins initialise method.
+
+```c#
+var marketRuleList = new List<IMarketRule>();
+var pendingMarketFilteringRule = new PendingMarketFilteringRule();
+pendingMarketFilteringRule.AddSportToRule(SS.Integration.Adapter.Model.Football);
+pendingMarketFilteringRule.ExcludeMarketType("match_winner");
+MarketRules = marketRuleList;
+```
 
 Modules
 ----------------------
