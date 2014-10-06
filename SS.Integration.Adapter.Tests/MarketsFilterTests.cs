@@ -464,10 +464,13 @@ namespace SS.Integration.Adapter.Tests
             _market2.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Pending, false));
             _market3.Setup(x => x.Selections).Returns(GetSelections(SelectionStatus.Active, true));
 
+            var pendingRule = new PendingMarketFilteringRule();
+            pendingRule.AddSportToRule("TestFootball");
+
             List<IMarketRule> rules = new List<IMarketRule> { 
                 VoidUnSettledMarket.Instance, 
                 InactiveMarketsFilteringRule.Instance,
-                new PendingMarketFilteringRule { AlwaysExcludePendingMarkets = true}
+                pendingRule
             };
 
 
@@ -497,7 +500,8 @@ namespace SS.Integration.Adapter.Tests
 
             _market1.Object.AddOrUpdateTagValue("type", "do_not_touch");
 
-            var rule = new PendingMarketFilteringRule { AlwaysExcludePendingMarkets = true };
+            var rule = new PendingMarketFilteringRule();
+            rule.AddSportToRule("TestFootball");
             rule.ExcludeMarketType("do_not_touch");
 
             List<IMarketRule> rules = new List<IMarketRule> { 
@@ -533,7 +537,8 @@ namespace SS.Integration.Adapter.Tests
             _market1.Object.AddOrUpdateTagValue("type", "do_not_touch");
             _market1.Object.AddOrUpdateTagValue("extra_tag", "just_to_check_that_tags_are_correctly_passed");
 
-            var rule = new PendingMarketFilteringRule { AlwaysExcludePendingMarkets = true };
+            var rule = new PendingMarketFilteringRule();
+            rule.AddSportToRule("TestFootball");
             rule.ExcludeMarketType("do_not_touch");
 
             List<IMarketRule> rules = new List<IMarketRule> { 
@@ -579,10 +584,13 @@ namespace SS.Integration.Adapter.Tests
             // in a pending state (that they haven't been actived before)
             // will be removed from the snapshot through the PendingMarketFilteringRule
 
+            var pendingRule = new PendingMarketFilteringRule();
+            pendingRule.AddSportToRule("TestFootball");
+
             List<IMarketRule> rules = new List<IMarketRule> { 
                 VoidUnSettledMarket.Instance, 
                 InactiveMarketsFilteringRule.Instance,
-                new PendingMarketFilteringRule {AlwaysExcludePendingMarkets = true}
+                pendingRule
             };
 
   

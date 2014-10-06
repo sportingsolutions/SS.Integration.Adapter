@@ -13,7 +13,9 @@
 //limitations under the License.
 
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using log4net;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
@@ -25,13 +27,14 @@ namespace SS.Integration.Adapter.MarketRules
 
         private const string NAME = "Pending_Markets";
         private static readonly ILog _Logger = LogManager.GetLogger(typeof(PendingMarketFilteringRule));
-        private readonly HashSet<string> _ExcludedMarketType;
+        private readonly HashSet<string> _includedSports;
+        private readonly HashSet<string> _excludedMarketTypes;
         
 
         public PendingMarketFilteringRule()
         {
-            _ExcludedMarketType = new HashSet<string>();
-            AlwaysExcludePendingMarkets = false;
+            _includedSports = new HashSet<string>();
+            _excludedMarketTypes = new HashSet<string>();
         }
 
         public string Name
@@ -46,101 +49,116 @@ namespace SS.Integration.Adapter.MarketRules
         /// <param name="type"></param>
         public void ExcludeMarketType(string type)
         {
-            _ExcludedMarketType.Add(type);
+            _excludedMarketTypes.Add(type);
         }
 
-        public void ExcludeMarketType(IEnumerable<string> MarketTypes)
+        public void ExcludeMarketType(IEnumerable<string> marketTypes)
         {
-            foreach (var type in MarketTypes)
+            foreach (var type in marketTypes)
                 ExcludeMarketType(type);
         }
 
         /// <summary>
-        /// By default, this class filters out markets
-        /// that are in a pending state and they have
-        /// never been on active state.
-        /// 
-        /// By settting to true this property, the class
-        /// will filter out all the pending markets, 
-        /// indipendently wheter they have been active
-        /// or not.
+        /// Add a sport for the rule to applied to
         /// </summary>
-        public bool AlwaysExcludePendingMarkets
+        /// <param name="sport">e.g. Football, Handball etc.</param>
+        public void AddSportToRule(string sport)
         {
-            get;
-            set;
+            _includedSports.Add(sport);
+        }
+
+        /// <summary>
+        /// Stop the rule being applied to this sport
+        /// </summary>
+        /// <param name="sport">e.g. Football, Handball etc.</param>
+        public void RemoveSportFromRule(string sport)
+        {
+            _includedSports.Remove(sport);
         }
 
         public IMarketRuleResultIntent Apply(Fixture fixture, IMarketStateCollection oldState, IMarketStateCollection newState)
         {
-            _Logger.DebugFormat("Applying market rule={0} for {1} - AlwaysExcludePendingMarkets={2}", Name, fixture, AlwaysExcludePendingMarkets);
-
             var result = new MarketRuleResultIntent();
 
-            foreach (var mkt in fixture.Markets)
+            if (_includedSports.Contains(newState.Sport))
             {
+                _Logger.DebugFormat("Applying market rule={0} for {1} sport={2}", Name, fixture, newState.Sport);
 
-                if (_ExcludedMarketType.Contains(mkt.Type))
+                foreach (var mkt in fixture.Markets)
                 {
-                    _Logger.DebugFormat("market rule={0} => {1} of {2} is marked as un-removable due its type={3}", 
-                        Name, mkt, fixture, mkt.Type);
-
-                    result.MarkAsUnRemovable(mkt);
-                    continue;
-                }
-
-                // get the value from the old state
-                IMarketState mkt_state = null;
-                if (oldState != null)
-                    mkt_state = oldState[mkt.Id];
-
-                // if a market is now active (for the first time), then we add all the tags
-                // that we have collected so far and let the market go through the filter
-                if (mkt.IsActive && (mkt_state != null && mkt_state.IsPending && !mkt_state.HasBeenActive))
-                {
-                    GetTags(mkt, mkt_state);
-                    result.MarkAsUnRemovable(mkt);
-
-                    _Logger.DebugFormat("market rule={0} => assigned tags to {1} of {2}", Name, mkt, fixture);
-                }
-                else if (mkt.IsPending)
-                {
-                    // otherwise, if the market is in a pending state, then we mark it as removable.
-                    // This happens if AlwaysExcludePendingMarkets is true, or, if the market
-                    // has never been active before
-                    if (AlwaysExcludePendingMarkets || (mkt_state != null && !mkt_state.HasBeenActive))
+                    if (_excludedMarketTypes.Contains(mkt.Type))
                     {
-                        _Logger.DebugFormat("market rule={0} => {1} of {2} is marked as removable", Name, mkt, fixture);
+                        _Logger.DebugFormat("market rule={0} => {1} of {2} is excluded from rule due its type={3}",
+                            Name, mkt, fixture, mkt.Type);
 
-                        result.MarkAsRemovable(mkt);
+                        continue;
                     }
-                    
-                }
+
+                    var oldMarketState = oldState != null ? oldState[mkt.Id] : null;
+                    var newMarketState = newState[mkt.Id];
+
+                    if (oldMarketState == null)
+                    {
+                        //must be a snapshot then
+                        if (newMarketState.IsActive)
+                        {
+                            //create market
+                            _Logger.DebugFormat("market rule={0} => {1} of {2} is created", Name, mkt, fixture);
+                            result.MarkAsUnRemovable(mkt);
+                        }
+                        else
+                        {
+                            //dont create market
+                            _Logger.DebugFormat("market rule={0} => {1} of {2} is not created", Name, mkt, fixture);
+                            result.MarkAsRemovable(mkt);
+                        }
+                    }
+                    else
+                    {
+                        if (oldMarketState.HasBeenActive) continue;
+                        if (newMarketState.IsActive)
+                        {
+                            //create
+                            Action<Market> editMarketAction = (m =>
+                            {
+                                if (newMarketState.TagsCount == 0)
+                                    return;
+
+                                foreach (var tagKey in newMarketState.TagKeys)
+                                {
+                                    m.AddOrUpdateTagValue(tagKey, newMarketState.GetTagValue(tagKey));
+                                }
+
+                                foreach (var sel in m.Selections)
+                                {
+                                    var selState = newMarketState[sel.Id];
+                                    foreach (var tagKey in selState.TagKeys)
+                                    {
+                                        sel.AddOrUpdateTagValue(tagKey, selState.GetTagValue(tagKey));
+                                    }
+                                }
+                            });
+                            var mri = new MarketRuleEditIntent(editMarketAction,
+                                MarketRuleEditIntent.OperationType.CHANGE_DATA);
+                            _Logger.DebugFormat("market rule={0} => {1} of {2} is created", Name, mkt, fixture);
+                            result.EditMarket(mkt, mri);
+                        }
+                        else
+                        {
+                            //dont create market
+                            _Logger.DebugFormat("market rule={0} => {1} of {2} is not created", Name, mkt, fixture);
+                            result.MarkAsRemovable(mkt);
+                        }
+                    }
+                }                
+            }
+            else
+            {
+                _Logger.DebugFormat("Disabled rule={0} for {1} sport={2}", Name, fixture,newState.Sport);
             }
 
             return result;
-
         }
 
-        private static void GetTags(Market Market, IMarketState State)
-        {
-            if (State.TagsCount == 0)
-                return;
-
-            foreach (var key in State.TagKeys)
-            {
-                Market.AddOrUpdateTagValue(key, State.GetTagValue(key));
-            }
-
-            foreach (var seln in Market.Selections)
-            {
-                var seln_state = State[seln.Id];
-
-                foreach (var key in seln_state.TagKeys)
-                {
-                    seln.AddOrUpdateTagValue(key, seln_state.GetTagValue(key));                    
-                }
-            }
-        }
     }
 }
