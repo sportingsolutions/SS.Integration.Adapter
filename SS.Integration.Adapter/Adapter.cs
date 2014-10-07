@@ -35,7 +35,7 @@ namespace SS.Integration.Adapter
 {
     public class Adapter
     {
-        public delegate void StreamEventHandler(string fixtureId);
+        public delegate void StreamEventHandler(object sender, string fixtureId);
 
         private readonly static object _sync = new object();
         private const int LISTENER_DISPOSING_SAFE_GUARD = 1;
@@ -633,14 +633,14 @@ namespace SS.Integration.Adapter
         {
             if (StreamCreated != null)
             {
-                StreamCreated(fixtureId);
+                StreamCreated(this, fixtureId);
             }
         }
 
         protected virtual void OnStreamRemoved(string fixtureId)
         {
             if (StreamRemoved != null)
-                StreamRemoved(fixtureId);
+                StreamRemoved(this, fixtureId);
         }
     }
 }

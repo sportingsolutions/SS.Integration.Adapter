@@ -12,7 +12,6 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -201,6 +200,14 @@ namespace SS.Integration.Adapter.Tests
 
         }
 
+        private void adapter_StreamCreated(object sender, string fixtureId)
+        {
+            lock (sender)
+            {
+                Monitor.Wait(sender);
+            }
+        }
+
         [Test]
         [Category("Adapter")]
         public void AdapterIsDisposedCorrectlyTest()
@@ -299,17 +306,15 @@ namespace SS.Integration.Adapter.Tests
             Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object);
             adapter.AddSport("Football");
 
-            adapter.StreamCreated += new EventHandler(delegate(object sender, EventArgs e)
+            adapter.StreamCreated += delegate(object sender, string e)
                 {
                     created++;
-                }
-            );
+                };
 
-            adapter.StreamRemoved += new EventHandler(delegate(object sender, EventArgs e)
+            adapter.StreamRemoved += delegate(object sender, string e)
                 {
                     created--;
-                }
-            );
+                };
 
             adapter.Start();
 
@@ -334,14 +339,6 @@ namespace SS.Integration.Adapter.Tests
 
             created.Should().Be(1);
             
-        }
-
-        private static void adapter_StreamCreated(object sender, EventArgs e)
-        {
-            lock (sender)
-            {
-                Monitor.Wait(sender);
-            }
         }
 
         private IEnumerable<string> Sports(ListOfSports howMany)
