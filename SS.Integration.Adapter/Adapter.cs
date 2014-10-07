@@ -35,12 +35,14 @@ namespace SS.Integration.Adapter
 {
     public class Adapter
     {
+        public delegate void StreamEventHandler(string fixtureId);
+
         private readonly static object _sync = new object();
         private const int LISTENER_DISPOSING_SAFE_GUARD = 1;
         private readonly ILog _logger = LogManager.GetLogger(typeof(Adapter).ToString());
-        
-        public event EventHandler StreamCreated;
-        public event EventHandler StreamRemoved;
+
+        public event StreamEventHandler StreamCreated;
+        public event StreamEventHandler StreamRemoved;
 
         private readonly ConcurrentDictionary<string, IListener> _listeners;
         private readonly ConcurrentDictionary<string, int> _listenerDisposingQueue;
@@ -496,7 +498,7 @@ namespace SS.Integration.Adapter
 
                         _listeners.TryAdd(resource.Id, listener);
 
-                        OnStreamCreated();
+                        OnStreamCreated(resource.Id);
 
                         _logger.InfoFormat("Listener created for {0}", resource);
                     }
@@ -524,7 +526,6 @@ namespace SS.Integration.Adapter
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine(ex.ToString());
                 _logger.Error(string.Format("An error occured on fixture creation task={0}", Task.CurrentId), ex);
             }
 
@@ -540,7 +541,7 @@ namespace SS.Integration.Adapter
             if (listener != null)
             {
                 listener.Dispose();
-                OnStreamRemoved();
+                OnStreamRemoved(fixtureId);
             }
 
             return listener != null;
@@ -628,18 +629,18 @@ namespace SS.Integration.Adapter
             }
         }
 
-        protected virtual void OnStreamCreated()
+        protected virtual void OnStreamCreated(string fixtureId)
         {
             if (StreamCreated != null)
             {
-                StreamCreated(this, EventArgs.Empty);
+                StreamCreated(fixtureId);
             }
         }
 
-        protected virtual void OnStreamRemoved()
+        protected virtual void OnStreamRemoved(string fixtureId)
         {
             if (StreamRemoved != null)
-                StreamRemoved(this, EventArgs.Empty);
+                StreamRemoved(fixtureId);
         }
     }
 }
