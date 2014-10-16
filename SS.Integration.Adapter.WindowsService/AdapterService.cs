@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
+using System.Configuration;
 using System.Reflection;
 using System.ServiceProcess;
 using System.Threading.Tasks;
@@ -76,7 +77,8 @@ namespace SS.Integration.Adapter.WindowsService
             {
                 string codebase = AppDomain.CurrentDomain.BaseDirectory;
 
-                var catalog = new DirectoryCatalog(codebase);
+                var pluginAssembly = ConfigurationManager.AppSettings["PluginAssembly"];
+                var catalog = new SafeDirectoryCatalog(codebase, pluginAssembly);
                 container = new CompositionContainer(catalog);
                 container.ComposeParts(this);
             }
