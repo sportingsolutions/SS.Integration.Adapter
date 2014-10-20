@@ -13,10 +13,8 @@
 //limitations under the License.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.MarketRules.Interfaces;
@@ -317,12 +315,9 @@ namespace SS.Integration.Adapter.MarketRules
             }
         }
 
-        private bool ShouldKeepFirstMarket(MarketRuleAddIntent firstIntent, MarketRuleAddIntent secondIntent)
+        private static bool ShouldKeepFirstMarket(MarketRuleAddIntent firstIntent, MarketRuleAddIntent secondIntent)
         {
-            if (firstIntent.Operation >= secondIntent.Operation)
-                return true;
-
-            return false;
+            return firstIntent.Operation >= secondIntent.Operation;
         }
 
         private void MergeEditIntents(Fixture fixture, Dictionary<Market, Dictionary<MarketRuleEditIntent, string>> toedit)

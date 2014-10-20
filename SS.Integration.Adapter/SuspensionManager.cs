@@ -296,7 +296,7 @@ namespace SS.Integration.Adapter
         {
             var market = new Market(marketState.Id) { IsSuspended = true };
             foreach (var seln in marketState.Selections)
-                market.Selections.Add(new Selection { Id = seln.Id, Tradable = false });
+                market.Selections.Add(new Selection { Id = seln.Id, Status = SelectionStatus.Pending, Tradable = false });
 
             return market;
         }

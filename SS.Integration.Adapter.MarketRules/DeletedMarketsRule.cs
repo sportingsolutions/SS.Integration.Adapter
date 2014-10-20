@@ -51,13 +51,13 @@ namespace SS.Integration.Adapter.MarketRules
                     .ToList();
 
             var newDeletedMarketState = deletedMarkets.Select(CreateSuspendedMarket).ToList();
-            
+
             if (deletedMarkets.Any())
             {
                 newDeletedMarketState.ForEach(m =>
                 {
                     _logger.DebugFormat("market rule={0} => {1} of {2} was deleted from the Connect platform - it will be suspended", Name, m, fixture);
-                    result.AddMarket(m,new MarketRuleAddIntent(MarketRuleAddIntent.OperationType.CHANGE_SELECTIONS));
+                    result.AddMarket(m, new MarketRuleAddIntent(MarketRuleAddIntent.OperationType.CHANGE_SELECTIONS));
                 });
             }
             
@@ -76,7 +76,7 @@ namespace SS.Integration.Adapter.MarketRules
             }
 
             foreach (var stateSelection in MarketState.Selections)
-                market.Selections.Add(new Selection { Id = stateSelection.Id, Tradable = false, Price = 0 });
+                market.Selections.Add(new Selection { Id = stateSelection.Id, Status = SelectionStatus.Pending, Tradable = false, Price = 0 });
 
             return market;
         }
