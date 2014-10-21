@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>SS.Integration.Adapter.MarketRules</id>
+    <description>Set of market rules that can be loaded within the adapter to add/enhance functionalities</description>
+    <version>$version$</version>
+    <authors>Sporting Solutions</authors>
+    <owners>Sporting Solutions</owners>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <projectUrl>http://www.sportingsolutions.com</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <copyright>Copyright (c) SPIN Services Ltd. 2014</copyright>
+		<dependencies>
+			<dependency id="log4net" version="2.0.3" />
+		</dependencies>
+  </metadata>
+  <files>
+    <file src="bin\Release\SS.Integration.Adapter.MarketRules.dll" target="lib\net45" />
+  </files>
+</package>
