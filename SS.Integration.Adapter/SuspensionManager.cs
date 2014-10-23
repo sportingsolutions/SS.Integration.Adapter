@@ -246,6 +246,7 @@ namespace SS.Integration.Adapter
 
                     foreach (var mkt_id in x.Markets)
                     {
+
                         // we take a conservative approach here.
                         // If, for any reason, the traded_in_play
                         // is not present, we assume it is. Better
@@ -254,6 +255,13 @@ namespace SS.Integration.Adapter
                         if (state.HasTag("traded_in_play") && 
                             string.Equals(state.GetTagValue("traded_in_play"), "false", StringComparison.OrdinalIgnoreCase))
                         {
+                            _logger.DebugFormat("marketId={0} of fixtureId={1} will not be suspended as it is not traded in play", state.Id, fixture.Id);
+                            continue;
+                        }
+
+                        if (!state.HasBeenActive || state.IsPending)
+                        {
+                            _logger.DebugFormat("marketId={0} of fixtureId={1} is already in a suspended state", state.Id, fixture.Id);
                             continue;
                         }
 

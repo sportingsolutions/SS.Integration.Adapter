@@ -39,5 +39,6 @@ namespace SS.Integration.Adapter.Interface
 
         void UpdateResourceState(IResourceFacade resource);
 
+        void ProcessFixtureDelete();
     }
 }

@@ -982,6 +982,21 @@ namespace SS.Integration.Adapter
             _eventState.UpdateFixtureState(_resource.Sport, fixtureDelta.Id, -1, status);
         }
 
+        public void ProcessFixtureDelete()
+        {
+            if (IsFixtureDeleted || IsFixtureEnded)
+                return;
+
+            Fixture fixture = new Fixture
+            {
+                MatchStatus = ((int)MatchStatus.Deleted).ToString(),
+                Sequence = _marketsRuleManager.CurrentState.FixtureSequence,
+                Id = FixtureId
+            };
+
+            ProcessFixtureDelete(fixture);
+        }
+
         private void ProcessMatchOver(Fixture fixtureDelta)
         {
             _logger.InfoFormat("{0} is Match Over. Suspending all markets and stopping the stream.", _resource);
