@@ -255,13 +255,13 @@ namespace SS.Integration.Adapter
                         if (state.HasTag("traded_in_play") && 
                             string.Equals(state.GetTagValue("traded_in_play"), "false", StringComparison.OrdinalIgnoreCase))
                         {
-                            _logger.DebugFormat("marketId={0} of fixtureId={1} will not be suspended as it is not traded in play", state.Id, fixture.Id);
+                            _logger.DebugFormat("marketId={0} of fixtureId={1} will not be suspended as it is not traded in play", mkt_id, fixture.Id);
                             continue;
                         }
 
-                        if (!state.HasBeenActive || state.IsPending)
+                        if (!state.HasBeenActive)
                         {
-                            _logger.DebugFormat("marketId={0} of fixtureId={1} is already in a suspended state", state.Id, fixture.Id);
+                            _logger.DebugFormat("marketId={0} of fixtureId={1} will not be suspended as it has not been active before", mkt_id, fixture.Id);
                             continue;
                         }
 
