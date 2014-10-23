@@ -990,9 +990,11 @@ namespace SS.Integration.Adapter
             Fixture fixture = new Fixture
             {
                 MatchStatus = ((int)MatchStatus.Deleted).ToString(),
-                Sequence = _marketsRuleManager.CurrentState.FixtureSequence,
                 Id = FixtureId
             };
+
+            if (_marketsRuleManager.CurrentState != null)
+                fixture.Sequence = _marketsRuleManager.CurrentState.FixtureSequence;
 
             ProcessFixtureDelete(fixture);
         }

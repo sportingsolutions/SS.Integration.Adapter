@@ -59,22 +59,32 @@ namespace SS.Integration.Adapter.Tests
                 Sequence = 2
             };
 
-            fixture.Markets.Add(new Market { Id = "MKT-1" });
-            fixture.Markets.Add(new Market { Id = "MKT-2" });
-            fixture.Markets.Add(new Market { Id = "MKT-3" });
+            var mkt1 = new Market { Id = "MKT-1" };
+            mkt1.Selections.Add(new Selection { Id = "SELN", Status = SelectionStatus.Active });
 
-            Market mkt = new Market { Id = "MKT-4" };
-            mkt.AddOrUpdateTagValue("traded_in_play", "false");
-            fixture.Markets.Add(mkt);
-            
-            mkt = new Market { Id = "MKT-5" };
-            mkt.AddOrUpdateTagValue("traded_in_play", "true");
-            fixture.Markets.Add(mkt);
+            var mkt2 = new Market { Id = "MKT-2" };
+            mkt2.Selections.Add(new Selection { Id = "SELN", Status = SelectionStatus.Active });
 
-            mkt = new Market { Id = "MKT-6" };
-            mkt.AddOrUpdateTagValue("traded_in_play", "true");
-            fixture.Markets.Add(mkt);
+            var mkt3 = new Market { Id = "MKT-3" };
+            mkt3.Selections.Add(new Selection { Id = "SELN", Status = SelectionStatus.Pending });
 
+            var mkt4 = new Market { Id = "MKT-4" };
+            mkt4.Selections.Add(new Selection { Id = "SELN", Status = SelectionStatus.Active });
+            mkt4.AddOrUpdateTagValue("traded_in_play", "false");
+
+            var mkt5 = new Market { Id = "MKT-5" };
+            mkt5.Selections.Add(new Selection { Id = "SELN", Status = SelectionStatus.Active });
+            mkt5.AddOrUpdateTagValue("traded_in_play", "true");
+
+            var mkt6 = new Market { Id = "MKT-6" };
+            mkt6.AddOrUpdateTagValue("traded_in_play", "true");
+
+            fixture.Markets.Add(mkt1);
+            fixture.Markets.Add(mkt2);
+            fixture.Markets.Add(mkt3);
+            fixture.Markets.Add(mkt4);
+            fixture.Markets.Add(mkt5);
+            fixture.Markets.Add(mkt6);
             state.Update(fixture, true);
             
             
@@ -108,13 +118,13 @@ namespace SS.Integration.Adapter.Tests
             // that the market is a in-play market
             plugin.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>
                 (
-                    y => y.Markets.Count == 5 &&
+                    y => y.Markets.Count == 3 &&
                          y.Markets.FirstOrDefault(z => z.Id == "MKT-1") != null &&
                          y.Markets.FirstOrDefault(z => z.Id == "MKT-2") != null &&
-                         y.Markets.FirstOrDefault(z => z.Id == "MKT-3") != null &&
+                         y.Markets.FirstOrDefault(z => z.Id == "MKT-3") == null &&
                          y.Markets.FirstOrDefault(z => z.Id == "MKT-4") == null &&
                          y.Markets.FirstOrDefault(z => z.Id == "MKT-5") != null &&
-                         y.Markets.FirstOrDefault(z => z.Id == "MKT-6") != null
+                         y.Markets.FirstOrDefault(z => z.Id == "MKT-6") == null
                 ), It.IsAny<bool>()));
 
 
@@ -127,10 +137,11 @@ namespace SS.Integration.Adapter.Tests
 
             fixture.Markets.Remove(fixture.Markets.FirstOrDefault(x => x.Id == "MKT-5"));
 
-            mkt = new Market { Id = "MKT-7" };
-            mkt.AddOrUpdateTagValue("traded_in_play", "true");
+            var mkt7 = new Market { Id = "MKT-7" };
+            mkt7.Selections.Add(new Selection { Id = "SELN", Status = SelectionStatus.Active });
+            mkt7.AddOrUpdateTagValue("traded_in_play", "true");
 
-            fixture.Markets.Add(mkt);
+            fixture.Markets.Add(mkt7);
 
             state.Update(fixture, true);
             
@@ -169,21 +180,21 @@ namespace SS.Integration.Adapter.Tests
 
             plugin.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>
                 (
-                    y => y.Markets.Count == 6 &&
+                    y => y.Markets.Count == 4 &&
                          y.Markets.FirstOrDefault(z => z.Id == "MKT-1") != null &&
                          y.Markets.FirstOrDefault(z => z.Id == "MKT-2") != null &&
-                         y.Markets.FirstOrDefault(z => z.Id == "MKT-3") != null &&
+                         y.Markets.FirstOrDefault(z => z.Id == "MKT-3") == null &&
                          y.Markets.FirstOrDefault(z => z.Id == "MKT-4") == null &&
                          y.Markets.FirstOrDefault(z => z.Id == "MKT-5") != null &&
-                         y.Markets.FirstOrDefault(z => z.Id == "MKT-6") != null &&
+                         y.Markets.FirstOrDefault(z => z.Id == "MKT-6") == null &&
                          y.Markets.FirstOrDefault(z => z.Id == "MKT-7") != null
                 ), It.IsAny<bool>()));
 
         }
 
         /// <summary>
-        /// I want to test that when the StreamListener
-        /// receives a disconnect event, it suspends
+        /// I want to test whether the StreamListener
+        /// upon a disconnection event, suspends 
         /// the fixture
         /// </summary>
         [Test]
@@ -208,8 +219,11 @@ namespace SS.Integration.Adapter.Tests
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
             fixture.Tags.Add("Sport", "Football"); // add at least one tags, so the MarketsRulesManager recognize it as a full-snapshot
 
-            fixture.Markets.Add(new Market("MKT-1"));
-            var mkt = new Market("MKT-2");
+            var mkt = new Market("MKT-1");
+            mkt.Selections.Add(new Selection {Id = "SELN-1", Status = SelectionStatus.Active});
+            fixture.Markets.Add(mkt);
+           
+            mkt = new Market("MKT-2");
             mkt.AddOrUpdateTagValue("traded_in_play", "false");
             fixture.Markets.Add(mkt);
 
