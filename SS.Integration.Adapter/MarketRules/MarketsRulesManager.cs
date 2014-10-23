@@ -127,6 +127,8 @@ namespace SS.Integration.Adapter.MarketRules
             if (CurrentState == null)
                 return;
 
+            // on deletion, we might have changed something on the current state 
+            // we then need to save these changes
             _stateProvider.SetObject(_fixtureId, CurrentState as IUpdatableMarketStateCollection);
         }
 

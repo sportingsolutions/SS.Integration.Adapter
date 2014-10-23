@@ -46,7 +46,9 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
             if (collection == null)
                 return;
-         
+
+            Sport = collection.Sport;
+
             // this is just for creating the nodes
             foreach (var mkt_id in collection.Markets)
             {

@@ -277,9 +277,7 @@ namespace SS.Integration.Adapter
                     ((IUpdatableMarketStateCollection)x).OnMarketsForcedSuspension(includedMarketStates);
                 };
         }
-
-        
-
+    
         private static Fixture GetFixtureWithSuspendedMarkets(IMarketStateCollection x, out IEnumerable<IMarketState> includedMarketStates)
         {
             includedMarketStates = new List<IMarketState>();
