@@ -501,7 +501,6 @@ namespace SS.Integration.Adapter
 
             try
             {
-
                 var deltaMessage = streamEventArgs.Update.FromJson<StreamMessage>();
                 var fixtureDelta = deltaMessage.GetContent<Fixture>();
 

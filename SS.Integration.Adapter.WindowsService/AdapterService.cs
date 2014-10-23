@@ -77,7 +77,7 @@ namespace SS.Integration.Adapter.WindowsService
             {
                 string codebase = AppDomain.CurrentDomain.BaseDirectory;
 
-                var pluginAssembly = ConfigurationManager.AppSettings["PluginAssembly"];
+                var pluginAssembly = ConfigurationManager.AppSettings["pluginAssembly"];
                 var catalog = new SafeDirectoryCatalog(codebase, pluginAssembly);
                 container = new CompositionContainer(catalog);
                 container.ComposeParts(this);

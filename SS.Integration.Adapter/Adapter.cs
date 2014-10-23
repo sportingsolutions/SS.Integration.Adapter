@@ -19,6 +19,10 @@ using System.Reflection;
 using System.Threading;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNet.SignalR;
+using SS.Integration.Adapter.Diagnostics;
+using SS.Integration.Adapter.Diagnostics.Host;
+using SS.Integration.Adapter.Diagnostics.Interface;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.ProcessState;
@@ -35,6 +39,8 @@ namespace SS.Integration.Adapter
 {
     public class Adapter
     {
+        private readonly ISupervisor _supervisor;
+
         public delegate void StreamEventHandler(object sender, string fixtureId);
 
         private readonly static object _sync = new object();
@@ -56,6 +62,8 @@ namespace SS.Integration.Adapter
 
         public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector)
         {
+            var broadcaster = GlobalHost.ConnectionManager.GetHubContext<SupervisorHub>();
+            _supervisor = new Supervisor(f=> broadcaster.Clients.All.Publish(f));
 
             Settings = settings;
             UDAPIService = udapiServiceFacade;
@@ -422,6 +430,8 @@ namespace SS.Integration.Adapter
         {
             _logger.DebugFormat("Attempt to process {0} for sport={1}", resource, sport);
 
+            _supervisor.AddFixture(new Fixture() {Id = resource.Id});
+
             // make sure that the resource is not already being processed by some other thread
             if(!CanProcessResource(resource))
                 return;
@@ -631,6 +641,8 @@ namespace SS.Integration.Adapter
 
         protected virtual void OnStreamCreated(string fixtureId)
         {
+            _supervisor.AddFixture(new Fixture() {Id = fixtureId});
+
             if (StreamCreated != null)
             {
                 StreamCreated(this, fixtureId);

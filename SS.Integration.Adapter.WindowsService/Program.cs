@@ -17,6 +17,7 @@ using System.IO;
 using System.Reflection;
 using System.ServiceProcess;
 using log4net;
+using SS.Integration.Adapter.Diagnostics.Host;
 
 namespace SS.Integration.Adapter.WindowsService
 {
@@ -40,6 +41,8 @@ namespace SS.Integration.Adapter.WindowsService
                 { 
                     new AdapterService() 
                 };
+
+            SupervisorHost.Start();
 
             if (Environment.UserInteractive)
             {

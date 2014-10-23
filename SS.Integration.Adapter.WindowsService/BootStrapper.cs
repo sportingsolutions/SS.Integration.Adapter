@@ -15,6 +15,9 @@
 
 using Ninject.Modules;
 using SS.Integration.Adapter.Configuration;
+using SS.Integration.Adapter.Diagnostics;
+using SS.Integration.Adapter.Diagnostics.Host;
+using SS.Integration.Adapter.Diagnostics.Interface;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.UdapiClient;
 
