@@ -392,7 +392,7 @@ namespace SS.Integration.Adapter
                     {
 
                         _logger.DebugFormat("Fixture with fixtureId={0} was deleted from Connect fixture factory", fixture.Key);
-                        RemoveAndStopListener(fixture.Key);
+                        RemoveAndStopListener(fixture.Key, true);
                         EventState.RemoveFixture(sport, fixture.Key);
                     }
                     else
@@ -531,7 +531,7 @@ namespace SS.Integration.Adapter
 
         }
 
-        private bool RemoveAndStopListener(string fixtureId)
+        private bool RemoveAndStopListener(string fixtureId, bool isDeleted = false)
         {
             _logger.InfoFormat("Removing listener for fixtureId={0}", fixtureId);
             
@@ -540,6 +540,9 @@ namespace SS.Integration.Adapter
 
             if (listener != null)
             {
+                if (isDeleted)
+                    listener.ProcessFixtureDelete();
+
                 listener.Dispose();
                 OnStreamRemoved(fixtureId);
             }
