@@ -353,7 +353,7 @@ namespace SS.Integration.Adapter
         {
             _logger.InfoFormat("Suspending fixtureId={0} due reason={1}", FixtureId, reason);
 
-            SuspensionManager.Instance.Suspend(FixtureId, reason);
+            _stateManager.StateProvider.SuspensionManager.Suspend(FixtureId, reason);
         }
 
         private void SetupListener()

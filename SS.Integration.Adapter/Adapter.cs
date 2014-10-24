@@ -62,15 +62,12 @@ namespace SS.Integration.Adapter
             PlatformConnector = platformConnector;
             EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
             
-            var statemanager = new StateManager(settings);
+            var statemanager = new StateManager(settings, platformConnector);
             StateManager = statemanager;
             StateProviderProxy.Init(statemanager);
 
             if (settings.StatsEnabled)
                 StatsManager.Configure();
-
-            // we just need the initialisation
-            new SuspensionManager(statemanager, PlatformConnector);
 
             platformConnector.Initialise();
             statemanager.AddRules(platformConnector.MarketRules);

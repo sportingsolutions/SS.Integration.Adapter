@@ -12,10 +12,14 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using SS.Integration.Adapter.Model.Interfaces;
+
 namespace SS.Integration.Adapter.Interface
 {
     public interface IStateManager
     {
+        IStateProvider StateProvider { get; }
+
         IMarketRulesManager CreateNewMarketRuleManager(string fixtureId);
 
         void ClearState(string fixtureId);

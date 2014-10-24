@@ -304,6 +304,8 @@ namespace SS.Integration.Adapter.Tests
             service.Setup(x => x.IsConnected).Returns(false);
 
             Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object);
+            adapter.StateManager.ClearState("1");
+            adapter.StateManager.ClearState("2");
             adapter.AddSport("Football");
 
             adapter.StreamCreated += delegate(object sender, string e)

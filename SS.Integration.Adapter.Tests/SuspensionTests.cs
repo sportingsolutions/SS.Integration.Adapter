@@ -206,14 +206,9 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             Mock<ISettings> settings = new Mock<ISettings>();
-            var provider = new StateManager(settings.Object);
+            var provider = new StateManager(settings.Object, connector.Object);
 
-
-            // STEP 2: make sure that we use the SuspendInPlayMarketsStrategy
-            // if a suspension request with reason = disconnect arrives
-            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
-
-            suspension.RegisterAction(suspension.SuspendInPlayMarketsStrategy, SuspensionReason.DISCONNECT_EVENT);
+            provider.SuspensionManager.RegisterAction(provider.SuspensionManager.SuspendInPlayMarketsStrategy, SuspensionReason.DISCONNECT_EVENT);
 
             // STEP 3: prepare the fixture data
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
@@ -269,14 +264,9 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             Mock<ISettings> settings = new Mock<ISettings>();
-            var provider = new StateManager(settings.Object);
+            var provider = new StateManager(settings.Object, connector.Object);
 
-
-            // STEP 2: make sure that we use the SuspendInPlayMarketsStrategy
-            // if a suspension request with reason = disconnect arrives
-            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
-
-            suspension.RegisterAction(suspension.SuspendInPlayMarketsStrategy, SuspensionReason.DISCONNECT_EVENT);
+            provider.SuspensionManager.RegisterAction(provider.SuspensionManager.SuspendInPlayMarketsStrategy, SuspensionReason.DISCONNECT_EVENT);
 
             // STEP 3: prepare the fixture data
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
@@ -341,12 +331,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             Mock<ISettings> settings = new Mock<ISettings>();
-            var provider = new StateManager(settings.Object);
+            var provider = new StateManager(settings.Object, connector.Object);
 
-
-            // STEP 2: make sure that we use the SuspendInPlayMarketsStrategy
-            // if a suspension request with reason = disconnect arrives
-            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
 
             // STEP 3: prepare the fixture data
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
@@ -408,14 +394,9 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             Mock<ISettings> settings = new Mock<ISettings>();
-            var provider = new StateManager(settings.Object);
+            var provider = new StateManager(settings.Object, connector.Object);
 
-
-            // STEP 2: make sure that we use the SuspendInPlayMarketsStrategy
-            // if a suspension request with reason = disconnect arrives
-            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
-
-            suspension.RegisterAction(suspension.SuspendInPlayMarketsStrategy, SuspensionReason.DISCONNECT_EVENT);
+            provider.SuspensionManager.RegisterAction(provider.SuspensionManager.SuspendInPlayMarketsStrategy, SuspensionReason.DISCONNECT_EVENT);
 
             // STEP 3: prepare the fixture data
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };

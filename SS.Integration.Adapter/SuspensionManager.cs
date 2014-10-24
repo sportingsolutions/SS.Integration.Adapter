@@ -22,16 +22,8 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter
 {
-    public enum SuspensionReason
-    {
-        SUSPENSION,
-        DISCONNECT_EVENT,
-        FIXTURE_DELETED,
-        FIXTURE_DISPOSING,
-        FIXTURE_ERRORED
-    }
-
-    public class SuspensionManager
+    
+    public class SuspensionManager : ISuspensionManager
     {
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(SuspensionManager));
@@ -62,17 +54,8 @@ namespace SS.Integration.Adapter
             _disconnected = SuspendFixtureStrategy;
             _default = SuspendFixtureStrategy;
             _fixtureDeleted = SuspendFixtureAndSetMatchStatusDeleted;
-            
-            // Not really a singleton
-            Instance = this;
         }
 
-
-        public static SuspensionManager Instance
-        {
-            get;
-            private set;
-        }
 
         public Action<IMarketStateCollection> DoNothingStrategy
         {

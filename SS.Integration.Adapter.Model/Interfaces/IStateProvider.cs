@@ -24,5 +24,7 @@ namespace SS.Integration.Adapter.Model.Interfaces
         IPluginFixtureState GetPluginFixtureState(string fixtureId);
 
         void AddOrUpdatePluginFixtureState(IPluginFixtureState state);
+
+        ISuspensionManager SuspensionManager { get; }
     }
 }

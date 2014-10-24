@@ -36,7 +36,7 @@ namespace SS.Integration.Adapter
         private readonly HashSet<IMarketRule> _Rules;
 
 
-        public StateManager(ISettings settings)
+        public StateManager(ISettings settings, IAdapterPlugin plugin)
         {
             if (settings == null)
                 throw new ArgumentNullException("settings", "ISettings cannot be null");
@@ -48,6 +48,9 @@ namespace SS.Integration.Adapter
             _PluginPersistanceLayer = new CachedObjectStoreWithPersistance<IPluginFixtureState>(
                 new BinaryStoreProvider<IPluginFixtureState>(settings.MarketFiltersDirectory, "PluginStore-{0}.bin"),
                 "MarketFilters", settings.CacheExpiryInMins * 60);
+
+            Plugin = plugin;
+            SuspensionManager = new SuspensionManager(this, plugin);
 
             _RulesManagers = new ConcurrentDictionary<string, MarketRulesManager>();
             _Rules = new HashSet<IMarketRule>
@@ -109,6 +112,8 @@ namespace SS.Integration.Adapter
             }
         }
 
+        private IAdapterPlugin Plugin { get; set; }
+
         #region IStoredObjectProvider
 
         public IUpdatableMarketStateCollection GetObject(string fixtureId)
@@ -163,6 +168,8 @@ namespace SS.Integration.Adapter
             _PluginPersistanceLayer.SetObject(PLUGIN_STORE_PREFIX + state.FixtureId, state);
         }
 
+        public ISuspensionManager SuspensionManager { get; private set; }
+
         #endregion
 
         #region IStateManager
@@ -196,6 +203,8 @@ namespace SS.Integration.Adapter
 
             _PersistanceLayer.Remove(fixtureId);
         }
+
+        public IStateProvider StateProvider { get { return this; } }
 
         #endregion
 

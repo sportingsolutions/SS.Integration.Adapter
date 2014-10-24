@@ -349,9 +349,8 @@ namespace SS.Integration.Adapter.Tests
             var settings = new Mock<ISettings>();
             settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
 
-            var stateManager = new StateManager(settings.Object);
             var plugin = new Mock<IAdapterPlugin>();
-            var suspensionManager = new SuspensionManager(stateManager, plugin.Object);
+            var stateManager = new StateManager(settings.Object, plugin.Object);
 
             // 1) Filter is created with initial snapshot
             var marketsFilter = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
@@ -368,7 +367,7 @@ namespace SS.Integration.Adapter.Tests
                 mkt.Selections.All(y => y.Tradable.HasValue && y.Tradable.Value).Should().BeTrue();
             }
 
-            suspensionManager.SuspendAllMarketsStrategy(marketsFilter.CurrentState);
+            stateManager.SuspensionManager.SuspendAllMarketsStrategy(marketsFilter.CurrentState);
 
             plugin.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
                     y => y.Markets.Count == 3 &&
@@ -385,9 +384,8 @@ namespace SS.Integration.Adapter.Tests
             var settings = new Mock<ISettings>();
             settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
 
-            var stateManager = new StateManager(settings.Object);
             var plugin = new Mock<IAdapterPlugin>();
-            var suspensionManager = new SuspensionManager(stateManager, plugin.Object);
+            var stateManager = new StateManager(settings.Object, plugin.Object);
 
             // 1) Filter is created with initial snapshot
             var marketsFilter = new MarketRulesManager(_snapshot.Id, stateManager, rules);
@@ -406,7 +404,7 @@ namespace SS.Integration.Adapter.Tests
 
             marketsFilter.ApplyRules(_snapshot);
 
-            suspensionManager.SuspendAllMarketsStrategy(marketsFilter.CurrentState);
+            stateManager.SuspensionManager.SuspendAllMarketsStrategy(marketsFilter.CurrentState);
 
             plugin.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
                     y => y.Markets.Count == mkt_count &&
@@ -423,9 +421,8 @@ namespace SS.Integration.Adapter.Tests
             var settings = new Mock<ISettings>();
             settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
 
-            var stateManager = new StateManager(settings.Object);
             var plugin = new Mock<IAdapterPlugin>();
-            var suspensionManager = new SuspensionManager(stateManager, plugin.Object);
+            var stateManager = new StateManager(settings.Object, plugin.Object);
 
             // 1) Filter is created with initial snapshot
             var marketsFilter = new MarketRulesManager(_snapshot.Id, _objectProvider, rules);
@@ -443,7 +440,7 @@ namespace SS.Integration.Adapter.Tests
 
             _snapshot.Markets.Count.Should().Be(0);
 
-            suspensionManager.SuspendAllMarketsStrategy(marketsFilter.CurrentState);
+            stateManager.SuspensionManager.SuspendAllMarketsStrategy(marketsFilter.CurrentState);
 
             plugin.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
                     y => y.Markets.Count == mkt_count &&
@@ -710,7 +707,8 @@ namespace SS.Integration.Adapter.Tests
         {
             // STEP 1: prepare stub data
             var settings = new Mock<ISettings>();
-            var stateprovider = new StateManager(settings.Object);
+            var plugin = new Mock<IAdapterPlugin>();
+            var stateprovider = new StateManager(settings.Object, plugin.Object);
 
             DeltaRule.Instance.Severity = DeltaRule.DeltaRuleSeverity.REMOVE_SELECTIONS;
 
@@ -805,12 +803,14 @@ namespace SS.Integration.Adapter.Tests
         public void DeltaRuleWithRealFixtureTest()
         {
             var settings = new Mock<ISettings>();
-            var state = new StateManager(settings.Object);
+            var plugin = new Mock<IAdapterPlugin>();
+            var state = new StateManager(settings.Object, plugin.Object);
 
             DeltaRule.Instance.Severity = DeltaRule.DeltaRuleSeverity.REMOVE_SELECTIONS;
             List<IMarketRule> rules = new List<IMarketRule> {DeltaRule.Instance};
-
-            MarketRulesManager manager = new MarketRulesManager("nr7B1f7gjMuk2ggCJoMIizHKrfI", state, rules);
+            state.ClearState("nr7B1f7gjMuk2ggCJoMIizHKrfI");
+            var manager = state.CreateNewMarketRuleManager("nr7B1f7gjMuk2ggCJoMIizHKrfI");
+            state.AddRules(rules);
 
             Fixture fixture = TestHelper.GetFixtureFromResource("rugbydata_snapshot_2");
 
@@ -843,7 +843,8 @@ namespace SS.Integration.Adapter.Tests
         {
             // STEP 1: prepare stub data
             var settings = new Mock<ISettings>();
-            var stateprovider = new StateManager(settings.Object);
+            var plugin = new Mock<IAdapterPlugin>();
+            var stateprovider = new StateManager(settings.Object, plugin.Object);
 
             DeltaRule.Instance.Severity = DeltaRule.DeltaRuleSeverity.REMOVE_MARKETS;
 
