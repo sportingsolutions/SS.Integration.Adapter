@@ -31,7 +31,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
         /// </summary>
         public SelectionState() 
         {
-            _tags = new Dictionary<string, string>();
+            _tags = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
         }
 
         public SelectionState(Selection selection, bool fullSnapshot)
@@ -150,7 +150,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
             if (fullSnapshot)
             {
-                _tags = new Dictionary<string, string>();
+                _tags = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
 
                 foreach (var key in selection.TagKeys)
                     _tags.Add(key, selection.GetTagValue(key));
