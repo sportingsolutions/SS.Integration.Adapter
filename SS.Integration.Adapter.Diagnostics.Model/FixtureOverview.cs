@@ -16,16 +16,15 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         }
 
         public string Id { get; internal set; }
-        public MatchStatus MatchStatus { get; internal set; }
-        public int Sequence { get; internal set; }
         public string Name { get; internal set; }
         public DateTime TimeStamp { get; private set; }
 
+        public MatchStatus MatchStatus { get; internal set; }
+        public int Sequence { get; internal set; }
+        
         public bool IsStreaming { get; internal set; }
         public bool IsDeleted { get; internal set; }
         public bool IsErrored { get; internal set; }
         public bool IsOver { get; internal set; }
-
-
     }
 }

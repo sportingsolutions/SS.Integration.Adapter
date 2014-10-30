@@ -2,6 +2,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,19 +16,20 @@ namespace SS.Integration.Adapter.Diagnostics
 {
     public class Supervisor : ISupervisor
     {
-        private readonly Action<FixtureOverview> _publishAction;
+        private readonly Action<Dictionary<string,FixtureOverview>> _publishAction;
         private ILog _logger = LogManager.GetLogger(typeof (Supervisor));
+        private Subject<FixtureOverview> _fixtureEvents;
+        private ConcurrentDictionary<string, FixtureOverview> _fixtures;
+        private IDisposable _publisher;
 
-        public Supervisor(Action<FixtureOverview> publishAction)
+        public Supervisor(Action<Dictionary<string,FixtureOverview>> publishAction)
         {
             _publishAction = publishAction;
+            _publisher = Observable.Buffer(_fixtureEvents, TimeSpan.FromSeconds(1), 10).Subscribe(x => _publishAction(x.ToDictionary(f => f.Id)));
         }
-
-        private ConcurrentDictionary<string, FixtureOverview> _fixtures;
-
+        
         public void AddFixture(Fixture fixture)
         {
-            _publishAction(new FixtureOverview() {Id = fixture.Id});
             _logger.DebugFormat("Something worked...");
 
         }
@@ -40,6 +43,20 @@ namespace SS.Integration.Adapter.Diagnostics
         {
             throw new NotImplementedException();
         }
-        
+
+        public void OnConnected(string fixtureId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnErrored(string fixtureId, string message)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnErrored(string fixtureId, Exception ex)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

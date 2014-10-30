@@ -14,5 +14,11 @@ namespace SS.Integration.Adapter.Diagnostics.Interface
         void RemoveFixture(string fixtureId);
 
         void UpdateFixture(Fixture fixture);
+
+        void OnConnected(string fixtureId);
+        void OnErrored(string fixtureId, string message);
+        void OnErrored(string fixtureId, Exception ex);
+
+
     }
 }

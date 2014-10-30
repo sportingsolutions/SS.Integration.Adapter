@@ -97,6 +97,7 @@
     <Compile Include="Interface\IStateManager.cs" />
     <Compile Include="Interface\IStoredObjectProvider.cs" />
     <Compile Include="Interface\IStoreProvider.cs" />
+    <Compile Include="Interface\IStreamListenerManager.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketState.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketStateCollection.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableSelectionState.cs" />
@@ -105,6 +106,7 @@
     <Compile Include="ProcessState\FileStoreProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StateManager.cs" />
+    <Compile Include="StreamListenerManager.cs" />
     <Compile Include="StreamMessage.cs" />
     <Compile Include="MarketRules\MarketsRulesManager.cs" />
     <Compile Include="MarketRules\Model\MarketState.cs" />
