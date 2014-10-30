@@ -14,5 +14,13 @@ namespace SS.Integration.Adapter.Interface
         void StopStreaming(string fixtureId);
         bool RemoveStreamListener(string fixtureId);
         bool AddStreamListener(Resource resource);
+
+        int Count { get; }
+
+        void StopAll();
+
+        event Adapter.StreamEventHandler StreamCreated;
+        event Adapter.StreamEventHandler StreamRemoved;
+        void RemoveDeletedFixtures(string sport, Dictionary<string, IResourceFacade> currentfixturesLookup);
     }
 }

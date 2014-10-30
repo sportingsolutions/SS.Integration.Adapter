@@ -39,7 +39,7 @@ namespace SS.Integration.Adapter
 {
     public class Adapter
     {
-        private readonly ISupervisor _supervisor;
+        private readonly IStreamListenerManager _supervisor;
 
         public delegate void StreamEventHandler(object sender, string fixtureId);
 
@@ -47,11 +47,8 @@ namespace SS.Integration.Adapter
         private const int LISTENER_DISPOSING_SAFE_GUARD = 1;
         private readonly ILog _logger = LogManager.GetLogger(typeof(Adapter).ToString());
 
-        public event StreamEventHandler StreamCreated;
-        public event StreamEventHandler StreamRemoved;
-
-        private readonly ConcurrentDictionary<string, IListener> _listeners;
-        private readonly ConcurrentDictionary<string, int> _listenerDisposingQueue;
+        
+        
         private readonly List<string> _sports;
         private readonly BlockingCollection<IResourceFacade> _resourceCreationQueue;
         private readonly HashSet<string> _currentlyProcessedFixtures;
@@ -63,7 +60,8 @@ namespace SS.Integration.Adapter
         public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector)
         {
             var broadcaster = GlobalHost.ConnectionManager.GetHubContext<SupervisorHub>();
-            _supervisor = new Supervisor(f=> broadcaster.Clients.All.Publish(f));
+            _supervisor = new StreamListenerManager();
+            //_supervisor = new Supervisor(f=> broadcaster.Clients.All.Publish(f));
 
             Settings = settings;
             UDAPIService = udapiServiceFacade;
@@ -87,9 +85,9 @@ namespace SS.Integration.Adapter
             ThreadPool.SetMinThreads(500, 500);
 
             _resourceCreationQueue = new BlockingCollection<IResourceFacade>(new ConcurrentQueue<IResourceFacade>());
-            _listenerDisposingQueue = new ConcurrentDictionary<string, int>();
+            //_listenerDisposingQueue = new ConcurrentDictionary<string, int>();
             _currentlyProcessedFixtures = new HashSet<string>();
-            _listeners = new ConcurrentDictionary<string, IListener>();
+            //_listeners = new ConcurrentDictionary<string, IListener>();
             _sports = new List<string>();
             _creationQueueCancellationToken = new CancellationTokenSource();
             
@@ -176,26 +174,7 @@ namespace SS.Integration.Adapter
                     _creationQueueCancellationToken.Cancel(false);
                     Task.WaitAll(_creationTasks);
 
-                    if (_listeners != null)
-                    {
-                        try
-                        {
-                            DisposeListeners();
-                        }
-                        catch (AggregateException ax)
-                        {
-                            foreach (var exception in ax.InnerExceptions)
-                            {
-                                _logger.Error("Error during listener disposing", exception);
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.Error("Error during listener disposing", e);
-                        }
-
-                        _listeners.Clear();
-                    }
+                    _supervisor.StopAll();
 
                     EventState.WriteToFile();
 
@@ -216,17 +195,7 @@ namespace SS.Integration.Adapter
             _stats.SetValue(AdapterCoreKeys.ADAPTER_STARTED, "0");
             _logger.InfoFormat("Adapter stopped");
         }
-
-        private void DisposeListeners()
-        {
-            _logger.Debug("Stopping listeners and suspending fixtures as service is shouting down");
-
-            Parallel.ForEach(
-                _listeners.Values,
-                new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-                listener => listener.Dispose());
-        }
-
+        
         /// <summary>
         /// This method could be accessed by multi threads if the ProcessSport takes long time
         /// </summary>
@@ -302,7 +271,7 @@ namespace SS.Integration.Adapter
         private void GetStatistics()
         {
             var queueSize = _resourceCreationQueue.Count;
-            var currentlyConnected = _listeners.Count;
+            var currentlyConnected = _supervisor.Count;
 
             try
             {
@@ -383,47 +352,8 @@ namespace SS.Integration.Adapter
         private void RemoveDeletedFixtures(string sport, IEnumerable<IResourceFacade> resources)
         {
             var currentfixturesLookup = resources.ToDictionary(r => r.Id);
-            var allFixturesForSport = _listeners.Where(x => string.Equals(x.Value.Sport, sport, StringComparison.Ordinal));
 
-            // deletedFixtures = allFixturesForSport \ resources
-            var deletedFixtures = allFixturesForSport.Where( fixture => !currentfixturesLookup.ContainsKey(fixture.Key));
-            
-            // existingFixtures = resources ^ allFixturesForSport
-            var existingFixtures = allFixturesForSport.Where(fixture => currentfixturesLookup.ContainsKey(fixture.Key));
-            
-            
-            foreach (var fixture in deletedFixtures)
-            {
-                if (_listenerDisposingQueue.ContainsKey(fixture.Key))
-                {
-                    if (_listenerDisposingQueue[fixture.Key] >= LISTENER_DISPOSING_SAFE_GUARD)
-                    {
-
-                        _logger.DebugFormat("Fixture with fixtureId={0} was deleted from Connect fixture factory", fixture.Key);
-                        RemoveAndStopListener(fixture.Key);
-                        EventState.RemoveFixture(sport, fixture.Key);
-                    }
-                    else
-                    {
-                        _listenerDisposingQueue[fixture.Key] = _listenerDisposingQueue[fixture.Key] + 1;
-                    }
-                }
-                else
-                {
-                    _listenerDisposingQueue.TryAdd(fixture.Key, 1);
-                    _logger.DebugFormat("Fixture with fixtureId={0} has been added to the disposing queue", fixture.Key);
-                }
-            }
-
-            foreach (var fixture in existingFixtures)
-            {
-                if (_listenerDisposingQueue.ContainsKey(fixture.Key))
-                {
-                    int dummy;
-                    _listenerDisposingQueue.TryRemove(fixture.Key, out dummy);
-                    _logger.DebugFormat("Fixture with fixtureId={0} was marked as deleted, but it appered on Connect again", fixture.Key);
-                }
-            }
+            _supervisor.RemoveDeletedFixtures(sport, currentfixturesLookup);
         }
 
         private void ProcessResource(string sport, IResourceFacade resource)
