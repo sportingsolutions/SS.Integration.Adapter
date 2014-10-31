@@ -133,7 +133,7 @@ namespace SS.Integration.Adapter.Tests
 
             service.VerifyAll();
             
-            eventState.Verify(es => es.RemoveFixture(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
+            eventState.Verify(es => es.RemoveFixture(It.IsAny<string>()), Times.Never());
         }
 
         /// <summary>

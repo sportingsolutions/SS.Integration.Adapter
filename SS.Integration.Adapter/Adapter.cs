@@ -44,14 +44,10 @@ namespace SS.Integration.Adapter
         public delegate void StreamEventHandler(object sender, string fixtureId);
 
         private readonly static object _sync = new object();
-        private const int LISTENER_DISPOSING_SAFE_GUARD = 1;
         private readonly ILog _logger = LogManager.GetLogger(typeof(Adapter).ToString());
-
-        
         
         private readonly List<string> _sports;
         private readonly BlockingCollection<IResourceFacade> _resourceCreationQueue;
-        private readonly HashSet<string> _currentlyProcessedFixtures;
         private readonly CancellationTokenSource _creationQueueCancellationToken;
         private readonly Task[] _creationTasks;
         private readonly IStatsHandle _stats;
@@ -59,14 +55,12 @@ namespace SS.Integration.Adapter
 
         public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector)
         {
-            var broadcaster = GlobalHost.ConnectionManager.GetHubContext<SupervisorHub>();
-            _supervisor = new StreamListenerManager();
-            //_supervisor = new Supervisor(f=> broadcaster.Clients.All.Publish(f));
-
+            _supervisor = new StreamListenerManager(settings);
+            
             Settings = settings;
             UDAPIService = udapiServiceFacade;
             PlatformConnector = platformConnector;
-            EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
+            
             
             var statemanager = new StateManager(settings);
             StateManager = statemanager;
@@ -85,9 +79,6 @@ namespace SS.Integration.Adapter
             ThreadPool.SetMinThreads(500, 500);
 
             _resourceCreationQueue = new BlockingCollection<IResourceFacade>(new ConcurrentQueue<IResourceFacade>());
-            //_listenerDisposingQueue = new ConcurrentDictionary<string, int>();
-            _currentlyProcessedFixtures = new HashSet<string>();
-            //_listeners = new ConcurrentDictionary<string, IListener>();
             _sports = new List<string>();
             _creationQueueCancellationToken = new CancellationTokenSource();
             
@@ -280,7 +271,7 @@ namespace SS.Integration.Adapter
                 _stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_HEALTH_CHECK, "1");
                 _stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_FIXTURE_TOTAL, currentlyConnected.ToString());
 
-                foreach (var sport in _listeners.Values.GroupBy(x => x.Sport))
+                foreach (var sport in _supervisor.GetListenersBySport())
                 {
                     var sportStatsHandle = StatsManager.Instance["adapter.core.fixture." + sport.Key].GetHandle();
                     sportStatsHandle.SetValueUnsafe(AdapterCoreKeys.SPORT_FIXTURE_TOTAL, sport.Count().ToString());
@@ -359,53 +350,15 @@ namespace SS.Integration.Adapter
         private void ProcessResource(string sport, IResourceFacade resource)
         {
             _logger.DebugFormat("Attempt to process {0} for sport={1}", resource, sport);
-
-            _supervisor.AddFixture(new Fixture() {Id = resource.Id});
-
+            
             // make sure that the resource is not already being processed by some other thread
-            if(!CanProcessResource(resource))
+            if(_supervisor.IsProcessing(resource.Id))
                 return;
 
             _logger.InfoFormat("Processing {0}", resource);
 
-            if (_listeners.ContainsKey(resource.Id))
+            if (_supervisor.ProcessResource(resource))
             {
-                _logger.DebugFormat("Listener already exists for {0}", resource);
-
-                IListener listener = _listeners[resource.Id];
-
-                if (listener.IsFixtureDeleted)
-                {
-                    _logger.DebugFormat("{0} was deleted and republished. Listener wil be removed", resource);
-                    RemoveAndStopListener(resource.Id);
-                }
-                else if (listener.IsIgnored)
-                {
-                    _logger.DebugFormat("{0} is marked as ignored. Listener wil be removed", resource);
-                    RemoveAndStopListener(resource.Id);
-                }
-                else
-                {
-                    if (!StopListenerIfFixtureEnded(sport, resource))
-                    {
-                        _listeners[resource.Id].UpdateResourceState(resource);
-                    }
-                }
-
-                MarkResourceAsProcessable(resource);
-            }
-            else
-            {
-                // Check fixture is not yet over, ignore if over
-                var fixtureState = EventState.GetFixtureState(resource.Id);
-                if (resource.IsMatchOver && (fixtureState == null || fixtureState.MatchStatus == resource.MatchStatus))
-                {
-                    _logger.InfoFormat("{0} is over. Adapter will not process the resource", resource);
-                    MarkResourceAsProcessable(resource);
-                    return;
-                }
-
-
                 _logger.DebugFormat("Adding {0} to the creation queue ", resource);
                 _resourceCreationQueue.Add(resource);
                 _logger.DebugFormat("Added {0} to the creation queue", resource);
@@ -423,34 +376,14 @@ namespace SS.Integration.Adapter
                     {
                         _logger.DebugFormat("Task={0} is processing {1} from the queue", Task.CurrentId, resource);
 
-                        if (_listeners.ContainsKey(resource.Id))
+                        if (_supervisor.HasStreamListener(resource.Id))
                             continue;
 
-                        _logger.DebugFormat("Attempting to create a Listener for sport={0} and {1}", resource.Sport, resource);
-
-                        var listener = new StreamListener(resource, PlatformConnector, EventState, StateManager);
-
-                        if (!listener.Start())
-                        {
-                            _logger.WarnFormat("Couldn't start stream listener for {0}",resource);
-                            continue;
-                        }
-
-                        _listeners.TryAdd(resource.Id, listener);
-
-                        OnStreamCreated(resource.Id);
-
-                        _logger.InfoFormat("Listener created for {0}", resource);
+                        _supervisor.CreateStreamListener(resource, StateManager,PlatformConnector);
                     }
                     catch (Exception ex)
                     {
                         _logger.Error(string.Format("There has been a problem creating a listener for {0}", resource), ex);
-                    }
-                    finally
-                    {
-                        MarkResourceAsProcessable(resource);
-
-                        _logger.DebugFormat("Finished processing fixture from queue {0}", resource);
                     }
 
                     if (_creationQueueCancellationToken.IsCancellationRequested)
@@ -473,18 +406,7 @@ namespace SS.Integration.Adapter
 
         private bool RemoveAndStopListener(string fixtureId)
         {
-            _logger.InfoFormat("Removing listener for fixtureId={0}", fixtureId);
-            
-            IListener listener = null;
-            _listeners.TryRemove(fixtureId, out listener);
-
-            if (listener != null)
-            {
-                listener.Dispose();
-                OnStreamRemoved(fixtureId);
-            }
-
-            return listener != null;
+            return _supervisor.RemoveAndStopListener(fixtureId);
         }
 
         /// <summary>
@@ -497,35 +419,7 @@ namespace SS.Integration.Adapter
         /// <returns></returns>
         private bool StopListenerIfFixtureEnded(string sport, IResourceFacade resource)
         {
-            var listener = _listeners[resource.Id];
-
-            if (listener.IsFixtureEnded || resource.IsMatchOver)
-            {
-                _logger.DebugFormat("{0} is marked as ended - checking for stopping streaming", resource);
-
-                FixtureState currState = EventState.GetFixtureState(resource.Id);
-
-                if (currState != null && currState.MatchStatus != MatchStatus.MatchOver)
-                {
-                    _logger.DebugFormat("{0} is over but the MatchOver update has not been processed yet", resource);
-                    return false;
-                }
-
-                _logger.InfoFormat("{0} is over. Listener will be removed", resource);
-                
-                if (RemoveAndStopListener(resource.Id))
-                {
-                    EventState.RemoveFixture(sport, resource.Id);
-                }
-                else
-                {
-                    _logger.WarnFormat("Couldn't remove listener for matchOver fixture {0}", resource);
-                }
-
-                return true;
-            }
-
-            return false;
+            return _supervisor.RemoveStreamListenerIfFinishedProcessing(resource);
         }
 
         private void LogVersions()
@@ -541,48 +435,10 @@ namespace SS.Integration.Adapter
             _logger.InfoFormat("Sporting Solutions Adapter version={0} using Sporting Solutions SDK version={1}", e, s);
         }
 
-        private bool CanProcessResource(IResourceFacade resource)
-        {
-            // this prevents to take any decision
-            // about the resource while it is
-            // being processed by another thread
-            lock (_sync)
-            {
-                if (_currentlyProcessedFixtures.Contains(resource.Id))
-                {
-                    _logger.DebugFormat("{0} is currently being processed by another task - ignoring it", resource);
-                    return false;
-                }
+        
 
-                _currentlyProcessedFixtures.Add(resource.Id);
-            }
+       
 
-            return true;
-        }
-
-        private void MarkResourceAsProcessable(IResourceFacade resource)
-        {
-            lock (_sync)
-            {
-                if (_currentlyProcessedFixtures.Contains(resource.Id))
-                    _currentlyProcessedFixtures.Remove(resource.Id);
-            }
-        }
-
-        protected virtual void OnStreamCreated(string fixtureId)
-        {
-            _supervisor.AddFixture(new Fixture() {Id = fixtureId});
-
-            if (StreamCreated != null)
-            {
-                StreamCreated(this, fixtureId);
-            }
-        }
-
-        protected virtual void OnStreamRemoved(string fixtureId)
-        {
-            if (StreamRemoved != null)
-                StreamRemoved(this, fixtureId);
-        }
+       
     }
 }
