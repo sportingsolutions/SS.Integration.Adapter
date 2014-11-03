@@ -2,30 +2,28 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
 using log4net;
-using SS.Integration.Adapter.Diagnostics.Interface;
 using SS.Integration.Adapter.Diagnostics.Model;
+using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 
-namespace SS.Integration.Adapter.Diagnostics
+namespace SS.Integration.Adapter
 {
-    public class Supervisor : ISupervisor
+    public class Supervisor : StreamListenerManager, ISupervisor
     {
         private readonly Action<Dictionary<string,FixtureOverview>> _publishAction;
         private ILog _logger = LogManager.GetLogger(typeof (Supervisor));
-        private Subject<FixtureOverview> _fixtureEvents;
+        //private Subject<FixtureOverview> _fixtureEvents;
         private ConcurrentDictionary<string, FixtureOverview> _fixtures;
         private IDisposable _publisher;
 
-        public Supervisor(Action<Dictionary<string,FixtureOverview>> publishAction)
+        public Supervisor(ISettings settings) : base(settings)
         {
-            _publishAction = publishAction;
-            _publisher = Observable.Buffer(_fixtureEvents, TimeSpan.FromSeconds(1), 10).Subscribe(x => _publishAction(x.ToDictionary(f => f.Id)));
+            //_publishAction = publishAction;
+            //_publisher = Observable.Buffer(_fixtureEvents, TimeSpan.FromSeconds(1), 10).Subscribe(x => _publishAction(x.ToDictionary(f => f.Id)));
         }
         
         public void AddFixture(Fixture fixture)

@@ -9,7 +9,7 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Interface
 {
-    interface IStreamListenerManager
+    public interface IStreamListenerManager
     {
         bool HasStreamListener(string fixtureId);
         void StartStreaming(string fixtureId);

@@ -22,7 +22,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using SS.Integration.Adapter.Diagnostics;
 using SS.Integration.Adapter.Diagnostics.Host;
-using SS.Integration.Adapter.Diagnostics.Interface;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.ProcessState;
@@ -53,10 +52,10 @@ namespace SS.Integration.Adapter
         private readonly IStatsHandle _stats;
         private Timer _trigger;
 
-        public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector)
+        public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector,ISupervisor supervisor)
         {
-            _supervisor = new StreamListenerManager(settings);
-            
+            _supervisor = supervisor;
+
             Settings = settings;
             UDAPIService = udapiServiceFacade;
             PlatformConnector = platformConnector;
