@@ -1219,6 +1219,59 @@ namespace SS.Integration.Adapter.Tests
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);            
         }
 
+        [Test]
+        [Category("StreamListener")]
+        public void ShouldNotSetIsFixtureEndedIfThereWasAnErrorProcessingSnapshot()
+        {
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            var provider = new StateManager(settings.Object,connector.Object);
+
+            var suspensionManager = new SuspensionManager(provider, connector.Object);
+
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+
+            Fixture update = new Fixture
+            {
+                Id = "ABC",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.MatchOver).ToString(),
+                Epoch = 2,
+                LastEpochChangeReason = new[] { (int)EpochChangeReason.MatchStatus }
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.SetupSequence(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture)).Returns(null);
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            // STEP 4: send the update containing a wrong sequence number
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+
+            // STEP 5: check that ProcessSnapshot is called only twice (first snapshot and when the fixture is ended, we get another one)!
+            connector.Verify(x => x.Suspend(It.Is<string>(y => y == "ABC")));
+            connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once());
+            resource.Verify(x => x.GetSnapshot(), Times.AtLeast(2), "The StreamListener was supposed to acquire a new snapshot");
+
+            listener.IsFixtureEnded.Should().BeFalse();
+            listener.IsErrored.Should().BeTrue();
+        }
+
+
         /// <summary>
         /// I want to test that if the StreamListener
         /// is in an error state and an update arrives,

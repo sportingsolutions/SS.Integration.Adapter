@@ -1007,6 +1007,13 @@ namespace SS.Integration.Adapter
             {
                 SuspendAndReprocessSnapshot(true);
 
+                //can't proceed if fixture errored
+                if (IsErrored)
+                {
+                    _logger.WarnFormat("Fixture {0} couldn't retrieve or process the match over snapshot. It will retry shortly.",fixtureDelta);
+                    return;
+                }
+                
                 this.IsFixtureEnded = true;
 
                 _stateManager.ClearState(_resource.Id);
