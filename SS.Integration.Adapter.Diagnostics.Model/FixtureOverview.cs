@@ -14,19 +14,57 @@ namespace SS.Integration.Adapter.Diagnostics.Model
     {
         private IDictionary<string, PropertyChanged> _changes;
         private bool? _isStreaming;
+        private bool? _isDeleted;
+        private bool? _isErrored;
+        private bool? _isOver;
+        private string _name;
+        private DateTime _timeStamp;
+        private MatchStatus? _matchStatus;
+        private int? _sequence;
 
         public FixtureOverview()
         {
             _changes = new Dictionary<string, PropertyChanged>();
-            TimeStamp = DateTime.UtcNow;
         }
 
 
         public string Id { get; set; }
-        public string Name { get; set; }
-        public DateTime TimeStamp { get; private set; }
-        public MatchStatus? MatchStatus { get; set; }
-        public int? Sequence { get; set; }
+
+        public string Name
+        {
+            get { return _name; }
+            set
+            {
+                OnChanged(_name, value);
+                _name = value;
+            }
+        }
+
+        public DateTime TimeStamp
+        {
+            get { return _timeStamp; }
+            private set { _timeStamp = value; }
+        }
+
+        public MatchStatus? MatchStatus
+        {
+            get { return _matchStatus; }
+            set
+            {
+                OnChanged(_matchStatus.HasValue ? _matchStatus.Value.ToString() : null, value.ToString());
+                _matchStatus = value;
+            }
+        }
+
+        public int? Sequence
+        {
+            get { return _sequence; }
+            set
+            {
+                OnChanged(_sequence.HasValue ? _sequence.Value.ToString() : null, value.ToString());
+                _sequence = value;
+            }
+        }
 
 
         public bool? IsStreaming
@@ -39,9 +77,34 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             } 
         }
 
-        public bool? IsDeleted { get; set; }
-        public bool? IsErrored { get; set; }
-        public bool? IsOver { get; set; }
+        public bool? IsDeleted
+        {
+            get { return _isDeleted; }
+            set
+            {
+                OnChanged(_isDeleted, value);
+                _isDeleted = value;
+            }
+        }
+
+        public bool? IsErrored
+        {
+            get { return _isErrored; }
+            set
+            {
+                OnChanged(_isErrored, value);
+                _isErrored = value;
+            }
+        }
+
+        public bool? IsOver
+        {
+            get { return _isOver; }
+            set { 
+                OnChanged(_isOver,value);
+                _isOver = value; 
+            }
+        }
 
         private void OnChanged(bool? oldValue, bool? newValue, [CallerMemberName] string callerName = null)
         {
@@ -65,7 +128,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
 
         public IEnumerable<PropertyChanged> GetChanges()
         {
-            _changes.ToList();
+            return _changes.Values;
         }
 
         public void Merge(FixtureOverview other)

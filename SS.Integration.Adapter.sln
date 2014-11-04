@@ -52,6 +52,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diag
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diagnostics.UI", "SS.Integration.Adapter.Diagnostics.UI\SS.Integration.Adapter.Diagnostics.UI.csproj", "{AA713CF0-54D1-40A0-8A1F-26F443A0B933}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diagnostics.Testing", "SS.Integration.Adapter.Diagnostics.Testing\SS.Integration.Adapter.Diagnostics.Testing.csproj", "{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -192,6 +194,16 @@ Global
 		{AA713CF0-54D1-40A0-8A1F-26F443A0B933}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{AA713CF0-54D1-40A0-8A1F-26F443A0B933}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{AA713CF0-54D1-40A0-8A1F-26F443A0B933}.Release|x86.ActiveCfg = Release|Any CPU
+		{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

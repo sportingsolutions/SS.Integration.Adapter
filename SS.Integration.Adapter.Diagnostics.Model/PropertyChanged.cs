@@ -25,7 +25,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
 
         public override string ToString()
         {
-            string.Format("{0} changed from {1} to {2}", ItemName, PreviousValue, CurrentValue);
+            return string.Format("{0} changed from {1} to {2}", ItemName, PreviousValue, CurrentValue);
         }
     }
 }

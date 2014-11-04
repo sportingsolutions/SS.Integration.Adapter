@@ -79,6 +79,8 @@ namespace SS.Integration.Adapter
                 IsStreaming = listener.IsStreaming,
                 IsOver = listener.IsFixtureEnded
             };
+
+            return fixtureOverview;
         }
     }
 }
