@@ -17,11 +17,6 @@ namespace SS.Integration.Adapter.Interface
         void UpdateFixture(Fixture fixture);
 
         void OnConnected(string fixtureId);
-        void OnErrored(string fixtureId, string message);
-        void OnErrored(string fixtureId, Exception ex);
-
-
-
-
+        void OnError(string fixtureId, Exception ex);
     }
 }

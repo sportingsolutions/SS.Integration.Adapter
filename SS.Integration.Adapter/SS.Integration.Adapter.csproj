@@ -107,6 +107,7 @@
     <Compile Include="ProcessState\FileStoreProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StateManager.cs" />
+    <Compile Include="StreamListenerEventArgs.cs" />
     <Compile Include="StreamListenerManager.cs" />
     <Compile Include="StreamMessage.cs" />
     <Compile Include="MarketRules\MarketsRulesManager.cs" />

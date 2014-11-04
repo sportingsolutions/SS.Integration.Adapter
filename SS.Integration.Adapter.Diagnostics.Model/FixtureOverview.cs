@@ -21,12 +21,13 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         private DateTime _timeStamp;
         private MatchStatus? _matchStatus;
         private int? _sequence;
+        private int? _epoch;
+
 
         public FixtureOverview()
         {
             _changes = new Dictionary<string, PropertyChanged>();
         }
-
 
         public string Id { get; set; }
 
@@ -37,6 +38,16 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             {
                 OnChanged(_name, value);
                 _name = value;
+            }
+        }
+
+        public int? Epoch
+        {
+            get { return _epoch; }
+            set
+            {
+                OnChanged(_epoch,value);
+                _epoch = value;
             }
         }
 
@@ -51,7 +62,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             get { return _matchStatus; }
             set
             {
-                OnChanged(_matchStatus.HasValue ? _matchStatus.Value.ToString() : null, value.ToString());
+                OnChanged(_matchStatus, value);
                 _matchStatus = value;
             }
         }
@@ -61,7 +72,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             get { return _sequence; }
             set
             {
-                OnChanged(_sequence.HasValue ? _sequence.Value.ToString() : null, value.ToString());
+                OnChanged(_sequence, value);
                 _sequence = value;
             }
         }
@@ -106,7 +117,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             }
         }
 
-        private void OnChanged(bool? oldValue, bool? newValue, [CallerMemberName] string callerName = null)
+        private void OnChanged<T>(T? oldValue, T? newValue, [CallerMemberName] string callerName = null) where T:struct
         {
             var oldValueString = oldValue.HasValue ? oldValue.Value.ToString() : null;
             OnChanged(oldValueString,newValue.ToString(),callerName);
@@ -122,6 +133,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             };
 
             propertyChanged.SetTimeStamp();
+            TimeStamp = propertyChanged.TimeStamp;
 
             _changes[callerName] = propertyChanged;
         }

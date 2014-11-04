@@ -44,6 +44,7 @@ namespace SS.Integration.Adapter
         private readonly IAdapterPlugin _platformConnector;
         private readonly IEventState _eventState;
         private readonly IStateManager _stateManager;
+        private readonly ISupervisor _supervisor;
         private readonly IStatsHandle _Stats;
         private readonly IMarketRulesManager _marketsRuleManager;
 
@@ -54,9 +55,18 @@ namespace SS.Integration.Adapter
         private bool _isFirstSnapshotProcessed;
         private bool _isProcessingFirstSnapshot;
 
+        //The events are for diagnostic purposes only
+        public event EventHandler<StreamListenerEventArgs> OnConnected;
+        public event EventHandler<StreamListenerEventArgs> OnDisconnected;
+        public event EventHandler<StreamListenerEventArgs> OnError;
+        public event EventHandler<StreamListenerEventArgs> OnSuspend;
+        public event EventHandler<StreamListenerEventArgs> OnFlagsChanged;
+        public event EventHandler<StreamListenerEventArgs> OnStreamUpdate;
+        public event EventHandler<StreamListenerEventArgs> OnSnapshot;
+        public event EventHandler<StreamListenerEventArgs> OnStopping;
+
         public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IStateManager stateManager)
         {
-
             if (resource == null)
                 throw new ArgumentException("Resource information cannot be null", "resource");
 
@@ -70,7 +80,7 @@ namespace SS.Integration.Adapter
             _platformConnector = platformConnector;
             _eventState = eventState;
             _stateManager = stateManager;
-
+            
             _currentSequence = resource.Content.Sequence;
             _lastSequenceProcessedInSnapshot = -1;
             _currentEpoch = -1;
@@ -92,7 +102,7 @@ namespace SS.Integration.Adapter
             IsStopping = false;
 
             var fixtureState = _eventState.GetFixtureState(resource.Id);
-            
+
             IsFixtureEnded = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.MatchOver : _resource.IsMatchOver;
             IsFixtureSetup = (_resource.MatchStatus == MatchStatus.Setup || _resource.MatchStatus == MatchStatus.Ready);
             IsFixtureDeleted = false;
@@ -117,7 +127,7 @@ namespace SS.Integration.Adapter
             [MethodImpl(MethodImplOptions.Synchronized)]
             get;
             [MethodImpl(MethodImplOptions.Synchronized)]
-            private set; 
+            private set;
         }
 
         public string Sport { get; private set; }
@@ -315,6 +325,7 @@ namespace SS.Integration.Adapter
                 IsConnecting = false;
 
                 _resource.StopStreaming();
+                RaiseEvent(OnStopping);
             }
         }
 
@@ -333,8 +344,7 @@ namespace SS.Integration.Adapter
             // has been already stopped
             if (_resource == null)
                 return;
-
-
+            
             IsFixtureSetup = (resource.MatchStatus == MatchStatus.Setup ||
                               resource.MatchStatus == MatchStatus.Ready);
 
@@ -354,6 +364,7 @@ namespace SS.Integration.Adapter
             _logger.InfoFormat("Suspending fixtureId={0} due reason={1}", FixtureId, reason);
 
             SuspensionManager.Instance.Suspend(FixtureId, reason);
+            RaiseEvent(OnSuspend);
         }
 
         private void SetupListener()
@@ -442,6 +453,7 @@ namespace SS.Integration.Adapter
                 IsErrored = true;
 
                 _logger.Error(string.Format("An error has occured when trying to connect to stream server for {0}. Stream listener is market as errored.", _resource), ex);
+                RaiseEvent(OnError);
             }
         }
 
@@ -483,7 +495,6 @@ namespace SS.Integration.Adapter
                 _logger.DebugFormat("Streaming for {0} entered the error state - going to acquire a new snapshot", _resource);
 
                 _hasRecoveredFromError = true;
-                IsErrored = true;
                 SuspendAndReprocessSnapshot();
                 IsErrored = !_hasRecoveredFromError;
             }
@@ -512,6 +523,8 @@ namespace SS.Integration.Adapter
                     return;
                 }
 
+                RaiseEvent(OnStreamUpdate);
+
                 // if there was an error from which we haven't recovered yet
                 // it might be that with a new sequence, we might recover.
                 // So in this case, ignore the update and grab a new 
@@ -523,9 +536,7 @@ namespace SS.Integration.Adapter
                     RetrieveAndProcessSnapshot();
                     return;
                 }
-
-
-
+                
                 if (!IsSequenceValid(fixtureDelta))
                 {
                     _logger.DebugFormat("Stream update {0} will not be processed because sequence was not valid", fixtureDelta);
@@ -592,11 +603,13 @@ namespace SS.Integration.Adapter
                 }
 
                 SetErrorState();
+                RaiseEvent(OnError,ex);
             }
             catch (Exception ex)
             {
                 _logger.Error(string.Format("Error processing update that arrived for {0}", _resource), ex);
                 SetErrorState();
+                RaiseEvent(OnError,ex);
             }
         }
 
@@ -628,11 +641,13 @@ namespace SS.Integration.Adapter
                 }
 
                 _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_STREAMING, "0");
+                RaiseEvent(OnDisconnected);
 
             }
             catch (Exception ex)
             {
                 _logger.ErrorFormat("Error while processing OnStreamDisconnected event: {0}", ex);
+                RaiseEvent(OnError,ex);
             }
             finally
             {
@@ -641,7 +656,7 @@ namespace SS.Integration.Adapter
                 IsConnecting = false;
 
                 IsStreaming = false;
-                IsStopping = false;   
+                IsStopping = false;
             }
         }
 
@@ -656,15 +671,16 @@ namespace SS.Integration.Adapter
                 // directly
                 _isFirstSnapshotProcessed = true;
 
-
                 _logger.InfoFormat("Listener for {0} is now connected to the streaming server", _resource);
                 _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_STREAMING, "1");
 
+                RaiseEvent(OnConnected);
                 RetrieveAndProcessSnapshotIfNeeded();
             }
             catch (Exception ex)
             {
                 _logger.ErrorFormat("Listener errored when executing OnStreamConnected: {0}", ex);
+                RaiseEvent(OnError,ex);
             }
         }
 
@@ -863,13 +879,13 @@ namespace SS.Integration.Adapter
             var logString = isFullSnapshot ? "snapshot" : "stream update";
 
             if (snapshot == null || (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id)))
-                throw new ArgumentException(string.Format("StreamListener received empty {0} for {1}", logString,_resource));
+                throw new ArgumentException(string.Format("StreamListener received empty {0} for {1}", logString, _resource));
 
-            _logger.InfoFormat("Processing {0} for {1}",logString, snapshot);
+            _logger.InfoFormat("Processing {0} for {1}", logString, snapshot);
 
             Stopwatch timer = new Stopwatch();
             timer.Start();
-            
+
             try
             {
                 bool is_inplay = string.Equals(snapshot.MatchStatus, ((int)MatchStatus.InRunning).ToString(), StringComparison.OrdinalIgnoreCase);
@@ -890,6 +906,7 @@ namespace SS.Integration.Adapter
                 UpdateState(snapshot, isFullSnapshot);
 
                 IsErrored = false;
+                RaiseEvent(OnSnapshot);
             }
             catch (FixtureIgnoredException ie)
             {
@@ -898,6 +915,7 @@ namespace SS.Integration.Adapter
                 IsIgnored = true;
 
                 _Stats.IncrementValue(AdapterCoreKeys.FIXTURE_ERRORS_COUNTER);
+                RaiseEvent(OnError,ie);
             }
             catch (AggregateException ex)
             {
@@ -905,24 +923,27 @@ namespace SS.Integration.Adapter
 
                 foreach (var innerException in ex.InnerExceptions)
                 {
-                    _logger.Error(string.Format("There has been an aggregate error while trying to process {0} {1}",logString, snapshot), innerException);
+                    _logger.Error(string.Format("There has been an aggregate error while trying to process {0} {1}", logString, snapshot), innerException);
                 }
 
                 _Stats.IncrementValue(AdapterCoreKeys.FIXTURE_ERRORS_COUNTER);
+                RaiseEvent(OnError, ex);
 
                 if (setErrorState)
                     SetErrorState();
                 else
                     throw;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
                 _marketsRuleManager.RollbackChanges();
 
                 _Stats.IncrementValue(AdapterCoreKeys.FIXTURE_ERRORS_COUNTER);
 
-                _logger.Error(string.Format("An error occured while trying to process {0} {1}",logString, snapshot), e);
-
+                _logger.Error(string.Format("An error occured while trying to process {0} {1}", logString, snapshot), ex);
+                
+                RaiseEvent(OnError, ex);
+                
                 if (setErrorState)
                     SetErrorState();
                 else
@@ -979,6 +1000,8 @@ namespace SS.Integration.Adapter
             //reset event state
             _marketsRuleManager.OnFixtureUnPublished();
             _eventState.UpdateFixtureState(_resource.Sport, fixtureDelta.Id, -1, status);
+
+            RaiseEvent(OnFlagsChanged);
         }
 
         private void ProcessMatchOver(Fixture fixtureDelta)
@@ -994,6 +1017,8 @@ namespace SS.Integration.Adapter
                 _stateManager.ClearState(_resource.Id);
 
                 _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_MATCH_OVER, "1");
+
+                RaiseEvent(OnFlagsChanged);
             }
             catch (Exception e)
             {
@@ -1001,11 +1026,23 @@ namespace SS.Integration.Adapter
             }
         }
 
+        private void RaiseEvent(EventHandler<StreamListenerEventArgs> eventName, Exception exception = null)
+        {
+            if (eventName != null)
+                eventName(this, new StreamListenerEventArgs
+                {
+                    CurrentSequence = _currentSequence,
+                    Epoch = _currentEpoch,
+                    Exception = exception,
+                    Listener = this
+                });
+        }
+
         /// <summary>
         /// Dispose the current stream listener
         /// </summary>
         public void Dispose()
-        {   
+        {
             try
             {
                 _logger.InfoFormat("Disposing listener for {0}", _resource);
