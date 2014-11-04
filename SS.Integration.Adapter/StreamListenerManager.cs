@@ -34,6 +34,12 @@ namespace SS.Integration.Adapter
             EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
         }
 
+        protected IListener GetStreamListener(string fixtureId)
+        {
+            if (!HasStreamListener(fixtureId)) return null;
+            return _listeners[fixtureId];
+        }
+
         public void RemoveDeletedFixtures(string sport, Dictionary<string, IResourceFacade> currentfixturesLookup)
         {
             var allFixturesForSport = _listeners.Where(x => string.Equals(x.Value.Sport, sport, StringComparison.Ordinal));

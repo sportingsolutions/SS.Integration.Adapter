@@ -21,5 +21,7 @@ namespace SS.Integration.Adapter.Interface
         void OnErrored(string fixtureId, Exception ex);
 
 
+
+
     }
 }

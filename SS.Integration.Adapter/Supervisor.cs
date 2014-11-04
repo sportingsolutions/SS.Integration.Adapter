@@ -56,5 +56,29 @@ namespace SS.Integration.Adapter
         {
             throw new NotImplementedException();
         }
+
+        public void StartStreaming(string fixtureId)
+        {
+            base.StartStreaming(fixtureId);
+            var fixtureOverview = UpdatePropertiesBasedOnStreamListener(fixtureId);
+
+        }
+
+        private FixtureOverview UpdatePropertiesBasedOnStreamListener(string fixtureId)
+        {
+            var listener = GetStreamListener(fixtureId);
+            
+            //TODO: Return object 
+            if (listener == null)
+                return null;
+
+            var fixtureOverview = new FixtureOverview
+            {
+                Id = fixtureId,
+                IsDeleted = listener.IsFixtureDeleted,
+                IsStreaming = listener.IsStreaming,
+                IsOver = listener.IsFixtureEnded
+            };
+        }
     }
 }
