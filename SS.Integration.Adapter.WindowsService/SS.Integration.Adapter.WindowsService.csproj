@@ -116,10 +116,6 @@
       <Project>{B11DBC1F-95E5-44D3-8896-78482D84FB07}</Project>
       <Name>SS.Integration.Adapter.Diagnostics.Model</Name>
     </ProjectReference>
-    <ProjectReference Include="..\SS.Integration.Adapter.Diagnostics\SS.Integration.Adapter.Diagnostics.Host.csproj">
-      <Project>{5A231A3A-BFDF-4DB0-B11F-4C2D63C1FE4D}</Project>
-      <Name>SS.Integration.Adapter.Diagnostics.Host</Name>
-    </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj">
       <Project>{29461692-6DE2-47FA-ACC4-ECAAE9462AE3}</Project>
       <Name>SS.Integration.Adapter.Model</Name>

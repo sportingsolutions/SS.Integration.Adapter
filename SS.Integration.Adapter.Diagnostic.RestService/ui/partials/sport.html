@@ -1,0 +1,78 @@
+﻿<div class="well col-md-8">
+
+    <nav class="navbar navbar-default" role="navigation">
+        <div class="container-fluid">
+
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#fixture-navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">{{sport.Name}}</a>
+            </div>
+
+            <div class="collapse navbar-collapse" id="fixture-navbar">
+                <ul class="nav navbar-nav">
+                    <li data-ng-class="{active: tab == 'all'}">
+                        <a href="#" data-ng-click="changeTab('all')">All
+                            <i class="glyphicon glyphicon-bell icon-alert" data-ng-hide="sport.InErrorState === 0">({{sport.InErrorState}})</i>
+                        </a>
+                    </li>
+                    <li data-ng-class="{active: tab === 'in-play'}">
+                        <a href="#" data-ng-click="changeTab('in-play')">In-Play 
+                            <i class="glyphicon glyphicon-bell icon-alert" data-ng-hide="sport.FixtureGroups.InPlay.InErrorState === 0">({{sport.FixtureGroups.InPlay.InErrorState}})</i>
+                        </a>
+                    </li>
+                    <li data-ng-class="{active: tab === 'in-prematch'}">
+                        <a href="#" data-ng-click="changeTab('in-prematch')">In-PreMatch 
+                            <i class="glyphicon glyphicon-bell icon-alert" data-ng-hide="sport.FixtureGroups.InPreMatch.InErrorState === 0">({{sport.FixtureGroups.InPreMatch.InErrorState}})</i>
+                        </a>
+                    </li>
+                    <li data-ng-class="{active: tab === 'in-setup'}">
+                        <a href="#" data-ng-click="changeTab('in-setup')">In-Setup
+                            <i class="glyphicon glyphicon-bell icon-alert" data-ng-hide="sport.FixtureGroups.InSetup.InErrorState === 0">({{sport.FixtureGroups.InSetup.InErrorState}})</i>
+                        </a>
+                    </li>
+                </ul>
+                <form class="navbar-form navbar-left" role="search">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search" data-ng-model="search" data-ng-model-options="{debounce: {'default': 1000, 'blur': 0}}">
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="glyphicon glyphicon-refresh"></i></button>
+                </form>
+            </div>
+
+        </div>
+        <!-- /.container-fluid -->
+    </nav>
+
+    <dl class="dl-horizontal">
+        <dt>Total fixtures</dt>
+        <dd>{{getFixturesForTab().length}}</dd>
+        <dt>In error state</dt>
+        <dd>{{getInErrorFixtureCountForTab()}}</dd>
+    </dl>
+
+    <table class="table table-striped">
+        <tr>
+            <th>Id</th>
+            <th>Start Time</th>
+            <th>Description</th>
+            <th>Competition (SSLNCompetitionId)</th>
+            <th>State</th>
+            <th>Sequence</th>
+        </tr>
+        <tr data-ng-repeat="fixture in filtered = ( getFixturesForTab()) |  orderBy:['-IsInErrorState', 'StartTime']" data-ng-class="{danger: fixture.IsInErrorState}">
+            <td>{{fixture.Id}}</td>
+            <td>{{fixture.StartTime | date:'dd MMM yyyy hh:mm'  }}</td>
+            <td>{{fixture.Description}}</td>
+            <td>{{fixture.Competition}} ({{fixture.CompetitionId}})</td>
+            <td>{{fixture.State | fixtureStatus}}</td>
+            <td>{{fixture.Sequence}} 
+                <i class="glyphicon right" data-ng-class="{'glyphicon-ok icon-ok': !fixture.IsInErrorState, 'glyphicon-remove icon-alert': fixture.IsInErrorState}" data-toggle="tooltip" data-placement="right" title="{{fixture.LastException}}"></i>
+            </td>
+        </tr>
+    </table>
+</div>
