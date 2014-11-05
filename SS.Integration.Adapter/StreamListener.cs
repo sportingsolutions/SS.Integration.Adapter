@@ -63,7 +63,7 @@ namespace SS.Integration.Adapter
         public event EventHandler<StreamListenerEventArgs> OnFlagsChanged;
         public event EventHandler<StreamListenerEventArgs> OnStreamUpdate;
         public event EventHandler<StreamListenerEventArgs> OnSnapshot;
-        public event EventHandler<StreamListenerEventArgs> OnStopping;
+        public event EventHandler<StreamListenerEventArgs> OnStop;
 
         public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IStateManager stateManager)
         {
@@ -325,7 +325,7 @@ namespace SS.Integration.Adapter
                 IsConnecting = false;
 
                 _resource.StopStreaming();
-                RaiseEvent(OnStopping);
+                RaiseEvent(OnStop);
             }
         }
 
@@ -641,7 +641,6 @@ namespace SS.Integration.Adapter
                 }
 
                 _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_STREAMING, "0");
-                RaiseEvent(OnDisconnected);
 
             }
             catch (Exception ex)
@@ -657,6 +656,7 @@ namespace SS.Integration.Adapter
 
                 IsStreaming = false;
                 IsStopping = false;
+                RaiseEvent(OnDisconnected);
             }
         }
 
@@ -764,9 +764,11 @@ namespace SS.Integration.Adapter
 
                 return snapshot;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.Error(string.Format("An error occured while trying to acquire snapshot for {0}", _resource), e);
+                _logger.Error(string.Format("An error occured while trying to acquire snapshot for {0}", _resource), ex);
+
+                RaiseEvent(OnError,ex);
 
                 if (setErrorState)
                     SetErrorState();

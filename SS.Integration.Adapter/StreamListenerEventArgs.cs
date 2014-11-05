@@ -4,7 +4,7 @@ using SS.Integration.Adapter.Interface;
 
 namespace SS.Integration.Adapter
 {
-    public class StreamListenerEventArgs
+    public class StreamListenerEventArgs : EventArgs
     {
         public IListener Listener { get; set; }
         public Exception Exception { get; set; }

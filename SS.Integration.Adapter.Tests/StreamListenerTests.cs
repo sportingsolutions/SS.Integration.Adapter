@@ -58,9 +58,7 @@ namespace SS.Integration.Adapter.Tests
             var eventState = new Mock<IEventState>();
             var settings = new Mock<ISettings>();
             var marketFilterObjectStore = new StateManager(settings.Object);
-
-            //marketFilterObjectStore.Setup(x => x.GetObject(It.IsAny<string>())).Returns(new MarketStateCollection());
-
+            
             resource.Setup(r => r.Sport).Returns("Football");
             resource.Setup(r => r.Content).Returns(new Summary());
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
@@ -69,15 +67,23 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Id).Returns("TestId");
             eventState.Setup(e => e.GetCurrentSequence(It.IsAny<string>(), It.IsAny<string>())).Returns(-1);
             
-
             var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
-
+            
+            listener.MonitorEvents();
+            
             listener.Start();
 
             listener.Stop();
 
+            listener.ShouldRaise("OnConnected");
+            listener.ShouldNotRaise("OnError");
+            listener.ShouldRaise("OnStopping");
+            listener.ShouldNotRaise("OnDisconnected","The disconnection is triggered by the user");
+
             connector.Verify(c => c.ProcessSnapshot(It.IsAny<Fixture>(), false), Times.Once());
         }
+
+
 
         [Category("Adapter")]
         [Test]
@@ -333,10 +339,7 @@ namespace SS.Integration.Adapter.Tests
 
             listener.Start();
             listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
-
-            //should be irrelevant
-            //listener.IsFixtureEnded.Should().BeTrue();
-
+            
             listener.IsFixtureSetup.Should().BeFalse();
 
             connector.Verify(c => c.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never());
@@ -1759,6 +1762,87 @@ namespace SS.Integration.Adapter.Tests
             deleted.Should().BeFalse();
             disposed.Should().BeFalse();
             matchover.Should().BeFalse();
+        }
+
+        [Test]
+        public void StreamListenerEvents()
+        {
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+
+            var provider = new StateManager(settings.Object);
+
+            var suspensionManager = new SuspensionManager(provider, connector.Object);
+
+            var fixtureSnapshot = new Fixture { Id = "ABC", Epoch = 0, MatchStatus = "30", Sequence = 1 };
+            var settledSnapshot = new Fixture { Id = "ABC", Epoch = 3, MatchStatus = "50", Sequence = 5 };
+
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += (e, o) => { }, EventArgs.Empty);
+
+            //sequence of 3 snapshots middle one should raise an exception
+            resource.SetupSequence(r => r.GetSnapshot())
+                .Returns(FixtureJsonHelper.ToJson(fixtureSnapshot))
+                .Returns(String.Empty)
+                .Returns(FixtureJsonHelper.ToJson(settledSnapshot));
+            
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener.MonitorEvents();
+
+            listener.Start();
+
+            listener.ShouldRaise("OnConnected");
+            listener.ShouldRaise("OnSnapshot");
+
+            //stream event
+            var update = new Fixture
+            {
+                Id = "ABC",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.MatchOver).ToString(),
+                Epoch = 2,
+                LastEpochChangeReason = new[] { (int)EpochChangeReason.MatchStatus }
+            };
+
+            var message = new StreamMessage { Content = update };
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+            listener.ShouldRaise("OnStreamUpdate");
+
+            //as a result of match status change it will get a second snapshot which is String.Empty
+            //this should generate an exception
+            listener.ShouldRaise("OnError")
+                .WithArgs<StreamListenerEventArgs>(e=> e.Exception != null);
+            
+            listener.ShouldRaise("OnSuspend");
+            
+            //when recovered the IsErrored should clear
+            listener.IsErrored.Should().BeFalse();
+            listener.ShouldRaise("OnFlagsChanged")
+                .WithArgs<StreamListenerEventArgs>(e => ((StreamListener) e.Listener).IsErrored == false);
+
+            //simulate stream disconnection 
+            listener.ResourceOnStreamDisconnected(null,null);
+
+            listener.ShouldRaise("OnDisconnected");
+
+            listener.Stop();
+
+            listener.ShouldRaise("OnStoppin");
+
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(3), "The StreamListener was supposed to acquire 3 snasphots");
+            connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
+
+            
         }
     }
 }
