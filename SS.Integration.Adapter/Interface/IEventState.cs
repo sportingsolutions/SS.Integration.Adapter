@@ -31,7 +31,7 @@ namespace SS.Integration.Adapter.Interface
 
         void AddFixture(string sport, string fixtureId, int sequence);
 
-        void RemoveFixture(string sport, string fixtureId);
+        void RemoveFixture(string fixtureId);
         void UpdateFixtureState(string sport, string fixtureId, int sequence, MatchStatus matchStatus);
     }
 }

@@ -51,7 +51,7 @@ namespace SS.Integration.Adapter.Tests
             var currentSeq = eventState.GetCurrentSequence("football", "1");
             currentSeq.Should().Be(1);
 
-            eventState.RemoveFixture("football", "1");
+            eventState.RemoveFixture("1");
             currentSeq = eventState.GetCurrentSequence("football", "1");
             currentSeq.Should().Be(-1);
         }

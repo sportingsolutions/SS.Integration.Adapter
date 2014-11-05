@@ -1,13 +1,15 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SportingSolutions.Udapi.Sdk;
+using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Interface
 {
-    interface IStreamListenerManager
+    public interface IStreamListenerManager
     {
         bool HasStreamListener(string fixtureId);
         void StartStreaming(string fixtureId);
@@ -22,5 +24,11 @@ namespace SS.Integration.Adapter.Interface
         event Adapter.StreamEventHandler StreamCreated;
         event Adapter.StreamEventHandler StreamRemoved;
         void RemoveDeletedFixtures(string sport, Dictionary<string, IResourceFacade> currentfixturesLookup);
+        bool RemoveAndStopListener(string fixtureId);
+        IEnumerable<IGrouping<string, IListener>> GetListenersBySport();
+        bool ProcessResource(IResourceFacade resource);
+        void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector);
+        bool RemoveStreamListenerIfFinishedProcessing(IResourceFacade resource);
+        bool IsProcessing(string fixtureId);
     }
 }

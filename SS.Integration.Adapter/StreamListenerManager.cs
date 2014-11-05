@@ -7,18 +7,39 @@ using System.Threading.Tasks;
 using log4net;
 using SportingSolutions.Udapi.Sdk;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model;
+using SS.Integration.Adapter.Model.Enums;
+using SS.Integration.Adapter.Model.Interfaces;
+using SS.Integration.Adapter.ProcessState;
 
 namespace SS.Integration.Adapter
 {
     public class StreamListenerManager : IStreamListenerManager
     {
-        private readonly ILog _logger = LogManager.GetLogger(typeof (StreamListenerManager));
+        private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerManager));
+        private const int LISTENER_DISPOSING_SAFE_GUARD = 1;
 
         private readonly ConcurrentDictionary<string, IListener> _listeners;
         private readonly ConcurrentDictionary<string, int> _listenerDisposingQueue;
+        private readonly HashSet<string> _currentlyProcessedFixtures;
+        private readonly static object _sync = new object();
 
         public event Adapter.StreamEventHandler StreamCreated;
         public event Adapter.StreamEventHandler StreamRemoved;
+
+        protected IEventState EventState { get; set; }
+
+        public StreamListenerManager(ISettings settings)
+        {
+            EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
+        }
+
+        protected IListener GetStreamListener(string fixtureId)
+        {
+            if (!HasStreamListener(fixtureId)) return null;
+            return _listeners[fixtureId];
+        }
+
         public void RemoveDeletedFixtures(string sport, Dictionary<string, IResourceFacade> currentfixturesLookup)
         {
             var allFixturesForSport = _listeners.Where(x => string.Equals(x.Value.Sport, sport, StringComparison.Ordinal));
@@ -39,7 +60,7 @@ namespace SS.Integration.Adapter
 
                         _logger.DebugFormat("Fixture with fixtureId={0} was deleted from Connect fixture factory", fixture.Key);
                         RemoveAndStopListener(fixture.Key);
-                        EventState.RemoveFixture(sport, fixture.Key);
+                        EventState.RemoveFixture(fixture.Key);
                     }
                     else
                     {
@@ -64,19 +85,167 @@ namespace SS.Integration.Adapter
             }
         }
 
+        public bool RemoveAndStopListener(string fixtureId)
+        {
+            _logger.InfoFormat("Removing listener for fixtureId={0}", fixtureId);
+
+            IListener listener = null;
+            _listeners.TryRemove(fixtureId, out listener);
+
+            if (listener != null)
+            {
+                listener.Dispose();
+                OnStreamRemoved(fixtureId);
+            }
+
+            return listener != null;
+        }
+
+        public IEnumerable<IGrouping<string, IListener>> GetListenersBySport()
+        {
+            return _listeners.Values.GroupBy(x => x.Sport);
+        }
+
+        public bool ProcessResource(IResourceFacade resource)
+        {
+            if (HasStreamListener(resource.Id))
+            {
+                _logger.DebugFormat("Listener already exists for {0}", resource);
+
+                IListener listener = _listeners[resource.Id];
+
+                if (listener.IsFixtureDeleted)
+                {
+                    _logger.DebugFormat("{0} was deleted and republished. Listener wil be removed", resource);
+                    RemoveAndStopListener(resource.Id);
+                }
+                else if (listener.IsIgnored)
+                {
+                    _logger.DebugFormat("{0} is marked as ignored. Listener wil be removed", resource);
+                    RemoveAndStopListener(resource.Id);
+                }
+                else
+                {
+                    if (!RemoveStreamListenerIfFinishedProcessing(resource))
+                    {
+                        _listeners[resource.Id].UpdateResourceState(resource);
+                    }
+                }
+
+                MarkResourceAsProcessable(resource);
+                return false;
+            }
+            else
+            {
+                // Check fixture is not yet over, ignore if over
+                var fixtureState = EventState.GetFixtureState(resource.Id);
+                if (resource.IsMatchOver && (fixtureState == null || fixtureState.MatchStatus == resource.MatchStatus))
+                {
+                    _logger.InfoFormat("{0} is over. Adapter will not process the resource", resource);
+                    MarkResourceAsProcessable(resource);
+                    return false;
+                }
+
+                //the resource will be processed
+                return true;
+            }
+        }
+
+        public void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector)
+        {
+            try
+            {
+                _logger.DebugFormat("Attempting to create a Listener for sport={0} and {1}", resource.Sport, resource);
+                var listener = new StreamListener(resource, platformConnector, EventState, stateManager);
+
+                if (!listener.Start())
+                {
+                    _logger.WarnFormat("Couldn't start stream listener for {0}", resource);
+                    return;
+                }
+
+                _listeners.TryAdd(resource.Id, listener);
+
+                OnStreamCreated(resource.Id);
+
+                _logger.InfoFormat("Listener created for {0}", resource);
+            }
+            finally
+            {
+                MarkResourceAsProcessable(resource);
+                _logger.DebugFormat("Finished processing fixture {0}", resource);
+            }
+        }
+
+        public bool RemoveStreamListenerIfFinishedProcessing(IResourceFacade resource)
+        {
+            var listener = _listeners[resource.Id];
+
+            if (listener.IsFixtureEnded || resource.IsMatchOver)
+            {
+                _logger.DebugFormat("{0} is marked as ended - checking for stopping streaming", resource);
+
+                var currentState = EventState.GetFixtureState(resource.Id);
+
+                if (currentState != null && currentState.MatchStatus != MatchStatus.MatchOver)
+                {
+                    _logger.DebugFormat("{0} is over but the MatchOver update has not been processed yet", resource);
+                    return false;
+                }
+
+                _logger.InfoFormat("{0} is over. Listener will be removed", resource);
+
+                if (RemoveAndStopListener(resource.Id))
+                {
+                    EventState.RemoveFixture(resource.Id);
+                }
+                else
+                {
+                    _logger.WarnFormat("Couldn't remove listener for matchOver fixture {0}", resource);
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool IsProcessing(string fixtureId)
+        {
+            // this prevents to take any decision
+            // about the resource while it is
+            // being processed by another thread
+            lock (_sync)
+            {
+                if (_currentlyProcessedFixtures.Contains(fixtureId))
+                {
+                    _logger.DebugFormat("Fixture fixtureId={0} is currently being processed by another task - ignoring it", fixtureId);
+                    return false;
+                }
+
+                _currentlyProcessedFixtures.Add(fixtureId);
+            }
+
+            return true;
+        }
+
         public bool HasStreamListener(string fixtureId)
         {
-            throw new NotImplementedException();
+            return _listeners.ContainsKey(fixtureId);
         }
 
         public void StartStreaming(string fixtureId)
         {
-            throw new NotImplementedException();
+            if (!HasStreamListener(fixtureId)) return;
+
+            _listeners[fixtureId].Start();
         }
 
         public void StopStreaming(string fixtureId)
         {
-            throw new NotImplementedException();
+            if (!HasStreamListener(fixtureId)) return;
+
+            _listeners[fixtureId].Stop();
         }
 
         public bool RemoveStreamListener(string fixtureId)
@@ -125,6 +294,27 @@ namespace SS.Integration.Adapter
                 listener => listener.Dispose());
         }
 
-        
+        protected virtual void OnStreamCreated(string fixtureId)
+        {
+            if (StreamCreated != null)
+            {
+                StreamCreated(this, fixtureId);
+            }
+        }
+
+        protected virtual void OnStreamRemoved(string fixtureId)
+        {
+            if (StreamRemoved != null)
+                StreamRemoved(this, fixtureId);
+        }
+
+        private void MarkResourceAsProcessable(IResourceFacade resource)
+        {
+            lock (_sync)
+            {
+                if (_currentlyProcessedFixtures.Contains(resource.Id))
+                    _currentlyProcessedFixtures.Remove(resource.Id);
+            }
+        }
     }
 }

@@ -33,6 +33,7 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void ShouldStartAndStopNoSports()
         {
+            var supervisor = new Mock<ISupervisor>();
             var settings = new Mock<ISettings>();
             settings.Setup(x => x.EventStateFilePath).Returns(".");
             var service = new Mock<IServiceFacade>();
@@ -47,7 +48,8 @@ namespace SS.Integration.Adapter.Tests
             var adapter = new Adapter(
                 settings.Object,
                 service.Object,
-                connector.Object);
+                connector.Object,
+                supervisor.Object);
 
             adapter.Start();
             adapter.Stop();
@@ -61,6 +63,7 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void ShouldStartAndStopWithFewSportsNoFixtures()
         {
+            var supervisor = new Mock<ISupervisor>();
             var settings = new Mock<ISettings>();
             settings.Setup(x => x.EventStateFilePath).Returns(".");
             var service = new Mock<IServiceFacade>();
@@ -75,7 +78,9 @@ namespace SS.Integration.Adapter.Tests
             var adapter = new Adapter(
                 settings.Object,
                 service.Object,
-                connector.Object);
+                connector.Object,
+                supervisor.Object
+                );
 
             foreach (var sport in this.Sports(ListOfSports.GiveMeFew))
                 adapter.AddSport(sport);
@@ -93,6 +98,7 @@ namespace SS.Integration.Adapter.Tests
         [Category("Adapter")]
         public void ShouldCreateListeners()
         {
+            var supervisor = new Mock<ISupervisor>();
             var settings = new Mock<ISettings>();
             settings.Setup(x => x.EventStateFilePath).Returns(".");
             var service = new Mock<IServiceFacade>();
@@ -122,7 +128,9 @@ namespace SS.Integration.Adapter.Tests
             var adapter = new Adapter(
                 settings.Object,
                 service.Object,
-                connector.Object);
+                connector.Object,
+                supervisor.Object
+                );
 
             adapter.Start();
             
@@ -133,7 +141,7 @@ namespace SS.Integration.Adapter.Tests
 
             service.VerifyAll();
             
-            eventState.Verify(es => es.RemoveFixture(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
+            eventState.Verify(es => es.RemoveFixture(It.IsAny<string>()), Times.Never());
         }
 
         /// <summary>
@@ -150,6 +158,8 @@ namespace SS.Integration.Adapter.Tests
             var service = new Mock<IServiceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var state = new Mock<IEventState>();
+            var supervisor = new Mock<ISupervisor>();
+
 
             settings.Setup(x => x.EventStateFilePath).Returns(".");
             settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
@@ -167,8 +177,9 @@ namespace SS.Integration.Adapter.Tests
             service.Setup(x => x.IsConnected).Returns(true);
 
 
-            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object);
-            adapter.StreamCreated += adapter_StreamCreated;
+
+            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object, supervisor.Object);
+            supervisor.Object.StreamCreated += adapter_StreamCreated;
             adapter.EventState = state.Object;
 
             // after this call a stream listener for the above resource will be created
@@ -212,6 +223,7 @@ namespace SS.Integration.Adapter.Tests
         [Category("Adapter")]
         public void AdapterIsDisposedCorrectlyTest()
         {
+            var supervisor = new Mock<ISupervisor>();
             var settings = new Mock<ISettings>();
             var service = new Mock<IServiceFacade>();
             var connector = new Mock<IAdapterPlugin>();
@@ -232,8 +244,8 @@ namespace SS.Integration.Adapter.Tests
             service.Setup(x => x.IsConnected).Returns(true);
 
 
-            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object);
-            adapter.StreamCreated += adapter_StreamCreated;
+            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object,supervisor.Object);
+            supervisor.Object.StreamCreated += adapter_StreamCreated;
 
             adapter.Start();
 
@@ -284,6 +296,7 @@ namespace SS.Integration.Adapter.Tests
             settings.Setup(x => x.FixtureCheckerFrequency).Returns(1200000); 
 
             var service = new Mock<IServiceFacade>();
+            var supervisor = new Mock<ISupervisor>();
             var connector = new Mock<IAdapterPlugin>();
             var fixtureOne = new Mock<IResourceFacade>();
             var fixtureTwo = new Mock<IResourceFacade>();
@@ -303,15 +316,15 @@ namespace SS.Integration.Adapter.Tests
             service.Setup(x => x.GetResources("Football")).Returns(() => new List<IResourceFacade> { fixtureOne.Object, fixtureTwo.Object });
             service.Setup(x => x.IsConnected).Returns(false);
 
-            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object);
+            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object,supervisor.Object);
             adapter.AddSport("Football");
 
-            adapter.StreamCreated += delegate(object sender, string e)
+            supervisor.Object.StreamCreated += delegate(object sender, string e)
                 {
                     created++;
                 };
 
-            adapter.StreamRemoved += delegate(object sender, string e)
+            supervisor.Object.StreamRemoved += delegate(object sender, string e)
                 {
                     created--;
                 };
