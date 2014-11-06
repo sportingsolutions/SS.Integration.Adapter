@@ -95,9 +95,14 @@
                 controllerAs: 'ctrl',
             }).
             otherwise({
-                templateUrl: '/ui/partials/sports.html',
-                controller: 'SportListCtrl',
-                controllerAs: 'ctrl',
+                redirectTo: function (routeParams, path, search) {
+
+                    if (search && search.path && (search.path.indexOf("/ui/sport") > -1 || search.path.indexOf("/ui/fixture/") > -1)) {
+                        return search.path;
+                    }
+
+                    return "/ui/sports";
+                }
             });
         $locationProvider.html5Mode({ enabled: true, requireBase: false });
     }]);

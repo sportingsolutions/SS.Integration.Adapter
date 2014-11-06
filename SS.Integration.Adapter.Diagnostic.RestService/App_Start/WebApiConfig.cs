@@ -25,17 +25,15 @@ namespace SS.Integration.Adapter.Diagnostic.RestService
             // Web API routes
             config.MapHttpAttributeRoutes();
 
-            config.Routes.MapHttpRoute(
-                name: "Error404",
-                routeTemplate: "{*url}",
-                defaults: new {controller = "Error", action = "Handle404"}
-                );
-            
-
             // enable 404 errors redirect
             // TODO: make it configurable
+            // MUST be the last one!
 
-            config.Services.Replace(typeof(IHttpControllerSelector), new HttpNotFoundControllerSelector(config));
+            config.Routes.MapHttpRoute(
+                name: "Error404",
+                routeTemplate: "{*url}", // invalid URL character, so this will never be called externally
+                defaults: new {controller = "Error", action = "Handle404"}
+                );
         }
     }
 }

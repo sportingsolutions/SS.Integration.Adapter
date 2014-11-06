@@ -101,6 +101,7 @@
             this.IsDeleted = false;
             this.Epoch = "";
             this.EpochChangeReason = "";
+            this.ProcessingEntries = {};
         },
     };
 

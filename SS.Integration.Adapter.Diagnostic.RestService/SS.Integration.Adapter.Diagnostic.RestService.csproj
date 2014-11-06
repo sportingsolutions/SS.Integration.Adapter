@@ -140,10 +140,10 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="Handlers\HttpNotFoundControllerSelector.cs" />
     <Compile Include="Handlers\MediaTypeHeaderDelegate.cs" />
     <Compile Include="Models\AdapterStatus.cs" />
     <Compile Include="Models\FixtureDetail.cs" />
+    <Compile Include="Models\FixtureHistoryEntry.cs" />
     <Compile Include="Models\FixtureOverview.cs" />
     <Compile Include="Models\ModelExtensions.cs" />
     <Compile Include="Models\SportDetail.cs" />

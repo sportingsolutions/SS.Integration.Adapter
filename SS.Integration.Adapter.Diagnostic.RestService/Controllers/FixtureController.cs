@@ -46,6 +46,14 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
                 ConnectionState = FixtureDetail.ConnectionStatus.CONNECTED
             };
 
+            tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "1", Epoch = "1", IsUpdate = false, State = FixtureProcessingEntry.FixtureProcessingState.PROCESSED, Timestamp = new System.DateTime(2013, 06, 11, 14, 33, 0)});
+            tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "2", Epoch = "1", IsUpdate = true, Exception = "Null pointer exception", State = FixtureProcessingEntry.FixtureProcessingState.PROCESSED, Timestamp = new System.DateTime(2013, 06, 11, 14, 34, 0) });
+            tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "2", Epoch = "1", IsUpdate = false, State = FixtureProcessingEntry.FixtureProcessingState.PROCESSED, Timestamp = new System.DateTime(2013, 06, 11, 14, 34, 30) });
+            tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "3", IsUpdate = true, State = FixtureProcessingEntry.FixtureProcessingState.SKIPPED, Timestamp = new System.DateTime(2013, 06, 11, 14, 35, 0) });
+            tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "4", IsUpdate = true, State = FixtureProcessingEntry.FixtureProcessingState.PROCESSED, Timestamp = new System.DateTime(2013, 06, 11, 14, 37, 0) });
+            tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "5", Epoch = "2", IsUpdate = true, State = FixtureProcessingEntry.FixtureProcessingState.SKIPPED, Timestamp = new System.DateTime(2013, 06, 11, 14, 38, 45) });
+            tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "5", Epoch = "2", IsUpdate = false, State = FixtureProcessingEntry.FixtureProcessingState.PROCESSING, Timestamp = new System.DateTime(2013, 06, 11, 14, 39, 0) });
+
             return Request.CreateResponse(HttpStatusCode.OK, tmp, UrlUtilities.JSON_MEDIA_TYPE);
 
             if (string.IsNullOrEmpty(fixtureId))

@@ -12,34 +12,29 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Collections.Generic;
+using System;
 
 namespace SS.Integration.Adapter.Diagnostic.RestService.Models
 {
-    public class FixtureDetail : FixtureOverview
+    public class FixtureProcessingEntry
     {
-        public enum ConnectionStatus
+        public enum FixtureProcessingState 
         {
-            CONNECTED = 0,
-            CONNECTING = 1,
-            DISCONNECTED = 2,
+            PROCESSED = 0,
+            PROCESSING = 1,
+            SKIPPED = 2,
         }
 
-        public FixtureDetail()
-        {
-            ProcessingEntries = new List<FixtureProcessingEntry>();
-        }
+        public DateTime Timestamp { get; set; }
 
-        public ConnectionStatus ConnectionState { get; set; }
-
-        public bool IsIgnored { get; set; }
-
-        public bool IsDeleted { get; set; }
+        public string Sequence { get; set; }
 
         public string Epoch { get; set; }
 
-        public string EpochChangeReason { get; set; }
+        public bool IsUpdate { get; set; }
 
-        public List<FixtureProcessingEntry> ProcessingEntries { get; private set; }
+        public string Exception { get; set; }
+
+        public FixtureProcessingState State { get; set; }
     }
 }
