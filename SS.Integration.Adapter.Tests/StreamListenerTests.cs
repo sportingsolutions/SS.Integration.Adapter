@@ -1837,7 +1837,7 @@ namespace SS.Integration.Adapter.Tests
 
             listener.Stop();
 
-            listener.ShouldRaise("OnStoppin");
+            listener.ShouldRaise("OnStop");
 
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(3), "The StreamListener was supposed to acquire 3 snasphots");
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));

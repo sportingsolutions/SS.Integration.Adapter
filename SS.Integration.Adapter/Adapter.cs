@@ -47,7 +47,7 @@ namespace SS.Integration.Adapter
         private readonly IStatsHandle _stats;
         private Timer _trigger;
 
-        public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector,ISupervisor supervisor)
+        public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector,IStreamListenerManager supervisor)
         {
             _supervisor = supervisor;
 
