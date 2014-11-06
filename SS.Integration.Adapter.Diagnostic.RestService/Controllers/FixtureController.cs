@@ -16,6 +16,7 @@ using System.Net;
 using System.Net.Http;
 using System.Web.Http;
 using SS.Integration.Adapter.Diagnostic.RestService.Attributes;
+using SS.Integration.Adapter.Diagnostic.RestService.Models;
 
 namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
 {
@@ -28,6 +29,25 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
         [HttpGet]
         public HttpResponseMessage GetDetails(string fixtureId)
         {
+            var tmp = new FixtureDetail
+            {
+                Id = "5",
+                IsStreaming = true,
+                State = FixtureOverview.FixtureState.Ready,
+                Competition = "French Division 1",
+                CompetitionId = "1qqqqqq",
+                StartTime = new System.DateTime(2014, 3, 17, 17, 0, 0),
+                Description = "PSG v Lion",
+                Sequence = "99",
+                IsIgnored = false,
+                IsDeleted = false,
+                Epoch = "1",
+                EpochChangeReason = "10",
+                ConnectionState = FixtureDetail.ConnectionStatus.CONNECTED
+            };
+
+            return Request.CreateResponse(HttpStatusCode.OK, tmp, UrlUtilities.JSON_MEDIA_TYPE);
+
             if (string.IsNullOrEmpty(fixtureId))
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
 

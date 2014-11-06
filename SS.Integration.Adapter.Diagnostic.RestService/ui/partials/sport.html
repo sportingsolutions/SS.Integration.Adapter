@@ -62,7 +62,8 @@
             <th>Description</th>
             <th>Competition (SSLNCompetitionId)</th>
             <th>State</th>
-            <th>Sequence</th>
+            <th>Seq.</th>
+            <th>Details</th>
         </tr>
         <tr data-ng-repeat="fixture in filtered = ( getFixturesForTab()) |  orderBy:['-IsInErrorState', 'StartTime']" data-ng-class="{danger: fixture.IsInErrorState}">
             <td>{{fixture.Id}}</td>
@@ -73,6 +74,7 @@
             <td>{{fixture.Sequence}} 
                 <i class="glyphicon right" data-ng-class="{'glyphicon-ok icon-ok': !fixture.IsInErrorState, 'glyphicon-remove icon-alert': fixture.IsInErrorState}" data-toggle="tooltip" data-placement="right" title="{{fixture.LastException}}"></i>
             </td>
+            <td><a href="#" data-ng-click="openFixtureDetails(fixture.Id)">Details</a></td>
         </tr>
     </table>
 </div>

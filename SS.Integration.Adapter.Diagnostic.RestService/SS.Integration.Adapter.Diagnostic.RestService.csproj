@@ -133,14 +133,17 @@
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="Attributes\HandleServerErrorAttribute.cs" />
+    <Compile Include="Controllers\ErrorController.cs" />
     <Compile Include="Controllers\FixtureController.cs" />
     <Compile Include="Controllers\SportController.cs" />
     <Compile Include="Controllers\SupervisorController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Handlers\HttpNotFoundControllerSelector.cs" />
     <Compile Include="Handlers\MediaTypeHeaderDelegate.cs" />
     <Compile Include="Models\AdapterStatus.cs" />
+    <Compile Include="Models\FixtureDetail.cs" />
     <Compile Include="Models\FixtureOverview.cs" />
     <Compile Include="Models\ModelExtensions.cs" />
     <Compile Include="Models\SportDetail.cs" />

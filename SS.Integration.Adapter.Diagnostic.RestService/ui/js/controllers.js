@@ -83,6 +83,25 @@
                 });
             }
         },
+
+        FixtureDetail: function FixtureDetail() {
+
+            this.Id = "";
+            this.IsStreaming = false;
+            this.State = 0;
+            this.IsInErrorState = false;
+            this.StartTime = null;
+            this.Competition = "";
+            this.CompetitionId = "";
+            this.Description = "";
+            this.LastException = "";
+            this.Sequence = "";
+            this.ConnectionStatus = "";
+            this.IsIgnored = false;
+            this.IsDeleted = false;
+            this.Epoch = "";
+            this.EpochChangeReason = "";
+        },
     };
 
     var fn = {
@@ -166,17 +185,16 @@
             });
 
             promise.then(function (data) {
-                
                 $scope.sports = fn.GetSportsDetails(data, Supervisor.getConfig());
             });
 
         }]);
 
-    controllers.controller('SportDetailCtrl', ['$scope', '$routeParams', '$rootScope', 'Supervisor',
-        function ($scope, $routeParams, $rootScope, Supervisor) {
+    controllers.controller('SportDetailCtrl', ['$scope', '$routeParams', '$rootScope', '$location', 'Supervisor',
+        function ($scope, $routeParams, $rootScope, $location, Supervisor) {
 
             if (!$routeParams.hasOwnProperty("sportCode")) {
-                window.location = Supervisor.getConfig().uiRelations.Home;
+                $location.path(Supervisor.getConfig().uiRelations.Home);
             }
 
             $scope.sport = new models.SportDetail();
@@ -235,10 +253,22 @@
                 return $scope.sport.InErrorState;
             }
 
+            $scope.openFixtureDetails = function (fixtureId) {
+                
+                if (!fixtureId)
+                    return;
+
+                var config = Supervisor.getConfig();
+                var path = config.uiRelations.FixtureDetail;
+                path = config.fn.getFixturePath(path, fixtureId);
+
+                $location.path(path);
+            }
+
 
             var promise = Supervisor.getSportDetail($routeParams.sportCode);
             if (!promise) {
-                window.location = Supervisor.getConfig().uiRelations.Home;
+                $location.path(Supervisor.getConfig().uiRelations.Home);
             }
 
             $rootScope.$broadcast('my-loading-started');
@@ -256,20 +286,26 @@
 
         }]);
 
-    controllers.controller('FixtureDetailCtrl', ['$scope', '$routeParams', '$rootScope', 'Supervisor',
-        function ($scope, $routeParams, $rootScope, Supervisor) {
+    controllers.controller('FixtureDetailCtrl', ['$scope', '$routeParams', '$rootScope', '$location', 'Supervisor',
+        function ($scope, $routeParams, $rootScope, $location, Supervisor) {
 
-            /*$rootScope.$broadcast('my-loading-started');
+            if (!$routeParams.hasOwnProperty("fixtureId")) {
+                $location.path(Supervisor.getConfig().uiRelations.Home);
+            }
 
-            var promise = Supervisor.getListOfSports();
+            $scope.fixture = new models.FixtureDetail();
+
+            var promise = Supervisor.getFixtureDetail($routeParams.fixtureId);
+
+            $rootScope.$broadcast('my-loading-started');
 
             promise['finally'](function () {
                 $rootScope.$broadcast('my-loading-complete');
             });
 
             promise.then(function (data) {
-                $scope.sports = data;
-            });*/
+                $.extend($scope.fixture, data);
+            });
 
         }]);
 

@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -13,21 +13,12 @@
 //limitations under the License.
 
 
-using Ninject.Modules;
-using SS.Integration.Adapter.Configuration;
-using SS.Integration.Adapter.Interface;
-using SS.Integration.Adapter.UdapiClient;
+using System.Web.Http;
 
-namespace SS.Integration.Adapter.WindowsService
+namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
 {
-    public class BootStrapper : NinjectModule
+    
+    public class ErrorController : ApiController
     {
-
-        public override void Load()
-        {
-            Bind<ISettings>().To<Settings>().InSingletonScope();
-            Bind<IReconnectStrategy>().To<DefaultReconnectStrategy>().InSingletonScope();
-            Bind<IServiceFacade>().To<UdapiServiceFacade>();
-        }
     }
 }

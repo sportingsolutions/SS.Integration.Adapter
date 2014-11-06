@@ -72,32 +72,32 @@
             when('/ui/sports', {
                 templateUrl: '/ui/partials/sports.html',
                 controller: 'SportListCtrl',
-                controllerAs: 'sports',
+                controllerAs: 'ctrl',
             }).
             when('/ui/sport/:sportCode', {
                 templateUrl: '/ui/partials/sport.html',
                 controller: 'SportDetailCtrl',
-                controllerAs: 'sport',
+                controllerAs: 'ctrl',
             }).
-            when('/fixture/:fixtureId', {
-                templateUrl: 'partials/fixture.html',
+            when('/ui/fixture/:fixtureId', {
+                templateUrl: '/ui/partials/fixture.html',
                 controller: 'FixtureDetailCtrl',
-                controllerAs: 'fixture',
+                controllerAs: 'ctrl',
             }).
-            when('/fixture/:fixtureId/details', {
-                templateUrl: 'partials/fixture.html',
+            when('/ui/fixture/:fixtureId/details', {
+                templateUrl: '/ui/partials/fixture.html',
                 controller: 'FixtureDetailCtrl',
-                controllerAs: 'fixture',
+                controllerAs: 'ctrl',
             }).
-            when('/fixture/:fixtureId/history', {
-                templateUrl: 'partials/fixture.html',
+            when('/ui/fixture/:fixtureId/history', {
+                templateUrl: '/ui/partials/fixture.html',
                 controller: 'FixtureHistoryCtrl',
-                controllerAs: 'fixture',
+                controllerAs: 'ctrl',
             }).
             otherwise({
                 templateUrl: '/ui/partials/sports.html',
                 controller: 'SportListCtrl',
-                controllerAs: 'sports',
+                controllerAs: 'ctrl',
             });
         $locationProvider.html5Mode({ enabled: true, requireBase: false });
     }]);

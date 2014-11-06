@@ -1,1 +1,18 @@
-﻿
+﻿<div class="well col-md-8">
+    <div class="panel" data-ng-class="{'panel-danger':fixture.IsInErrorState, 'panel-success': !fixture.IsInErrorState}">
+        <div class="panel-heading">
+            <h4>Fixture: {{fixture.Description}} ({{fixture.Id}}) at {{fixture.StartTime | date:'dd MMM yyyy hh:mm' }}
+                <strong class="right" data-ng-if="fixture.IsInErrorState">In an error state!</strong>
+                <strong class="right" data-ng-if="!fixture.IsInErrorState">Processing as normal</strong>
+            </h4>
+        </div>
+        <div class="panel-body">
+            <dl class="dl-horizontal">
+                <dt>Description</dt><dd>{{fixture.Description}}</dd>
+                <dt>Start Time</dt><dd>{{fixture.StartTime | date:'dd MMM yyyy hh:mm' }}</dd>
+                <dt>Competition</dt><dd>{{fixture.Competition}}</dd>
+                <dt>Competition Id</dt><dd>{{fixture.CompetitionId}}</dd>
+            </dl>
+        </div>
+    </div>
+</div>
