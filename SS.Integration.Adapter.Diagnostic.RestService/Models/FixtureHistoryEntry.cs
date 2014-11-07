@@ -31,6 +31,8 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.Models
 
         public string Epoch { get; set; }
 
+        public string EpochChangeReason { get; set; }
+
         public bool IsUpdate { get; set; }
 
         public string Exception { get; set; }

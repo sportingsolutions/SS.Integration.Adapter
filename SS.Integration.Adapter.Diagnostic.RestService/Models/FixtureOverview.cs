@@ -43,8 +43,6 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.Models
 
         public string Description { get; set; }
 
-        public string LastException { get; set; }
-
         public string Sequence { get; set; }
     }
 }

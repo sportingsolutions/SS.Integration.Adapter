@@ -24,6 +24,7 @@
         url: 'http://localhost',
         port: '58623',
         uiUrlBase: '/ui/',
+        usePushNotification: true,
 
         relations: {
             SportList: '/api/supervisor/sports',
@@ -214,4 +215,5 @@
             }
         };
     }]);
+
 })();

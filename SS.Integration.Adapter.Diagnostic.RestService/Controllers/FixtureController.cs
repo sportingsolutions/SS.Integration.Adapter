@@ -31,18 +31,16 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
         {
             var tmp = new FixtureDetail
             {
-                Id = "5",
+                Id = "asdas341",
                 IsStreaming = true,
                 State = FixtureOverview.FixtureState.Ready,
                 Competition = "French Division 1",
                 CompetitionId = "1qqqqqq",
                 StartTime = new System.DateTime(2014, 3, 17, 17, 0, 0),
                 Description = "PSG v Lion",
-                Sequence = "99",
+                Sequence = "5",
                 IsIgnored = false,
                 IsDeleted = false,
-                Epoch = "1",
-                EpochChangeReason = "10",
                 ConnectionState = FixtureDetail.ConnectionStatus.CONNECTED
             };
 
@@ -51,7 +49,7 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
             tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "2", Epoch = "1", IsUpdate = false, State = FixtureProcessingEntry.FixtureProcessingState.PROCESSED, Timestamp = new System.DateTime(2013, 06, 11, 14, 34, 30) });
             tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "3", IsUpdate = true, State = FixtureProcessingEntry.FixtureProcessingState.SKIPPED, Timestamp = new System.DateTime(2013, 06, 11, 14, 35, 0) });
             tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "4", IsUpdate = true, State = FixtureProcessingEntry.FixtureProcessingState.PROCESSED, Timestamp = new System.DateTime(2013, 06, 11, 14, 37, 0) });
-            tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "5", Epoch = "2", IsUpdate = true, State = FixtureProcessingEntry.FixtureProcessingState.SKIPPED, Timestamp = new System.DateTime(2013, 06, 11, 14, 38, 45) });
+            tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "5", Epoch = "2", IsUpdate = true, EpochChangeReason = "10", State = FixtureProcessingEntry.FixtureProcessingState.SKIPPED, Timestamp = new System.DateTime(2013, 06, 11, 14, 38, 45) });
             tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "5", Epoch = "2", IsUpdate = false, State = FixtureProcessingEntry.FixtureProcessingState.PROCESSING, Timestamp = new System.DateTime(2013, 06, 11, 14, 39, 0) });
 
             return Request.CreateResponse(HttpStatusCode.OK, tmp, UrlUtilities.JSON_MEDIA_TYPE);

@@ -36,10 +36,6 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.Models
 
         public bool IsDeleted { get; set; }
 
-        public string Epoch { get; set; }
-
-        public string EpochChangeReason { get; set; }
-
         public List<FixtureProcessingEntry> ProcessingEntries { get; private set; }
     }
 }

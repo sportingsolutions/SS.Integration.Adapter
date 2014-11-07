@@ -216,6 +216,10 @@ you can use the generic selector below, but it's slower:
     float:left;
 }
 
+.clickable {
+    cursor: pointer;
+}
+
 /* for angular UI */
 .nav, .pagination, .carousel, .panel-title a { cursor: pointer; }
 

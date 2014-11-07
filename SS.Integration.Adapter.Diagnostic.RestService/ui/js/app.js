@@ -89,11 +89,6 @@
                 controller: 'FixtureDetailCtrl',
                 controllerAs: 'ctrl',
             }).
-            when('/ui/fixture/:fixtureId/history', {
-                templateUrl: '/ui/partials/fixture.html',
-                controller: 'FixtureHistoryCtrl',
-                controllerAs: 'ctrl',
-            }).
             otherwise({
                 redirectTo: function (routeParams, path, search) {
 

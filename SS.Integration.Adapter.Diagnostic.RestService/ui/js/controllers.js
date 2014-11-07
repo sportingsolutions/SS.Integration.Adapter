@@ -94,14 +94,43 @@
             this.Competition = "";
             this.CompetitionId = "";
             this.Description = "";
-            this.LastException = "";
             this.Sequence = "";
-            this.ConnectionStatus = "";
+            this.ConnectionState = "";
             this.IsIgnored = false;
             this.IsDeleted = false;
-            this.Epoch = "";
-            this.EpochChangeReason = "";
-            this.ProcessingEntries = {};
+            this.LastEpoch = ""; 
+            this.LastTimestamp = "";
+            this.LastEpochChangeReason = "";
+            this.LastException = "";
+            this.ProcessingEntries = new Array();
+            this.GroupedProcessingEntries = new Array();
+
+            this.FillData = function () {
+
+                this.ProcessingEntries.sort(function (a, b) {
+                    return new Date(a.Timestamp) - new Date(b.Timestamp);
+                });
+
+                if (this.ProcessingEntries.length > 0) {
+
+                    var lastEntry = this.ProcessingEntries[this.ProcessingEntries.length - 1];
+                    this.LastEpoch = lastEntry.Epoch;
+                    this.LastTimestamp = lastEntry.Timestamp;
+                    this.LastEpochChangeReason = lastEntry.EpochChangeReason;
+                    this.LastException = lastEntry.Exception;
+                }
+
+                var last = "";
+                var outer = this;
+                $.each(this.ProcessingEntries, function (index, value) {
+                    if (last != value.Sequence) {
+                        outer.GroupedProcessingEntries.push({ sequence: value.Sequence, items: new Array() });
+                        last = value.Sequence;
+                    }
+
+                    outer.GroupedProcessingEntries[outer.GroupedProcessingEntries.length - 1].items.unshift(value);
+                });
+            };
         },
     };
 
@@ -129,6 +158,15 @@
             return result;
         },
 
+        /**
+         * Allows to search within a list of fixtures for
+         * a fixtures that contains, in at list one of its
+         * own properties, a value that contains the
+         * substrign specified by "data"
+         * @param {Array<FixtureDetail>} fixtures
+         * @param {String} data
+         * @return FixtureDetail
+         */
         SearchFixtures: function (fixtures, data) {
             
             if (!Array.isArray(fixtures)) fixtures = [fixtures];
@@ -177,6 +215,7 @@
 
             $scope.sports = [];
 
+            // this allows us to display the "waiting layer"
             $rootScope.$broadcast('my-loading-started');
 
             var promise = Supervisor.getListOfSports();
@@ -202,12 +241,23 @@
             $scope.tab = "all";
             $scope.search = null;
 
+            /**
+             * Allows us to switch to the tab
+             * indicated by "tab".
+             * @param {string} tab
+             */
             $scope.changeTab = function (tab) {
                 $scope.tab = tab;
             };
 
+            /** 
+             * Returns the list of fixtures to display
+             * in the current active tab, eventually filtered
+             * by the user through the search functionality
+             */
             $scope.getFixturesForTab = function(){
 
+                // make sure we have some valid values
                 if(!$scope.tab)
                     $scope.tab = 'all';
 
@@ -230,6 +280,7 @@
                         break;
                 }
 
+                // filter using user specified data
                 if ($scope.search) {
                     fixtures = fn.SearchFixtures(fixtures, $scope.search);
                 }
@@ -237,6 +288,12 @@
                 return fixtures;
             };
 
+            /**
+             * Returns the number of fixture displayed on 
+             * the current active tabe that are in 
+             * error state.
+             * @return {int}
+             */
             $scope.getInErrorFixtureCountForTab = function() {
 
                 if(!$scope.tab)
@@ -254,6 +311,10 @@
                 return $scope.sport.InErrorState;
             }
 
+            /**
+             * Opens the fixture page
+             * @param {String} fixtureId
+             */
             $scope.openFixtureDetails = function (fixtureId) {
                 
                 if (!fixtureId)
@@ -263,6 +324,8 @@
                 var path = config.uiRelations.FixtureDetail;
                 path = config.fn.getFixturePath(path, fixtureId);
 
+                // don't use window.location directly
+                // or the route dispatcher will not work
                 $location.path(path);
             }
 
@@ -279,7 +342,9 @@
             });
 
             promise.then(function (data) {
-
+                
+                // there will always be only one sport, but 
+                // getSportsDetails returns an array...
                 var tmp = fn.GetSportsDetails(data, Supervisor.getConfig());
                 if (tmp.length && tmp.length > 0)
                     $scope.sport = tmp[0];
@@ -290,11 +355,35 @@
     controllers.controller('FixtureDetailCtrl', ['$scope', '$routeParams', '$rootScope', '$location', 'Supervisor',
         function ($scope, $routeParams, $rootScope, $location, Supervisor) {
 
+            // check if we have the fixtureId
             if (!$routeParams.hasOwnProperty("fixtureId")) {
                 $location.path(Supervisor.getConfig().uiRelations.Home);
             }
 
             $scope.fixture = new models.FixtureDetail();
+            var sequenceDetailsVisibility = new Array();  // stores information about the visibility of the details table
+
+
+            /**
+             * Returns true if the details for the sequence
+             * passes as "sequence" are visible
+             * @param {String} sequence
+             */
+            $scope.isDetailVisibile = function (sequence) {
+                if (sequenceDetailsVisibility[sequence] === undefined)
+                    return false;
+
+                return sequenceDetailsVisibility[sequence];
+            };
+
+            /**
+             * Shows/hides sequence's details
+             * @param {String} sequence
+             * @param {Boolean} value
+             */
+            $scope.setDetailVisible = function (sequence, value) {
+                sequenceDetailsVisibility[sequence] = value;
+            };
 
             var promise = Supervisor.getFixtureDetail($routeParams.fixtureId);
 
@@ -306,26 +395,10 @@
 
             promise.then(function (data) {
                 $.extend($scope.fixture, data);
+
+                // fill up all the missing data
+                $scope.fixture.FillData();
             });
 
-        }]);
-
-    controllers.controller('FixtureHistoryCtrl', ['$scope', '$routeParams', '$rootScope', 'Supervisor',
-       function ($scope, $routeParams, $rootScope, Supervisor) {
-
-           /*$rootScope.$broadcast('my-loading-started');
-
-           var promise = Supervisor.getListOfSports();
-
-           promise['finally'](function () {
-               $rootScope.$broadcast('my-loading-complete');
-           });
-
-           promise.then(function (data) {
-               $scope.sports = data;
-           });*/
-
-       }]);
-
-   
+        }]);   
 })();
