@@ -55,23 +55,23 @@
         <dd>{{getInErrorFixtureCountForTab()}}</dd>
     </dl>
 
-    <table class="table table-striped">
+    <table class="table table-hover">
         <tr>
             <th>Id</th>
             <th>Start Time</th>
             <th>Description</th>
             <th>Competition (SSLNCompetitionId)</th>
             <th>State</th>
-            <th>Sequence</th>
+            <th>Seq.</th>
         </tr>
-        <tr data-ng-repeat="fixture in filtered = ( getFixturesForTab()) |  orderBy:['-IsInErrorState', 'StartTime']" data-ng-class="{danger: fixture.IsInErrorState}">
+        <tr data-ng-repeat="fixture in filtered = ( getFixturesForTab()) |  orderBy:['-IsInErrorState', 'StartTime']" data-ng-class="{danger: fixture.IsInErrorState}"  data-ng-click="openFixtureDetails(fixture.Id)" class="clickable">
             <td>{{fixture.Id}}</td>
             <td>{{fixture.StartTime | date:'dd MMM yyyy hh:mm'  }}</td>
             <td>{{fixture.Description}}</td>
             <td>{{fixture.Competition}} ({{fixture.CompetitionId}})</td>
             <td>{{fixture.State | fixtureStatus}}</td>
             <td>{{fixture.Sequence}} 
-                <i class="glyphicon right" data-ng-class="{'glyphicon-ok icon-ok': !fixture.IsInErrorState, 'glyphicon-remove icon-alert': fixture.IsInErrorState}" data-toggle="tooltip" data-placement="right" title="{{fixture.LastException}}"></i>
+                <i class="glyphicon right" data-ng-class="{'glyphicon-ok icon-ok': !fixture.IsInErrorState, 'glyphicon-remove icon-alert': fixture.IsInErrorState}"></i>
             </td>
         </tr>
     </table>

@@ -13,6 +13,8 @@
 //limitations under the License.
 
 using System.Web.Http;
+using System.Web.Http.Dispatcher;
+using SS.Integration.Adapter.Diagnostic.RestService.Handlers;
 
 namespace SS.Integration.Adapter.Diagnostic.RestService
 {
@@ -22,6 +24,16 @@ namespace SS.Integration.Adapter.Diagnostic.RestService
         {
             // Web API routes
             config.MapHttpAttributeRoutes();
+
+            // enable 404 errors redirect
+            // TODO: make it configurable
+            // MUST be the last one!
+
+            config.Routes.MapHttpRoute(
+                name: "Error404",
+                routeTemplate: "{*url}", // invalid URL character, so this will never be called externally
+                defaults: new {controller = "Error", action = "Handle404"}
+                );
         }
     }
 }

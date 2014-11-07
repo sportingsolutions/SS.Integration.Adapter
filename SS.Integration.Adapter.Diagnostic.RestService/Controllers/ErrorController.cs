@@ -1,0 +1,57 @@
+﻿//Copyright 2014 Spin Services Limited
+
+//Licensed under the Apache License, Version 2.0 (the "License");
+//you may not use this file except in compliance with the License.
+//You may obtain a copy of the License at
+
+//    http://www.apache.org/licenses/LICENSE-2.0
+
+//Unless required by applicable law or agreed to in writing, software
+//distributed under the License is distributed on an "AS IS" BASIS,
+//WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//See the License for the specific language governing permissions and
+//limitations under the License.
+
+using System;
+using System.Net;
+using System.Net.Http;
+using System.Web.Http;
+
+namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
+{
+    
+    public class ErrorController : ApiController
+    {
+        private const string DEFAULT_REDIRECT_PAGE = "/ui/index.html";
+
+        [HttpGet, HttpPost, HttpPut, HttpDelete, HttpHead, HttpOptions, AcceptVerbs("PATCH")]
+        public HttpResponseMessage Handle404()
+        {
+            if (Request.RequestUri.LocalPath.Contains("/ui/"))
+            {
+                var response = Request.CreateResponse(HttpStatusCode.Moved);
+                response.Headers.Location = BuildRedirectUrl(Request.RequestUri);
+
+                return response;
+            }
+
+            var responseMessage = new HttpResponseMessage(HttpStatusCode.NotFound)
+            {
+                ReasonPhrase = "The requested resource is not found",
+                
+            };
+            return responseMessage;
+        }
+
+        private static Uri BuildRedirectUrl(Uri uri)
+        {
+            var basepath = uri.AbsoluteUri.Replace(uri.LocalPath, "");
+            if (basepath.EndsWith("/"))
+                basepath = basepath.Substring(0, basepath.Length - 1);
+
+            basepath += DEFAULT_REDIRECT_PAGE;
+            basepath += "?path=" + uri.LocalPath;
+            return new Uri(basepath);
+        }
+    }
+}

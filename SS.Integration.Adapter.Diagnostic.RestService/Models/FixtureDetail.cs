@@ -12,37 +12,30 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
+using System.Collections.Generic;
 
 namespace SS.Integration.Adapter.Diagnostic.RestService.Models
 {
-    public class FixtureOverview
+    public class FixtureDetail : FixtureOverview
     {
-        public enum FixtureState {
-
-            Setup = 0,
-            Ready = 1,
-            PreMatch = 2,
-            Running = 3,
-            Over = 4
+        public enum ConnectionStatus
+        {
+            CONNECTED = 0,
+            CONNECTING = 1,
+            DISCONNECTED = 2,
         }
 
-        public string Id { get; set; }
+        public FixtureDetail()
+        {
+            ProcessingEntries = new List<FixtureProcessingEntry>();
+        }
 
-        public bool IsStreaming { get; set; }
+        public ConnectionStatus ConnectionState { get; set; }
 
-        public FixtureState State { get; set; }
+        public bool IsIgnored { get; set; }
 
-        public bool IsInErrorState { get; set; }
+        public bool IsDeleted { get; set; }
 
-        public DateTime StartTime { get; set; }
-
-        public string Competition { get; set; }
-
-        public string CompetitionId { get; set; }
-
-        public string Description { get; set; }
-
-        public string Sequence { get; set; }
+        public List<FixtureProcessingEntry> ProcessingEntries { get; private set; }
     }
 }

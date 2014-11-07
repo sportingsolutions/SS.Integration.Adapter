@@ -16,33 +16,27 @@ using System;
 
 namespace SS.Integration.Adapter.Diagnostic.RestService.Models
 {
-    public class FixtureOverview
+    public class FixtureProcessingEntry
     {
-        public enum FixtureState {
-
-            Setup = 0,
-            Ready = 1,
-            PreMatch = 2,
-            Running = 3,
-            Over = 4
+        public enum FixtureProcessingState 
+        {
+            PROCESSED = 0,
+            PROCESSING = 1,
+            SKIPPED = 2,
         }
 
-        public string Id { get; set; }
-
-        public bool IsStreaming { get; set; }
-
-        public FixtureState State { get; set; }
-
-        public bool IsInErrorState { get; set; }
-
-        public DateTime StartTime { get; set; }
-
-        public string Competition { get; set; }
-
-        public string CompetitionId { get; set; }
-
-        public string Description { get; set; }
+        public DateTime Timestamp { get; set; }
 
         public string Sequence { get; set; }
+
+        public string Epoch { get; set; }
+
+        public string EpochChangeReason { get; set; }
+
+        public bool IsUpdate { get; set; }
+
+        public string Exception { get; set; }
+
+        public FixtureProcessingState State { get; set; }
     }
 }

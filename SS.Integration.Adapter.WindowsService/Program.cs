@@ -41,7 +41,6 @@ namespace SS.Integration.Adapter.WindowsService
                     new AdapterService() 
                 };
 
-            //SupervisorHost.Start();
 
             if (Environment.UserInteractive)
             {
