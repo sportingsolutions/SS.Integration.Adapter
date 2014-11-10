@@ -103,8 +103,6 @@
     <Content Include="Scripts\jquery-2.1.1.min.js" />
     <Content Include="Scripts\jquery.signalR-2.1.2.js" />
     <Content Include="Scripts\jquery.signalR-2.1.2.min.js" />
-    <Content Include="ui\css\bootstrap-theme.css" />
-    <Content Include="ui\css\bootstrap-theme.min.css" />
     <Content Include="ui\css\bootstrap.css" />
     <Content Include="ui\css\bootstrap.min.css" />
     <Content Include="ui\css\main.css" />
@@ -121,9 +119,9 @@
     <Content Include="ui\js\bootstrap.min.js" />
     <Content Include="ui\js\controllers.js" />
     <Content Include="ui\js\app.js" />
+    <Content Include="ui\js\pnotify.custom.js" />
+    <Content Include="ui\js\pnotify.custom.min.js" />
     <Content Include="ui\js\services.js" />
-    <Content Include="ui\js\ui-bootstrap-tpls-0.11.2.js" />
-    <Content Include="ui\js\ui-bootstrap-tpls-0.11.2.min.js" />
     <Content Include="ui\partials\fixture.html" />
     <Content Include="ui\partials\sport.html" />
     <Content Include="ui\partials\sports.html" />
@@ -154,7 +152,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
-    <Content Include="ui\css\bootstrap-theme.css.map" />
     <Content Include="ui\css\bootstrap.css.map" />
     <Content Include="ui\fonts\glyphicons-halflings-regular.eot" />
     <Content Include="ui\fonts\glyphicons-halflings-regular.ttf" />

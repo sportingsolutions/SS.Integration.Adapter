@@ -1,12 +1,9 @@
 ﻿@font-face {
-	font-family: 'sports';
-	src:url('../fonts/sports.eot');
-	src:url('../fonts/sports.eot?#iefix') format('embedded-opentype'),
-		url('../fonts/sports.svg#sports') format('svg'),
-		url('../fonts/sports.woff') format('woff'),
-		url('../fonts/sports.ttf') format('truetype');
-	font-weight: normal;
-	font-style: normal;
+    font-family: 'sports';
+    src: url('../fonts/sports.eot');
+    src: url('../fonts/sports.eot?#iefix') format('embedded-opentype'), url('../fonts/sports.svg#sports') format('svg'), url('../fonts/sports.woff') format('woff'), url('../fonts/sports.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
 }
 
 
@@ -18,7 +15,7 @@ header.site_header {
     background-color: #f8f8f8;
     background-image: url('../images/header_bg.png');
     background-repeat: no-repeat;
-    background-position:0px -7px;
+    background-position: 0px -7px;
     height: 70px;
     border-bottom: 0 solid #d5d5d5;
     position: relative;
@@ -26,23 +23,23 @@ header.site_header {
     min-width: 1024px;
 }
 
-header.site_header a.home_link {
-    display:block;
-    width:500px;
-    height:100px;
-}
+    header.site_header a.home_link {
+        display: block;
+        width: 500px;
+        height: 100px;
+    }
 
-header.site_header .corner {
-    width: 76px;
-    height: 75px;
-    position: absolute;
-    z-index: 2;
-    top: 70px;
-    left: 0;
-    background: url('../images/header_corner.png');
-    background-repeat: no-repeat;
-    background-position: top left;
-}
+    header.site_header .corner {
+        width: 76px;
+        height: 75px;
+        position: absolute;
+        z-index: 2;
+        top: 70px;
+        left: 0;
+        background: url('../images/header_corner.png');
+        background-repeat: no-repeat;
+        background-position: top left;
+    }
 
 .transition {
     -webkit-transition: all 250ms ease-in-out;
@@ -62,7 +59,7 @@ header.site_header .corner {
     color: #cccccc;
     padding: 0;
     font-weight: normal;
-    background-color:rgb(76,76,76);
+    background-color: rgb(76,76,76);
     box-sizing: border-box;
     -webkit-box-shadow: 1px 0px 5px rgba(0,0,0,0.5);
     -moz-box-shadow: 1px 0px 5px rgba(0,0,0,0.5);
@@ -70,31 +67,31 @@ header.site_header .corner {
     vertical-align: top;
     -webkit-backface-visibility: hidden;
     line-height: 1em;
-    font-size:13px;
+    font-size: 13px;
 }
 
-.sport:hover {
-    color:white;
-    background:#666666;
-    -webkit-box-shadow:1px 0 10px rgba(0,0,0,0.7);
-    -moz-box-shadow:1px 0 10px rgba(0,0,0,0.7);
-    box-shadow:1px 0 10px rgba(0,0,0,0.7);
-    -moz-transform:scale(1.05) rotate(2deg);
-    -o-transform:scale(1.05) rotate(2deg);
-    -ms-transform:scale(1.05) rotate(2deg);
-    transform:scale(1.05) rotate(2deg);
-}
+    .sport:hover {
+        color: white;
+        background: #666666;
+        -webkit-box-shadow: 1px 0 10px rgba(0,0,0,0.7);
+        -moz-box-shadow: 1px 0 10px rgba(0,0,0,0.7);
+        box-shadow: 1px 0 10px rgba(0,0,0,0.7);
+        -moz-transform: scale(1.05) rotate(2deg);
+        -o-transform: scale(1.05) rotate(2deg);
+        -ms-transform: scale(1.05) rotate(2deg);
+        transform: scale(1.05) rotate(2deg);
+    }
 
-.sport:before {
-    content: "";
-    height: 0;
-    width:0;
-    border-left:40px solid #fe8125;
-    border-bottom:40px solid transparent;
-    position:absolute;
-    top:0;
-    left:0;
-}
+    .sport:before {
+        content: "";
+        height: 0;
+        width: 0;
+        border-left: 40px solid #fe8125;
+        border-bottom: 40px solid transparent;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
 
 /* Use the following CSS code if you want to have a class per icon */
 /*
@@ -103,64 +100,126 @@ you can use the generic selector below, but it's slower:
 [class*="ssln-"] {
 */
 .ssln-volleyball, .ssln-tennisdoubles, .ssln-tennis, .ssln-snooker, .ssln-rugbyunion, .ssln-rugbyleague, .ssln-icehockey, .ssln-horseracing, .ssln-handball, .ssln-golf, .ssln-hurling, .ssln-gaelicfootball, .ssln-football, .ssln-darts, .ssln-cricket, .ssln-boxing, .ssln-basketball, .ssln-baseball, .ssln-badminton, .ssln-americanfootball, .ssln-logo, .ssln-testcricket {
-	font-family: 'sports';
-	speak: none;
-	font-style: normal;
-	font-weight: normal;
-	font-variant: normal;
-	text-transform: none;
+    font-family: 'sports';
+    speak: none;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
     font-size: 53px;
-	line-height: 53px;
-    height:53px;
+    line-height: 53px;
+    height: 53px;
     width: 133px;
-    display:block;
-	-webkit-font-smoothing: antialiased;
-    text-align:center;
+    display: block;
+    -webkit-font-smoothing: antialiased;
+    text-align: center;
     text-decoration: none;
     text-shadow: rgba(0, 0, 0, 0) 0 0 15px;
-    text-transform:none;
+    text-transform: none;
     top: 26px;
-    vertical-align:baseline;
-    position:absolute;
+    vertical-align: baseline;
+    position: absolute;
 }
 
-.ssln-americanfootball:before { content: "\e000"; }
-.ssln-badminton:before { content: "\e001"; }
-.ssln-baseball:before { content: "\e002"; }
-.ssln-basketball:before { content: "\e003"; }
-.ssln-boxing:before { content: "\e004"; }
-.ssln-cricket:before { content: "\e005"; }
-.ssln-testcricket:before { content: "\e017"; }
-.ssln-darts:before { content: "\e007"; }
-.ssln-football:before { content: "\e008"; }
-.ssln-gaelicfootball:before { content: "\e009"; }
-.ssln-hurling:before { content: "\e00a"; }
-.ssln-golf:before { content: "\e00b"; }
-.ssln-handball:before { content: "\e00c"; }
-.ssln-horseracing:before { content: "\e00d"; }
-.ssln-icehockey:before { content: "\e00e"; }
-.ssln-rugbyleague:before { content: "\e00f"; }
-.ssln-rugbyunion:before { content: "\e010"; }
-.ssln-snooker:before { content: "\e011"; }
-.ssln-tennis:before { content: "\e012"; }
-.ssln-tennisdoubles:before { content: "\e013"; }
-.ssln-volleyball:before { content: "\e014"; }
+    .ssln-americanfootball:before {
+        content: "\e000";
+    }
+
+    .ssln-badminton:before {
+        content: "\e001";
+    }
+
+    .ssln-baseball:before {
+        content: "\e002";
+    }
+
+    .ssln-basketball:before {
+        content: "\e003";
+    }
+
+    .ssln-boxing:before {
+        content: "\e004";
+    }
+
+    .ssln-cricket:before {
+        content: "\e005";
+    }
+
+    .ssln-testcricket:before {
+        content: "\e017";
+    }
+
+    .ssln-darts:before {
+        content: "\e007";
+    }
+
+    .ssln-football:before {
+        content: "\e008";
+    }
+
+    .ssln-gaelicfootball:before {
+        content: "\e009";
+    }
+
+    .ssln-hurling:before {
+        content: "\e00a";
+    }
+
+    .ssln-golf:before {
+        content: "\e00b";
+    }
+
+    .ssln-handball:before {
+        content: "\e00c";
+    }
+
+    .ssln-horseracing:before {
+        content: "\e00d";
+    }
+
+    .ssln-icehockey:before {
+        content: "\e00e";
+    }
+
+    .ssln-rugbyleague:before {
+        content: "\e00f";
+    }
+
+    .ssln-rugbyunion:before {
+        content: "\e010";
+    }
+
+    .ssln-snooker:before {
+        content: "\e011";
+    }
+
+    .ssln-tennis:before {
+        content: "\e012";
+    }
+
+    .ssln-tennisdoubles:before {
+        content: "\e013";
+    }
+
+    .ssln-volleyball:before {
+        content: "\e014";
+    }
 
 .sport label {
-    box-sizing:border-box;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-size: 0.9em;
-    position:absolute;
-    width:100%;
-    left:0;
-    bottom:0;
-    text-align:center;
-    background:#111111;
+    position: absolute;
+    width: 100%;
+    left: 0;
+    bottom: 0;
+    text-align: center;
+    background: #111111;
     padding: 0.8em 0.3em;
-    margin:0;
-    line-height:1em;
+    margin: 0;
+    line-height: 1em;
 }
 
 .container-fluid {
@@ -169,24 +228,24 @@ you can use the generic selector below, but it's slower:
 }
 
 #veil {
-	position: absolute;
-	top: 0;
-	left: 0;
-	height:100%;
-	width:100%;
-	cursor: not-allowed;
-	filter: alpha(opacity=60);
-	opacity: 0.6;
-    z-index:1000;
-	background-color: #000000;
-    display:none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    cursor: not-allowed;
+    filter: alpha(opacity=60);
+    opacity: 0.6;
+    z-index: 1000;
+    background-color: #000000;
+    display: none;
 }
 
-#veil > p {
-    float:right;
-    opacity:0.8;
-    filter:alpha(opacity=80);
-}
+    #veil > p {
+        float: right;
+        opacity: 0.8;
+        filter: alpha(opacity=80);
+    }
 
 .glyphicon-refresh-animate {
     -animation: spin .7s infinite linear;
@@ -194,32 +253,99 @@ you can use the generic selector below, but it's slower:
 }
 
 @-webkit-keyframes spin2 {
-    from { -webkit-transform: rotate(0deg);}
-    to { -webkit-transform: rotate(360deg);}
+    from {
+        -webkit-transform: rotate(0deg);
+    }
+
+    to {
+        -webkit-transform: rotate(360deg);
+    }
 }
 
 .icon-alert {
-    color:red;
-    padding-left:5px;
+    color: red;
+    padding-left: 5px;
 }
 
 .icon-ok {
-    padding-left:5px;
-    color:green;
+    padding-left: 5px;
+    color: green;
 }
 
 .right {
-    float:right;
+    float: right;
 }
 
 .left {
-    float:left;
+    float: left;
 }
 
 .clickable {
     cursor: pointer;
 }
 
-/* for angular UI */
-.nav, .pagination, .carousel, .panel-title a { cursor: pointer; }
+/* PNotify */
 
+/*
+Author  : Hunter Perrin
+Version : 2.0.1
+Link    : http://sciactive.com/pnotify/
+*/
+/* -- Notice */
+.ui-pnotify {
+    top: 50px;
+    right: 25px;
+    position: absolute;
+    height: auto;
+    /* Ensures notices are above everything */
+    z-index: 9999;
+}
+/* Hides position: fixed from IE6 */
+html > body > .ui-pnotify {
+    position: fixed;
+}
+
+.ui-pnotify .ui-pnotify-shadow {
+    -webkit-box-shadow: 0px 2px 10px rgba(50, 50, 50, 0.5);
+    -moz-box-shadow: 0px 2px 10px rgba(50, 50, 50, 0.5);
+    box-shadow: 0px 2px 10px rgba(50, 50, 50, 0.5);
+}
+
+.ui-pnotify-container {
+    background-position: 0 0;
+    padding: .8em;
+    height: 100%;
+    margin: 0;
+}
+
+.ui-pnotify-sharp {
+    -webkit-border-radius: 0;
+    -moz-border-radius: 0;
+    border-radius: 0;
+}
+
+.ui-pnotify-title {
+    display: block;
+    margin-bottom: .4em;
+    margin-top: 0;
+}
+
+.ui-pnotify-text {
+    display: block;
+}
+
+.ui-pnotify-icon, .ui-pnotify-icon span {
+    display: block;
+    float: left;
+    margin-right: .2em;
+}
+
+.ui-pnotify-closer, .ui-pnotify-sticker {
+    float: right;
+    margin-left: .2em;
+}
+
+/* for angular UI */
+.nav, .pagination, .carousel, .panel-title a {
+    cursor: pointer;
+}

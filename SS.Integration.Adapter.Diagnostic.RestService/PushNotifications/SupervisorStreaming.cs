@@ -52,5 +52,25 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.PushNotifications
 
             Groups.Remove(Context.ConnectionId, FIXTURE_GROUP_PREFIX + fixtureId);
         }
+
+        public void OnSportUpdate(string sport, object update)
+        {
+            if (update == null || string.IsNullOrEmpty(sport))
+                return;
+
+            var group = Clients.Group(SPORT_GROUP_PREFIX + sport);
+            if (group != null)
+                group.updateSport(update);
+        }
+
+        public void OnFixtureUpdate(string fixtureId, object update)
+        {
+            if (update == null || string.IsNullOrEmpty(fixtureId))
+                return;
+
+            var group = Clients.Group(FIXTURE_GROUP_PREFIX + fixtureId);
+            if (group != null)
+                group.updateFixture(update);
+        }
     }
 }

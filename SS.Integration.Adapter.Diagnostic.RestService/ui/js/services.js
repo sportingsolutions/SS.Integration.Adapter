@@ -24,7 +24,13 @@
         url: 'http://localhost',
         port: '58623',
         uiUrlBase: '/ui/',
-        usePushNotification: true,
+
+        // set as {} to disable push notifications
+        pushNotification: {
+            server : 'http://localhost',
+            port: '58623',
+            path: '/streaming'
+        },
 
         relations: {
             SportList: '/api/supervisor/sports',
@@ -70,6 +76,48 @@
     var services = angular.module('adapterSupervisorServices', []);
 
     services.constant('MyConfig', myConfig);
+
+    services.factory('Streaming', ['$rootScope', 'MyConfig', function ($rootScope, MyConfig) {
+        
+        function signalRHubProxyFactory(url, hubname) {
+
+            var connection = $.hubConnection(url);
+            var proxy = connection.createHubProxy(hubname);
+            connection.start().done(function () { });
+
+            return {
+
+                onSportUpdate: function (sport, callback) {
+                    proxy.on(sport, function (data) {
+                        $rootScope.$apply(function () {
+                            if (callback)
+                                callback(data);
+                        });
+                    });
+                },
+
+                off: function (eventName, callback) {
+                    proxy.off(eventName, function (data) {
+                        $rootScope.$apply(function () {
+                            if (callback)
+                                callback(data);
+                        });
+                    });
+                },
+
+                invoke: function (methodName, callback) {
+                    proxy.invoke(methodName).done(function (data) {
+                        $rootScope.$apply(function () {
+                            if (callback)
+                                callback(data);
+                        });
+                    });
+                },
+            };
+        };
+
+        return signalRHubProxyFactory;
+    }]);
 
     services.factory('Supervisor', ['$http', '$log', '$q', 'MyConfig', function ($http, $log, $q, MyConfig) {
 

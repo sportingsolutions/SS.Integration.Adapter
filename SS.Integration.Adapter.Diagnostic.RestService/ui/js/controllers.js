@@ -208,6 +208,14 @@
                 $scope.details = data;
             });
 
+            this.testNotification = function () {
+                $rootScope.$broadcast('on-error-notification-received', {text: new Date().toString()});
+            }
+
+            this.clearNotifications = function () {
+                $rootScope.$broadcast('on-error-notification-clear-all', { text: new Date().toString() });
+            }
+
         }]);
 
     controllers.controller('SportListCtrl', ['$scope', '$routeParams', '$rootScope', 'Supervisor',

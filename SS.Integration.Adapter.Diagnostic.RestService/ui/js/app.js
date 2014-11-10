@@ -21,7 +21,6 @@
 
     var app = angular.module('adapterSupervisorApp', [
         'ngRoute',
-        'ui.bootstrap',
 
         'adapterSupervisorControllers',
         'adapterSupervisorServices'
@@ -62,6 +61,59 @@
 
                 scope.$on('my-loading-complete', function (e) {
                     element.css({ "display": "none" });
+                });
+            },
+        };
+    });
+
+
+    app.directive("myNotifications", function () {
+        return {
+            restrict: 'A',
+            link: function (scope, element, attrs) {
+
+                var stack_context = {
+                    "dir1": "right",
+                    "dir2": "down",
+                    "push": "top",
+                    "firstpos2": 50,
+                    "spacing2": 10,
+                    "context": $("#" + attrs.myNotifications)
+                }
+
+                var opts = {
+                    title: "Something went wrong...",
+                    stack: stack_context,                    
+                    type: "error",
+                    width: "100%",
+                    hide: false,
+                    buttons: {
+                        sticker:false
+                    },
+                    confirm: {
+                        confirm: true,
+                        buttons: [{
+                            text: "Show me",
+                            addClass: "btn-danger",
+                            click: function (notice) {
+                                // TODO redirect here using $locationProvider
+                            }
+                        }]
+                    }
+                };
+
+                scope.$on('on-error-notification-received', function (evt, args) {
+                    opts.text = args.text;
+                    if(scope.noticies === undefined)
+                        scope.noticies = new Array();
+
+                    scope.noticies.push(new PNotify(opts));
+                });
+
+                scope.$on('on-error-notification-clear-all', function (evt, args) {
+                    $.each(scope.noticies, function (index, value) {
+                        value.remove();
+                    });
                 });
             },
         };
