@@ -23,23 +23,23 @@ header.site_header {
     min-width: 1024px;
 }
 
-    header.site_header a.home_link {
-        display: block;
-        width: 500px;
-        height: 100px;
-    }
+header.site_header a.home_link {
+    display: block;
+    width: 500px;
+    height: 100px;
+}
 
-    header.site_header .corner {
-        width: 76px;
-        height: 75px;
-        position: absolute;
-        z-index: 2;
-        top: 70px;
-        left: 0;
-        background: url('../images/header_corner.png');
-        background-repeat: no-repeat;
-        background-position: top left;
-    }
+header.site_header .corner {
+    width: 76px;
+    height: 75px;
+    position: absolute;
+    z-index: 2;
+    top: 70px;
+    left: 0;
+    background: url('../images/header_corner.png');
+    background-repeat: no-repeat;
+    background-position: top left;
+}
 
 .transition {
     -webkit-transition: all 250ms ease-in-out;
@@ -54,7 +54,7 @@ header.site_header {
     display: inline-block;
     margin: 0 26px 26px 0;
     position: relative;
-    height: 133px;
+    height: 175px;
     width: 133px;
     color: #cccccc;
     padding: 0;
@@ -70,34 +70,34 @@ header.site_header {
     font-size: 13px;
 }
 
-    .sport:hover {
-        color: white;
-        background: #666666;
-        -webkit-box-shadow: 1px 0 10px rgba(0,0,0,0.7);
-        -moz-box-shadow: 1px 0 10px rgba(0,0,0,0.7);
-        box-shadow: 1px 0 10px rgba(0,0,0,0.7);
-        -moz-transform: scale(1.05) rotate(2deg);
-        -o-transform: scale(1.05) rotate(2deg);
-        -ms-transform: scale(1.05) rotate(2deg);
-        transform: scale(1.05) rotate(2deg);
-    }
+.sport:hover {
+    color: white;
+    background: #666666;
+    -webkit-box-shadow: 1px 0 10px rgba(0,0,0,0.7);
+    -moz-box-shadow: 1px 0 10px rgba(0,0,0,0.7);
+    box-shadow: 1px 0 10px rgba(0,0,0,0.7);
+    -moz-transform: scale(1.05) rotate(2deg);
+    -o-transform: scale(1.05) rotate(2deg);
+    -ms-transform: scale(1.05) rotate(2deg);
+    transform: scale(1.05) rotate(2deg);
+}
 
-    .sport:before {
-        content: "";
-        height: 0;
-        width: 0;
-        border-left: 40px solid #fe8125;
-        border-bottom: 40px solid transparent;
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
+.sport:before {
+    content: "";
+    height: 0;
+    width: 0;
+    border-left: 40px solid #fe8125;
+    border-bottom: 40px solid transparent;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
 
 /* Use the following CSS code if you want to have a class per icon */
 /*
-Instead of a list of all class selectors,
-you can use the generic selector below, but it's slower:
-[class*="ssln-"] {
+    Instead of a list of all class selectors,
+    you can use the generic selector below, but it's slower:
+    [class*="ssln-"] {
 */
 .ssln-volleyball, .ssln-tennisdoubles, .ssln-tennis, .ssln-snooker, .ssln-rugbyunion, .ssln-rugbyleague, .ssln-icehockey, .ssln-horseracing, .ssln-handball, .ssln-golf, .ssln-hurling, .ssln-gaelicfootball, .ssln-football, .ssln-darts, .ssln-cricket, .ssln-boxing, .ssln-basketball, .ssln-baseball, .ssln-badminton, .ssln-americanfootball, .ssln-logo, .ssln-testcricket {
     font-family: 'sports';
@@ -121,89 +121,89 @@ you can use the generic selector below, but it's slower:
     position: absolute;
 }
 
-    .ssln-americanfootball:before {
-        content: "\e000";
-    }
+.ssln-americanfootball:before {
+    content: "\e000";
+}
 
-    .ssln-badminton:before {
-        content: "\e001";
-    }
+.ssln-badminton:before {
+    content: "\e001";
+}
 
-    .ssln-baseball:before {
-        content: "\e002";
-    }
+.ssln-baseball:before {
+    content: "\e002";
+}
 
-    .ssln-basketball:before {
-        content: "\e003";
-    }
+.ssln-basketball:before {
+    content: "\e003";
+}
 
-    .ssln-boxing:before {
-        content: "\e004";
-    }
+.ssln-boxing:before {
+    content: "\e004";
+}
 
-    .ssln-cricket:before {
-        content: "\e005";
-    }
+.ssln-cricket:before {
+    content: "\e005";
+}
 
-    .ssln-testcricket:before {
-        content: "\e017";
-    }
+.ssln-testcricket:before {
+    content: "\e017";
+}
 
-    .ssln-darts:before {
-        content: "\e007";
-    }
+.ssln-darts:before {
+    content: "\e007";
+}
 
-    .ssln-football:before {
-        content: "\e008";
-    }
+.ssln-football:before {
+    content: "\e008";
+}
 
-    .ssln-gaelicfootball:before {
-        content: "\e009";
-    }
+.ssln-gaelicfootball:before {
+    content: "\e009";
+}
 
-    .ssln-hurling:before {
-        content: "\e00a";
-    }
+.ssln-hurling:before {
+    content: "\e00a";
+}
 
-    .ssln-golf:before {
-        content: "\e00b";
-    }
+.ssln-golf:before {
+    content: "\e00b";
+}
 
-    .ssln-handball:before {
-        content: "\e00c";
-    }
+.ssln-handball:before {
+    content: "\e00c";
+}
 
-    .ssln-horseracing:before {
-        content: "\e00d";
-    }
+.ssln-horseracing:before {
+    content: "\e00d";
+}
 
-    .ssln-icehockey:before {
-        content: "\e00e";
-    }
+.ssln-icehockey:before {
+    content: "\e00e";
+}
 
-    .ssln-rugbyleague:before {
-        content: "\e00f";
-    }
+.ssln-rugbyleague:before {
+    content: "\e00f";
+}
 
-    .ssln-rugbyunion:before {
-        content: "\e010";
-    }
+.ssln-rugbyunion:before {
+    content: "\e010";
+}
 
-    .ssln-snooker:before {
-        content: "\e011";
-    }
+.ssln-snooker:before {
+    content: "\e011";
+}
 
-    .ssln-tennis:before {
-        content: "\e012";
-    }
+.ssln-tennis:before {
+    content: "\e012";
+}
 
-    .ssln-tennisdoubles:before {
-        content: "\e013";
-    }
+.ssln-tennisdoubles:before {
+    content: "\e013";
+}
 
-    .ssln-volleyball:before {
-        content: "\e014";
-    }
+.ssln-volleyball:before {
+    content: "\e014";
+}
 
 .sport label {
     box-sizing: border-box;
@@ -214,12 +214,17 @@ you can use the generic selector below, but it's slower:
     position: absolute;
     width: 100%;
     left: 0;
-    bottom: 0;
+    bottom: 41px;
     text-align: center;
     background: #111111;
     padding: 0.8em 0.3em;
     margin: 0;
     line-height: 1em;
+}
+
+.sport label.details {
+    bottom:0px;
+    background:#444444;
 }
 
 .container-fluid {
@@ -241,11 +246,11 @@ you can use the generic selector below, but it's slower:
     display: none;
 }
 
-    #veil > p {
-        float: right;
-        opacity: 0.8;
-        filter: alpha(opacity=80);
-    }
+#veil > p {
+    float: right;
+    opacity: 0.8;
+    filter: alpha(opacity=80);
+}
 
 .glyphicon-refresh-animate {
     -animation: spin .7s infinite linear;

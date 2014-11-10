@@ -25,11 +25,28 @@
         port: '58623',
         uiUrlBase: '/ui/',
 
-        // set as {} to disable push notifications
         pushNotification: {
-            server : 'http://localhost',
+            url: 'http://localhost',
             port: '58623',
-            path: '/streaming'
+            path: '/streaming',
+            hub: 'SupervisorStreaming',
+            enabled: true,
+            sportGroupPath: 'SportGroup-:sportCode',
+            fixtureGroupPath: 'FixtureGroup-:fixtureId',
+
+            events: {
+                AdapterUpdate: 'on-adapter-update-received',
+                FixtureUpdate: 'on-fixture-update-received',
+                SportUpdate: 'on-sport-update-received',
+                Errors: 'on-error-received',
+            },
+
+            serverEvents: {
+                AdapterUpdate: 'OnAdapterUpdate',
+                FixtureUpdate: 'OnFixtureUpdate',
+                SportUpdate: 'OnSportUpdate',
+                Errors: 'OnError',
+            },
         },
 
         relations: {
@@ -41,7 +58,7 @@
         },
 
         uiRelations: {
-            Home:'/ui/index.html',
+            Home: '/ui/index.html',
             SportList: '/ui/sports/',
             SportDetail: '/ui/sport/:sportCode',
             FixtureDetail: '/ui/fixture/:fixtureId/details',
@@ -75,51 +92,173 @@
 
     var services = angular.module('adapterSupervisorServices', []);
 
+    /**
+     * We modelled our config as a service so it can be easily accessed
+     * whenever it is needed
+     */
     services.constant('MyConfig', myConfig);
 
-    services.factory('Streaming', ['$rootScope', 'MyConfig', function ($rootScope, MyConfig) {
-        
+    /** 
+     * This is the streaming service: it receives push notifications from the adapter's supervisor.
+     *
+     * A client can subscribe to three different types of notifications:
+     *
+     * 1) sport notifications - receives updates regarding a specific sport: use sportSubscription(sportCode).subscribe/unsubscribe
+     * 2) fixture notifications - receives updates regarding a specific fixture: user fixtureSubscription(fixtureId).subscribe/unsubscribe
+     * 3) adapter notifications - receives updates regarding the adapter internal state and possibile raised errors
+     *
+     * Use the specific "subscribe" methods in order to {un}-subscribe. Internally, the service sends broadcast messages 
+     * (see MyConfig.pushNotifications.events) when a message is received from the server. 
+     *
+     * To use the service, a client should 1) subscribe itself to service and 2) register specific listeners on $rootScope
+     * to receive the desired notifications.
+     */
+    services.factory('Streaming', ['$rootScope', '$log', '$q', 'MyConfig', function ($rootScope, $log, $q, MyConfig) {
+
         function signalRHubProxyFactory(url, hubname) {
+
+            var defered = $q.defer();
+            var promise = defered.promise;
 
             var connection = $.hubConnection(url);
             var proxy = connection.createHubProxy(hubname);
-            connection.start().done(function () { });
+            var connected = false;
 
-            return {
+            connection.start()
+                .done(function () {
+                    $log.info('Successfully connected to the streaming server');
+                    connected = true;
+                    defered.resolve();
+                })
+                .fail(function () {
+                    $log.error('Not conncted to the streaming server');
+                    MyConfig.pushNotification.enabled = false;
+                    defered.reject();
+                });
 
-                onSportUpdate: function (sport, callback) {
-                    proxy.on(sport, function (data) {
+
+            var on = function (eventName, callback) {
+
+                if (MyConfig.pushNotification.enabled) {
+                    proxy.on(eventName, function (data) {
                         $rootScope.$apply(function () {
                             if (callback)
                                 callback(data);
                         });
                     });
-                },
-
-                off: function (eventName, callback) {
-                    proxy.off(eventName, function (data) {
-                        $rootScope.$apply(function () {
-                            if (callback)
-                                callback(data);
-                        });
-                    });
-                },
-
-                invoke: function (methodName, callback) {
-                    proxy.invoke(methodName).done(function (data) {
-                        $rootScope.$apply(function () {
-                            if (callback)
-                                callback(data);
-                        });
-                    });
-                },
+                }
             };
+
+            var invoke = function (methodName, params, callback) {
+
+                // we need to use defer/promise here as at the time
+                // the first subscribe() call is made, the connection
+                // might not be yet ready
+
+                var tmp = function () {
+                    if (MyConfig.pushNotification.enabled) {
+                        proxy.invoke(methodName, params).done(function (data) {
+                            if (callback)
+                                callback(data);
+                        });
+                    }
+                };
+
+                if (!connected) {
+                    promise.then(tmp);
+                }
+                else {
+                    tmp();
+                }
+            };
+
+            // register listeners and dispatch broadcast messages upon messages' arrivals
+            on(MyConfig.pushNotification.serverEvents.AdapterUpdate, function (data) {
+                $rootScope.$broadcast(MyConfig.pushNotification.events.AdapterUpdate, data);
+            });
+
+            on(MyConfig.pushNotification.serverEvents.SportUpdate, function (data) {
+                $rootScope.$broadcast(MyConfig.pushNotification.events.SportUpdate, data);
+            });
+
+            on(MyConfig.pushNotification.serverEvents.FixtureUpdate, function (data) {
+                $rootScope.$broadcast(MyConfig.pushNotification.events.FixtureUpdate, data);
+            });
+
+            var rtn = {
+
+                sportSubscription: function (sportCode) {
+
+                    if (!sportCode || 0 === sportCode.length)
+                        return null;
+
+                    return {
+                        subscribe: function () {
+                            invoke('JoinSportGroup', sportCode, function () {
+                                $log.debug("Correctly subscribed to sport=" + sportCode);
+                            });
+                        },
+
+                        unsubscribe: function () {
+                            invoke('LeaveSportGroup', sportCode, function () {
+                                $log.debug("Correctly un-subscribed from sport=" + sportCode);
+                            });
+                        },
+                    };
+                },
+
+                fixtureSubscription: function (fixtureId) {
+
+                    if (!fixtureId || 0 === fixtureId.length)
+                        return null;
+
+                    return {
+                        subscribe: function () {
+                            invoke('JoinFixtureGroup', fixtureId, function () {
+                                $log.debug("Correctly subscribed to fixtureId=" + fixtureId);
+                            });
+                        },
+
+                        unsubscribe: function () {
+                            invoke('LeaveFixtureGroup', fixtureId, function () {
+                                $log.debug("Correctly un-subscribed from fixtureId=" + fixtureId);
+                            });
+                        },
+                    };
+                },
+
+                adapterSubscription: function () {
+                    return {
+                        subscribe: function () {
+                            invoke('AdapterGroup', {}, function () {
+                                $log.debug("Correctly subscribed to adapter's notifications");
+                            });
+                        },
+
+                        unsubscribe: function () {
+                            invoke('AdapterGroup', {}, function () {
+                                $log.debug("Correctly un-subscribed from adapter's notifications");
+                            });
+                        },
+                    };
+                }
+            };
+
+            return rtn;
         };
 
-        return signalRHubProxyFactory;
+        return signalRHubProxyFactory(MyConfig.fn.buildPath(MyConfig.pushNotification.path, MyConfig.pushNotification), MyConfig.pushNotification.hub);
     }]);
 
-    services.factory('Supervisor', ['$http', '$log', '$q', 'MyConfig', function ($http, $log, $q, MyConfig) {
+    /**
+     * This is the supervisor service: it allows to query the adapter's supervisor about its internal state.
+     *
+     * Internally, it uses the angularjs' promise API - each methods (except getConfig and getStreamingService that return
+     * respectively the MyConfig ang Streaming service) returns a promise. The caller should use the .then() method
+     * to execute a callback when the data is available.
+     *
+     */
+    services.factory('Supervisor', ['$http', '$log', '$q', 'Streaming', 'MyConfig', function ($http, $log, $q, Streaming, MyConfig) {
 
         return {
 
@@ -127,8 +266,18 @@
              * Returns the config object
              * @return {!Object}
              */
-            getConfig: function() {
+            getConfig: function () {
                 return MyConfig;
+            },
+
+            /**
+             * Allows to obtain a reference to the Streaming service.
+             * The streaming service can also be obtained using
+             * the standard angularjs's way
+             * @return {!Object}
+             */
+            getStreamingService: function () {
+                return Streaming;
             },
 
             /** 

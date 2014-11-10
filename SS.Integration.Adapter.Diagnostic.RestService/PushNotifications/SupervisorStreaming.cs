@@ -18,15 +18,14 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.PushNotifications
 {
     public class SupervisorStreaming : Hub
     {
-        private const string SPORT_GROUP_PREFIX = "SportGroup-";
-        private const string FIXTURE_GROUP_PREFIX = "FixtureGroup-";
+    
 
         public void JoinSportGroup(string sport)
         {
             if(string.IsNullOrEmpty(sport))
                 return;
 
-            Groups.Add(Context.ConnectionId, SPORT_GROUP_PREFIX + sport);
+            Groups.Add(Context.ConnectionId, SupervisorConstants.SPORT_GROUP_PREFIX + sport);
         }
 
         public void LeaveSportGroup(string sport)
@@ -34,7 +33,7 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.PushNotifications
             if (string.IsNullOrEmpty(sport))
                 return;
 
-            Groups.Remove(Context.ConnectionId, SPORT_GROUP_PREFIX + sport);
+            Groups.Remove(Context.ConnectionId, SupervisorConstants.SPORT_GROUP_PREFIX + sport);
         }
 
         public void JoinFixtureGroup(string fixtureId)
@@ -42,7 +41,7 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.PushNotifications
             if (string.IsNullOrEmpty(fixtureId))
                 return;
 
-            Groups.Add(Context.ConnectionId, FIXTURE_GROUP_PREFIX + fixtureId);
+            Groups.Add(Context.ConnectionId, SupervisorConstants.FIXTURE_GROUP_PREFIX + fixtureId);
         }
 
         public void LeaveFixtureGroup(string fixtureId)
@@ -50,27 +49,17 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.PushNotifications
             if (string.IsNullOrEmpty(fixtureId))
                 return;
 
-            Groups.Remove(Context.ConnectionId, FIXTURE_GROUP_PREFIX + fixtureId);
+            Groups.Remove(Context.ConnectionId, SupervisorConstants.FIXTURE_GROUP_PREFIX + fixtureId);
         }
 
-        public void OnSportUpdate(string sport, object update)
+        public void JoinAdapterGroup()
         {
-            if (update == null || string.IsNullOrEmpty(sport))
-                return;
-
-            var group = Clients.Group(SPORT_GROUP_PREFIX + sport);
-            if (group != null)
-                group.updateSport(update);
+            Groups.Add(Context.ConnectionId, SupervisorConstants.ADAPTER_GROUP);
         }
 
-        public void OnFixtureUpdate(string fixtureId, object update)
+        public void LeaveAdapterGroup()
         {
-            if (update == null || string.IsNullOrEmpty(fixtureId))
-                return;
-
-            var group = Clients.Group(FIXTURE_GROUP_PREFIX + fixtureId);
-            if (group != null)
-                group.updateFixture(update);
+            Groups.Remove(Context.ConnectionId, SupervisorConstants.ADAPTER_GROUP);
         }
     }
 }

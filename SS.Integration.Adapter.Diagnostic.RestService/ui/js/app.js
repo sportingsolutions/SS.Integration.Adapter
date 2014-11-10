@@ -50,16 +50,24 @@
         };
     });
 
+    /**
+     * Allows to display a "waiting" (modal) layer
+     * 
+     * Brodcast 
+     * 1) "my-loading-started" to show it
+     * 2) "my-loading-complete" to hide it
+     *
+     */
     app.directive("myLoadingIndicator", function () {
         return {
             restrict: 'A',
-            link: function (scope, element, attrs) {
+            link: function (scope, element) {
 
-                scope.$on('my-loading-started', function (e) {
+                scope.$on('my-loading-started', function () {
                     element.css({ "display": "block" });
                 });
 
-                scope.$on('my-loading-complete', function (e) {
+                scope.$on('my-loading-complete', function () {
                     element.css({ "display": "none" });
                 });
             },
@@ -71,6 +79,10 @@
         return {
             restrict: 'A',
             link: function (scope, element, attrs) {
+
+                var limit = 10;
+                var global = null;
+                var globalCount = 0;
 
                 var stack_context = {
                     "dir1": "right",
@@ -97,6 +109,7 @@
                             addClass: "btn-danger",
                             click: function (notice) {
                                 // TODO redirect here using $locationProvider
+                                // TODO remove notice from noticies list
                             }
                         }]
                     }
@@ -107,13 +120,31 @@
                     if(scope.noticies === undefined)
                         scope.noticies = new Array();
 
-                    scope.noticies.push(new PNotify(opts));
+                    globalCount++;
+                    if(scope.noticies.length < limit)
+                        scope.noticies.push(new PNotify(opts));
+                    else if (scope.noticies.length >= limit) {
+                        if (global !== null) {
+                            global.remove();
+                        }
+
+                        opts.text = "There are more than " + globalCount + " errors";
+                        global = new PNotify(opts);
+                    }
                 });
 
-                scope.$on('on-error-notification-clear-all', function (evt, args) {
+                scope.$on('on-error-notification-clear-all', function () {
                     $.each(scope.noticies, function (index, value) {
                         value.remove();
                     });
+
+                    scope.noticies.length = 0;
+                    if (global !== null) {
+                        global.remove();
+                    }
+
+                    global = null;
+                    globalCount = 0;
                 });
             },
         };
