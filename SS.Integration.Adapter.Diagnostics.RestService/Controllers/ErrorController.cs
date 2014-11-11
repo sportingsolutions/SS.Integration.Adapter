@@ -17,7 +17,7 @@ using System.Net;
 using System.Net.Http;
 using System.Web.Http;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
+namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
 {
     
     public class ErrorController : ApiController

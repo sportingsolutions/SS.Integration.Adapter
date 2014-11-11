@@ -12,16 +12,15 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-namespace SS.Integration.Adapter.Diagnostics.RestService.Models
+namespace SS.Integration.Adapter.Diagnostics.Model.Interface
 {
-    public class AdapterStatus
+    public interface IAdapterDetails
     {
-        public bool IsRunning { get; set; }
-        public string UdapiSDKVersion { get; set; }
-        public string AdapterVersion { get; set; }
-        public string PluginName { get; set; }
-        public string PluginVersion { get; set; }
-        public string RunningThreads { get; set; }
-        public string MemoryUsage { get; set; }
+        string UdapiSDKVersion { get; }
+        string AdapterVersion { get; }
+        string PluginName { get; }
+        string PluginVersion { get; }
+        string RunningThreads { get; }
+        string MemoryUsage { get; }
     }
 }

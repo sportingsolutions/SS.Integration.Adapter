@@ -14,7 +14,7 @@
 
 using System.Net.Http;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService.Handlers
+namespace SS.Integration.Adapter.Diagnostics.RestService.Handlers
 {
     public class MediaTypeHeaderDelegate : DelegatingHandler
     {

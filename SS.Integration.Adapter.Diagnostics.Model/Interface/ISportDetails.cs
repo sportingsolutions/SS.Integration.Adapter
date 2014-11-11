@@ -14,28 +14,12 @@
 
 using System.Collections.Generic;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService.Models
+namespace SS.Integration.Adapter.Diagnostics.Model.Interface
 {
-    public class FixtureDetail : FixtureOverview
+    interface ISportDetails
     {
-        public enum ConnectionStatus
-        {
-            CONNECTED = 0,
-            CONNECTING = 1,
-            DISCONNECTED = 2,
-        }
+        string Name { get; }
 
-        public FixtureDetail()
-        {
-            ProcessingEntries = new List<FixtureProcessingEntry>();
-        }
-
-        public ConnectionStatus ConnectionState { get; set; }
-
-        public bool IsIgnored { get; set; }
-
-        public bool IsDeleted { get; set; }
-
-        public List<FixtureProcessingEntry> ProcessingEntries { get; private set; }
+        IEnumerable<IFixtureOverview> Fixtures { get; }
     }
 }

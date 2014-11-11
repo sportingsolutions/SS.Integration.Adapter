@@ -14,7 +14,7 @@
 
 using System;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService.Models
+namespace SS.Integration.Adapter.Diagnostics.RestService.Models
 {
     public class FixtureOverview
     {

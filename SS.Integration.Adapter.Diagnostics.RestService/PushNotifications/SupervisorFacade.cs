@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 using log4net;
 using Microsoft.AspNet.SignalR;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService.PushNotifications
+namespace SS.Integration.Adapter.Diagnostics.RestService.PushNotifications
 {
     public class SupervisorFacade
     {

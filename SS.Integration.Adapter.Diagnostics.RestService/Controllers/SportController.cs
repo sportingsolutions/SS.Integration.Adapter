@@ -15,10 +15,10 @@
 using System.Net.Http;
 using System.Web.Http;
 using System.Net;
-using SS.Integration.Adapter.Diagnostic.RestService.Attributes;
-using SS.Integration.Adapter.Diagnostic.RestService.Models;
+using SS.Integration.Adapter.Diagnostics.RestService.Attributes;
+using SS.Integration.Adapter.Diagnostics.RestService.Models;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
+namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
 {
     [HandleServerError]
     [RoutePrefix("api/supervisor")]
@@ -33,7 +33,7 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
         public HttpResponseMessage GetSports()
         {
             
-            System.Collections.Generic.List<SportDetail> sports = new System.Collections.Generic.List<SportDetail>();
+            System.Collections.Generic.List<SportDetails> sports = new System.Collections.Generic.List<SportDetails>();
             foreach(var sport in new[] {"Football", "RugbyUnion", "RugbyLeague", "Darts", "Cricket", "TestCricket", "AmericanFootball", "Basketball", "Baseball", "HorseRacing"})
             {
                 sports.Add(GenerateMockedSportDetail(sport));
@@ -57,9 +57,9 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
 
-        private SportDetail GenerateMockedSportDetail(string sportCode)
+        private SportDetails GenerateMockedSportDetail(string sportCode)
         {
-            SportDetail detail = new SportDetail(sportCode);
+            SportDetails detail = new SportDetails(sportCode);
             detail.Fixtures.Add(new FixtureOverview { Id = "1", IsStreaming = true, State = FixtureOverview.FixtureState.Running, Competition = "Premier League", CompetitionId = "123212112", StartTime = new System.DateTime(2014, 2, 17, 9, 0, 0), Description = "Chelsea v QPR", Sequence = "10" });
             detail.Fixtures.Add(new FixtureOverview { Id = "2", IsStreaming = true, State = FixtureOverview.FixtureState.PreMatch, IsInErrorState = true, Competition = "Premier League", CompetitionId = "ffffff", StartTime = new System.DateTime(2014, 2, 17, 14, 0, 0), Description = "Manchester United v Arsenal", Sequence = "12" });
             detail.Fixtures.Add(new FixtureOverview { Id = "3", IsStreaming = false, State = FixtureOverview.FixtureState.Over, Competition = "Champions League", CompetitionId = "AAAA", StartTime = new System.DateTime(2014, 3, 18, 20, 0, 0), Description = "Tottenham v Juventus", Sequence = "84" });

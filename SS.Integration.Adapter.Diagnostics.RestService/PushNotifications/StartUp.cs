@@ -15,8 +15,8 @@
 using Microsoft.Owin;
 using Owin;
 
-[assembly: OwinStartup(typeof(SS.Integration.Adapter.Diagnostic.RestService.PushNotifications.StartUp))]
-namespace SS.Integration.Adapter.Diagnostic.RestService.PushNotifications
+[assembly: OwinStartup(typeof(SS.Integration.Adapter.Diagnostics.RestService.PushNotifications.StartUp))]
+namespace SS.Integration.Adapter.Diagnostics.RestService.PushNotifications
 {
     public class StartUp
     {

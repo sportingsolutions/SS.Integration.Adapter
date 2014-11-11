@@ -15,10 +15,10 @@
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
-using SS.Integration.Adapter.Diagnostic.RestService.Attributes;
-using SS.Integration.Adapter.Diagnostic.RestService.Models;
+using SS.Integration.Adapter.Diagnostics.RestService.Attributes;
+using SS.Integration.Adapter.Diagnostics.RestService.Models;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
+namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
 {
     [HandleServerError]
     [RoutePrefix("api/supervisor/fixture")]
@@ -29,7 +29,7 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
         [HttpGet]
         public HttpResponseMessage GetDetails(string fixtureId)
         {
-            var tmp = new FixtureDetail
+            var tmp = new FixtureDetails
             {
                 Id = "asdas341",
                 IsStreaming = true,
@@ -41,7 +41,7 @@ namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
                 Sequence = "5",
                 IsIgnored = false,
                 IsDeleted = false,
-                ConnectionState = FixtureDetail.ConnectionStatus.CONNECTED
+                ConnectionState = FixtureDetails.ConnectionStatus.CONNECTED
             };
 
             tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "1", Epoch = "1", IsUpdate = false, State = FixtureProcessingEntry.FixtureProcessingState.PROCESSED, Timestamp = new System.DateTime(2013, 06, 11, 14, 33, 0)});

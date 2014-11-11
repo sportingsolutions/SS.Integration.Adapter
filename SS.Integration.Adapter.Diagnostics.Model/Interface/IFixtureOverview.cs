@@ -12,24 +12,38 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Collections.Generic;
+using System;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService.Models
+namespace SS.Integration.Adapter.Diagnostics.Model.Interface
 {
-    public class SportDetail
+    public enum FixtureState
     {
-        public SportDetail(string sportName)
-        {
-            Name = sportName;
-            Fixtures = new List<FixtureOverview>();
-        }
+        Setup = 0,
+        Ready = 1,
+        PreMatch = 2,
+        Running = 3,
+        Over = 4
+    }
 
-        public string Name { get; private set; }
+    interface IFixtureOverview
+    {
+        
+        string Id { get; set; }
 
-        public List<FixtureOverview> Fixtures
-        {
-            get;
-            private set;
-        }
+        bool IsStreaming { get; }
+
+        FixtureState State { get; }
+
+        bool IsInErrorState { get; }
+
+        DateTime StartTime { get; }
+
+        string Competition { get; }
+
+        string CompetitionId { get; }
+
+        string Description { get; }
+
+        string Sequence { get; }
     }
 }

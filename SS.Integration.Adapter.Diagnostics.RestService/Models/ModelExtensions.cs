@@ -15,7 +15,7 @@
 
 using Newtonsoft.Json;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService.Models
+namespace SS.Integration.Adapter.Diagnostics.RestService.Models
 {
     public static class ModelExtensions
     {

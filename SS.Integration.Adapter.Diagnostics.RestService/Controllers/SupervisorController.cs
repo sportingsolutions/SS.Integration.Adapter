@@ -15,10 +15,10 @@
 using System.Net.Http;
 using System.Web.Http;
 using System.Net;
-using SS.Integration.Adapter.Diagnostic.RestService.Attributes;
-using SS.Integration.Adapter.Diagnostic.RestService.Models;
+using SS.Integration.Adapter.Diagnostics.RestService.Attributes;
+using SS.Integration.Adapter.Diagnostics.RestService.Models;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService.Controllers
+namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
 {
     [HandleServerError]
     [RoutePrefix("api/supervisor")]

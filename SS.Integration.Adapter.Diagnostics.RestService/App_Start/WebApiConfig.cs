@@ -13,10 +13,8 @@
 //limitations under the License.
 
 using System.Web.Http;
-using System.Web.Http.Dispatcher;
-using SS.Integration.Adapter.Diagnostic.RestService.Handlers;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService
+namespace SS.Integration.Adapter.Diagnostics.RestService
 {
     public static class WebApiConfig
     {
