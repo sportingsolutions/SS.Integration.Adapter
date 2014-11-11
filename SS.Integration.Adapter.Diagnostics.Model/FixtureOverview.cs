@@ -22,6 +22,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         private MatchStatus? _matchStatus;
         private int? _sequence;
         private int? _epoch;
+        private Exception _lastError;
 
 
         public FixtureOverview()
@@ -108,6 +109,16 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             }
         }
 
+        public Exception LastError
+        {
+            get { return _lastError; }
+            set
+            {
+                OnChanged(_lastError != null ? _lastError.ToString() : null,value != null ? value.ToString() : null);
+                _lastError = value;
+            }
+        }
+
         public bool? IsOver
         {
             get { return _isOver; }
@@ -116,7 +127,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
                 _isOver = value; 
             }
         }
-
+        
         private void OnChanged<T>(T? oldValue, T? newValue, [CallerMemberName] string callerName = null) where T:struct
         {
             var oldValueString = oldValue.HasValue ? oldValue.Value.ToString() : null;

@@ -830,11 +830,11 @@ namespace SS.Integration.Adapter
             }
         }
 
-        private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false)
+        public void RetrieveAndProcessSnapshot(bool hasEpochChanged = false,bool skipMarketRules = false)
         {
             var snapshot = RetrieveSnapshot();
             if (snapshot != null)
-                ProcessSnapshot(snapshot, true, hasEpochChanged, !IsErrored);
+                ProcessSnapshot(snapshot, true, hasEpochChanged, !IsErrored,skipMarketRules);
         }
 
         private void RetrieveAndProcessSnapshotIfNeeded()
@@ -875,8 +875,8 @@ namespace SS.Integration.Adapter
             }
 
         }
-
-        private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool setErrorState = true)
+        
+        private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool setErrorState = true, bool skipAnyRules = false)
         {
             var logString = isFullSnapshot ? "snapshot" : "stream update";
 
@@ -896,9 +896,11 @@ namespace SS.Integration.Adapter
                 _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_IN_PLAY, is_inplay ? "1" : "0");
                 _Stats.AddValue(AdapterCoreKeys.FIXTURE_MARKETS_IN_SNAPSHOT, snapshot.Markets.Count.ToString());
 
-                _logger.DebugFormat("Applying market rules for {0}", snapshot);
-
-                _marketsRuleManager.ApplyRules(snapshot);
+                if (!skipAnyRules)
+                {
+                    _logger.DebugFormat("Applying market rules for {0}", snapshot);
+                    _marketsRuleManager.ApplyRules(snapshot);
+                }
 
                 if (isFullSnapshot)
                     _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);

@@ -40,6 +40,7 @@ namespace SS.Integration.Adapter
             return _listeners[fixtureId];
         }
 
+       
         public void RemoveDeletedFixtures(string sport, Dictionary<string, IResourceFacade> currentfixturesLookup)
         {
             var allFixturesForSport = _listeners.Where(x => string.Equals(x.Value.Sport, sport, StringComparison.Ordinal));
@@ -151,7 +152,7 @@ namespace SS.Integration.Adapter
             }
         }
 
-        public void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector)
+        public virtual void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector)
         {
             try
             {
@@ -235,14 +236,14 @@ namespace SS.Integration.Adapter
             return _listeners.ContainsKey(fixtureId);
         }
 
-        public void StartStreaming(string fixtureId)
+        public virtual void StartStreaming(string fixtureId)
         {
             if (!HasStreamListener(fixtureId)) return;
 
             _listeners[fixtureId].Start();
         }
 
-        public void StopStreaming(string fixtureId)
+        public virtual void StopStreaming(string fixtureId)
         {
             if (!HasStreamListener(fixtureId)) return;
 

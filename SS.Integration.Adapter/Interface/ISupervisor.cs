@@ -11,12 +11,6 @@ namespace SS.Integration.Adapter.Interface
 {
     public interface ISupervisor : IStreamListenerManager
     {
-        void AddFixture(Fixture fixture);
-        void RemoveFixture(string fixtureId);
-
-        void UpdateFixture(Fixture fixture);
-
-        void OnConnected(string fixtureId);
-        void OnError(string fixtureId, Exception ex);
+        void ForceSnapshot(string fixtureId);
     }
 }

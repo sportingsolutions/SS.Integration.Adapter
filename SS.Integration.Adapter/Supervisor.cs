@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Messaging;
@@ -68,7 +69,7 @@ namespace SS.Integration.Adapter
 
         private void StreamListenerStop(object sender, StreamListenerEventArgs e)
         {
-            throw new NotImplementedException();
+            
         }
 
         private void StreamListenerSuspended(object sender, StreamListenerEventArgs e)
@@ -93,9 +94,9 @@ namespace SS.Integration.Adapter
 
         private void StreamListenerErrored(object sender, StreamListenerEventArgs e)
         {
-            throw new NotImplementedException();
+            UpdateStateFromEventDetails(e);
         }
-
+        
         private void StreamListenerDisconnected(object sender, StreamListenerEventArgs e)
         {
             throw new NotImplementedException();
@@ -105,73 +106,66 @@ namespace SS.Integration.Adapter
         {
             throw new NotImplementedException();
         }
-
-        public void AddFixture(Fixture fixture)
+        
+        public void ForceSnapshot(string fixtureId)
         {
-            _logger.DebugFormat("Something worked...");
-
-        }
-
-        public void RemoveFixture(string fixtureId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void UpdateFixture(Fixture fixture)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void OnConnected(string fixtureId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void OnErrored(string fixtureId, string message)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void OnError(string fixtureId, Exception ex)
-        {
-            throw new NotImplementedException();
+            var listener = GetStreamListener(fixtureId) as StreamListener;
+            if(listener == null)
+                throw new NullReferenceException("Can't convert Listener to StreamListener in ForceSnapshot method");
+            
+            //skips market rules
+            listener.RetrieveAndProcessSnapshot(false,true);
         }
 
         public override void StartStreaming(string fixtureId)
         {
             base.StartStreaming(fixtureId);
-            UpdatePropertiesBasedOnStreamListener(fixtureId);
+            UpdateStateFromStreamListener(fixtureId);
 
         }
 
-        private void UpdatePropertiesBasedOnStreamListener(string fixtureId)
+        private void UpdateStateFromStreamListener(string fixtureId)
         {
             var listener = GetStreamListener(fixtureId);
+            UpdateStateFromStreamListener(listener as StreamListener);
+        }
+
+        private void UpdateStateFromEventDetails(StreamListenerEventArgs streamListenerEventArgs)
+        {
+            UpdateStateFromStreamListener(streamListenerEventArgs.Listener as StreamListener);
+            var fixtureOverview = GetFixtureOverview(streamListenerEventArgs.Listener.FixtureId);
+            fixtureOverview.Sequence = streamListenerEventArgs.CurrentSequence;
+            fixtureOverview.Epoch = streamListenerEventArgs.Epoch;
             
+            if (streamListenerEventArgs.Exception != null)
+                fixtureOverview.LastError = streamListenerEventArgs.Exception;
+        }
+
+        private void UpdateStateFromStreamListener(StreamListener listener)
+        {
             //Nothing to update
             if (listener == null)
                 return;
 
             //this is accessing a dictionary object
-            var fixtureOverview = GetFixtureOverview(fixtureId);
+            var fixtureOverview = GetFixtureOverview(listener.FixtureId);
 
-            fixtureOverview.Id = fixtureId;
+            fixtureOverview.Id = listener.FixtureId;
             fixtureOverview.IsDeleted = listener.IsFixtureDeleted;
             fixtureOverview.IsStreaming = listener.IsStreaming;
             fixtureOverview.IsOver = listener.IsFixtureEnded;
-
-            var streamListener = listener as StreamListener;
-            
-            //this should be only null in unit tests
-            if(streamListener == null)
-                return;
-
-            fixtureOverview.IsErrored = streamListener.IsErrored;
+            fixtureOverview.IsErrored = listener.IsErrored;
         }
 
         private FixtureOverview GetFixtureOverview(string fixtureId)
         {
             return _fixtures.ContainsKey(fixtureId) ? _fixtures[fixtureId] : _fixtures[fixtureId] = new FixtureOverview();
         }
+
+        private StreamListener GetStreamListenerObject(string fixtureId)
+        {
+            return GetStreamListener(fixtureId) as StreamListener;
+        }
+
     }
 }
