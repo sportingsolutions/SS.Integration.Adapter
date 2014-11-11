@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using log4net;
 using SS.Integration.Adapter.Diagnostics.Model;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
+using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter
 {
@@ -25,6 +27,83 @@ namespace SS.Integration.Adapter
         {
             //_publishAction = publishAction;
             //_publisher = Observable.Buffer(_fixtureEvents, TimeSpan.FromSeconds(1), 10).Subscribe(x => _publishAction(x.ToDictionary(f => f.Id)));
+        }
+
+        public override void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector)
+        {
+            base.CreateStreamListener(resource,stateManager,platformConnector);
+            var listener = GetStreamListener(resource.Id);
+
+            var streamListener = listener as StreamListener;
+            if (streamListener != null)
+            {
+                streamListener.OnConnected += StreamListenerConnected;
+                streamListener.OnDisconnected += StreamListenerDisconnected;
+                streamListener.OnError += StreamListenerErrored;
+                streamListener.OnFlagsChanged += StreamListenerFlagsChanged;
+                streamListener.OnSnapshot += StreamListenerSnapshot;
+                streamListener.OnStreamUpdate += StreamListenerStreamUpdate;
+                streamListener.OnSuspend += StreamListenerSuspended;
+                streamListener.OnStop += StreamListenerStop;
+            }
+        }
+
+        public override void StopStreaming(string fixtureId)
+        {
+            var listener = GetStreamListener(fixtureId);
+            base.StopStreaming(fixtureId);
+
+            var streamListener = listener as StreamListener;
+            if(streamListener == null) return;
+
+            streamListener.OnConnected      -= StreamListenerConnected;
+            streamListener.OnError          -= StreamListenerErrored;
+            streamListener.OnFlagsChanged   -= StreamListenerFlagsChanged;
+            streamListener.OnSnapshot       -= StreamListenerSnapshot;
+            streamListener.OnStreamUpdate   -= StreamListenerStreamUpdate;
+            streamListener.OnSuspend        -= StreamListenerSuspended;
+            streamListener.OnStop           -= StreamListenerStop;
+            streamListener.OnDisconnected   -= StreamListenerDisconnected;
+        }
+
+        private void StreamListenerStop(object sender, StreamListenerEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void StreamListenerSuspended(object sender, StreamListenerEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void StreamListenerStreamUpdate(object sender, StreamListenerEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void StreamListenerSnapshot(object sender, StreamListenerEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void StreamListenerFlagsChanged(object sender, StreamListenerEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void StreamListenerErrored(object sender, StreamListenerEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void StreamListenerDisconnected(object sender, StreamListenerEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void StreamListenerConnected(object sender, StreamListenerEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         public void AddFixture(Fixture fixture)
@@ -58,7 +137,7 @@ namespace SS.Integration.Adapter
             throw new NotImplementedException();
         }
 
-        public void StartStreaming(string fixtureId)
+        public override void StartStreaming(string fixtureId)
         {
             base.StartStreaming(fixtureId);
             UpdatePropertiesBasedOnStreamListener(fixtureId);
