@@ -179,6 +179,11 @@ namespace SS.Integration.Adapter
             return _changeTracker;
         }
 
+        public IEnumerable<FixtureOverview> GetFixtures()
+        {
+            throw new NotImplementedException();
+        }
+
         private FixtureOverview GetFixtureOverview(string fixtureId)
         {
             return _fixtures.ContainsKey(fixtureId) ? _fixtures[fixtureId] : _fixtures[fixtureId] = new FixtureOverview();
