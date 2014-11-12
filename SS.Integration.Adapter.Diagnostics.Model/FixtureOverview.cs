@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -23,6 +24,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         private int? _sequence;
         private int? _epoch;
         private Exception _lastError;
+        private bool? _isSuspended;
 
 
         public FixtureOverview()
@@ -109,6 +111,16 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             }
         }
 
+        public bool? IsSuspended
+        {
+            get { return _isSuspended; }
+            set
+            {
+                OnChanged(_isSuspended, value);
+                _isSuspended = value;
+            }
+        }
+
         public Exception LastError
         {
             get { return _lastError; }
@@ -148,7 +160,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
 
             _changes[callerName] = propertyChanged;
         }
-
+        
         public IEnumerable<PropertyChanged> GetChanges()
         {
             return _changes.Values;

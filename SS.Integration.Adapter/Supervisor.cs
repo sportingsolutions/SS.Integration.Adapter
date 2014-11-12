@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Messaging;
 using System.Text;
@@ -21,6 +24,7 @@ namespace SS.Integration.Adapter
         private ILog _logger = LogManager.GetLogger(typeof(Supervisor));
         
         private ConcurrentDictionary<string, FixtureOverview> _fixtures;
+        private Subject<FixtureOverview> _changeTracker = new Subject<FixtureOverview>();
         private IDisposable _publisher;
 
         public Supervisor(ISettings settings)
@@ -69,27 +73,37 @@ namespace SS.Integration.Adapter
 
         private void StreamListenerStop(object sender, StreamListenerEventArgs e)
         {
-            
+            UpdateStateFromEventDetails(e);
         }
 
         private void StreamListenerSuspended(object sender, StreamListenerEventArgs e)
         {
-            throw new NotImplementedException();
+            var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId);
+            fixtureOverview.IsSuspended = true;
+            UpdateStateFromEventDetails(e);
         }
 
         private void StreamListenerStreamUpdate(object sender, StreamListenerEventArgs e)
         {
-            throw new NotImplementedException();
+            var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId);
+
+            //assumption
+            fixtureOverview.IsSuspended = false;
+            UpdateStateFromEventDetails(e);
         }
 
         private void StreamListenerSnapshot(object sender, StreamListenerEventArgs e)
         {
-            throw new NotImplementedException();
+            var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId);
+            
+            //assumption
+            fixtureOverview.IsSuspended = false;
+            UpdateStateFromEventDetails(e);
         }
 
         private void StreamListenerFlagsChanged(object sender, StreamListenerEventArgs e)
         {
-            throw new NotImplementedException();
+            UpdateStateFromEventDetails(e);
         }
 
         private void StreamListenerErrored(object sender, StreamListenerEventArgs e)
@@ -99,12 +113,12 @@ namespace SS.Integration.Adapter
         
         private void StreamListenerDisconnected(object sender, StreamListenerEventArgs e)
         {
-            throw new NotImplementedException();
+            UpdateStateFromEventDetails(e);
         }
 
         private void StreamListenerConnected(object sender, StreamListenerEventArgs e)
         {
-            throw new NotImplementedException();
+            UpdateStateFromEventDetails(e);
         }
         
         public void ForceSnapshot(string fixtureId)
@@ -139,6 +153,8 @@ namespace SS.Integration.Adapter
             
             if (streamListenerEventArgs.Exception != null)
                 fixtureOverview.LastError = streamListenerEventArgs.Exception;
+
+            _changeTracker.OnNext(fixtureOverview);
         }
 
         private void UpdateStateFromStreamListener(StreamListener listener)
@@ -155,6 +171,12 @@ namespace SS.Integration.Adapter
             fixtureOverview.IsStreaming = listener.IsStreaming;
             fixtureOverview.IsOver = listener.IsFixtureEnded;
             fixtureOverview.IsErrored = listener.IsErrored;
+        }
+
+        
+        public IObservable<FixtureOverview> GetFixtureOverviewStream()
+        {
+            return _changeTracker;
         }
 
         private FixtureOverview GetFixtureOverview(string fixtureId)

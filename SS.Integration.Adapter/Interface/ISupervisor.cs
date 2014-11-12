@@ -12,5 +12,6 @@ namespace SS.Integration.Adapter.Interface
     public interface ISupervisor : IStreamListenerManager
     {
         void ForceSnapshot(string fixtureId);
+        IObservable<FixtureOverview> GetFixtureOverviewStream();
     }
 }
