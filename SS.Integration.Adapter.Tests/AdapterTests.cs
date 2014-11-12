@@ -244,7 +244,7 @@ namespace SS.Integration.Adapter.Tests
             service.Setup(x => x.IsConnected).Returns(true);
 
 
-            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object,supervisor.Object);
+            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object,new StreamListenerManager(settings.Object));
             supervisor.Object.StreamCreated += adapter_StreamCreated;
 
             adapter.Start();

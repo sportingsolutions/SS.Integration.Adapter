@@ -13,5 +13,6 @@ namespace SS.Integration.Adapter.Interface
     {
         void ForceSnapshot(string fixtureId);
         IObservable<FixtureOverview> GetFixtureOverviewStream();
+        IEnumerable<FixtureOverview> GetFixtures();
     }
 }
