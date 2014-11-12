@@ -12,14 +12,21 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Collections.Generic;
 
-namespace SS.Integration.Adapter.Diagnostics.Model.Interface
+using Newtonsoft.Json;
+
+namespace SS.Integration.Adapter.Diagnostics.RestService.Models
 {
-    interface ISportDetails
+    public static class ModelExtensions
     {
-        string Name { get; }
+        private static readonly JsonSerializerSettings _settings = new JsonSerializerSettings
+        {
+            Formatting = Formatting.None
+        };
 
-        IEnumerable<IFixtureOverview> Fixtures { get; }
+        public static string ToJson(this AdapterStatus status)
+        {
+            return JsonConvert.SerializeObject(status, _settings);
+        }
     }
 }

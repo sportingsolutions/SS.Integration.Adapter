@@ -24,6 +24,20 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
     {
         private const string DEFAULT_REDIRECT_PAGE = "/ui/index.html";
 
+        /**
+         * This allows to redirect the request to DEFAULT_REDIRECT_PAGE if the 
+         * requested uri doesn't exist and it starts with "/ui". This is to
+         * solve issues with client MVC frameworks that use logical urls (CMS style)
+         * instead of physical urls (i.e /ui/sports when the physical path is /ui/partials/sports) and
+         * the user copy and paste the url (hence, going outside the framework routing capabilities).
+         * 
+         * This controller will send out a 301 status code with "Location" header build as
+         * DEFAULT_REDIRECT_PAGE + ?path=RequestedUri. (it is responsability of the client
+         * re-initialise the framework routing capability (see /ui/js/app.js)
+         *
+         * It sends instead a standard 404 if the requested uri doesn't start with "/ui"
+         * 
+         */
         [HttpGet, HttpPost, HttpPut, HttpDelete, HttpHead, HttpOptions, AcceptVerbs("PATCH")]
         public HttpResponseMessage Handle404()
         {
@@ -38,7 +52,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
             var responseMessage = new HttpResponseMessage(HttpStatusCode.NotFound)
             {
                 ReasonPhrase = "The requested resource is not found",
-                
+
             };
             return responseMessage;
         }

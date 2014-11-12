@@ -14,36 +14,29 @@
 
 using System;
 
-namespace SS.Integration.Adapter.Diagnostics.Model.Interface
+namespace SS.Integration.Adapter.Diagnostics.RestService.Models
 {
-    public enum FixtureState
+    public class FixtureProcessingEntry
     {
-        Setup = 0,
-        Ready = 1,
-        PreMatch = 2,
-        Running = 3,
-        Over = 4
-    }
+        public enum FixtureProcessingState 
+        {
+            PROCESSED = 0,
+            PROCESSING = 1,
+            SKIPPED = 2,
+        }
 
-    interface IFixtureOverview
-    {
-        
-        string Id { get; set; }
+        public DateTime Timestamp { get; set; }
 
-        bool IsStreaming { get; }
+        public string Sequence { get; set; }
 
-        FixtureState State { get; }
+        public string Epoch { get; set; }
 
-        bool IsInErrorState { get; }
+        public string EpochChangeReason { get; set; }
 
-        DateTime StartTime { get; }
+        public bool IsUpdate { get; set; }
 
-        string Competition { get; }
+        public string Exception { get; set; }
 
-        string CompetitionId { get; }
-
-        string Description { get; }
-
-        string Sequence { get; }
+        public FixtureProcessingState State { get; set; }
     }
 }

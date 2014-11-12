@@ -12,17 +12,18 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using Microsoft.Owin;
-using Owin;
+using System;
+using SS.Integration.Adapter.Diagnostics.RestService;
 
-[assembly: OwinStartup(typeof(SS.Integration.Adapter.Diagnostics.RestService.PushNotifications.StartUp))]
-namespace SS.Integration.Adapter.Diagnostics.RestService.PushNotifications
+namespace SS.Integration.Adapter.Diagnostics.RestServiceStartup
 {
-    public class StartUp
+    public class Program
     {
-        public void Configuration(IAppBuilder app)
+        public static void Main()
         {
-            app.MapSignalR("/streaming", new Microsoft.AspNet.SignalR.HubConfiguration { EnableJavaScriptProxies = false, EnableJSONP = false, EnableDetailedErrors = true });   
+            StartUp start = new StartUp();
+            start.Start();
+            Console.ReadLine();
         }
     }
 }

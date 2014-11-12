@@ -18,19 +18,12 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Models
 {
     public class FixtureDetails : FixtureOverview
     {
-        public enum ConnectionStatus
-        {
-            CONNECTED = 0,
-            CONNECTING = 1,
-            DISCONNECTED = 2,
-        }
-
         public FixtureDetails()
         {
             ProcessingEntries = new List<FixtureProcessingEntry>();
         }
 
-        public ConnectionStatus ConnectionState { get; set; }
+        //public ConnectionStatus ConnectionState { get; set; }
 
         public bool IsIgnored { get; set; }
 

@@ -12,16 +12,24 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
+using System.Collections.Generic;
 
-namespace SS.Integration.Adapter.Diagnostics.Model.Interface
+namespace SS.Integration.Adapter.Diagnostics.RestService.Models
 {
-    public interface IErrorNotification
+    public class SportDetails
     {
-        string ErrorDescription { get; }
+        public SportDetails(string sportName)
+        {
+            Name = sportName;
+            Fixtures = new List<FixtureOverview>();
+        }
 
-        string FixtureId { get; }
+        public string Name { get; private set; }
 
-        DateTime Timestamp { get; }
+        public List<FixtureOverview> Fixtures
+        {
+            get;
+            private set;
+        }
     }
 }

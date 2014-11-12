@@ -41,7 +41,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
                 Sequence = "5",
                 IsIgnored = false,
                 IsDeleted = false,
-                ConnectionState = FixtureDetails.ConnectionStatus.CONNECTED
+                //ConnectionState = FixtureDetails.ConnectionStatus.CONNECTED
             };
 
             tmp.ProcessingEntries.Add(new FixtureProcessingEntry { Sequence = "1", Epoch = "1", IsUpdate = false, State = FixtureProcessingEntry.FixtureProcessingState.PROCESSED, Timestamp = new System.DateTime(2013, 06, 11, 14, 33, 0)});

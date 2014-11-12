@@ -18,7 +18,7 @@
 <html lang="en" data-ng-app="adapterSupervisorApp">
 <head>
     <meta charset="utf-8" />
-    <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+    <link href="/ui/favicon.ico" rel="shortcut icon" type="image/x-icon" />
     <meta name="viewport" content="width=device-width" />
     <title>Sporting Solution - Adapter Supervisor</title>
 
@@ -28,9 +28,8 @@
 
     <!-- scripts -->
 
-    <!-- do not move jquery of of this directory, as it is also used by SignalR -->
-    <script src="../Scripts/jquery-2.1.1.min.js"></script>
-    <script src="../Scripts/jquery.signalR-2.1.2.min.js"></script>
+    <script src="js/jquery-2.1.1.min.js"></script>
+    <script src="js/jquery.signalR-2.1.2.js"></script>
     <script src="js/pnotify.custom.min.js"></script>
     <script src="js/angular.min.js"></script>
     <script src="js/angular-route.min.js"></script>
@@ -43,7 +42,7 @@
 <body>
 
     <header class="site_header">
-        <a href="/ui/index.html" class="home_link" title="Adapter Supervisor Home">
+        <a href="~/ui/index.html" class="home_link" title="Adapter Supervisor Home">
             <div class="corner"></div>
         </a>
     </header>
@@ -55,7 +54,7 @@
     <div class="container-fluid">
         <div class="row">
 
-            <div data-ng-view></div>
+            <div data-ng-view=""></div>
 
             <div class="col-md-4 well" data-ng-controller="AdapterCtrl as adapter">
 
