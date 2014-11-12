@@ -12,20 +12,10 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-namespace SS.Integration.Adapter.Diagnostic.RestService
+namespace SS.Integration.Adapter.Diagnostics.RestService
 {
     public static class UrlUtilities
     {
         public const string JSON_MEDIA_TYPE = "application/json";
-
-        public static string GetUrl(string path)
-        {
-            return null;
-        }
-
-        public static string GetBaseUrl()
-        {
-            return null;
-        }
     }
 }

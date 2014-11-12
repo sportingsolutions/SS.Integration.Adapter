@@ -22,12 +22,12 @@
     /** @type {ssln.supervisor.config} */
     var myConfig = {
         url: 'http://localhost',
-        port: '58623',
+        port: '9000',
         uiUrlBase: '/ui/',
 
         pushNotification: {
             url: 'http://localhost',
-            port: '58623',
+            port: '9000',
             path: '/streaming',
             hub: 'SupervisorStreaming',
             enabled: true,
@@ -130,7 +130,7 @@
                     connected = true;
                     defered.resolve();
                 })
-                .fail(function () {
+                .fail(function (error) {
                     $log.error('Not conncted to the streaming server');
                     MyConfig.pushNotification.enabled = false;
                     defered.reject();

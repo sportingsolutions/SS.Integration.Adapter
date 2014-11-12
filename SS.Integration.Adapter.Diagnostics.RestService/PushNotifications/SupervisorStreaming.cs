@@ -14,7 +14,7 @@
 
 using Microsoft.AspNet.SignalR;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService.PushNotifications
+namespace SS.Integration.Adapter.Diagnostics.RestService.PushNotifications
 {
     public class SupervisorStreaming : Hub
     {

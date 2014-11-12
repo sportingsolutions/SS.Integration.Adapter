@@ -12,17 +12,23 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using Microsoft.Owin;
-using Owin;
+using System.Collections.Generic;
 
-[assembly: OwinStartup(typeof(SS.Integration.Adapter.Diagnostic.RestService.PushNotifications.StartUp))]
-namespace SS.Integration.Adapter.Diagnostic.RestService.PushNotifications
+namespace SS.Integration.Adapter.Diagnostics.RestService.Models
 {
-    public class StartUp
+    public class FixtureDetails : FixtureOverview
     {
-        public void Configuration(IAppBuilder app)
+        public FixtureDetails()
         {
-            app.MapSignalR("/streaming", new Microsoft.AspNet.SignalR.HubConfiguration { EnableJavaScriptProxies = false, EnableJSONP = false, EnableDetailedErrors = true });   
+            ProcessingEntries = new List<FixtureProcessingEntry>();
         }
+
+        //public ConnectionStatus ConnectionState { get; set; }
+
+        public bool IsIgnored { get; set; }
+
+        public bool IsDeleted { get; set; }
+
+        public List<FixtureProcessingEntry> ProcessingEntries { get; private set; }
     }
 }

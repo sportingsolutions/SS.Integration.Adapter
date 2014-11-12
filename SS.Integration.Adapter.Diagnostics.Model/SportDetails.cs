@@ -12,16 +12,24 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Web.Http;
+using System.Collections.Generic;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService
+namespace SS.Integration.Adapter.Diagnostics.RestService.Models
 {
-    public class WebApiApplication : System.Web.HttpApplication
+    public class SportDetails
     {
-
-        protected void Application_Start()
+        public SportDetails(string sportName)
         {
-            GlobalConfiguration.Configure(WebApiConfig.Register);
+            Name = sportName;
+            Fixtures = new List<FixtureOverview>();
+        }
+
+        public string Name { get; private set; }
+
+        public List<FixtureOverview> Fixtures
+        {
+            get;
+            private set;
         }
     }
 }

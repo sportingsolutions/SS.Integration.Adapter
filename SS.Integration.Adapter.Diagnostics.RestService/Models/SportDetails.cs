@@ -12,16 +12,24 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System.Collections.Generic;
+
 namespace SS.Integration.Adapter.Diagnostics.RestService.Models
 {
-    public class AdapterStatus
+    public class SportDetails
     {
-        public bool IsRunning { get; set; }
-        public string UdapiSDKVersion { get; set; }
-        public string AdapterVersion { get; set; }
-        public string PluginName { get; set; }
-        public string PluginVersion { get; set; }
-        public string RunningThreads { get; set; }
-        public string MemoryUsage { get; set; }
+        public SportDetails(string sportName)
+        {
+            Name = sportName;
+            Fixtures = new List<FixtureOverview>();
+        }
+
+        public string Name { get; private set; }
+
+        public List<FixtureOverview> Fixtures
+        {
+            get;
+            private set;
+        }
     }
 }

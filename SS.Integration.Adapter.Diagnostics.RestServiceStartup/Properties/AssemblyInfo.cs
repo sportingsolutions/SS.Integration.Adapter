@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("SS.Integration.Adapter.Diagnostics.RestService")]
+[assembly: AssemblyTitle("SS.Integration.Adapter.Diagnostics.RestServiceStartup")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("SS.Integration.Adapter.Diagnostics.RestService")]
+[assembly: AssemblyProduct("SS.Integration.Adapter.Diagnostics.RestServiceStartup")]
 [assembly: AssemblyCopyright("Copyright ©  2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("a93ea2e4-560c-4f5b-b2ef-8991c62ea69e")]
+[assembly: Guid("d8014a98-453d-4676-9013-7817fbaf6f21")]
 
 // Version information for an assembly consists of the following four values:
 //

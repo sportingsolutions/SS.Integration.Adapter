@@ -12,24 +12,18 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Collections.Generic;
+using System;
+using SS.Integration.Adapter.Diagnostics.RestService;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService.Models
+namespace SS.Integration.Adapter.Diagnostics.RestServiceStartup
 {
-    public class SportDetail
+    public class Program
     {
-        public SportDetail(string sportName)
+        public static void Main()
         {
-            Name = sportName;
-            Fixtures = new List<FixtureOverview>();
-        }
-
-        public string Name { get; private set; }
-
-        public List<FixtureOverview> Fixtures
-        {
-            get;
-            private set;
+            StartUp start = new StartUp();
+            start.Start();
+            Console.ReadLine();
         }
     }
 }

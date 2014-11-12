@@ -18,7 +18,7 @@ using System.Web.Http.Filters;
 using log4net;
 using System.Net;
 
-namespace SS.Integration.Adapter.Diagnostic.RestService.Attributes
+namespace SS.Integration.Adapter.Diagnostics.RestService.Attributes
 {
     public class HandleServerErrorAttribute : ExceptionFilterAttribute
     {
