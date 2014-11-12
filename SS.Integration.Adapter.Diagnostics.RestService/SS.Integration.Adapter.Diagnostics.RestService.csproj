@@ -11,8 +11,8 @@
     <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SS.Integration.Adapter.Diagnostic.RestService</RootNamespace>
-    <AssemblyName>SS.Integration.Adapter.Diagnostic.RestService</AssemblyName>
+    <RootNamespace>SS.Integration.Adapter.Diagnostics.RestService</RootNamespace>
+    <AssemblyName>SS.Integration.Adapter.Diagnostics.RestService</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <UseIISExpress>true</UseIISExpress>
     <IISExpressSSLPort />
@@ -103,8 +103,6 @@
     <Content Include="Scripts\jquery-2.1.1.min.js" />
     <Content Include="Scripts\jquery.signalR-2.1.2.js" />
     <Content Include="Scripts\jquery.signalR-2.1.2.min.js" />
-    <Content Include="ui\css\bootstrap-theme.css" />
-    <Content Include="ui\css\bootstrap-theme.min.css" />
     <Content Include="ui\css\bootstrap.css" />
     <Content Include="ui\css\bootstrap.min.css" />
     <Content Include="ui\css\main.css" />
@@ -121,9 +119,9 @@
     <Content Include="ui\js\bootstrap.min.js" />
     <Content Include="ui\js\controllers.js" />
     <Content Include="ui\js\app.js" />
+    <Content Include="ui\js\pnotify.custom.js" />
+    <Content Include="ui\js\pnotify.custom.min.js" />
     <Content Include="ui\js\services.js" />
-    <Content Include="ui\js\ui-bootstrap-tpls-0.11.2.js" />
-    <Content Include="ui\js\ui-bootstrap-tpls-0.11.2.min.js" />
     <Content Include="ui\partials\fixture.html" />
     <Content Include="ui\partials\sport.html" />
     <Content Include="ui\partials\sports.html" />
@@ -149,12 +147,13 @@
     <Compile Include="Models\SportDetail.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PushNotifications\StartUp.cs" />
+    <Compile Include="PushNotifications\SupervisorConstants.cs" />
+    <Compile Include="PushNotifications\SupervisorFacade.cs" />
     <Compile Include="PushNotifications\SupervisorStreaming.cs" />
     <Compile Include="UrlUtilities.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
-    <Content Include="ui\css\bootstrap-theme.css.map" />
     <Content Include="ui\css\bootstrap.css.map" />
     <Content Include="ui\fonts\glyphicons-halflings-regular.eot" />
     <Content Include="ui\fonts\glyphicons-halflings-regular.ttf" />

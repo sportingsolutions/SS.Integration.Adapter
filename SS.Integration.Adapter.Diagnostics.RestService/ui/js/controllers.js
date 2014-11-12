@@ -21,7 +21,19 @@
 
     var controllers = angular.module('adapterSupervisorControllers', []);
 
+    // models used by the angularjs' controllers - most of them
+    // expand the data received by the server by adding extra data
     var models = {
+
+        AdapterDetail: function AdapterDetail(){
+
+            this.AdapterVersion = "";
+            this.UdapiSDKVersion = "";
+            this.PluginName = "";
+            this.PluginVersion = "";
+            this.RunningThreads = "";
+            this.MemoryUsage = "";
+        },
 
         SportDetail: function SportDetail() {
 
@@ -134,6 +146,7 @@
         },
     };
 
+    // set of helper functions
     var fn = {
     
         GetSportsDetails : function(array, config)
@@ -189,16 +202,30 @@
         },
     };
 
+
+    /**
+     * AdapterCtrl controller: used to display details about the adapter,
+     * and error notifications. It listens for push notifications regarding the
+     * adapter's state and any possibile errors 
+     * see:
+     * 1) MyConfig.pushNotifications.events.AdapterUpdate
+     * 2) MyConfig.pushNotifications.events.Errors
+     */
     controllers.controller('AdapterCtrl', ['$scope', '$rootScope', 'Supervisor',
         function ($scope, $rootScope, Supervisor) {
 
-            $rootScope.$broadcast('my-loading-started');
+            // as the current layout (index.html) uses ngView and adds
+            // this controller outside ngView's supervision, its scope
+            // is only destroyed when we leave the ngView's routing capabilities
+            
+            $scope.details = new models.AdapterDetail();
 
-            $scope.details = {};
+            // 1) get the adapter's details
 
             var promise = Supervisor.getAdapterDetails();
-            if (!promise)
-                return;
+            if (!promise) return;
+
+            $rootScope.$broadcast('my-loading-started');
 
             promise['finally'](function () {
                 $rootScope.$broadcast('my-loading-complete');
@@ -208,24 +235,84 @@
                 $scope.details = data;
             });
 
+
+            // 2) subscribe to push notifications
+
+            var config = Supervisor.getConfig();
+
+            var streaming = Supervisor.getStreamingService();
+            streaming.adapterSubscription().subscribe();
+
+            $scope.$on(config.pushNotification.events.Errors, function (events, args) {
+
+                // TODO
+            });
+
+            $scope.$on(config.pushNotification.events.AdapterUpdate, function (events, args) {
+
+                // update the adpter's detail with new data
+                $.extend($scope.details, args);
+                
+            });
+
+
+            // if the scope is destroyed, stop listening to notifications
+            $scope.$on('destroy', function () {
+                streaming.adapterSubscription().unsubscribe();
+            });
+
+
+            
+
+            // TODO: get rid of this code after dev phase is completed
+            this.testNotification = function () {
+                $rootScope.$broadcast('on-error-notification-received', {text: new Date().toString()});
+            }
+
+            // this allows us to clear all the currently displayed notifications
+            this.clearNotifications = function () {
+                $rootScope.$broadcast('on-error-notification-clear-all', { text: new Date().toString() });
+            }
         }]);
 
     controllers.controller('SportListCtrl', ['$scope', '$routeParams', '$rootScope', 'Supervisor',
         function ($scope, $routeParams, $rootScope, Supervisor) {
 
+            // 1) get the list of sports
+
             $scope.sports = [];
+
+            var promise = Supervisor.getListOfSports();
+            if (!promise) return;
 
             // this allows us to display the "waiting layer"
             $rootScope.$broadcast('my-loading-started');
-
-            var promise = Supervisor.getListOfSports();
 
             promise['finally'](function () {
                 $rootScope.$broadcast('my-loading-complete');
             });
 
+
+            // 2) subscribe to push notifications
+            var streaming = Supervisor.getStreamingService();
+
             promise.then(function (data) {
                 $scope.sports = fn.GetSportsDetails(data, Supervisor.getConfig());
+
+                // subscribe to push-notifications
+                $.each($scope.sports, function (index, value) {
+                    var tmp = streaming.sportSubscription(value.Name);
+                    if (tmp != null)
+                        tmp.subscribe();
+                });
+            });
+
+            $scope.$on('destroy', function () {
+                $.each($scope.sports, function (index, value) {
+                    var tmp = streaming.sportSubscription(value.Name);
+                    if (tmp != null)
+                        tmp.unsubscribe();
+                });
             });
 
         }]);

@@ -21,7 +21,6 @@
 
     var app = angular.module('adapterSupervisorApp', [
         'ngRoute',
-        'ui.bootstrap',
 
         'adapterSupervisorControllers',
         'adapterSupervisorServices'
@@ -51,17 +50,101 @@
         };
     });
 
+    /**
+     * Allows to display a "waiting" (modal) layer
+     * 
+     * Brodcast 
+     * 1) "my-loading-started" to show it
+     * 2) "my-loading-complete" to hide it
+     *
+     */
     app.directive("myLoadingIndicator", function () {
+        return {
+            restrict: 'A',
+            link: function (scope, element) {
+
+                scope.$on('my-loading-started', function () {
+                    element.css({ "display": "block" });
+                });
+
+                scope.$on('my-loading-complete', function () {
+                    element.css({ "display": "none" });
+                });
+            },
+        };
+    });
+
+
+    app.directive("myNotifications", function () {
         return {
             restrict: 'A',
             link: function (scope, element, attrs) {
 
-                scope.$on('my-loading-started', function (e) {
-                    element.css({ "display": "block" });
+                var limit = 10;
+                var global = null;
+                var globalCount = 0;
+
+                var stack_context = {
+                    "dir1": "right",
+                    "dir2": "down",
+                    "push": "top",
+                    "firstpos2": 50,
+                    "spacing2": 10,
+                    "context": $("#" + attrs.myNotifications)
+                }
+
+                var opts = {
+                    title: "Something went wrong...",
+                    stack: stack_context,                    
+                    type: "error",
+                    width: "100%",
+                    hide: false,
+                    buttons: {
+                        sticker:false
+                    },
+                    confirm: {
+                        confirm: true,
+                        buttons: [{
+                            text: "Show me",
+                            addClass: "btn-danger",
+                            click: function (notice) {
+                                // TODO redirect here using $locationProvider
+                                // TODO remove notice from noticies list
+                            }
+                        }]
+                    }
+                };
+
+                scope.$on('on-error-notification-received', function (evt, args) {
+                    opts.text = args.text;
+                    if(scope.noticies === undefined)
+                        scope.noticies = new Array();
+
+                    globalCount++;
+                    if(scope.noticies.length < limit)
+                        scope.noticies.push(new PNotify(opts));
+                    else if (scope.noticies.length >= limit) {
+                        if (global !== null) {
+                            global.remove();
+                        }
+
+                        opts.text = "There are more than " + globalCount + " errors";
+                        global = new PNotify(opts);
+                    }
                 });
 
-                scope.$on('my-loading-complete', function (e) {
-                    element.css({ "display": "none" });
+                scope.$on('on-error-notification-clear-all', function () {
+                    $.each(scope.noticies, function (index, value) {
+                        value.remove();
+                    });
+
+                    scope.noticies.length = 0;
+                    if (global !== null) {
+                        global.remove();
+                    }
+
+                    global = null;
+                    globalCount = 0;
                 });
             },
         };

@@ -101,7 +101,7 @@
                             <th class="col-md-1">Status</th>
                             <th class="col-md-7"></th>
                         </tr>
-                        <tr data-ng-repeat-start="update in fixture.GroupedProcessingEntries | orderBy:sequence" data-ng-class="{danger: update.Exception}">
+                        <tr data-ng-repeat-start="update in fixture.GroupedProcessingEntries | orderBy:+sequence" data-ng-class="{danger: update.Exception}">
                             <td class="col-md-1"><strong>{{update.sequence}}</strong></td>
                             <td class="col-md-2"><i>{{update.items[0].Timestamp | date:'dd MMM yyyy hh:mm:ss'}}</i></td>
                             <td class="col-md-1">{{update.items[0].Epoch}}</td>
@@ -114,10 +114,11 @@
                                 <span class="right glyphicon glyphicon-info-sign clickable" data-ng-show="update.items.length > 1" data-ng-click="setDetailVisible(update.sequence, !isDetailVisibile(update.sequence))"></span>
                             </td>
                         </tr>
-                        <tr data-ng-repeat-end="">
+                        <tr data-ng-repeat-end="" data-ng-show="isDetailVisibile(update.sequence)">
                             <td colspan="12">
-                                <table class="table" data-ng-show="isDetailVisibile(update.sequence)">
-                                    <tr data-ng-repeat="received in update.items | orderBy:'-Timestamp'">
+                                <p><ins>Processing attempts for sequence {{update.sequence}}</ins></p>
+                                <table class="table">
+                                    <tr data-ng-repeat="received in update.items | orderBy:'-Timestamp'" data-ng-class="{danger: received.Exception}">
                                         <td class="col-md-1"></td>
                                         <td class="col-md-2"><i>{{received.Timestamp | date:'dd MMM yyyy hh:mm:ss'}}</i></td>
                                         <td class="col-md-1">
@@ -130,7 +131,7 @@
                                             <span class="label label-warning" data-ng-if="received.State == 2">Skipped</span>
                                         </td>
                                         <td class="col-md-7">
-                                            <span class="icon-alert" data-ng-show="received.Exception">{{received.Exception}}</span>
+                                            <span data-ng-show="received.Exception">{{received.Exception}}</span>
                                         </td>
                                     </tr>
                                 </table>

@@ -48,7 +48,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Mark
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diagnostics.Model", "SS.Integration.Adapter.Diagnostics.Model\SS.Integration.Adapter.Diagnostics.Model.csproj", "{B11DBC1F-95E5-44D3-8896-78482D84FB07}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diagnostic.RestService", "SS.Integration.Adapter.Diagnostic.RestService\SS.Integration.Adapter.Diagnostic.RestService.csproj", "{44D6F89B-0A71-4B0C-84FE-619D0E6572D7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diagnostics.RestService", "SS.Integration.Adapter.Diagnostics.RestService\SS.Integration.Adapter.Diagnostics.RestService.csproj", "{44D6F89B-0A71-4B0C-84FE-619D0E6572D7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diagnostics.Testing", "SS.Integration.Adapter.Diagnostics.Testing\SS.Integration.Adapter.Diagnostics.Testing.csproj", "{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF}"
 EndProject
