@@ -19,7 +19,6 @@ using System.Web.Http;
 
 namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
 {
-    
     public class ErrorController : ApiController
     {
         private const string DEFAULT_REDIRECT_PAGE = "/ui/index.html";

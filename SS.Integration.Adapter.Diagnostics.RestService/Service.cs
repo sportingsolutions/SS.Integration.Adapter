@@ -21,25 +21,47 @@ using Microsoft.Owin.FileSystems;
 using Microsoft.Owin.Hosting;
 using Microsoft.Owin.StaticFiles;
 using Owin;
+using SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
 
 namespace SS.Integration.Adapter.Diagnostics.RestService
 {
-    public class StartUp
+    public class Service : ISupervisorService
     {
         // do not change this to use HttpSelfHostServer to self hosting asp.net web api 
         // cause SignalR requires an OWIN host
         // make sure Microsoft.Owin.Host.HttpListner is reference otherwise a run-time exception is raised.
 
         private IDisposable _server;
-        private readonly ILog _log = LogManager.GetLogger(typeof(StartUp));
+        private readonly ILog _log = LogManager.GetLogger(typeof(Service));
+
+        public Service(ISupervisorProxy supervisor, ISupervisorServiceConfiguration configuration)
+        {
+            if (supervisor == null)
+                throw new ArgumentNullException("supervisor");
+
+            if (configuration == null)
+                throw new ArgumentNullException("configuration");
+
+
+            Supervisor = supervisor;
+            ServiceConfiguration = configuration;
+            ServiceInstance = this;
+        }
+
+        public ISupervisorProxy Supervisor { get; private set; }
+
+        public ISupervisorServiceConfiguration ServiceConfiguration { get; private set; }
+
+        /// <summary>
+        /// Global static access to this object instance
+        /// </summary>
+        public static ISupervisorService ServiceInstance { get; private set; }
 
         public void Start()
         {
-            string url = "http://localhost:9000";
+            _log.InfoFormat("Starting self-hosted web server on {0}", ServiceConfiguration.Url);
 
-            _log.InfoFormat("Starting self-hosted web server on {0}", url);
-
-            _server = WebApp.Start<StartUp>(url);
+            _server = WebApp.Start<Service>(ServiceConfiguration.Url);
         }
 
         public void Stop()
@@ -56,19 +78,25 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
         {
             // configure the OWIN middlewares....pay attention that order matters
 
-            UseSignalR(app);
+            if (ServiceConfiguration.UsePushNotifications)
+            {
+                UseSignalR(app);
+            }
+
             UseFileServer(app);
             UseWebApi(app);
-
-            app.Properties["host.AppMode"] = "development";
-            app.UseErrorPage();
         }
 
         private static void UseSignalR(IAppBuilder app)
         {
             // prepare the signalr middleware
             app.UseCors(CorsOptions.AllowAll);
-            app.MapSignalR("/streaming", new Microsoft.AspNet.SignalR.HubConfiguration { EnableJavaScriptProxies = false, EnableJSONP = false, EnableDetailedErrors = false });   
+            app.MapSignalR("/streaming", new Microsoft.AspNet.SignalR.HubConfiguration 
+            { 
+                EnableJavaScriptProxies = false, 
+                EnableJSONP = false, 
+                EnableDetailedErrors = false 
+            });   
         }
 
         private static void UseWebApi(IAppBuilder app)
@@ -88,7 +116,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
             app.UseWebApi(config);
         }
 
-        private static void UseFileServer(IAppBuilder app)
+        private void UseFileServer(IAppBuilder app)
         {
             // configure the static web server middleware
             app.UseFileServer(new FileServerOptions
@@ -100,10 +128,10 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
 
         }
 
-        private static string GetRootDirectory()
+        private string GetRootDirectory()
         {
             var currentDirectory = Directory.GetCurrentDirectory();
-            return Path.Combine(currentDirectory, "ui");  
+            return Path.Combine(currentDirectory, ServiceConfiguration.UIPath);  
         }
     }
 }

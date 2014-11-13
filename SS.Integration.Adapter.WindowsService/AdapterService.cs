@@ -21,6 +21,7 @@ using System.Reflection;
 using System.ServiceProcess;
 using System.Threading.Tasks;
 using Ninject.Modules;
+using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Interface;
 using log4net;
 using Ninject;
@@ -32,7 +33,6 @@ namespace SS.Integration.Adapter.WindowsService
     {
         private readonly ILog _logger = LogManager.GetLogger(typeof(AdapterService).ToString());
         private static Task _adapterWorkerThread;
-        private StandardKernel _iocContainer;
         private Adapter _adapter;
         
         [Import]
@@ -131,7 +131,7 @@ namespace SS.Integration.Adapter.WindowsService
                 return;
             }
 
-            List<NinjectModule> modules = new List<NinjectModule> {new BootStrapper()};
+            List<INinjectModule> modules = new List<INinjectModule> {new BootStrapper()};
 
             if (PluginBootstrapper != null)
             {
@@ -139,17 +139,35 @@ namespace SS.Integration.Adapter.WindowsService
                 modules.AddRange(PluginBootstrapper.BootstrapModules);
             }
 
-            _iocContainer = new StandardKernel(modules.ToArray());
-            _iocContainer.Settings.InjectNonPublic = true;
+            StandardKernel iocContainer = new StandardKernel(modules.ToArray());
 
-            _iocContainer.Inject(PlatformConnector);
-            
 
-            var settings = _iocContainer.Get<ISettings>();
-            var service = _iocContainer.Get<IServiceFacade>();
-            var streamListenerManager = _iocContainer.Get<IStreamListenerManager>();
+            var settings = iocContainer.Get<ISettings>();
+            var service = iocContainer.Get<IServiceFacade>();
+            var streamListenerManager = iocContainer.Get<IStreamListenerManager>();
 
             _adapter = new Adapter(settings, service, PlatformConnector,streamListenerManager);
+
+            if (settings.UseSupervisor)
+            {
+                var supervisor = iocContainer.Get<ISupervisor>();
+                if (supervisor == null)
+                {
+                    _logger.Error("Cannot instantiate Supervisor as not suitable module was found");
+                }
+                else
+                {
+                    _logger.Info("Initializing adapter's supervisor");
+                    try
+                    {
+                        supervisor.Initialise();
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Error("An error occured during the initialization of the adapter's supervisor. The supervisor will not be available", e);
+                    }
+                }
+            }
 
 
             _adapter.Start();

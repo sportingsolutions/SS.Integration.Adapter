@@ -26,6 +26,11 @@ namespace SS.Integration.Adapter.Diagnostic
             //_publisher = Observable.Buffer(_fixtureEvents, TimeSpan.FromSeconds(1), 10).Subscribe(x => _publishAction(x.ToDictionary(f => f.Id)));
         }
 
+        public void Initialise()
+        {
+            // TODO
+        }
+
         public override void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector)
         {
             base.CreateStreamListener(resource,stateManager,platformConnector);

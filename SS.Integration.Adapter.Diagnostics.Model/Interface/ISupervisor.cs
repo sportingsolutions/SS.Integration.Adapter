@@ -9,5 +9,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Interface
         void ForceSnapshot(string fixtureId);
         IObservable<FixtureOverview> GetFixtureOverviewStream();
         IEnumerable<FixtureOverview> GetFixtures();
+
+        void Initialise();
     }
 }

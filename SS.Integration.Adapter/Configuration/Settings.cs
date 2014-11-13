@@ -27,12 +27,12 @@ namespace SS.Integration.Adapter.Configuration
         private const int DEFAULT_MAX_RETRY_ATTEMPT_VALUE = 3;
         private const int DEFAULT_ECHO_INTERVAL_VALUE = 10000;
         private const int DEFAULT_ECHO_DELAY_VALUE = 3000;
-        private const bool DEFAULT_SUSPEND_ALL_MARKETS_ON_SHUTDOWN_VALUE = true;
         private const string DEFAULT_EVENT_STATE_FILE_PATH_VALUE = @"C:\eventState.json";
         private const string DEFAULT_MARKET_STATE_MANAGER_DIRECTORY = @"MarketsState";
         private const int DEFAULT_CACHE_EXPIRY_MINUTES_VALUE = 15;
         private const bool DEFAULT_ENABLE_DELTA_RULE = false;
         private const bool DEFAULT_USE_STATS = false;
+        private const bool DEFAULT_USE_SUPERVISOR = false;
 
         public Settings()
         {
@@ -61,9 +61,6 @@ namespace SS.Integration.Adapter.Configuration
 
             value = ConfigurationManager.AppSettings["echoDelay"];
             EchoDelay = string.IsNullOrEmpty(value) ? DEFAULT_ECHO_DELAY_VALUE : Convert.ToInt32(value);
-
-            value = ConfigurationManager.AppSettings["suspendAllOnShutdown"];
-            SuspendAllMarketsOnShutdown = string.IsNullOrEmpty(value) ? DEFAULT_SUSPEND_ALL_MARKETS_ON_SHUTDOWN_VALUE : string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
 
             value = ConfigurationManager.AppSettings["eventStateFilePath"];
             EventStateFilePath = string.IsNullOrEmpty(value) ? DEFAULT_EVENT_STATE_FILE_PATH_VALUE : Convert.ToString(value);
@@ -103,16 +100,14 @@ namespace SS.Integration.Adapter.Configuration
 
         public int EchoDelay { get; private set; }
 
-        public bool SuspendAllMarketsOnShutdown { get; private set; }
-
-        public int HeartBeatIntervalSeconds { get; private set; }
-
         public string EventStateFilePath { get; private set; }
 
-        public int FixtureCreationConcurrency { get; set; }
+        public int FixtureCreationConcurrency { get; private set; }
 
-        public bool DeltaRuleEnabled { get; set; }
+        public bool DeltaRuleEnabled { get; private set; }
 
-        public bool StatsEnabled { get; set; }
+        public bool StatsEnabled { get; private set; }
+
+        public bool UseSupervisor { get; private set; }
     }
 }
