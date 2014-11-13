@@ -27,6 +27,8 @@ namespace SS.Integration.Adapter.Interface
 
         bool IsStreaming { get; }
 
+        bool IsErrored { get; }
+
         bool IsInPlay { get; }
 
         string Sport { get; }

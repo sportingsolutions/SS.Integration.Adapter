@@ -147,9 +147,9 @@ namespace SS.Integration.Adapter.WindowsService
 
             var settings = _iocContainer.Get<ISettings>();
             var service = _iocContainer.Get<IServiceFacade>();
-            var supervisor = _iocContainer.Get<ISupervisor>();
+            var streamListenerManager = _iocContainer.Get<IStreamListenerManager>();
 
-            _adapter = new Adapter(settings, service, PlatformConnector,supervisor);
+            _adapter = new Adapter(settings, service, PlatformConnector,streamListenerManager);
 
 
             _adapter.Start();

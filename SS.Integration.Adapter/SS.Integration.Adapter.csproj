@@ -48,9 +48,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\RestSharp.104.3.3\lib\net4\RestSharp.dll</HintPath>
     </Reference>
-    <Reference Include="SportingSolutions.Udapi.Sdk, Version=1.0.128.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="SportingSolutions.Udapi.Sdk, Version=1.0.129.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\SportingSolutions.Udapi.Sdk.1.0.128.0\lib\net40\SportingSolutions.Udapi.Sdk.dll</HintPath>
+      <HintPath>..\packages\SportingSolutions.Udapi.Sdk.1.0.129.0\lib\net40\SportingSolutions.Udapi.Sdk.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -87,7 +87,6 @@
     <Compile Include="Interface\IStoredObjectProvider.cs" />
     <Compile Include="Interface\IStoreProvider.cs" />
     <Compile Include="Interface\IStreamListenerManager.cs" />
-    <Compile Include="Interface\ISupervisor.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketState.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketStateCollection.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableSelectionState.cs" />
@@ -105,7 +104,6 @@
     <Compile Include="MarketRules\Model\SelectionState.cs" />
     <Compile Include="StreamListener.cs" />
     <Compile Include="DefaultReconnectStrategy.cs" />
-    <Compile Include="Supervisor.cs" />
     <Compile Include="SuspensionManager.cs" />
     <Compile Include="UdapiClient\UdapiResourceFacade.cs" />
     <Compile Include="UdapiClient\UdapiServiceFacade.cs" />
@@ -121,10 +119,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SS.Integration.Adapter.Diagnostics.Model\SS.Integration.Adapter.Diagnostics.Model.csproj">
-      <Project>{B11DBC1F-95E5-44D3-8896-78482D84FB07}</Project>
-      <Name>SS.Integration.Adapter.Diagnostics.Model</Name>
-    </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Adapter.MarketRules\SS.Integration.Adapter.MarketRules.csproj">
       <Project>{5cadd732-a519-4006-8370-52efc8aa97b8}</Project>
       <Name>SS.Integration.Adapter.MarketRules</Name>

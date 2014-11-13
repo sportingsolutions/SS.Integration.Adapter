@@ -47,6 +47,7 @@
   <ItemGroup>
     <Compile Include="FixtureOverview.cs" />
     <Compile Include="Interface\IAdapterSupervisor.cs" />
+    <Compile Include="Interface\ISupervisor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyChanged.cs" />
   </ItemGroup>
@@ -55,8 +56,13 @@
       <Project>{29461692-6DE2-47FA-ACC4-ECAAE9462AE3}</Project>
       <Name>SS.Integration.Adapter.Model</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Adapter\SS.Integration.Adapter.csproj">
+      <Project>{1ad0b149-3a7b-4725-abde-9455d953f036}</Project>
+      <Name>SS.Integration.Adapter</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />

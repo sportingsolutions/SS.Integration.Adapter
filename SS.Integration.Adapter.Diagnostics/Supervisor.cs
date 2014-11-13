@@ -1,22 +1,14 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Messaging;
-using System.Text;
-using System.Threading.Tasks;
 using log4net;
 using SS.Integration.Adapter.Diagnostics.Model;
+using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Interface;
-using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 
-namespace SS.Integration.Adapter
+namespace SS.Integration.Adapter.Diagnostic
 {
     public class Supervisor : StreamListenerManager, ISupervisor
     {

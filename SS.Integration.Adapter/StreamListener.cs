@@ -44,7 +44,6 @@ namespace SS.Integration.Adapter
         private readonly IAdapterPlugin _platformConnector;
         private readonly IEventState _eventState;
         private readonly IStateManager _stateManager;
-        private readonly ISupervisor _supervisor;
         private readonly IStatsHandle _Stats;
         private readonly IMarketRulesManager _marketsRuleManager;
 
@@ -254,7 +253,7 @@ namespace SS.Integration.Adapter
         /// 
         /// Thread-safe property
         /// </summary>
-        internal bool IsErrored
+        public bool IsErrored
         {
             [MethodImpl(MethodImplOptions.Synchronized)]
             get;

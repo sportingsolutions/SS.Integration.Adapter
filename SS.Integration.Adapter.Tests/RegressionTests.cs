@@ -57,7 +57,7 @@ namespace SS.Integration.Adapter.Tests
         {
             var settings = new Mock<ISettings>();
             var service = new Mock<IServiceFacade>();
-            var supervisor = new Mock<ISupervisor>();
+            var streamListenerManager = new Mock<IStreamListenerManager>();
             var plugin = new Mock<IAdapterPlugin>();
             var feature = new Mock<IFeature>();
             var resource = new Mock<IResourceFacade>();
@@ -98,7 +98,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
             resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
 
-            Adapter adapter = new Adapter(settings.Object, service.Object, plugin.Object,supervisor.Object)
+            Adapter adapter = new Adapter(settings.Object, service.Object, plugin.Object,streamListenerManager.Object)
             {
                 EventState = eventstate.Object,
                 StateManager = provider
