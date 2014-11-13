@@ -12,23 +12,17 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Collections.Generic;
+using SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
 
-namespace SS.Integration.Adapter.Diagnostics.RestService.Models
+namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model
 {
-    public class FixtureDetails : FixtureOverview
-    {
-        public FixtureDetails()
-        {
-            ProcessingEntries = new List<FixtureProcessingEntry>();
-        }
-
-        //public ConnectionStatus ConnectionState { get; set; }
-
-        public bool IsIgnored { get; set; }
-
-        public bool IsDeleted { get; set; }
-
-        public List<FixtureProcessingEntry> ProcessingEntries { get; private set; }
+    public class AdapterStatus : IAdapterStatus
+    {       
+        public string UdapiSDKVersion { get; set; }
+        public string AdapterVersion { get; set; }
+        public string PluginName { get; set; }
+        public string PluginVersion { get; set; }
+        public string RunningThreads { get; set; }
+        public string MemoryUsage { get; set; }
     }
 }

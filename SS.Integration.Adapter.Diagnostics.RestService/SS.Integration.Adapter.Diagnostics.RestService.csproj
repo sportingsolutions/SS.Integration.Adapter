@@ -102,17 +102,13 @@
     <Compile Include="Controllers\SportController.cs" />
     <Compile Include="Controllers\SupervisorController.cs" />
     <Compile Include="Handlers\MediaTypeHeaderDelegate.cs" />
-    <Compile Include="Models\AdapterStatus.cs" />
-    <Compile Include="Models\FixtureDetails.cs" />
-    <Compile Include="Models\FixtureOverview.cs" />
-    <Compile Include="Models\FixtureProcessingEntry.cs" />
-    <Compile Include="Models\ModelExtensions.cs" />
-    <Compile Include="Models\SportDetails.cs" />
+    <Compile Include="MockedSupervisor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PushNotifications\SupervisorConstants.cs" />
     <Compile Include="PushNotifications\SupervisorFacade.cs" />
     <Compile Include="PushNotifications\SupervisorStreaming.cs" />
     <Compile Include="Service.cs" />
+    <Compile Include="ServiceConfiguration.cs" />
     <Compile Include="UrlUtilities.cs" />
   </ItemGroup>
   <ItemGroup>

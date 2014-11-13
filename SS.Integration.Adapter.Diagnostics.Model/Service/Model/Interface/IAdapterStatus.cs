@@ -12,21 +12,15 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-
-using Newtonsoft.Json;
-
-namespace SS.Integration.Adapter.Diagnostics.RestService.Models
+namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface
 {
-    public static class ModelExtensions
+    public interface IAdapterStatus
     {
-        private static readonly JsonSerializerSettings _settings = new JsonSerializerSettings
-        {
-            Formatting = Formatting.None
-        };
-
-        public static string ToJson(this AdapterStatus status)
-        {
-            return JsonConvert.SerializeObject(status, _settings);
-        }
+        string UdapiSDKVersion { get; }
+        string AdapterVersion { get; }
+        string PluginName { get; }
+        string PluginVersion { get; }
+        string RunningThreads { get; }
+        string MemoryUsage { get; }
     }
 }

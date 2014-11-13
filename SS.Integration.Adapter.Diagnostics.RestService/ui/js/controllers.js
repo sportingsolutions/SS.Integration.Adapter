@@ -42,8 +42,12 @@
             this.Url = "";
             this.Fixtures = {},
             this.InErrorState = 0,
+            this.Total = 0;
+            this.InPlay = 0;
+            this.InPreMatch = 0;
+            this.InSetup = 0;
             
-            // don't rename this to Fixtures, otherwise extend doesn't work properly
+            // don't rename, otherwise extend() doesn't work properly
             this.FixtureGroups = {
                 InPlay: {
                     InErrorState: 0,
@@ -62,7 +66,6 @@
             this.groupFixtures = function () {
 
                 var outer = this;
-
                 $.each(this.Fixtures, function (index, value) {
                     var group = null;
                     switch (value.State) {

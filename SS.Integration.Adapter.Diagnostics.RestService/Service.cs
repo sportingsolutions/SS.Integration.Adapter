@@ -34,6 +34,11 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
         private IDisposable _server;
         private readonly ILog _log = LogManager.GetLogger(typeof(Service));
 
+        public Service(ISupervisorProxy supervisor)
+            : this(supervisor, GetDefaultConfiguration())
+        {
+        }
+
         public Service(ISupervisorProxy supervisor, ISupervisorServiceConfiguration configuration)
         {
             if (supervisor == null)
@@ -41,12 +46,12 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
 
             if (configuration == null)
                 throw new ArgumentNullException("configuration");
-
-
+            
             Supervisor = supervisor;
             ServiceConfiguration = configuration;
             ServiceInstance = this;
         }
+
 
         public ISupervisorProxy Supervisor { get; private set; }
 
@@ -60,8 +65,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
         public void Start()
         {
             _log.InfoFormat("Starting self-hosted web server on {0}", ServiceConfiguration.Url);
-
-            _server = WebApp.Start<Service>(ServiceConfiguration.Url);
+            _server = WebApp.Start<ServiceStartUp>(ServiceConfiguration.Url);
         }
 
         public void Stop()
@@ -74,64 +78,75 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
             _log.Info("Self-hosted web server stopped");
         }
 
-        public void Configuration(IAppBuilder app)
+        internal static ISupervisorServiceConfiguration GetDefaultConfiguration()
         {
-            // configure the OWIN middlewares....pay attention that order matters
+            return new ServiceConfiguration();
+        }
 
-            if (ServiceConfiguration.UsePushNotifications)
+        /// <summary>
+        /// Start up class required by OWIN
+        /// </summary>
+        private class ServiceStartUp
+        {
+
+            public void Configuration(IAppBuilder app)
             {
-                UseSignalR(app);
+                // configure the OWIN middlewares....pay attention that order matters
+
+                if (ServiceInstance.ServiceConfiguration.UsePushNotifications)
+                    UseSignalR(app);
+
+                UseFileServer(app);
+                UseWebApi(app);
             }
 
-            UseFileServer(app);
-            UseWebApi(app);
-        }
-
-        private static void UseSignalR(IAppBuilder app)
-        {
-            // prepare the signalr middleware
-            app.UseCors(CorsOptions.AllowAll);
-            app.MapSignalR("/streaming", new Microsoft.AspNet.SignalR.HubConfiguration 
-            { 
-                EnableJavaScriptProxies = false, 
-                EnableJSONP = false, 
-                EnableDetailedErrors = false 
-            });   
-        }
-
-        private static void UseWebApi(IAppBuilder app)
-        {
-            // prepare the web-api middleware
-            HttpConfiguration config = new HttpConfiguration();
-
-            config.MapHttpAttributeRoutes();
-
-            config.Routes.MapHttpRoute(
-                name: "Error404",
-                routeTemplate: "{*url}", // invalid URL character, so this will never be called externally
-                defaults: new { controller = "Error", action = "Handle404" }
-            );
-
-
-            app.UseWebApi(config);
-        }
-
-        private void UseFileServer(IAppBuilder app)
-        {
-            // configure the static web server middleware
-            app.UseFileServer(new FileServerOptions
+            private static void UseSignalR(IAppBuilder app)
             {
-                FileSystem = new PhysicalFileSystem(GetRootDirectory()),
-                EnableDirectoryBrowsing = true,
-                RequestPath = new Microsoft.Owin.PathString("/ui")
-            });
+                // prepare the signalr middleware
+                app.UseCors(CorsOptions.AllowAll);
+                app.MapSignalR("/streaming", new Microsoft.AspNet.SignalR.HubConfiguration
+                {
+                    EnableJavaScriptProxies = false,
+                    EnableJSONP = false,
+                    EnableDetailedErrors = false
+                });
+            }
 
-        }
+            private static void UseWebApi(IAppBuilder app)
+            {
+                // prepare the web-api middleware
+                HttpConfiguration config = new HttpConfiguration();
 
-        private string GetRootDirectory()
-        {
-            var currentDirectory = Directory.GetCurrentDirectory();
-            return Path.Combine(currentDirectory, ServiceConfiguration.UIPath);  
+                config.MapHttpAttributeRoutes();
+
+                config.Routes.MapHttpRoute(
+                    name: "Error404",
+                    routeTemplate: "{*url}", // invalid URL character, so this will never be called externally
+                    defaults: new { controller = "Error", action = "Handle404" }
+                );
+
+
+                app.UseWebApi(config);
+            }
+
+            private static void UseFileServer(IAppBuilder app)
+            {
+                // configure the static web server middleware
+                app.UseFileServer(new FileServerOptions
+                {
+                    FileSystem = new PhysicalFileSystem(GetRootDirectory()),
+                    EnableDirectoryBrowsing = true,
+                    RequestPath = new Microsoft.Owin.PathString("/ui")
+                });
+
+            }
+
+            private static string GetRootDirectory()
+            {
+                var currentDirectory = Directory.GetCurrentDirectory();
+                var path = ServiceInstance.ServiceConfiguration.UIPath.Replace("/", "");
+                return Path.Combine(currentDirectory, path);
+            }
         }
     }
 }

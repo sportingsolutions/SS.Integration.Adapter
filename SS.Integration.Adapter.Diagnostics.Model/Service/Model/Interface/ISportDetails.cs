@@ -14,22 +14,13 @@
 
 using System.Collections.Generic;
 
-namespace SS.Integration.Adapter.Diagnostics.RestService.Models
+namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface
 {
-    public class SportDetails
+    public interface ISportDetails : ISportOverview
     {
-        public SportDetails(string sportName)
-        {
-            Name = sportName;
-            Fixtures = new List<FixtureOverview>();
-        }
-
-        public string Name { get; private set; }
-
-        public List<FixtureOverview> Fixtures
-        {
-            get;
-            private set;
-        }
+        /// <summary>
+        /// Returns an IFixtureOverview object for each fixture on this sport
+        /// </summary>
+        IEnumerable<IFixtureOverview> Fixtures { get; }
     }
 }

@@ -15,19 +15,27 @@
 using System.Collections.Generic;
 using SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
 
-namespace SS.Integration.Adapter.Diagnostics.Model.Service.Interface
+namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model
 {
-    public interface ISupervisorProxy
+    public class SportDetails : SportOverview, ISportDetails
     {
+        public SportDetails()
+        {
+            Fixtures = new List<IFixtureOverview>();
+        }
 
-        IEnumerable<ISportOverview> GetSports();
+        public IEnumerable<IFixtureOverview> Fixtures
+        {
+            get;
+            private set;
+        }
 
-        ISportDetails GetSportDetail(string sportCode);
+        public void AddFixture(IFixtureOverview overview)
+        {
+            if (overview == null)
+                return;
 
-        IFixtureDetails GetFixtureDetail(string fixtureId);
-
-        IAdapterStatus GetAdapterStatus();
-
-        IEnumerable<IFixtureProcessingEntry> GetFixtureHistory(string fixtureId);
+            ((List<IFixtureOverview>)Fixtures).Add(overview);
+        }
     }
 }

@@ -5,7 +5,7 @@
             <i class="{{sport.CssClass}}"></i>
             <label>{{sport.Name}}</label>
             <label class="details">
-                <span>Total / IP: {{sport.Fixtures.length}} / {{sport.FixtureGroups.InPlay.Items.length}}</span><br />
+                <span>Total / IP: {{sport.Total}} / {{sport.InPlay}}</span><br />
                 <span data-ng-class="{'icon-alert': sport.InErrorState}">Errors: {{sport.InErrorState}}</span>
             </label>
         </a>

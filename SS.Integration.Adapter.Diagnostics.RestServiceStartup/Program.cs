@@ -12,23 +12,19 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Net.Http;
-using System.Web.Http;
-using System.Net;
-using SS.Integration.Adapter.Diagnostics.RestService.Attributes;
+using System;
+using SS.Integration.Adapter.Diagnostics.RestService;
 
-namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
+namespace SS.Integration.Adapter.Diagnostics.RestServiceStartup
 {
-    [HandleServerError]
-    [RoutePrefix("api/supervisor")]
-    public class SupervisorController : ApiController
+    public class Program
     {
-        [Route("details")]
-        [HttpGet]
-        public HttpResponseMessage GetDetails()
+        public static void Main()
         {
-            var status = Service.ServiceInstance.Supervisor.GetAdapterStatus();
-            return Request.CreateResponse(HttpStatusCode.OK, status, UrlUtilities.JSON_MEDIA_TYPE);
+
+            Service start = new Service(new MockedSupervisor());
+            start.Start();
+            Console.ReadLine();
         }
     }
 }

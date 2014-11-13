@@ -12,22 +12,24 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Collections.Generic;
+
 using SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
 
-namespace SS.Integration.Adapter.Diagnostics.Model.Service.Interface
+namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model
 {
-    public interface ISupervisorProxy
+    public class SportOverview : ISportOverview
     {
+        
+        public string Name { get; set; }
 
-        IEnumerable<ISportOverview> GetSports();
+        public int Total { get; set; }
 
-        ISportDetails GetSportDetail(string sportCode);
+        public int InPlay { get; set; }
 
-        IFixtureDetails GetFixtureDetail(string fixtureId);
+        public int InSetup { get; set; }
 
-        IAdapterStatus GetAdapterStatus();
+        public int InPreMatch { get; set; }
 
-        IEnumerable<IFixtureProcessingEntry> GetFixtureHistory(string fixtureId);
+        public int InErrorState { get; set; }
     }
 }
