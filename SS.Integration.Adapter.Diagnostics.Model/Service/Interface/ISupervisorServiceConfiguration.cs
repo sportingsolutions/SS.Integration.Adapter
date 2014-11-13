@@ -41,9 +41,11 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Service.Interface
         /// </summary>
         string UIPath { get; }
 
-
-        string UseUIRedirect { get; }
-
-        string UIRedirectPage { get; }
+        /// <summary>
+        /// If true, every request not found 
+        /// whose path starts with UIPath
+        /// will be redirected to UIPath/index.html
+        /// </summary>
+        bool UseUIRedirect { get; }
     }
 }

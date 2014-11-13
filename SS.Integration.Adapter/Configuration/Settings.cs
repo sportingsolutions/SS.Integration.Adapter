@@ -76,6 +76,9 @@ namespace SS.Integration.Adapter.Configuration
 
             value = ConfigurationManager.AppSettings["statsEnabled"];
             StatsEnabled = string.IsNullOrEmpty(value) ? DEFAULT_USE_STATS : Convert.ToBoolean(value);
+
+            value = ConfigurationManager.AppSettings["useSupervisor"];
+            UseSupervisor = string.IsNullOrEmpty(value) ? DEFAULT_USE_SUPERVISOR : Convert.ToBoolean(value);
         }
 
         public string MarketFiltersDirectory { get; private set; }
