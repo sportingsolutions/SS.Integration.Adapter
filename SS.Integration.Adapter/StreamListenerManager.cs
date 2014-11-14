@@ -19,9 +19,9 @@ namespace SS.Integration.Adapter
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerManager));
         private const int LISTENER_DISPOSING_SAFE_GUARD = 1;
 
-        private readonly ConcurrentDictionary<string, IListener> _listeners;
-        private readonly ConcurrentDictionary<string, int> _listenerDisposingQueue;
-        private readonly HashSet<string> _currentlyProcessedFixtures;
+        private readonly ConcurrentDictionary<string, IListener> _listeners = new ConcurrentDictionary<string, IListener>();
+        private readonly ConcurrentDictionary<string, int> _listenerDisposingQueue = new ConcurrentDictionary<string, int>();
+        private readonly HashSet<string> _currentlyProcessedFixtures = new HashSet<string>();
         private readonly static object _sync = new object();
 
         public event Adapter.StreamEventHandler StreamCreated;
@@ -212,7 +212,7 @@ namespace SS.Integration.Adapter
             return false;
         }
 
-        public bool IsProcessing(string fixtureId)
+        public bool CanBeProcessed(string fixtureId)
         {
             // this prevents to take any decision
             // about the resource while it is

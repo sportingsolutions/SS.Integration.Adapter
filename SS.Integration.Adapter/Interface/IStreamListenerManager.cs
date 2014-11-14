@@ -29,6 +29,6 @@ namespace SS.Integration.Adapter.Interface
         bool ProcessResource(IResourceFacade resource);
         void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector);
         bool RemoveStreamListenerIfFinishedProcessing(IResourceFacade resource);
-        bool IsProcessing(string fixtureId);
+        bool CanBeProcessed(string fixtureId);
     }
 }
