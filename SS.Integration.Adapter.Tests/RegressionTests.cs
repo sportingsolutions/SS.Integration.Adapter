@@ -57,7 +57,7 @@ namespace SS.Integration.Adapter.Tests
         {
             var settings = new Mock<ISettings>();
             var service = new Mock<IServiceFacade>();
-            var streamListenerManager = new Mock<IStreamListenerManager>();
+            
             var plugin = new Mock<IAdapterPlugin>();
             var feature = new Mock<IFeature>();
             var resource = new Mock<IResourceFacade>();
@@ -70,6 +70,8 @@ namespace SS.Integration.Adapter.Tests
             settings.Setup(x => x.FixtureCreationConcurrency).Returns(1);
             settings.Setup(x => x.FixtureCheckerFrequency).Returns(1000);
             settings.Setup(x => x.EventStateFilePath).Returns(".");
+
+            var streamListenerManager = new StreamListenerManager(settings.Object);
 
             feature.Setup(x => x.Name).Returns("Football");
 
@@ -98,7 +100,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
             resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
 
-            Adapter adapter = new Adapter(settings.Object, service.Object, plugin.Object,streamListenerManager.Object)
+            Adapter adapter = new Adapter(settings.Object, service.Object, plugin.Object,streamListenerManager)
             {
                 EventState = eventstate.Object,
                 StateManager = provider

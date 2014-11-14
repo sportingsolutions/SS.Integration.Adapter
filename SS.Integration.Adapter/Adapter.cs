@@ -24,6 +24,7 @@ using log4net;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
+using SS.Integration.Adapter.ProcessState;
 using SS.Integration.Common.Stats;
 using SS.Integration.Common.Stats.Interface;
 using SS.Integration.Common.Stats.Keys;
@@ -54,7 +55,7 @@ namespace SS.Integration.Adapter
             Settings = settings;
             UDAPIService = udapiServiceFacade;
             PlatformConnector = platformConnector;
-            
+            EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
             
             var statemanager = new StateManager(settings);
             StateManager = statemanager;
@@ -346,7 +347,7 @@ namespace SS.Integration.Adapter
             _logger.DebugFormat("Attempt to process {0} for sport={1}", resource, sport);
             
             // make sure that the resource is not already being processed by some other thread
-            if(_supervisor.IsProcessing(resource.Id))
+            if(!_supervisor.CanBeProcessed(resource.Id))
                 return;
 
             _logger.InfoFormat("Processing {0}", resource);
