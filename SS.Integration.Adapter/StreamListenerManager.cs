@@ -252,14 +252,10 @@ namespace SS.Integration.Adapter
 
         public bool RemoveStreamListener(string fixtureId)
         {
+            //TODO: Rename RemoveAndStop 
             throw new NotImplementedException();
         }
-
-        public bool AddStreamListener(Resource resource)
-        {
-            throw new NotImplementedException();
-        }
-
+        
         public int Count { get { return _listeners.Count; } }
 
         public void StopAll()

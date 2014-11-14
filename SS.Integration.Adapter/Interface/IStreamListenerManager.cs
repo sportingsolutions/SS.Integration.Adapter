@@ -15,8 +15,7 @@ namespace SS.Integration.Adapter.Interface
         void StartStreaming(string fixtureId);
         void StopStreaming(string fixtureId);
         bool RemoveStreamListener(string fixtureId);
-        bool AddStreamListener(Resource resource);
-
+        
         int Count { get; }
 
         void StopAll();

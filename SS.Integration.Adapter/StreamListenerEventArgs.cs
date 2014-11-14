@@ -10,5 +10,6 @@ namespace SS.Integration.Adapter
         public Exception Exception { get; set; }
         public int Epoch { get; set; }
         public int CurrentSequence { get; set; }
+        public DateTime? StartTime { get; set; }
     }
 }

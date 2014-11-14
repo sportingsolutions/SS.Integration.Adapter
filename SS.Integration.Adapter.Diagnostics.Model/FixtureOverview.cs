@@ -1,93 +1,72 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
-using log4net.Util;
+using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Diagnostics.Model
 {
-    public class FixtureOverview
+    public class FixtureOverview : IFixtureOverview
     {
-        private IDictionary<string, PropertyChanged> _changes;
+        private const int MAX_AUDIT_SIZE = 10;
+
+        private string _name;
+        private string _id;
+        private int? _sequence;
+        private int? _epoch;
         private bool? _isStreaming;
         private bool? _isDeleted;
         private bool? _isErrored;
-        private bool? _isOver;
-        private string _name;
-        private DateTime _timeStamp;
-        private MatchStatus? _matchStatus;
-        private int? _sequence;
-        private int? _epoch;
-        private Exception _lastError;
         private bool? _isSuspended;
-
+        private bool? _isOver;
+        private ErrorOverview _lastError;
+        private FeedUpdateOverview _feedUpdate;
+        private string _competitionId;
+        private string _competitionName;
+        private MatchStatus? _matchStatus;
+        private DateTime _timeStamp;
+        private FixtureOverviewDelta _delta;
+        private List<ErrorOverview> _errors;
+        private List<FeedUpdateOverview> _feedUpdates;
+        private DateTime? _startTime;
 
         public FixtureOverview()
         {
-            _changes = new Dictionary<string, PropertyChanged>();
+            _errors = new List<ErrorOverview>(10);
+        }
+
+        protected FixtureOverviewDelta Delta
+        {
+            get
+            {
+                //returns the value of the assignment 
+                return (_delta = _delta ?? new FixtureOverviewDelta() {Id = this.Id});
+            }
+            set { _delta = value; }
         }
 
         public string Id { get; set; }
 
-        public string Name
-        {
-            get { return _name; }
-            set
-            {
-                OnChanged(_name, value);
-                _name = value;
-            }
-        }
+        public int? Sequence { get; set; }
 
         public int? Epoch
         {
             get { return _epoch; }
             set
             {
-                OnChanged(_epoch,value);
+                OnChanged(_epoch, value,v=> _delta.Epoch = v);
                 _epoch = value;
             }
         }
-
-        public DateTime TimeStamp
-        {
-            get { return _timeStamp; }
-            private set { _timeStamp = value; }
-        }
-
-        public MatchStatus? MatchStatus
-        {
-            get { return _matchStatus; }
-            set
-            {
-                OnChanged(_matchStatus, value);
-                _matchStatus = value;
-            }
-        }
-
-        public int? Sequence
-        {
-            get { return _sequence; }
-            set
-            {
-                OnChanged(_sequence, value);
-                _sequence = value;
-            }
-        }
-
 
         public bool? IsStreaming
         {
             get { return _isStreaming; }
             set
             {
-                OnChanged(_isStreaming,value);
+                OnChanged(_isStreaming, value,v=> Delta.IsStreaming = v);
                 _isStreaming = value;
-            } 
+            }
         }
 
         public bool? IsDeleted
@@ -95,7 +74,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             get { return _isDeleted; }
             set
             {
-                OnChanged(_isDeleted, value);
+                OnChanged(_isDeleted, value, v => _delta.IsDeleted = v);
                 _isDeleted = value;
             }
         }
@@ -105,70 +84,184 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             get { return _isErrored; }
             set
             {
-                OnChanged(_isErrored, value);
+                OnChanged(_isErrored, value, OnErrorChanged);
                 _isErrored = value;
             }
         }
-
+        
         public bool? IsSuspended
         {
             get { return _isSuspended; }
             set
             {
-                OnChanged(_isSuspended, value);
+                OnChanged(_isSuspended, value, v => _delta.IsSuspended = v);
                 _isSuspended = value;
-            }
-        }
-
-        public Exception LastError
-        {
-            get { return _lastError; }
-            set
-            {
-                OnChanged(_lastError != null ? _lastError.ToString() : null,value != null ? value.ToString() : null);
-                _lastError = value;
             }
         }
 
         public bool? IsOver
         {
             get { return _isOver; }
-            set { 
-                OnChanged(_isOver,value);
-                _isOver = value; 
+            set
+            {
+                OnChanged(_isOver, value, v => _delta.IsOver = v);
+                _isOver = value;
             }
         }
-        
-        private void OnChanged<T>(T? oldValue, T? newValue, [CallerMemberName] string callerName = null) where T:struct
-        {
-            var oldValueString = oldValue.HasValue ? oldValue.Value.ToString() : null;
-            OnChanged(oldValueString,newValue.ToString(),callerName);
-        }
 
-        private void OnChanged(string oldValue,string newValue, [CallerMemberName] string callerName = null)
+        public DateTime? StartTime
         {
-            var propertyChanged = new PropertyChanged
+            get { return _startTime; }
+            set
             {
-                CurrentValue = newValue,
-                PreviousValue = oldValue,
-                ItemName = callerName
-            };
+                OnChanged(_startTime,value,v=> Delta.StartTime = v);
+                _startTime = value;
+            }
+        }
 
-            propertyChanged.SetTimeStamp();
-            TimeStamp = propertyChanged.TimeStamp;
+        public ErrorOverview LastError
+        {
+            get { return _lastError; }
+            set
+            {
+                UpdateError(value);
+                _lastError = value; 
+            }
+        }
 
-            _changes[callerName] = propertyChanged;
+        private void OnErrorChanged(bool? isErrored)
+        {
+            Delta.IsErrored = isErrored;
+
+            //Is Errored changed to false
+            if (!isErrored.Value && this.LastError != null)
+            {
+                LastError.IsErrored = false;
+                LastError.ResolvedAt = DateTime.UtcNow;
+
+                Delta.LastError = LastError;
+            }
+        }
+
+        private void UpdateError(ErrorOverview value)
+        {
+            _errors.Add(value);
+            Delta.LastError = value;
+
+            TrimOldItems(_errors);
+        }
+
+        private void TrimOldItems<T>(IList<T> auditList)
+        {
+            if(auditList.Count >= MAX_AUDIT_SIZE)   
+                auditList.RemoveAt(0);
+        }
+
+        public FeedUpdateOverview FeedUpdate
+        {
+            get { return _feedUpdate; }
+            set
+            {
+                FeedUpdated(value);
+                _feedUpdate = value;
+            }
+        }
+
+        private void FeedUpdated(FeedUpdateOverview value)
+        {
+            Delta.FeedUpdate = value;
+
+            TrimOldItems(_feedUpdates);
+        }
+
+
+        public string Name
+        {
+            get { return _name; }
+            set
+            {
+                _name = value;
+            }
+        }
+
+        public string CompetitionId
+        {
+            get { return _competitionId; }
+        }
+
+        public string CompetitionName
+        {
+            get { return _competitionName; }
+        }
+
+        public MatchStatus? MatchStatus
+        {
+            get { return _matchStatus; }
+            set
+            {
+                OnChanged(_matchStatus, value,v => _delta.MatchStatus = v);
+                _matchStatus = value;
+            }
+        }
+
+        public DateTime TimeStamp
+        {
+            get { return _timeStamp; }
+            private set { _timeStamp = value; }
         }
         
-        public IEnumerable<PropertyChanged> GetChanges()
+        private bool HasChanged<T>(T? oldValue, T? newValue) where T:struct
         {
-            return _changes.Values;
+            //If none has a value , the value coudln't have changed
+            //If old value doesn't exist the new value is the change
+            if (!oldValue.HasValue || !newValue.HasValue)
+                return newValue.HasValue;
+
+            return !oldValue.Value.Equals(newValue.Value);
         }
 
-        public void Merge(FixtureOverview other)
+        private bool HasChanged(string oldValue, string newValue)
         {
-            //other._changes 
+            return oldValue != newValue;
+        }
 
+        private void OnChanged<T>(T? oldValue, T? newValue, Action<T?> updateDeltaProperty) where T : struct
+        {
+            if(!HasChanged(oldValue,newValue))
+                return;
+            
+            updateDeltaProperty(newValue);
+        }
+
+
+        private void OnChanged(string oldValue,string newValue,Func<string,string> updateDeltaProperty)
+        {
+            if(!HasChanged(oldValue,newValue))
+                return;
+            
+            updateDeltaProperty(newValue);
+        }
+        
+        public IEnumerable<ErrorOverview> GetErrorsAudit(int limit = 0)
+        {
+            if (limit == 0)
+                return _errors;
+
+            return _errors.Take(limit);
+        }
+
+        public IEnumerable<FeedUpdateOverview> GetFeedAudit(int limit = 0)
+        {
+            throw new NotImplementedException();
+        }
+        
+        
+        public IFixtureOverviewDelta GetDelta()
+        {
+            var responseDelta = _delta;
+            _delta = null;
+
+            return responseDelta;
         }
     }
 }

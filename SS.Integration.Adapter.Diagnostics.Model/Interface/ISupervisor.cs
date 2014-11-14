@@ -7,7 +7,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Interface
     public interface ISupervisor : IStreamListenerManager
     {
         void ForceSnapshot(string fixtureId);
-        IObservable<FixtureOverview> GetFixtureOverviewStream();
-        IEnumerable<FixtureOverview> GetFixtures();
+        IObservable<IFixtureOverviewDelta> GetFixtureOverviewStream();
+        IEnumerable<IFixtureOverview> GetFixtures();
     }
 }

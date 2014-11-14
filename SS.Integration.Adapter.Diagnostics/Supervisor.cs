@@ -16,14 +16,12 @@ namespace SS.Integration.Adapter.Diagnostic
         private ILog _logger = LogManager.GetLogger(typeof(Supervisor));
         
         private ConcurrentDictionary<string, FixtureOverview> _fixtures;
-        private Subject<FixtureOverview> _changeTracker = new Subject<FixtureOverview>();
+        private Subject<IFixtureOverviewDelta> _changeTracker = new Subject<IFixtureOverviewDelta>();
         private IDisposable _publisher;
 
-        public Supervisor(ISettings settings)
-            : base(settings)
+        public Supervisor(ISettings settings): base(settings)
         {
-            //_publishAction = publishAction;
-            //_publisher = Observable.Buffer(_fixtureEvents, TimeSpan.FromSeconds(1), 10).Subscribe(x => _publishAction(x.ToDictionary(f => f.Id)));
+            
         }
 
         public override void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector)
@@ -142,11 +140,16 @@ namespace SS.Integration.Adapter.Diagnostic
             var fixtureOverview = GetFixtureOverview(streamListenerEventArgs.Listener.FixtureId);
             fixtureOverview.Sequence = streamListenerEventArgs.CurrentSequence;
             fixtureOverview.Epoch = streamListenerEventArgs.Epoch;
-            
-            if (streamListenerEventArgs.Exception != null)
-                fixtureOverview.LastError = streamListenerEventArgs.Exception;
 
-            _changeTracker.OnNext(fixtureOverview);
+            if (streamListenerEventArgs.Exception != null)
+                fixtureOverview.LastError = new ErrorOverview
+                {
+                    ErroredAt = DateTime.UtcNow,
+                    Exception = streamListenerEventArgs.Exception,
+                    IsErrored = streamListenerEventArgs.Listener.IsErrored
+                };
+
+            _changeTracker.OnNext(fixtureOverview.GetDelta());
         }
 
         private void UpdateStateFromStreamListener(StreamListener listener)
@@ -166,14 +169,14 @@ namespace SS.Integration.Adapter.Diagnostic
         }
 
         
-        public IObservable<FixtureOverview> GetFixtureOverviewStream()
+        public IObservable<IFixtureOverviewDelta> GetFixtureOverviewStream()
         {
             return _changeTracker;
         }
 
-        public IEnumerable<FixtureOverview> GetFixtures()
+        public IEnumerable<IFixtureOverview> GetFixtures()
         {
-            throw new NotImplementedException();
+            return _fixtures.Values;
         }
 
         private FixtureOverview GetFixtureOverview(string fixtureId)
