@@ -24,6 +24,11 @@ namespace SS.Integration.Adapter.Diagnostic
             
         }
 
+        public void Initialise()
+        {
+            // TODO
+        }
+
         public override void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector)
         {
             base.CreateStreamListener(resource,stateManager,platformConnector);

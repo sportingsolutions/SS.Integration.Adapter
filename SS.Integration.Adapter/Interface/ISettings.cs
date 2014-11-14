@@ -74,13 +74,6 @@ namespace SS.Integration.Adapter.Interface
         int EchoDelay { get; }
 
         /// <summary>
-        /// Determines wheter the adapter generates
-        /// or not a suspension request for all the 
-        /// markets when is shutting down
-        /// </summary>
-        bool SuspendAllMarketsOnShutdown { get; }
-
-        /// <summary>
         /// Returns the path for
         /// the events' state storage file
         /// </summary>
@@ -108,5 +101,10 @@ namespace SS.Integration.Adapter.Interface
         /// True to collect statistics
         /// </summary>
         bool StatsEnabled { get; }
+
+        /// <summary>
+        /// True to instantiate the adapter's supervisor
+        /// </summary>
+        bool UseSupervisor { get; }
     }
 }

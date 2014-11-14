@@ -12,9 +12,15 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-namespace SS.Integration.Adapter.Diagnostics.Model.Interface
+using System.Collections.Generic;
+
+namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface
 {
-    public interface IAdapterSupervisor
+    public interface ISportDetails : ISportOverview
     {
+        /// <summary>
+        /// Returns an IFixtureOverview object for each fixture on this sport
+        /// </summary>
+        IEnumerable<IFixtureOverview> Fixtures { get; }
     }
 }

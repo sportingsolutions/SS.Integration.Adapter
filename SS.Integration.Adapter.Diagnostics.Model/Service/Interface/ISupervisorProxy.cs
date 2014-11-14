@@ -12,21 +12,22 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System.Collections.Generic;
+using SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
 
-using Newtonsoft.Json;
-
-namespace SS.Integration.Adapter.Diagnostics.RestService.Models
+namespace SS.Integration.Adapter.Diagnostics.Model.Service.Interface
 {
-    public static class ModelExtensions
+    public interface ISupervisorProxy
     {
-        private static readonly JsonSerializerSettings _settings = new JsonSerializerSettings
-        {
-            Formatting = Formatting.None
-        };
 
-        public static string ToJson(this AdapterStatus status)
-        {
-            return JsonConvert.SerializeObject(status, _settings);
-        }
+        IEnumerable<ISportOverview> GetSports();
+
+        ISportDetails GetSportDetail(string sportCode);
+
+        IFixtureDetails GetFixtureDetail(string fixtureId);
+
+        IAdapterStatus GetAdapterStatus();
+
+        IEnumerable<IFixtureProcessingEntry> GetFixtureHistory(string fixtureId);
     }
 }

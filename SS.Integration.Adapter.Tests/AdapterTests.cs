@@ -43,7 +43,6 @@ namespace SS.Integration.Adapter.Tests
             var listener = new Mock<IListener>();
 
             settings.Setup(s => s.FixtureCheckerFrequency).Returns(10000);
-            settings.Setup(s => s.SuspendAllMarketsOnShutdown).Returns(false);
             service.Setup(s => s.Connect());
 
             var adapter = new Adapter(
@@ -73,7 +72,6 @@ namespace SS.Integration.Adapter.Tests
             var listener = new Mock<IListener>();
 
             settings.Setup(s => s.FixtureCheckerFrequency).Returns(10000);
-            settings.Setup(s => s.SuspendAllMarketsOnShutdown).Returns(true);
             service.Setup(s => s.Connect());
 
             var adapter = new Adapter(

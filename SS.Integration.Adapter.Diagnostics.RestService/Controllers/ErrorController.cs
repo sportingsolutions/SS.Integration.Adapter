@@ -15,14 +15,14 @@
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Web.Http;
 
 namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
 {
-    
     public class ErrorController : ApiController
     {
-        private const string DEFAULT_REDIRECT_PAGE = "/ui/index.html";
+        private const string DEFAULT_REDIRECT_PAGE = "/index.html";
 
         /**
          * This allows to redirect the request to DEFAULT_REDIRECT_PAGE if the 
@@ -41,12 +41,16 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
         [HttpGet, HttpPost, HttpPut, HttpDelete, HttpHead, HttpOptions, AcceptVerbs("PATCH")]
         public HttpResponseMessage Handle404()
         {
-            if (Request.RequestUri.LocalPath.Contains("/ui/"))
+            if (Service.ServiceInstance.ServiceConfiguration.UseUIRedirect)
             {
-                var response = Request.CreateResponse(HttpStatusCode.Moved);
-                response.Headers.Location = BuildRedirectUrl(Request.RequestUri);
 
-                return response;
+                if (Request.RequestUri.LocalPath.Contains(Service.ServiceInstance.ServiceConfiguration.UIPath))
+                {
+                    var response = Request.CreateResponse(HttpStatusCode.Moved);
+                    response.Headers.Location = BuildRedirectUrl(Request.RequestUri);
+
+                    return response;
+                }
             }
 
             var responseMessage = new HttpResponseMessage(HttpStatusCode.NotFound)
@@ -54,6 +58,8 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
                 ReasonPhrase = "The requested resource is not found",
 
             };
+
+            responseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue(UrlUtilities.JSON_MEDIA_TYPE);
             return responseMessage;
         }
 
@@ -63,7 +69,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
             if (basepath.EndsWith("/"))
                 basepath = basepath.Substring(0, basepath.Length - 1);
 
-            basepath += DEFAULT_REDIRECT_PAGE;
+            basepath += Service.ServiceInstance.ServiceConfiguration.UIPath + DEFAULT_REDIRECT_PAGE;
             basepath += "?path=" + uri.LocalPath;
             return new Uri(basepath);
         }

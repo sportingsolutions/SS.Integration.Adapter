@@ -12,24 +12,15 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Collections.Generic;
-
-namespace SS.Integration.Adapter.Diagnostics.RestService.Models
+namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface
 {
-    public class SportDetails
+    public interface IAdapterStatus
     {
-        public SportDetails(string sportName)
-        {
-            Name = sportName;
-            Fixtures = new List<FixtureOverview>();
-        }
-
-        public string Name { get; private set; }
-
-        public List<FixtureOverview> Fixtures
-        {
-            get;
-            private set;
-        }
+        string UdapiSDKVersion { get; }
+        string AdapterVersion { get; }
+        string PluginName { get; }
+        string PluginVersion { get; }
+        string RunningThreads { get; }
+        string MemoryUsage { get; }
     }
 }

@@ -34,7 +34,7 @@ namespace SS.Integration.Adapter
 {
     public class Adapter
     {
-        private readonly IStreamListenerManager _supervisor;
+        private readonly IStreamListenerManager _listenersManager;
 
         public delegate void StreamEventHandler(object sender, string fixtureId);
 
@@ -48,15 +48,15 @@ namespace SS.Integration.Adapter
         private readonly IStatsHandle _stats;
         private Timer _trigger;
 
-        public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector,IStreamListenerManager supervisor)
+        public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector, IStreamListenerManager listenersManager)
         {
-            _supervisor = supervisor;
+            _listenersManager = listenersManager;
 
             Settings = settings;
             UDAPIService = udapiServiceFacade;
             PlatformConnector = platformConnector;
             EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
-            
+
             var statemanager = new StateManager(settings);
             StateManager = statemanager;
             StateProviderProxy.Init(statemanager);
@@ -76,7 +76,7 @@ namespace SS.Integration.Adapter
             _resourceCreationQueue = new BlockingCollection<IResourceFacade>(new ConcurrentQueue<IResourceFacade>());
             _sports = new List<string>();
             _creationQueueCancellationToken = new CancellationTokenSource();
-            
+
             _creationTasks = new Task[settings.FixtureCreationConcurrency];
 
             _stats = StatsManager.Instance["adapter.core"].GetHandle();
@@ -160,7 +160,7 @@ namespace SS.Integration.Adapter
                     _creationQueueCancellationToken.Cancel(false);
                     Task.WaitAll(_creationTasks);
 
-                    _supervisor.StopAll();
+                    _listenersManager.StopAll();
 
                     EventState.WriteToFile();
 
@@ -257,7 +257,7 @@ namespace SS.Integration.Adapter
         private void GetStatistics()
         {
             var queueSize = _resourceCreationQueue.Count;
-            var currentlyConnected = _supervisor.Count;
+            var currentlyConnected = _listenersManager.Count;
 
             try
             {
@@ -266,7 +266,7 @@ namespace SS.Integration.Adapter
                 _stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_HEALTH_CHECK, "1");
                 _stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_FIXTURE_TOTAL, currentlyConnected.ToString());
 
-                foreach (var sport in _supervisor.GetListenersBySport())
+                foreach (var sport in _listenersManager.GetListenersBySport())
                 {
                     var sportStatsHandle = StatsManager.Instance["adapter.core.fixture." + sport.Key].GetHandle();
                     sportStatsHandle.SetValueUnsafe(AdapterCoreKeys.SPORT_FIXTURE_TOTAL, sport.Count().ToString());
@@ -339,7 +339,7 @@ namespace SS.Integration.Adapter
         {
             var currentfixturesLookup = resources.ToDictionary(r => r.Id);
 
-            _supervisor.RemoveDeletedFixtures(sport, currentfixturesLookup);
+            _listenersManager.RemoveDeletedFixtures(sport, currentfixturesLookup);
         }
 
         private void ProcessResource(string sport, IResourceFacade resource)
@@ -347,12 +347,12 @@ namespace SS.Integration.Adapter
             _logger.DebugFormat("Attempt to process {0} for sport={1}", resource, sport);
             
             // make sure that the resource is not already being processed by some other thread
-            if(!_supervisor.CanBeProcessed(resource.Id))
+            if(!_listenersManager.CanBeProcessed(resource.Id))
                 return;
 
             _logger.InfoFormat("Processing {0}", resource);
 
-            if (_supervisor.ProcessResource(resource))
+            if (_listenersManager.ProcessResource(resource))
             {
                 _logger.DebugFormat("Adding {0} to the creation queue ", resource);
                 _resourceCreationQueue.Add(resource);
@@ -371,10 +371,10 @@ namespace SS.Integration.Adapter
                     {
                         _logger.DebugFormat("Task={0} is processing {1} from the queue", Task.CurrentId, resource);
 
-                        if (_supervisor.HasStreamListener(resource.Id))
+                        if (_listenersManager.HasStreamListener(resource.Id))
                             continue;
 
-                        _supervisor.CreateStreamListener(resource, StateManager,PlatformConnector);
+                        _listenersManager.CreateStreamListener(resource, StateManager,PlatformConnector);
                     }
                     catch (Exception ex)
                     {
@@ -401,7 +401,7 @@ namespace SS.Integration.Adapter
 
         private bool RemoveAndStopListener(string fixtureId)
         {
-            return _supervisor.RemoveAndStopListener(fixtureId);
+            return _listenersManager.RemoveAndStopListener(fixtureId);
         }
 
         /// <summary>
@@ -414,7 +414,7 @@ namespace SS.Integration.Adapter
         /// <returns></returns>
         private bool StopListenerIfFixtureEnded(string sport, IResourceFacade resource)
         {
-            return _supervisor.RemoveStreamListenerIfFinishedProcessing(resource);
+            return _listenersManager.RemoveStreamListenerIfFinishedProcessing(resource);
         }
 
         private void LogVersions()
@@ -430,10 +430,5 @@ namespace SS.Integration.Adapter
             _logger.InfoFormat("Sporting Solutions Adapter version={0} using Sporting Solutions SDK version={1}", e, s);
         }
 
-        
-
-       
-
-       
     }
 }

@@ -12,31 +12,24 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
 
-namespace SS.Integration.Adapter.Diagnostics.RestService.Models
+using SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
+
+namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model
 {
-    public class FixtureProcessingEntry
+    public class SportOverview : ISportOverview
     {
-        public enum FixtureProcessingState 
-        {
-            PROCESSED = 0,
-            PROCESSING = 1,
-            SKIPPED = 2,
-        }
+        
+        public string Name { get; set; }
 
-        public DateTime Timestamp { get; set; }
+        public int Total { get; set; }
 
-        public string Sequence { get; set; }
+        public int InPlay { get; set; }
 
-        public string Epoch { get; set; }
+        public int InSetup { get; set; }
 
-        public string EpochChangeReason { get; set; }
+        public int InPreMatch { get; set; }
 
-        public bool IsUpdate { get; set; }
-
-        public string Exception { get; set; }
-
-        public FixtureProcessingState State { get; set; }
+        public int InErrorState { get; set; }
     }
 }

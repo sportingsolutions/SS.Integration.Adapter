@@ -12,16 +12,26 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-namespace SS.Integration.Adapter.Diagnostics.RestService.Models
+using System;
+using SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
+
+namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model
 {
-    public class AdapterStatus
+    public class FixtureProcessingEntry : IFixtureProcessingEntry
     {
-        public bool IsRunning { get; set; }
-        public string UdapiSDKVersion { get; set; }
-        public string AdapterVersion { get; set; }
-        public string PluginName { get; set; }
-        public string PluginVersion { get; set; }
-        public string RunningThreads { get; set; }
-        public string MemoryUsage { get; set; }
+       
+        public DateTime Timestamp { get; set; }
+
+        public string Sequence { get; set; }
+
+        public string Epoch { get; set; }
+
+        public int[] EpochChangeReasons { get; set; }
+
+        public bool IsUpdate { get; set; }
+
+        public string Exception { get; set; }
+
+        public FixtureProcessingState State { get; set; }
     }
 }

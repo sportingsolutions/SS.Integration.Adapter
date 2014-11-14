@@ -16,7 +16,6 @@ using System.Net.Http;
 using System.Web.Http;
 using System.Net;
 using SS.Integration.Adapter.Diagnostics.RestService.Attributes;
-using SS.Integration.Adapter.Diagnostics.RestService.Models;
 
 namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
 {
@@ -32,13 +31,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
         [HttpGet]
         public HttpResponseMessage GetSports()
         {
-            
-            System.Collections.Generic.List<SportDetails> sports = new System.Collections.Generic.List<SportDetails>();
-            foreach(var sport in new[] {"Football", "RugbyUnion", "RugbyLeague", "Darts", "Cricket", "TestCricket", "AmericanFootball", "Basketball", "Baseball", "HorseRacing"})
-            {
-                sports.Add(GenerateMockedSportDetail(sport));
-            }
-        
+            var sports = Service.ServiceInstance.Supervisor.GetSports();
             return Request.CreateResponse(HttpStatusCode.OK, sports, UrlUtilities.JSON_MEDIA_TYPE);
         }
 
@@ -46,29 +39,11 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
         [HttpGet]
         public HttpResponseMessage GetSport(string sportCode)
         {
-            // TODO call the supervisor for getting these data
+            var sport = Service.ServiceInstance.Supervisor.GetSportDetail(sportCode);
+            if(sport == null)
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
 
-
-            return Request.CreateResponse(HttpStatusCode.OK, GenerateMockedSportDetail(sportCode), UrlUtilities.JSON_MEDIA_TYPE);
-
-            if (string.IsNullOrEmpty(sportCode))
-                return new HttpResponseMessage(HttpStatusCode.BadRequest);
-
-            return new HttpResponseMessage(HttpStatusCode.OK);
+            return Request.CreateResponse(HttpStatusCode.OK, sport, UrlUtilities.JSON_MEDIA_TYPE);
         }
-
-        private SportDetails GenerateMockedSportDetail(string sportCode)
-        {
-            SportDetails detail = new SportDetails(sportCode);
-            detail.Fixtures.Add(new FixtureOverview { Id = "1", IsStreaming = true, State = FixtureOverview.FixtureState.Running, Competition = "Premier League", CompetitionId = "123212112", StartTime = new System.DateTime(2014, 2, 17, 9, 0, 0), Description = "Chelsea v QPR", Sequence = "10" });
-            detail.Fixtures.Add(new FixtureOverview { Id = "2", IsStreaming = true, State = FixtureOverview.FixtureState.PreMatch, IsInErrorState = true, Competition = "Premier League", CompetitionId = "ffffff", StartTime = new System.DateTime(2014, 2, 17, 14, 0, 0), Description = "Manchester United v Arsenal", Sequence = "12" });
-            detail.Fixtures.Add(new FixtureOverview { Id = "3", IsStreaming = false, State = FixtureOverview.FixtureState.Over, Competition = "Champions League", CompetitionId = "AAAA", StartTime = new System.DateTime(2014, 3, 18, 20, 0, 0), Description = "Tottenham v Juventus", Sequence = "84" });
-            detail.Fixtures.Add(new FixtureOverview { Id = "4", IsStreaming = false, State = FixtureOverview.FixtureState.Setup, IsInErrorState = true, Competition = "Serie A", CompetitionId = "823702", StartTime = new System.DateTime(2014, 2, 17, 9, 0, 0), Description = "Milan v Inter", Sequence = "3" });
-            detail.Fixtures.Add(new FixtureOverview { Id = "5", IsStreaming = false, State = FixtureOverview.FixtureState.Ready, Competition = "French Division 1", CompetitionId = "1qqqqqq", StartTime = new System.DateTime(2014, 3, 17, 17, 0, 0), Description = "PSG v Lion", Sequence = "99" });
-
-            return detail;
-        }
-
-        
     }
 }

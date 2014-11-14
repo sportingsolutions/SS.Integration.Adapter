@@ -74,14 +74,8 @@
     <Reference Include="System.Configuration" />
     <Reference Include="System.Configuration.Install" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Management" />
-    <Reference Include="System.Web.Extensions" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
     <Reference Include="System.ServiceProcess" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdapterService.cs">
@@ -112,13 +106,17 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SS.Integration.Adapter.Diagnostics.Model\SS.Integration.Adapter.Diagnostics.Model.csproj">
+      <Project>{b11dbc1f-95e5-44d3-8896-78482d84fb07}</Project>
+      <Name>SS.Integration.Adapter.Diagnostics.Model</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Adapter.Diagnostics\SS.Integration.Adapter.Diagnostics.csproj">
+      <Project>{f12cc40d-b6bb-4142-bab0-af3a6e5a4eee}</Project>
+      <Name>SS.Integration.Adapter.Diagnostics</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj">
       <Project>{29461692-6DE2-47FA-ACC4-ECAAE9462AE3}</Project>
       <Name>SS.Integration.Adapter.Model</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SS.Integration.Adapter.Plugin.Model\SS.Integration.Adapter.Plugin.Model.csproj">
-      <Project>{b622855c-9331-4792-9fbf-339f737db982}</Project>
-      <Name>SS.Integration.Adapter.Plugin.Model</Name>
     </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Adapter\SS.Integration.Adapter.csproj">
       <Project>{1ad0b149-3a7b-4725-abde-9455d953f036}</Project>

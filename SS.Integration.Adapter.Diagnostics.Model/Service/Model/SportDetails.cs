@@ -13,23 +13,29 @@
 //limitations under the License.
 
 using System.Collections.Generic;
+using SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
 
-namespace SS.Integration.Adapter.Diagnostics.RestService.Models
+namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model
 {
-    public class SportDetails
+    public class SportDetails : SportOverview, ISportDetails
     {
-        public SportDetails(string sportName)
+        public SportDetails()
         {
-            Name = sportName;
-            Fixtures = new List<FixtureOverview>();
+            Fixtures = new List<IFixtureOverview>();
         }
 
-        public string Name { get; private set; }
-
-        public List<FixtureOverview> Fixtures
+        public IEnumerable<IFixtureOverview> Fixtures
         {
             get;
             private set;
+        }
+
+        public void AddFixture(IFixtureOverview overview)
+        {
+            if (overview == null)
+                return;
+
+            ((List<IFixtureOverview>)Fixtures).Add(overview);
         }
     }
 }

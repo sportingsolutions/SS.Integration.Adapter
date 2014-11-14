@@ -21,7 +21,8 @@ namespace SS.Integration.Adapter.Diagnostics.RestServiceStartup
     {
         public static void Main()
         {
-            StartUp start = new StartUp();
+
+            Service start = new Service(new MockedSupervisor());
             start.Start();
             Console.ReadLine();
         }

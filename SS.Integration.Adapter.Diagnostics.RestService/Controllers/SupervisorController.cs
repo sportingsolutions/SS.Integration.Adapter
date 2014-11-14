@@ -16,7 +16,6 @@ using System.Net.Http;
 using System.Web.Http;
 using System.Net;
 using SS.Integration.Adapter.Diagnostics.RestService.Attributes;
-using SS.Integration.Adapter.Diagnostics.RestService.Models;
 
 namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
 {
@@ -28,17 +27,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
         [HttpGet]
         public HttpResponseMessage GetDetails()
         {
-            AdapterStatus status = new AdapterStatus
-            {
-                AdapterVersion = "1.2.3",
-                IsRunning = true,
-                PluginName = "Testing",
-                PluginVersion = "4.5.6",
-                UdapiSDKVersion = "7.8.9",
-                RunningThreads = "12",
-                MemoryUsage = "150000"
-            };            
-
+            var status = Service.ServiceInstance.Supervisor.GetAdapterStatus();
             return Request.CreateResponse(HttpStatusCode.OK, status, UrlUtilities.JSON_MEDIA_TYPE);
         }
     }
