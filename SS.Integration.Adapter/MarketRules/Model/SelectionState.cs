@@ -58,6 +58,10 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public bool IsRollingSelection { get; private set; }
 
+        public ISelectionResultState Result { get; private set; }
+
+        public ISelectionResultState PlaceResult { get; private set; }
+
         #region Tags
 
         public IEnumerable<string> TagKeys
@@ -101,6 +105,26 @@ namespace SS.Integration.Adapter.MarketRules.Model
             if (IsRollingSelection)
                 ret &= Line == selection.Line;
 
+            if(Result != null)
+            {
+                if(selection.Result == null)
+                    return false;
+
+                ret &= Result.IsEqualTo(selection.Result);
+            }
+            else if(selection.Result != null)
+                return false;
+
+            if (PlaceResult != null)
+            {
+                if (selection.PlaceResult == null)
+                    return false;
+
+                ret &= PlaceResult.IsEqualTo(selection.PlaceResult);
+            }
+            else if (selection.PlaceResult != null)
+                return false;
+
             return ret;
         }
 
@@ -125,6 +149,27 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 // and those contained within the selection object...
                 // we can then proceed to check the selection's fields
                 // Note that Selection.Name is a shortcut for Selection.GetTagValue("name")
+
+                // as Result and PlaceResult are only present when dealing with full snapshots
+                // we only check these properties if checkTags is true
+
+                if (selection.Result != null)
+                {
+                    if (Result == null)
+                        return false;
+
+                    if (!Result.IsEquivalentTo(selection.Result))
+                        return false;
+                }
+
+                if (selection.PlaceResult != null)
+                {
+                    if (PlaceResult == null)
+                        return false;
+
+                    if (!PlaceResult.IsEquivalentTo(selection.PlaceResult))
+                        return false;
+                }
             }
 
             var result = Price == selection.Price &&
@@ -156,6 +201,24 @@ namespace SS.Integration.Adapter.MarketRules.Model
                     _tags.Add(key, selection.GetTagValue(key));
 
                 Name = selection.Name;
+
+                // Result and PlaceResult (in the context of racing fixtures) 
+                // are only present on a full snapshot
+                if (selection.Result != null)
+                {
+                    if (Result == null)
+                        Result = new SelectionResultState(selection.Result);
+                    else
+                        ((IUpdatableSelectionResultState)Result).Update(selection.Result);
+                }
+
+                if (selection.PlaceResult != null)
+                {
+                    if (PlaceResult == null)
+                        PlaceResult = new SelectionResultState(selection.PlaceResult);
+                    else
+                        ((IUpdatableSelectionResultState)PlaceResult).Update(selection.PlaceResult);
+                }
             }
 
             UpdateLineOnRollingSelection(selection);
@@ -182,6 +245,12 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 Line = this.Line,
                 IsRollingSelection = this.IsRollingSelection
             };
+
+            if (Result != null)
+                clone.Result = ((IUpdatableSelectionResultState)Result).Clone();
+
+            if (PlaceResult != null)
+                clone.PlaceResult = ((IUpdatableSelectionResultState)Result).Clone();
 
             foreach (var key in this.TagKeys)
                 clone._tags.Add(key, this.GetTagValue(key));
