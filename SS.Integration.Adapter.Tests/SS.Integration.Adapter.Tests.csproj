@@ -89,6 +89,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="Data\horseracing" />
     <None Include="Data\rugbydata-snapshot-2" />
     <None Include="Data\rugbydata-update-3" />
     <None Include="Data\rugbydata-update-4" />

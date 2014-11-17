@@ -58,6 +58,7 @@
     <Compile Include="FixtureState.cs" />
     <Compile Include="GameState\FootballGameState.cs" />
     <Compile Include="Interfaces\IPluginFixtureState.cs" />
+    <Compile Include="Interfaces\ISelectionResultState.cs" />
     <Compile Include="Interfaces\IStateProvider.cs" />
     <Compile Include="Interfaces\IPluginBootstrapper.cs" />
     <Compile Include="Interfaces\IMarketRule.cs" />

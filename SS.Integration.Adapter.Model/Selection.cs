@@ -115,6 +115,10 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        public Result Result { get; set; }
+
+        public Result PlaceResult { get; set; }
+
         #region Tags
 
         [IgnoreDataMember]

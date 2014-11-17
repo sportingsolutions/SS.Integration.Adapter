@@ -76,6 +76,10 @@ namespace SS.Integration.Adapter.Tests
                     data = FixtureSamples.rugbydata_snapshot_withRemovedMarkets_5;
                     sport = "RugbyLeague";
                     break;
+                case "horseracing":
+                    data = FixtureSamples.horseracing;
+                    sport = "HorseRacing";
+                    break;
                 default:
                     throw new Exception("Unknown fixture");
 

@@ -80,7 +80,9 @@
     <Compile Include="Interface\IStoreProvider.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketState.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketStateCollection.cs" />
+    <Compile Include="MarketRules\Interfaces\IUpdatableSelectionResultState.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableSelectionState.cs" />
+    <Compile Include="MarketRules\Model\SelectionResultState.cs" />
     <Compile Include="ProcessState\BinaryStoreProvider.cs" />
     <Compile Include="ProcessState\EventState.cs" />
     <Compile Include="ProcessState\FileStoreProvider.cs" />
