@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter", "SS.Integration.Adapter\SS.Integration.Adapter.csproj", "{1AD0B149-3A7B-4725-ABDE-9455D953F036}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7C471272-0AE9-4E16-B292-07747CDC330D} = {7C471272-0AE9-4E16-B292-07747CDC330D}
@@ -17,7 +19,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{B4C9F6
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.WindowsService", "SS.Integration.Adapter.WindowsService\SS.Integration.Adapter.WindowsService.csproj", "{83ADA2B6-1947-43C9-B4E4-5F7474A663D2}"
 	ProjectSection(ProjectDependencies) = postProject
+		{AB236001-8C88-4511-A70B-41571A83BB4F} = {AB236001-8C88-4511-A70B-41571A83BB4F}
 		{BF7E4403-53DA-43C9-868A-C7510584D207} = {BF7E4403-53DA-43C9-868A-C7510584D207}
+		{F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE} = {F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE}
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Model", "SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj", "{29461692-6DE2-47FA-ACC4-ECAAE9462AE3}"
@@ -45,6 +49,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.MarketRules", "SS.Integration.Adapter.MarketRules\SS.Integration.Adapter.MarketRules.csproj", "{5CADD732-A519-4006-8370-52EFC8AA97B8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diagnostics.Model", "SS.Integration.Adapter.Diagnostics.Model\SS.Integration.Adapter.Diagnostics.Model.csproj", "{B11DBC1F-95E5-44D3-8896-78482D84FB07}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AD0B149-3A7B-4725-ABDE-9455D953F036} = {1AD0B149-3A7B-4725-ABDE-9455D953F036}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diagnostics.Testing", "SS.Integration.Adapter.Diagnostics.Testing\SS.Integration.Adapter.Diagnostics.Testing.csproj", "{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF}"
 EndProject

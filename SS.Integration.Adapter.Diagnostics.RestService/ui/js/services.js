@@ -54,7 +54,8 @@
             SportDetail: '/api/supervisor/sports/:sportCode/',
             FixtureDetail: '/api/supervisor/fixture/:fixtureId/details',
             FixtureHistory: '/api/supervisor/fixture/:fixtureId/history',
-            AdapterDetails: '/api/supervisor/details'
+            FixtureSearch: '/api/supervisor/search/fixture',
+            AdapterDetails: '/api/supervisor/details',
         },
 
         uiRelations: {
@@ -409,6 +410,27 @@
                     });
 
                 return deferred.promise;
+            },
+
+            searchFixture: function (searchData) {
+                if (!searchData || 0 === searchData.length)
+                    return null;
+
+                var path = MyConfig.relations.FixtureSearch;
+                path = MyConfig.fn.buildPath(path, MyConfig);
+
+                var deferred = $q.defer();
+                $http.post(path, searchData)
+                    .success(function (data) {
+                        deferred.resolve(data);
+                    })
+                    .error(function () {
+                        $log.error('An error occured while searching for fixtures');
+                        deferred.resolve({});
+                    });
+
+                return deferred.promise;
+                
             }
         };
     }]);

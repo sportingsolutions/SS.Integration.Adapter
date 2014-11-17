@@ -50,11 +50,11 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
                 InErrorState = 2
             };
 
-            detail.AddFixture(new FixtureOverview { Id = "1", IsStreaming = true,  State = FixtureState.Running,  IsInErrorState = false,  Competition = "Premier League",    CompetitionId = "123212112", StartTime = new DateTime(2014, 2, 17, 9, 0, 0),  Description = "Chelsea v QPR", Sequence = "10"});
-            detail.AddFixture(new FixtureOverview { Id = "2", IsStreaming = true,  State = FixtureState.PreMatch, IsInErrorState = true,   Competition = "Premier League",    CompetitionId = "fffffffff", StartTime = new DateTime(2014, 2, 17, 14, 0, 0), Description = "Manchester United v Arsenal", Sequence = "12" });
-            detail.AddFixture(new FixtureOverview { Id = "3", IsStreaming = false, State = FixtureState.Over,     IsInErrorState = false,  Competition = "Champions League",  CompetitionId = "AAAAAAAAA", StartTime = new DateTime(2014, 3, 18, 20, 0, 0), Description = "Tottenham v Juventus", Sequence = "84" });
-            detail.AddFixture(new FixtureOverview { Id = "4", IsStreaming = false, State = FixtureState.Setup,    IsInErrorState = true,   Competition = "Serie A",           CompetitionId = "823702122", StartTime = new DateTime(2014, 2, 17, 9, 0, 0),  Description = "Milan v Inter", Sequence = "3" });
-            detail.AddFixture(new FixtureOverview { Id = "5", IsStreaming = false, State = FixtureState.Ready,    IsInErrorState = false , Competition = "French Division 1", CompetitionId = "1qqqqqqas", StartTime = new DateTime(2014, 3, 17, 17, 0, 0), Description = "PSG v Lion", Sequence = "99" });
+            detail.AddFixture(new FixtureOverview { Id = "123", IsStreaming = true,  State = FixtureState.Running,  IsInErrorState = false,  Competition = "Premier League",    CompetitionId = "123212112", StartTime = new DateTime(2014, 2, 17, 9, 0, 0),  Description = "Chelsea v QPR", Sequence = "10"});
+            detail.AddFixture(new FixtureOverview { Id = "234", IsStreaming = true,  State = FixtureState.PreMatch, IsInErrorState = true,   Competition = "Premier League",    CompetitionId = "fffffffff", StartTime = new DateTime(2014, 2, 17, 14, 0, 0), Description = "Manchester United v Arsenal", Sequence = "12" });
+            detail.AddFixture(new FixtureOverview { Id = "345", IsStreaming = false, State = FixtureState.Over,     IsInErrorState = false,  Competition = "Champions League",  CompetitionId = "AAAAAAAAA", StartTime = new DateTime(2014, 3, 18, 20, 0, 0), Description = "Tottenham v Juventus", Sequence = "84" });
+            detail.AddFixture(new FixtureOverview { Id = "456", IsStreaming = false, State = FixtureState.Setup,    IsInErrorState = true,   Competition = "Serie A",           CompetitionId = "823702122", StartTime = new DateTime(2014, 2, 17, 9, 0, 0),  Description = "Milan v Inter", Sequence = "3" });
+            detail.AddFixture(new FixtureOverview { Id = "567", IsStreaming = false, State = FixtureState.Ready,    IsInErrorState = false , Competition = "French Division 1", CompetitionId = "1qqqqqqas", StartTime = new DateTime(2014, 3, 17, 17, 0, 0), Description = "PSG v Lion", Sequence = "99" });
 
             return detail;
         }
@@ -126,6 +126,13 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
         {
             // TODO
             return new List<IFixtureProcessingEntry>();
+        }
+
+
+        public IEnumerable<IFixtureOverview> GetFixtures()
+        {
+            var sport = GenerateMockedSportDetail("");
+            return sport.Fixtures;
         }
     }
 }

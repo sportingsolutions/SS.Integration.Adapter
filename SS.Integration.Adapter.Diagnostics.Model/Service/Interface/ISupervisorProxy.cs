@@ -29,5 +29,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Service.Interface
         IAdapterStatus GetAdapterStatus();
 
         IEnumerable<IFixtureProcessingEntry> GetFixtureHistory(string fixtureId);
+
+        IEnumerable<IFixtureOverview> GetFixtures();
     }
 }

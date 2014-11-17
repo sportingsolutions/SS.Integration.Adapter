@@ -75,9 +75,10 @@
 
                 <form role="search" class="navbar-form navbar-left">
                     <div class="form-group">
-                        <input type="text" class="form-control" placeholder="Search fixture" />
+                        <input type="text" class="form-control" placeholder="Search fixture" data-ng-model="searching.data"/>
                     </div>
-                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <button type="submit" class="btn btn-primary" data-ng-click="adapter.search()">Submit</button>
+                    <span data-ng-show="searching.noResults === true" class="icon-alert">No fixtures found</span>
                 </form>
 
                 <a href="#" data-ng-click="adapter.testNotification()">Click here</a>

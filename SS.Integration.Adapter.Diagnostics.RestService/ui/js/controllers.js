@@ -23,6 +23,7 @@
 
     // models used by the angularjs' controllers - most of them
     // expand the data received by the server by adding extra data
+    // don't rename, otherwise extend() doesn't work properly
     var models = {
 
         AdapterDetail: function AdapterDetail(){
@@ -47,7 +48,6 @@
             this.InPreMatch = 0;
             this.InSetup = 0;
             
-            // don't rename, otherwise extend() doesn't work properly
             this.FixtureGroups = {
                 InPlay: {
                     InErrorState: 0,
@@ -74,11 +74,11 @@
                         case 1:
                             group = outer.FixtureGroups.InSetup;
                             break;
-                            // 2: pre-match
+                        // 2: pre-match
                         case 2:
                             group = outer.FixtureGroups.InPreMatch;
                             break;
-                            // 3: in-play, 4: match over
+                        // 3: in-play, 4: match over
                         case 3:
                         case 4:
                             group = outer.FixtureGroups.InPlay;
@@ -176,7 +176,7 @@
 
         /**
          * Allows to search within a list of fixtures for
-         * a fixtures that contains, in at list one of its
+         * a fixture that contains, in at list one of its
          * own properties, a value that contains the
          * substrign specified by "data"
          * @param {Array<FixtureDetail>} fixtures
@@ -214,13 +214,16 @@
      * 1) MyConfig.pushNotifications.events.AdapterUpdate
      * 2) MyConfig.pushNotifications.events.Errors
      */
-    controllers.controller('AdapterCtrl', ['$scope', '$rootScope', 'Supervisor',
-        function ($scope, $rootScope, Supervisor) {
+    controllers.controller('AdapterCtrl', ['$scope', '$location', '$rootScope', 'Supervisor',
+        function ($scope, $location, $rootScope, Supervisor) {
 
             // as the current layout (index.html) uses ngView and adds
             // this controller outside ngView's supervision, its scope
             // is only destroyed when we leave the ngView's routing capabilities
             
+            $scope.searching = {};
+            $scope.searching.data = null;
+            $scope.searching.noResults = false;
             $scope.details = new models.AdapterDetail();
 
             // 1) get the adapter's details
@@ -275,6 +278,26 @@
             // this allows us to clear all the currently displayed notifications
             this.clearNotifications = function () {
                 $rootScope.$broadcast('on-error-notification-clear-all', { text: new Date().toString() });
+            }
+
+
+            this.search = function () {
+                if ($scope.searching.data && 0 !== $scope.searching.data.length) {
+                    var searchPromise = Supervisor.searchFixture($scope.searching.data);
+                    $scope.searching.data = null;
+
+                    if (!searchPromise)
+                        return;
+
+                    searchPromise.then(function (data) {
+                        if (data && data.Id) {
+                            $location.path('/ui/fixture/' + data.Id);
+                        }
+                        else {
+                            $scope.searching.noResults = true;
+                        }
+                    });
+                }
             }
         }]);
 
