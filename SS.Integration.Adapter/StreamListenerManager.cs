@@ -27,7 +27,7 @@ namespace SS.Integration.Adapter
         public event Adapter.StreamEventHandler StreamCreated;
         public event Adapter.StreamEventHandler StreamRemoved;
 
-        protected IEventState EventState { get; set; }
+        internal IEventState EventState { get; set; }
 
         public StreamListenerManager(ISettings settings)
         {
@@ -41,7 +41,7 @@ namespace SS.Integration.Adapter
         }
 
        
-        public void RemoveDeletedFixtures(string sport, Dictionary<string, IResourceFacade> currentfixturesLookup)
+        public void UpdateCurrentlyAvailableFixtures(string sport, Dictionary<string, IResourceFacade> currentfixturesLookup)
         {
             var allFixturesForSport = _listeners.Where(x => string.Equals(x.Value.Sport, sport, StringComparison.Ordinal));
 
@@ -60,7 +60,7 @@ namespace SS.Integration.Adapter
                     {
 
                         _logger.DebugFormat("Fixture with fixtureId={0} was deleted from Connect fixture factory", fixture.Key);
-                        RemoveAndStopListener(fixture.Key);
+                        RemoveStreamListener(fixture.Key);
                         EventState.RemoveFixture(fixture.Key);
                     }
                     else
@@ -84,9 +84,11 @@ namespace SS.Integration.Adapter
                     _logger.DebugFormat("Fixture with fixtureId={0} was marked as deleted, but it appered on Connect again", fixture.Key);
                 }
             }
+
+            SaveEventState();
         }
 
-        public bool RemoveAndStopListener(string fixtureId)
+        public bool RemoveStreamListener(string fixtureId)
         {
             _logger.InfoFormat("Removing listener for fixtureId={0}", fixtureId);
 
@@ -107,7 +109,7 @@ namespace SS.Integration.Adapter
             return _listeners.Values.GroupBy(x => x.Sport);
         }
 
-        public bool ProcessResource(IResourceFacade resource)
+        public bool WillProcessResource(IResourceFacade resource)
         {
             if (HasStreamListener(resource.Id))
             {
@@ -118,12 +120,12 @@ namespace SS.Integration.Adapter
                 if (listener.IsFixtureDeleted)
                 {
                     _logger.DebugFormat("{0} was deleted and republished. Listener wil be removed", resource);
-                    RemoveAndStopListener(resource.Id);
+                    RemoveStreamListener(resource.Id);
                 }
                 else if (listener.IsIgnored)
                 {
                     _logger.DebugFormat("{0} is marked as ignored. Listener wil be removed", resource);
-                    RemoveAndStopListener(resource.Id);
+                    RemoveStreamListener(resource.Id);
                 }
                 else
                 {
@@ -175,9 +177,13 @@ namespace SS.Integration.Adapter
             finally
             {
                 MarkResourceAsProcessable(resource);
+
+                SaveEventState();
                 _logger.DebugFormat("Finished processing fixture {0}", resource);
             }
         }
+
+
 
         public bool RemoveStreamListenerIfFinishedProcessing(IResourceFacade resource)
         {
@@ -197,7 +203,7 @@ namespace SS.Integration.Adapter
 
                 _logger.InfoFormat("{0} is over. Listener will be removed", resource);
 
-                if (RemoveAndStopListener(resource.Id))
+                if (RemoveStreamListener(resource.Id))
                 {
                     EventState.RemoveFixture(resource.Id);
                 }
@@ -231,6 +237,11 @@ namespace SS.Integration.Adapter
             return true;
         }
 
+        public void RemoveFixtureEventState(string fixtureId)
+        {
+            EventState.RemoveFixture(fixtureId);
+        }
+
         public bool HasStreamListener(string fixtureId)
         {
             return _listeners.ContainsKey(fixtureId);
@@ -249,14 +260,8 @@ namespace SS.Integration.Adapter
 
             _listeners[fixtureId].Stop();
         }
-
-        public bool RemoveStreamListener(string fixtureId)
-        {
-            //TODO: Rename RemoveAndStop 
-            throw new NotImplementedException();
-        }
         
-        public int Count { get { return _listeners.Count; } }
+        public int ListenersCount { get { return _listeners.Count; } }
 
         public void StopAll()
         {
@@ -280,6 +285,8 @@ namespace SS.Integration.Adapter
 
                 _listeners.Clear();
             }
+
+            SaveEventState();
         }
 
         private void DisposeListeners()
@@ -312,6 +319,19 @@ namespace SS.Integration.Adapter
             {
                 if (_currentlyProcessedFixtures.Contains(resource.Id))
                     _currentlyProcessedFixtures.Remove(resource.Id);
+            }
+        }
+
+        private void SaveEventState()
+        {
+            try
+            {
+                lock (_sync)
+                    EventState.WriteToFile();
+            }
+            catch (Exception ex)
+            {
+                _logger.ErrorFormat("Event state errored on attempt to save it: {0}",ex);
             }
         }
     }

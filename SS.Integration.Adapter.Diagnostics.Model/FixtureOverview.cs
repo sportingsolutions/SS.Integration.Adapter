@@ -183,7 +183,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
                 _name = value;
             }
         }
-
+        
         public string CompetitionId
         {
             get { return _competitionId; }
@@ -219,22 +219,8 @@ namespace SS.Integration.Adapter.Diagnostics.Model
 
             return !oldValue.Value.Equals(newValue.Value);
         }
-
-        private bool HasChanged(string oldValue, string newValue)
-        {
-            return oldValue != newValue;
-        }
-
+        
         private void OnChanged<T>(T? oldValue, T? newValue, Action<T?> updateDeltaProperty) where T : struct
-        {
-            if(!HasChanged(oldValue,newValue))
-                return;
-            
-            updateDeltaProperty(newValue);
-        }
-
-
-        private void OnChanged(string oldValue,string newValue,Func<string,string> updateDeltaProperty)
         {
             if(!HasChanged(oldValue,newValue))
                 return;
@@ -252,7 +238,10 @@ namespace SS.Integration.Adapter.Diagnostics.Model
 
         public IEnumerable<FeedUpdateOverview> GetFeedAudit(int limit = 0)
         {
-            throw new NotImplementedException();
+            if (limit == 0)
+                return _feedUpdates;
+
+            return _feedUpdates.Take(limit);
         }
         
         

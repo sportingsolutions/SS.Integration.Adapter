@@ -77,7 +77,7 @@ namespace SS.Integration.Adapter.Tests
 
             listener.ShouldRaise("OnConnected");
             listener.ShouldNotRaise("OnError");
-            listener.ShouldRaise("OnStopping");
+            listener.ShouldRaise("OnStop");
             listener.ShouldNotRaise("OnDisconnected","The disconnection is triggered by the user");
 
             connector.Verify(c => c.ProcessSnapshot(It.IsAny<Fixture>(), false), Times.Once());

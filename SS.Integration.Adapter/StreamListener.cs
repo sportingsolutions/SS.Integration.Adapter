@@ -494,6 +494,7 @@ namespace SS.Integration.Adapter
                 _logger.DebugFormat("Streaming for {0} entered the error state - going to acquire a new snapshot", _resource);
 
                 _hasRecoveredFromError = true;
+                IsErrored = true;
                 SuspendAndReprocessSnapshot();
                 IsErrored = !_hasRecoveredFromError;
             }

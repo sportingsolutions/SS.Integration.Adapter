@@ -55,7 +55,6 @@ namespace SS.Integration.Adapter
             Settings = settings;
             UDAPIService = udapiServiceFacade;
             PlatformConnector = platformConnector;
-            EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
 
             var statemanager = new StateManager(settings);
             StateManager = statemanager;
@@ -81,10 +80,7 @@ namespace SS.Integration.Adapter
 
             _stats = StatsManager.Instance["adapter.core"].GetHandle();
         }
-
-
-        internal IEventState EventState { get; set; }
-
+        
         internal IStateManager StateManager { get; set; }
 
         internal IAdapterPlugin PlatformConnector { get; private set; }
@@ -162,8 +158,6 @@ namespace SS.Integration.Adapter
 
                     _listenersManager.StopAll();
 
-                    EventState.WriteToFile();
-
                     _resourceCreationQueue.Dispose();
                     _creationQueueCancellationToken.Dispose();
                 }
@@ -194,7 +188,7 @@ namespace SS.Integration.Adapter
                 var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
 
                 Parallel.ForEach(_sports, parallelOptions, ProcessSport);
-
+                
                 GetStatistics();
 
             }
@@ -214,11 +208,6 @@ namespace SS.Integration.Adapter
                 }
 
                 ReconnectAPI();
-            }
-            finally
-            {
-                lock (_sync)
-                    EventState.WriteToFile();
             }
         }
 
@@ -257,7 +246,7 @@ namespace SS.Integration.Adapter
         private void GetStatistics()
         {
             var queueSize = _resourceCreationQueue.Count;
-            var currentlyConnected = _listenersManager.Count;
+            var currentlyConnected = _listenersManager.ListenersCount;
 
             try
             {
@@ -339,7 +328,7 @@ namespace SS.Integration.Adapter
         {
             var currentfixturesLookup = resources.ToDictionary(r => r.Id);
 
-            _listenersManager.RemoveDeletedFixtures(sport, currentfixturesLookup);
+            _listenersManager.UpdateCurrentlyAvailableFixtures(sport, currentfixturesLookup);
         }
 
         private void ProcessResource(string sport, IResourceFacade resource)
@@ -352,7 +341,7 @@ namespace SS.Integration.Adapter
 
             _logger.InfoFormat("Processing {0}", resource);
 
-            if (_listenersManager.ProcessResource(resource))
+            if (_listenersManager.WillProcessResource(resource))
             {
                 _logger.DebugFormat("Adding {0} to the creation queue ", resource);
                 _resourceCreationQueue.Add(resource);
@@ -401,21 +390,21 @@ namespace SS.Integration.Adapter
 
         private bool RemoveAndStopListener(string fixtureId)
         {
-            return _listenersManager.RemoveAndStopListener(fixtureId);
+            return _listenersManager.RemoveStreamListener(fixtureId);
         }
 
-        /// <summary>
-        /// Stops and remove the listener if the fixture is over.
-        /// Returns true if the fixture was over and the listener is removed.
-        /// False otherwise
-        /// </summary>
-        /// <param name="sport"></param>
-        /// <param name="resource"></param>
-        /// <returns></returns>
-        private bool StopListenerIfFixtureEnded(string sport, IResourceFacade resource)
-        {
-            return _listenersManager.RemoveStreamListenerIfFinishedProcessing(resource);
-        }
+        ///// <summary>
+        ///// Stops and remove the listener if the fixture is over.
+        ///// Returns true if the fixture was over and the listener is removed.
+        ///// False otherwise
+        ///// </summary>
+        ///// <param name="sport"></param>
+        ///// <param name="resource"></param>
+        ///// <returns></returns>
+        //private bool StopListenerIfFixtureEnded(string sport, IResourceFacade resource)
+        //{
+        //    return _listenersManager.RemoveStreamListenerIfFinishedProcessing(resource);
+        //}
 
         private void LogVersions()
         {

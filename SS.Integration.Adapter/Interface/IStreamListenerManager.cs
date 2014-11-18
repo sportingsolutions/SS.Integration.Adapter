@@ -14,20 +14,23 @@ namespace SS.Integration.Adapter.Interface
         bool HasStreamListener(string fixtureId);
         void StartStreaming(string fixtureId);
         void StopStreaming(string fixtureId);
-        bool RemoveStreamListener(string fixtureId);
-        
-        int Count { get; }
-
-        void StopAll();
 
         event Adapter.StreamEventHandler StreamCreated;
         event Adapter.StreamEventHandler StreamRemoved;
-        void RemoveDeletedFixtures(string sport, Dictionary<string, IResourceFacade> currentfixturesLookup);
-        bool RemoveAndStopListener(string fixtureId);
-        IEnumerable<IGrouping<string, IListener>> GetListenersBySport();
-        bool ProcessResource(IResourceFacade resource);
+        
+        int ListenersCount { get; }
+        void StopAll();
+        
+        /// <summary>
+        /// This method indicates which fixtures are currently present in the feed
+        /// for a given sport
+        /// </summary>
+        void UpdateCurrentlyAvailableFixtures(string sport, Dictionary<string, IResourceFacade> currentfixturesLookup);
         void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector);
-        bool RemoveStreamListenerIfFinishedProcessing(IResourceFacade resource);
+        bool RemoveStreamListener(string fixtureId);
+
+        IEnumerable<IGrouping<string, IListener>> GetListenersBySport();
+        bool WillProcessResource(IResourceFacade resource);
         bool CanBeProcessed(string fixtureId);
     }
 }

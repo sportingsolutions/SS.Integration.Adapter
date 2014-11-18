@@ -178,7 +178,7 @@ namespace SS.Integration.Adapter.Tests
 
             Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object, streamListenerManager);
             streamListenerManager.StreamCreated += adapter_StreamCreated;
-            adapter.EventState = state.Object;
+            streamListenerManager.EventState = state.Object;
 
             // after this call a stream listener for the above resource will be created
             // and the thread that created it will be blocked on the adapter_StreamCreated 
@@ -199,9 +199,9 @@ namespace SS.Integration.Adapter.Tests
 
             Thread.Sleep(5000);
 
-            lock (adapter)
+            lock (streamListenerManager)
             {
-                Monitor.PulseAll(adapter);
+                Monitor.PulseAll(streamListenerManager);
                 state.Verify(x => x.GetFixtureState("ABC"), Times.AtLeastOnce());
             }
 

@@ -102,9 +102,10 @@ namespace SS.Integration.Adapter.Tests
 
             Adapter adapter = new Adapter(settings.Object, service.Object, plugin.Object,streamListenerManager)
             {
-                EventState = eventstate.Object,
                 StateManager = provider
             };
+
+            streamListenerManager.EventState = eventstate.Object;
 
             adapter.Start();
 

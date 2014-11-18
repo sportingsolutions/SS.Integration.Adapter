@@ -10,6 +10,8 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Interface
         IObservable<IFixtureOverviewDelta> GetFixtureOverviewStream();
         IEnumerable<IFixtureOverview> GetFixtures();
 
+        void RemoveFixtureEventState(string fixtureId);
+
         void Initialise();
     }
 }
