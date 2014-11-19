@@ -38,16 +38,49 @@
     <Reference Include="FluentAssertions.Core">
       <HintPath>..\packages\FluentAssertions.3.2.1\lib\net45\FluentAssertions.Core.dll</HintPath>
     </Reference>
+    <Reference Include="log4net, Version=1.2.13.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
+    </Reference>
     <Reference Include="Moq">
       <HintPath>..\packages\Moq.4.2.1409.1722\lib\net40\Moq.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Newtonsoft.Json.6.0.5\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="nunit.framework, Version=2.6.3.13283, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\NUnit.2.6.3\lib\nunit.framework.dll</HintPath>
     </Reference>
+    <Reference Include="RabbitMQ.Client">
+      <HintPath>..\packages\RabbitMQ.Client.2.8.6\lib\net30\RabbitMQ.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="RestSharp, Version=104.3.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\RestSharp.104.3.3\lib\net4\RestSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="SportingSolutions.Udapi.Sdk, Version=1.0.129.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\SportingSolutions.Udapi.Sdk.1.0.129.0\lib\net40\SportingSolutions.Udapi.Sdk.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.Reactive.Core, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Rx-Core.2.2.5\lib\net45\System.Reactive.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Interfaces">
+      <HintPath>..\packages\Rx-Interfaces.2.2.5\lib\net45\System.Reactive.Interfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Linq, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Rx-Linq.2.2.5\lib\net45\System.Reactive.Linq.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.PlatformServices">
+      <HintPath>..\packages\Rx-PlatformServices.2.2.5\lib\net45\System.Reactive.PlatformServices.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -57,6 +90,7 @@
   <ItemGroup>
     <Compile Include="FixtureOverviewTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SupervisorTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -66,6 +100,18 @@
     <ProjectReference Include="..\SS.Integration.Adapter.Diagnostics.Model\SS.Integration.Adapter.Diagnostics.Model.csproj">
       <Project>{B11DBC1F-95E5-44D3-8896-78482D84FB07}</Project>
       <Name>SS.Integration.Adapter.Diagnostics.Model</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Adapter.Diagnostics\SS.Integration.Adapter.Diagnostics.csproj">
+      <Project>{F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE}</Project>
+      <Name>SS.Integration.Adapter.Diagnostics</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj">
+      <Project>{29461692-6DE2-47FA-ACC4-ECAAE9462AE3}</Project>
+      <Name>SS.Integration.Adapter.Model</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Adapter\SS.Integration.Adapter.csproj">
+      <Project>{1AD0B149-3A7B-4725-ABDE-9455D953F036}</Project>
+      <Name>SS.Integration.Adapter</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

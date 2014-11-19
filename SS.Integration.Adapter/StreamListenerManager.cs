@@ -184,8 +184,7 @@ namespace SS.Integration.Adapter
         }
 
 
-
-        public bool RemoveStreamListenerIfFinishedProcessing(IResourceFacade resource)
+        private bool RemoveStreamListenerIfFinishedProcessing(IResourceFacade resource)
         {
             var listener = _listeners[resource.Id];
 

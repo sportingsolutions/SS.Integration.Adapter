@@ -54,7 +54,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             get { return _epoch; }
             set
             {
-                OnChanged(_epoch, value,v=> _delta.Epoch = v);
+                OnChanged(_epoch, value,v=> Delta.Epoch = v);
                 _epoch = value;
             }
         }
@@ -74,7 +74,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             get { return _isDeleted; }
             set
             {
-                OnChanged(_isDeleted, value, v => _delta.IsDeleted = v);
+                OnChanged(_isDeleted, value, v => Delta.IsDeleted = v);
                 _isDeleted = value;
             }
         }
@@ -94,7 +94,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             get { return _isSuspended; }
             set
             {
-                OnChanged(_isSuspended, value, v => _delta.IsSuspended = v);
+                OnChanged(_isSuspended, value, v => Delta.IsSuspended = v);
                 _isSuspended = value;
             }
         }
@@ -104,7 +104,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             get { return _isOver; }
             set
             {
-                OnChanged(_isOver, value, v => _delta.IsOver = v);
+                OnChanged(_isOver, value, v => Delta.IsOver = v);
                 _isOver = value;
             }
         }
@@ -199,7 +199,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             get { return _matchStatus; }
             set
             {
-                OnChanged(_matchStatus, value,v => _delta.MatchStatus = v);
+                OnChanged(_matchStatus, value,v => Delta.MatchStatus = v);
                 _matchStatus = value;
             }
         }

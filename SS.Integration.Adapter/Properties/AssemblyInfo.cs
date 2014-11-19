@@ -43,3 +43,4 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("SS.Integration.Adapter.Specs")]
 [assembly: InternalsVisibleTo("SS.Integration.Adapter.E2E.Test")]
 [assembly: InternalsVisibleTo("SS.Integration.Adapter.Testing.Host")]
+[assembly: InternalsVisibleTo("SS.Integration.Adapter.Diagnostics.Testing")]

@@ -12,7 +12,6 @@ namespace SS.Integration.Adapter.Diagnostic
 {
     public class Supervisor : StreamListenerManager, ISupervisor
     {
-        private readonly Action<Dictionary<string, FixtureOverview>> _publishAction;
         private ILog _logger = LogManager.GetLogger(typeof(Supervisor));
         
         private ConcurrentDictionary<string, FixtureOverview> _fixtures;
@@ -21,7 +20,7 @@ namespace SS.Integration.Adapter.Diagnostic
 
         public Supervisor(ISettings settings): base(settings)
         {
-            
+            _fixtures = new ConcurrentDictionary<string, FixtureOverview>();   
         }
 
         public void Initialise()
@@ -46,6 +45,8 @@ namespace SS.Integration.Adapter.Diagnostic
                 streamListener.OnSuspend += StreamListenerSuspended;
                 streamListener.OnStop += StreamListenerStop;
             }
+
+            UpdateStateFromStreamListener(streamListener);
         }
 
         public override void StopStreaming(string fixtureId)
