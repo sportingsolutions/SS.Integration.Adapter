@@ -1802,7 +1802,8 @@ namespace SS.Integration.Adapter.Tests
             listener.Start();
 
             listener.ShouldRaise("OnConnected");
-            listener.ShouldRaise("OnSnapshot");
+            listener.ShouldRaise("OnBeginSnapshotProcessing");
+            listener.ShouldRaise("OnFinishedSnapshotProcessing");
 
             //stream event
             var update = new Fixture
@@ -1816,7 +1817,8 @@ namespace SS.Integration.Adapter.Tests
 
             var message = new StreamMessage { Content = update };
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
-            listener.ShouldRaise("OnStreamUpdate");
+            listener.ShouldRaise("OnBeginStreamUpdateProcessing");
+            listener.ShouldRaise("OnFinishedStreamUpdateProcessing");
 
             //as a result of match status change it will get a second snapshot which is String.Empty
             //this should generate an exception

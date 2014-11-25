@@ -60,8 +60,10 @@ namespace SS.Integration.Adapter
         public event EventHandler<StreamListenerEventArgs> OnError;
         public event EventHandler<StreamListenerEventArgs> OnSuspend;
         public event EventHandler<StreamListenerEventArgs> OnFlagsChanged;
-        public event EventHandler<StreamListenerEventArgs> OnStreamUpdate;
-        public event EventHandler<StreamListenerEventArgs> OnSnapshot;
+        public event EventHandler<StreamListenerEventArgs> OnBeginStreamUpdateProcessing;
+        public event EventHandler<StreamListenerEventArgs> OnFinishedStreamUpdateProcessing;
+        public event EventHandler<StreamListenerEventArgs> OnBeginSnapshotProcessing;
+        public event EventHandler<StreamListenerEventArgs> OnFinishedSnapshotProcessing;
         public event EventHandler<StreamListenerEventArgs> OnStop;
 
         public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IStateManager stateManager)
@@ -514,6 +516,8 @@ namespace SS.Integration.Adapter
             {
                 var deltaMessage = streamEventArgs.Update.FromJson<StreamMessage>();
                 var fixtureDelta = deltaMessage.GetContent<Fixture>();
+                
+                RaiseEvent(OnBeginStreamUpdateProcessing,null,fixtureDelta);
 
                 _logger.InfoFormat("{0} stream update arrived", fixtureDelta);
 
@@ -522,9 +526,7 @@ namespace SS.Integration.Adapter
                     _logger.InfoFormat("Listener for {0} is disposing - skipping current update", _resource);
                     return;
                 }
-
-                RaiseEvent(OnStreamUpdate);
-
+                
                 // if there was an error from which we haven't recovered yet
                 // it might be that with a new sequence, we might recover.
                 // So in this case, ignore the update and grab a new 
@@ -553,13 +555,14 @@ namespace SS.Integration.Adapter
                     SuspendAndReprocessSnapshot();
                     return;
                 }
-
+                
                 bool hasEpochChanged;
                 var epochValid = IsEpochValid(fixtureDelta, out hasEpochChanged);
 
                 if (epochValid)
                 {
                     ProcessSnapshot(fixtureDelta, false, hasEpochChanged);
+                    RaiseEvent(OnFinishedStreamUpdateProcessing);
                 }
                 else
                 {
@@ -568,6 +571,8 @@ namespace SS.Integration.Adapter
                     {
                         _logger.DebugFormat("{0} has changed matchStatus={1}", _resource, Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus));
                         _platformConnector.ProcessMatchStatus(fixtureDelta);
+
+                        RaiseEvent(OnFinishedStreamUpdateProcessing);
                     }
 
                     if ((fixtureDelta.IsMatchStatusChanged && fixtureDelta.IsMatchOver) || fixtureDelta.IsDeleted)
@@ -581,6 +586,8 @@ namespace SS.Integration.Adapter
                         {
                             ProcessMatchOver(fixtureDelta);
                         }
+
+                        RaiseEvent(OnFinishedStreamUpdateProcessing);
 
                         Stop();
                         return;
@@ -890,6 +897,8 @@ namespace SS.Integration.Adapter
 
             try
             {
+                RaiseEvent(OnBeginSnapshotProcessing,null,snapshot);
+
                 bool is_inplay = string.Equals(snapshot.MatchStatus, ((int)MatchStatus.InRunning).ToString(), StringComparison.OrdinalIgnoreCase);
                 IsInPlay = is_inplay;
 
@@ -910,7 +919,7 @@ namespace SS.Integration.Adapter
                 UpdateState(snapshot, isFullSnapshot);
 
                 IsErrored = false;
-                RaiseEvent(OnSnapshot);
+                RaiseEvent(OnFinishedSnapshotProcessing);
             }
             catch (FixtureIgnoredException ie)
             {
@@ -1030,16 +1039,27 @@ namespace SS.Integration.Adapter
             }
         }
 
-        private void RaiseEvent(EventHandler<StreamListenerEventArgs> eventName, Exception exception = null)
+        private void RaiseEvent(EventHandler<StreamListenerEventArgs> eventName, Exception exception = null, Fixture fixture = null)
         {
             if (eventName != null)
-                eventName(this, new StreamListenerEventArgs
+            {
+                try
                 {
-                    CurrentSequence = _currentSequence,
-                    Epoch = _currentEpoch,
-                    Exception = exception,
-                    Listener = this
-                });
+                    eventName(this, new StreamListenerEventArgs
+                    {
+                        CurrentSequence = fixture != null ? fixture.Sequence : _currentSequence,
+                        Epoch = fixture != null ? fixture.Epoch : _currentEpoch,
+                        Exception = exception,
+                        Listener = this
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.ErrorFormat("Error occured while raising event in fixtureId={0}",FixtureId);
+                    //DO NOT Rethrow - this would affect listener with event subscriber issues
+                }
+                
+            }
         }
 
         /// <summary>

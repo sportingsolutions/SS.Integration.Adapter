@@ -17,6 +17,7 @@ using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
+using SS.Integration.Common.Extensions;
 
 namespace SS.Integration.Adapter.Diagnostics.Testing
 {
@@ -42,6 +43,12 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             _connector = new Mock<IAdapterPlugin>();
 
             _supervisor = new Supervisor(_settings.Object);
+
+            var plugin = new Mock<IAdapterPlugin>();
+
+            var stateManager = new StateManager(new Mock<ISettings>().Object);
+            new SuspensionManager(stateManager, plugin.Object);
+
         }
 
         //This test should verify that when you force snapshot there is no filtering(market rules) applied
@@ -98,50 +105,201 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
         public void GetDeltaOverviewTest()
         {
             var fixtureOneId = "fixtureOne";
-            var fixtureTwoId = "fixtureTwo";
             
             var resourceOne = new Mock<IResourceFacade>();
-            var resourceTwo = new Mock<IResourceFacade>();
-
+            
             resourceOne.Setup(x => x.Id).Returns(fixtureOneId);
             resourceOne.Setup(x => x.Content).Returns(new Summary());
             resourceOne.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
             resourceOne.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId)));
             resourceOne.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null,EventArgs.Empty);
+            
+            _supervisor.CreateStreamListener(resourceOne.Object, _provider, _connector.Object);
+            
+            var fixtureOverviews = _supervisor.GetFixtures();
+            fixtureOverviews.Should().NotBeNullOrEmpty();
+            fixtureOverviews.Should().Contain(f => f.Id == fixtureOneId);
+            
+            var deltas = new List<IFixtureOverviewDelta>();
 
-            resourceTwo.Setup(x => x.Id).Returns(fixtureTwoId);
-            resourceTwo.Setup(x => x.Content).Returns(new Summary());
-            resourceTwo.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
-            resourceTwo.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureTwoId)));
+            var subscriber = _supervisor.GetFixtureOverviewStream().Subscribe(deltas.Add);
 
+            _supervisor.StartStreaming(fixtureOneId);
+            
+            var streamUpdate = new Fixture
+            {
+                Id = fixtureOneId,
+                Sequence = 2,
+                Epoch = 1,
+                MatchStatus = ((int) MatchStatus.InRunning).ToString()
+            };
+
+            SendStreamUpdate(streamUpdate);
+
+            deltas.Should().NotBeEmpty();
+            var delta = deltas.First(d=> d.FeedUpdate != null);
+            deltas.Should().NotBeNull();
+            delta.Sequence.Should().Be(2);
+            delta.FeedUpdate.Should().NotBeNull();
+            delta.FeedUpdate.IsSnapshot.Should().BeFalse();
+            delta.FeedUpdate.IsProcessed.Should().BeFalse();
+
+            deltas.FirstOrDefault(d => d.FeedUpdate != null && d.FeedUpdate.Sequence == 2 && d.FeedUpdate.IsProcessed)
+                .Should()
+                .NotBeNull();
+
+            subscriber.Dispose();
+        }
+
+        [Test]
+        public void GetDeltaErrorsTest()
+        {
+            var fixtureOneId = "fixtureOne";
+
+            var resourceOne = new Mock<IResourceFacade>();
+
+            resourceOne.Setup(x => x.Id).Returns(fixtureOneId);
+            resourceOne.Setup(x => x.Content).Returns(new Summary());
+            resourceOne.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resourceOne.SetupSequence(x => x.GetSnapshot())
+                .Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId)))
+                .Returns(String.Empty)
+                .Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId,10,3)));
+
+            resourceOne.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
             _supervisor.CreateStreamListener(resourceOne.Object, _provider, _connector.Object);
-            _supervisor.CreateStreamListener(resourceTwo.Object, _provider, _connector.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();
             fixtureOverviews.Should().Contain(f => f.Id == fixtureOneId);
-            fixtureOverviews.Should().Contain(f => f.Id == fixtureTwoId);
-
-            var delta = new List<IFixtureOverviewDelta>();
-
-            var subscriber = _supervisor.GetFixtureOverviewStream().Subscribe(delta.Add);
 
             _supervisor.StartStreaming(fixtureOneId);
-
 
             var streamUpdate = new Fixture
             {
                 Id = fixtureOneId,
                 Sequence = 2,
-                Epoch = 1
+                //Epoch increased
+                Epoch = 10,
+                MatchStatus = ((int)MatchStatus.InRunning).ToString()
             };
 
-            SendStreamUpdate(streamUpdate);
+            var deltas = new List<IFixtureOverviewDelta>();
 
-            delta.Should().NotBeEmpty();
+            using (var subscriber = _supervisor.GetFixtureOverviewStream().Subscribe(deltas.Add))
+            {
+                //in order to generate error the resource is setup to return empty snapshot
+                //the snapshot should be taken because epoch is changed
+                SendStreamUpdate(streamUpdate);
 
-            //subscriber.Dispose();
+                deltas.Should().NotBeEmpty();
+                deltas.FirstOrDefault(d => d.LastError != null).Should().NotBeNull();
+                
+                //error was resolved with a further snapshot
+                deltas.FirstOrDefault(d => d.LastError != null && !d.LastError.IsErrored).Should().NotBeNull();
+            }
+        }
+
+        [Test]
+        public void CheckUpdatesAreTrackedTest()
+        {
+            var fixtureOneId = "fixtureOne";
+
+            var resourceOne = new Mock<IResourceFacade>();
+
+            resourceOne.Setup(x => x.Id).Returns(fixtureOneId);
+            resourceOne.Setup(x => x.Content).Returns(new Summary());
+            resourceOne.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resourceOne.SetupSequence(x => x.GetSnapshot())
+                .Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId)))
+                .Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId, 10, 3)));
+            
+            resourceOne.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
+
+            _supervisor.CreateStreamListener(resourceOne.Object, _provider, _connector.Object);
+
+            var fixtureOverviews = _supervisor.GetFixtures();
+            fixtureOverviews.Should().NotBeNullOrEmpty();
+            fixtureOverviews.Should().Contain(f => f.Id == fixtureOneId);
+
+            _supervisor.StartStreaming(fixtureOneId);
+
+            var streamUpdate = new Fixture
+            {
+                Id = fixtureOneId,
+                Sequence = 2,
+                //Epoch increased
+                Epoch = 10,
+                MatchStatus = ((int)MatchStatus.InRunning).ToString()
+            };
+
+
+            Enumerable.Range(3, 13).ForEach(s =>
+            {
+                streamUpdate.Sequence = s;
+                SendStreamUpdate(streamUpdate);
+            });
+
+            var fixtureOverview = _supervisor.GetFixtureOverview(fixtureOneId);
+            fixtureOverview.GetFeedAudit().Should().NotBeEmpty();
+            fixtureOverview.GetFeedAudit().FirstOrDefault(f => f.Sequence == 12 && f.IsProcessed).Should().NotBeNull();
+
+            fixtureOverview.FeedUpdate.Sequence.Should().BeGreaterThan(10);
+        }
+
+        [Test]
+        public void CheckErrorsAreTrackedTest()
+        {
+            var fixtureOneId = "fixtureOne";
+
+            var resourceOne = new Mock<IResourceFacade>();
+
+            resourceOne.Setup(x => x.Id).Returns(fixtureOneId);
+            resourceOne.Setup(x => x.Content).Returns(new Summary());
+            resourceOne.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resourceOne.SetupSequence(x => x.GetSnapshot())
+                .Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId)))
+                .Returns(String.Empty)
+                .Returns(String.Empty)
+                .Returns(String.Empty)
+                .Returns(String.Empty)
+                .Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId,10,15)));
+
+            resourceOne.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
+
+            _supervisor.CreateStreamListener(resourceOne.Object, _provider, _connector.Object);
+
+            var fixtureOverviews = _supervisor.GetFixtures();
+            fixtureOverviews.Should().NotBeNullOrEmpty();
+            fixtureOverviews.Should().Contain(f => f.Id == fixtureOneId);
+
+            _supervisor.StartStreaming(fixtureOneId);
+
+            var streamUpdate = new Fixture
+            {
+                Id = fixtureOneId,
+                Sequence = 2,
+                //Epoch increased
+                Epoch = 10,
+                MatchStatus = ((int)MatchStatus.InRunning).ToString()
+            };
+
+            Enumerable.Range(3, 10).ForEach(s =>
+            {
+                streamUpdate.Sequence = s;
+                SendStreamUpdate(streamUpdate);
+            });
+
+            var fixtureOverview = _supervisor.GetFixtureOverview(fixtureOneId);
+            fixtureOverview.GetErrorsAudit().Should().NotBeEmpty();
+            var errorsAudit = fixtureOverview.GetErrorsAudit();
+            
+            //at least 4 failed snapshots
+            errorsAudit.Count().Should().Be(4);
+
+            //the final snapshot sholud have succeeded
+            fixtureOverview.LastError.IsErrored.Should().BeFalse();
         }
 
         private void SendStreamUpdate(Fixture streamUpdate)
@@ -156,9 +314,9 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             listener.ResourceOnStreamEvent(null, new StreamEventArgs(JsonConvert.SerializeObject(message)));
         }
 
-        private Fixture GetSnapshotWithMarkets(string id)
+        private Fixture GetSnapshotWithMarkets(string id,int epoch = 1 ,int sequence = 1)
         {
-            var snapshot = new Fixture { Id = id, Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString(), Epoch = 1};
+            var snapshot = new Fixture { Id = id, Sequence = sequence, MatchStatus = ((int)MatchStatus.InRunning).ToString(), Epoch = epoch};
 
             AddMarket(snapshot);
 

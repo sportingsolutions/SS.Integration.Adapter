@@ -113,6 +113,10 @@
       <Project>{1AD0B149-3A7B-4725-ABDE-9455D953F036}</Project>
       <Name>SS.Integration.Adapter</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Common\SS.Integration.Common.csproj">
+      <Project>{756C25C1-9FF6-4299-8825-EEEA5565AC58}</Project>
+      <Name>SS.Integration.Common</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />

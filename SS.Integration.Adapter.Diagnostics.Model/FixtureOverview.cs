@@ -26,9 +26,10 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         private MatchStatus? _matchStatus;
         private DateTime _timeStamp;
         private FixtureOverviewDelta _delta;
-        private List<ErrorOverview> _errors;
-        private List<FeedUpdateOverview> _feedUpdates;
+        private List<ErrorOverview> _errors = new List<ErrorOverview>(MAX_AUDIT_SIZE);
+        private List<FeedUpdateOverview> _feedUpdates = new List<FeedUpdateOverview>(MAX_AUDIT_SIZE);
         private DateTime? _startTime;
+        private int? _sequence1;
 
         public FixtureOverview()
         {
@@ -42,12 +43,25 @@ namespace SS.Integration.Adapter.Diagnostics.Model
                 //returns the value of the assignment 
                 return (_delta = _delta ?? new FixtureOverviewDelta() {Id = this.Id});
             }
-            set { _delta = value; }
+            set
+            {
+                _delta = value;
+                TimeStamp = DateTime.UtcNow;
+            }
         }
 
         public string Id { get; set; }
 
-        public int? Sequence { get; set; }
+        public int? Sequence
+        {
+            get { return _sequence1; }
+            set
+            {
+                OnChanged(_sequence,value,v=> Delta.Sequence = v);
+                _sequence1 = value;
+            }
+        }
+
 
         public int? Epoch
         {
@@ -169,8 +183,8 @@ namespace SS.Integration.Adapter.Diagnostics.Model
 
         private void FeedUpdated(FeedUpdateOverview value)
         {
+            _feedUpdates.Add(value);
             Delta.FeedUpdate = value;
-
             TrimOldItems(_feedUpdates);
         }
 
