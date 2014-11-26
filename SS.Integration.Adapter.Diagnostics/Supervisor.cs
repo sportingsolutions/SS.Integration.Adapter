@@ -5,6 +5,8 @@ using System.Reactive.Subjects;
 using log4net;
 using SS.Integration.Adapter.Diagnostics.Model;
 using SS.Integration.Adapter.Diagnostics.Model.Interface;
+using SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
+using SS.Integration.Adapter.Diagnostics.RestService;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model.Interfaces;
 
@@ -14,20 +16,27 @@ namespace SS.Integration.Adapter.Diagnostics
     {
         private ILog _logger = LogManager.GetLogger(typeof(Supervisor));
 
-        private ConcurrentDictionary<string, FixtureOverview> _fixtures;
-        private Subject<IFixtureOverviewDelta> _changeTracker = new Subject<IFixtureOverviewDelta>();
+        private readonly ConcurrentDictionary<string, FixtureOverview> _fixtures;
+        private readonly Subject<IFixtureOverviewDelta> _changeTracker = new Subject<IFixtureOverviewDelta>();
         private IDisposable _publisher;
 
         public Supervisor(ISettings settings)
             : base(settings)
         {
             _fixtures = new ConcurrentDictionary<string, FixtureOverview>();
+            Proxy = new SupervisorProxy(this);
         }
 
         public void Initialise()
         {
-            // TODO
+            // TODO REST service should be configurable
+            Service = new Service(Proxy);
+            Service.Start();
         }
+
+        public ISupervisorProxy Proxy { get; private set; }
+
+        public ISupervisorService Service { get; private set; }
 
         public override void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector)
         {
@@ -115,7 +124,7 @@ namespace SS.Integration.Adapter.Diagnostics
 
         private FeedUpdateOverview CreateFeedUpdate(StreamListenerEventArgs streamListenerArgs, bool isSnapshot = false)
         {
-            var feedUpdate = new FeedUpdateOverview()
+            var feedUpdate = new FeedUpdateOverview
             {
                 Issued = DateTime.UtcNow,
                 Sequence = streamListenerArgs.CurrentSequence,
@@ -145,7 +154,7 @@ namespace SS.Integration.Adapter.Diagnostics
         private void StreamListenerErrored(object sender, StreamListenerEventArgs e)
         {
             var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId) as FixtureOverview;
-            fixtureOverview.LastError = new ErrorOverview()
+            fixtureOverview.LastError = new ErrorOverview
             {
                 ErroredAt = DateTime.UtcNow,
                 Exception = e.Exception,
@@ -245,5 +254,14 @@ namespace SS.Integration.Adapter.Diagnostics
             return GetStreamListener(fixtureId) as StreamListener;
         }
 
+        #region IDisposable
+
+        public void Dispose()
+        {
+            if (Service != null)
+                Service.Stop();
+        }
+
+        #endregion
     }
 }

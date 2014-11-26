@@ -64,11 +64,16 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Supervisor.cs" />
+    <Compile Include="SupervisorProxy.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SS.Integration.Adapter.Diagnostics.Model\SS.Integration.Adapter.Diagnostics.Model.csproj">
       <Project>{B11DBC1F-95E5-44D3-8896-78482D84FB07}</Project>
       <Name>SS.Integration.Adapter.Diagnostics.Model</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Adapter.Diagnostics.RestService\SS.Integration.Adapter.Diagnostics.RestService.csproj">
+      <Project>{358e7882-2ebb-49ac-a3a1-4986b40d56bf}</Project>
+      <Name>SS.Integration.Adapter.Diagnostics.RestService</Name>
     </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj">
       <Project>{29461692-6DE2-47FA-ACC4-ECAAE9462AE3}</Project>

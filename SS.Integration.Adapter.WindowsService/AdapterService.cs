@@ -34,6 +34,7 @@ namespace SS.Integration.Adapter.WindowsService
         private readonly ILog _logger = LogManager.GetLogger(typeof(AdapterService).ToString());
         private static Task _adapterWorkerThread;
         private Adapter _adapter;
+        private ISupervisor _supervisor;
         
         [Import]
         public IAdapterPlugin PlatformConnector { get; set; }
@@ -146,12 +147,15 @@ namespace SS.Integration.Adapter.WindowsService
             var service = iocContainer.Get<IServiceFacade>();
             var streamListenerManager = iocContainer.Get<IStreamListenerManager>();
 
-            _adapter = new Adapter(settings, service, PlatformConnector,streamListenerManager);
+            _adapter = new Adapter(settings, service, PlatformConnector, streamListenerManager);
 
             if (settings.UseSupervisor)
             {
-                var supervisor = iocContainer.Get<ISupervisor>();
-                if (supervisor == null)
+                // SS.Integration.Diagnostics.RestService uses Owin.HttpListeners.
+                // that assembly must be referenced in the startup project even if not
+                // directly used, so do not remove it from the list of references
+                _supervisor = iocContainer.Get<ISupervisor>();
+                if (_supervisor == null)
                 {
                     _logger.Error("Cannot instantiate Supervisor as not suitable module was found");
                 }
@@ -160,7 +164,7 @@ namespace SS.Integration.Adapter.WindowsService
                     _logger.Info("Initializing adapter's supervisor");
                     try
                     {
-                        supervisor.Initialise();
+                        _supervisor.Initialise();
                     }
                     catch (Exception e)
                     {
@@ -183,6 +187,8 @@ namespace SS.Integration.Adapter.WindowsService
             _adapterWorkerThread.Wait();
             _adapterWorkerThread.ContinueWith(task => _logger.InfoFormat("Adapter successfully stopped"));
 
+            if (_supervisor != null)
+                _supervisor.Dispose();
         }
 
         private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
