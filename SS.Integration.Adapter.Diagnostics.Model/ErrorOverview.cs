@@ -14,5 +14,6 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         public Exception Exception { get; set; }
         public DateTime ErroredAt { get; set; }
         public DateTime? ResolvedAt { get; set; }
+        public int Sequence { get; set; }
     }
 }

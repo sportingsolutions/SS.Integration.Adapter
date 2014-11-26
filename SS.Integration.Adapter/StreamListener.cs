@@ -1052,11 +1052,14 @@ namespace SS.Integration.Adapter
                     Epoch = fixture != null ? fixture.Epoch : _currentEpoch,
                     Exception = exception,
                     Listener = this,
+                    StartTime = fixture != null ? fixture.StartTime : null
                 };
-
+                
                 eventArgs.IsSnapshot = fixture != null && fixture.Tags.Count > 0;
                 if (eventArgs.IsSnapshot)
                 {
+                    eventArgs.Name = fixture.FixtureName;
+
                     eventArgs.CompetitionId = fixture.Tags.ContainsKey("SSLNCompetitionId")
                         ? fixture.Tags["SSLNCompetitionId"].ToString()
                         : null;

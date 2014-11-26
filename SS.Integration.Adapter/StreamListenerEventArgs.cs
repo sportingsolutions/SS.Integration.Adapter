@@ -16,6 +16,6 @@ namespace SS.Integration.Adapter
         public bool IsSnapshot { get; set; }
         public string CompetitionId { get; set; }
         public string CompetitionName { get; set; }
-        
+        public string Name { get; set; }
     }
 }

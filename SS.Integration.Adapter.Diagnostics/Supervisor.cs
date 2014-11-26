@@ -142,7 +142,7 @@ namespace SS.Integration.Adapter.Diagnostics
             fixtureOverview.IsSuspended = false;
 
             fixtureOverview.FeedUpdate = CreateFeedUpdate(e, true);
-
+            
             UpdateStateFromEventDetails(e);
         }
 
@@ -158,7 +158,8 @@ namespace SS.Integration.Adapter.Diagnostics
             {
                 ErroredAt = DateTime.UtcNow,
                 Exception = e.Exception,
-                IsErrored = e.Listener.IsErrored
+                IsErrored = e.Listener.IsErrored,
+                Sequence = e.CurrentSequence
             };
             
             UpdateStateFromEventDetails(e);
@@ -200,9 +201,12 @@ namespace SS.Integration.Adapter.Diagnostics
         private void UpdateStateFromEventDetails(StreamListenerEventArgs streamListenerEventArgs)
         {
             UpdateStateFromStreamListener(streamListenerEventArgs.Listener as StreamListener);
+            
             var fixtureOverview = GetFixtureOverview(streamListenerEventArgs.Listener.FixtureId) as FixtureOverview;
             fixtureOverview.Sequence = streamListenerEventArgs.CurrentSequence;
             fixtureOverview.Epoch = streamListenerEventArgs.Epoch;
+            fixtureOverview.StartTime = streamListenerEventArgs.StartTime;
+            fixtureOverview.Name = streamListenerEventArgs.Name ?? fixtureOverview.Name;
 
             if (fixtureOverview.LastError != null
                 && fixtureOverview.LastError.IsErrored
@@ -210,6 +214,9 @@ namespace SS.Integration.Adapter.Diagnostics
             {
                 fixtureOverview.LastError.ResolvedAt = DateTime.UtcNow;
                 fixtureOverview.LastError.IsErrored = false;
+
+                //this is to force delta update
+                fixtureOverview.LastError = fixtureOverview.LastError;
             }         
 
             _changeTracker.OnNext(fixtureOverview.GetDelta());

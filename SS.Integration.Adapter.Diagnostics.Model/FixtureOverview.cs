@@ -11,7 +11,6 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         private const int MAX_AUDIT_SIZE = 10;
 
         private string _name;
-        private string _id;
         private int? _sequence;
         private int? _epoch;
         private bool? _isStreaming;
