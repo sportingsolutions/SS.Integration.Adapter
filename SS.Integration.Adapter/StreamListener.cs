@@ -81,7 +81,7 @@ namespace SS.Integration.Adapter
             _platformConnector = platformConnector;
             _eventState = eventState;
             _stateManager = stateManager;
-            
+
             _currentSequence = resource.Content.Sequence;
             _lastSequenceProcessedInSnapshot = -1;
             _currentEpoch = -1;
@@ -345,7 +345,7 @@ namespace SS.Integration.Adapter
             // has been already stopped
             if (_resource == null)
                 return;
-            
+
             IsFixtureSetup = (resource.MatchStatus == MatchStatus.Setup ||
                               resource.MatchStatus == MatchStatus.Ready);
 
@@ -516,8 +516,8 @@ namespace SS.Integration.Adapter
             {
                 var deltaMessage = streamEventArgs.Update.FromJson<StreamMessage>();
                 var fixtureDelta = deltaMessage.GetContent<Fixture>();
-                
-                RaiseEvent(OnBeginStreamUpdateProcessing,null,fixtureDelta);
+
+                RaiseEvent(OnBeginStreamUpdateProcessing, null, fixtureDelta);
 
                 _logger.InfoFormat("{0} stream update arrived", fixtureDelta);
 
@@ -526,7 +526,7 @@ namespace SS.Integration.Adapter
                     _logger.InfoFormat("Listener for {0} is disposing - skipping current update", _resource);
                     return;
                 }
-                
+
                 // if there was an error from which we haven't recovered yet
                 // it might be that with a new sequence, we might recover.
                 // So in this case, ignore the update and grab a new 
@@ -538,7 +538,7 @@ namespace SS.Integration.Adapter
                     RetrieveAndProcessSnapshot();
                     return;
                 }
-                
+
                 if (!IsSequenceValid(fixtureDelta))
                 {
                     _logger.DebugFormat("Stream update {0} will not be processed because sequence was not valid", fixtureDelta);
@@ -555,7 +555,7 @@ namespace SS.Integration.Adapter
                     SuspendAndReprocessSnapshot();
                     return;
                 }
-                
+
                 bool hasEpochChanged;
                 var epochValid = IsEpochValid(fixtureDelta, out hasEpochChanged);
 
@@ -610,13 +610,13 @@ namespace SS.Integration.Adapter
                 }
 
                 SetErrorState();
-                RaiseEvent(OnError,ex);
+                RaiseEvent(OnError, ex);
             }
             catch (Exception ex)
             {
                 _logger.Error(string.Format("Error processing update that arrived for {0}", _resource), ex);
                 SetErrorState();
-                RaiseEvent(OnError,ex);
+                RaiseEvent(OnError, ex);
             }
         }
 
@@ -653,7 +653,7 @@ namespace SS.Integration.Adapter
             catch (Exception ex)
             {
                 _logger.ErrorFormat("Error while processing OnStreamDisconnected event: {0}", ex);
-                RaiseEvent(OnError,ex);
+                RaiseEvent(OnError, ex);
             }
             finally
             {
@@ -687,7 +687,7 @@ namespace SS.Integration.Adapter
             catch (Exception ex)
             {
                 _logger.ErrorFormat("Listener errored when executing OnStreamConnected: {0}", ex);
-                RaiseEvent(OnError,ex);
+                RaiseEvent(OnError, ex);
             }
         }
 
@@ -775,7 +775,7 @@ namespace SS.Integration.Adapter
             {
                 _logger.Error(string.Format("An error occured while trying to acquire snapshot for {0}", _resource), ex);
 
-                RaiseEvent(OnError,ex);
+                RaiseEvent(OnError, ex);
 
                 if (setErrorState)
                     SetErrorState();
@@ -837,11 +837,11 @@ namespace SS.Integration.Adapter
             }
         }
 
-        public void RetrieveAndProcessSnapshot(bool hasEpochChanged = false,bool skipMarketRules = false)
+        public void RetrieveAndProcessSnapshot(bool hasEpochChanged = false, bool skipMarketRules = false)
         {
             var snapshot = RetrieveSnapshot();
             if (snapshot != null)
-                ProcessSnapshot(snapshot, true, hasEpochChanged, !IsErrored,skipMarketRules);
+                ProcessSnapshot(snapshot, true, hasEpochChanged, !IsErrored, skipMarketRules);
         }
 
         private void RetrieveAndProcessSnapshotIfNeeded()
@@ -882,7 +882,7 @@ namespace SS.Integration.Adapter
             }
 
         }
-        
+
         private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool setErrorState = true, bool skipAnyRules = false)
         {
             var logString = isFullSnapshot ? "snapshot" : "stream update";
@@ -897,7 +897,7 @@ namespace SS.Integration.Adapter
 
             try
             {
-                RaiseEvent(OnBeginSnapshotProcessing,null,snapshot);
+                RaiseEvent(OnBeginSnapshotProcessing, null, snapshot);
 
                 bool is_inplay = string.Equals(snapshot.MatchStatus, ((int)MatchStatus.InRunning).ToString(), StringComparison.OrdinalIgnoreCase);
                 IsInPlay = is_inplay;
@@ -928,7 +928,7 @@ namespace SS.Integration.Adapter
                 IsIgnored = true;
 
                 _Stats.IncrementValue(AdapterCoreKeys.FIXTURE_ERRORS_COUNTER);
-                RaiseEvent(OnError,ie);
+                RaiseEvent(OnError, ie);
             }
             catch (AggregateException ex)
             {
@@ -954,9 +954,9 @@ namespace SS.Integration.Adapter
                 _Stats.IncrementValue(AdapterCoreKeys.FIXTURE_ERRORS_COUNTER);
 
                 _logger.Error(string.Format("An error occured while trying to process {0} {1}", logString, snapshot), ex);
-                
+
                 RaiseEvent(OnError, ex);
-                
+
                 if (setErrorState)
                     SetErrorState();
                 else
@@ -1041,39 +1041,40 @@ namespace SS.Integration.Adapter
 
         private void RaiseEvent(EventHandler<StreamListenerEventArgs> eventToRaise, Exception exception = null, Fixture fixture = null)
         {
-            if (eventToRaise != null)
+            if (eventToRaise == null)
+                return;
+
+            try
             {
-                try
+                var eventArgs = new StreamListenerEventArgs
                 {
-                    var eventArgs = new StreamListenerEventArgs
-                    {
-                        CurrentSequence = fixture != null ? fixture.Sequence : _currentSequence,
-                        Epoch = fixture != null ? fixture.Epoch : _currentEpoch,
-                        Exception = exception,
-                        Listener = this,
-                    };
+                    CurrentSequence = fixture != null ? fixture.Sequence : _currentSequence,
+                    Epoch = fixture != null ? fixture.Epoch : _currentEpoch,
+                    Exception = exception,
+                    Listener = this,
+                };
 
-                    eventArgs.IsSnapshot = fixture != null && fixture.Tags.Count > 0;
-                    if (eventArgs.IsSnapshot)
-                    {
-                        eventArgs.CompetitionId = fixture.Tags.ContainsKey("SSLNCompetitionId")
-                            ? fixture.Tags["SSLNCompetitionId"].ToString()
-                            : null;
-
-                        eventArgs.CompetitionName = fixture.Tags.ContainsKey("SSLNCompetitionName")
-                            ? fixture.Tags["SSLNCompetitionName"].ToString()
-                            : null;
-                    }
-
-                    eventToRaise(this,eventArgs);
-                }
-                catch (Exception ex)
+                eventArgs.IsSnapshot = fixture != null && fixture.Tags.Count > 0;
+                if (eventArgs.IsSnapshot)
                 {
-                    _logger.ErrorFormat("Error occured while raising event in fixtureId={0}",FixtureId);
-                    //DO NOT Rethrow - this would affect listener with event subscriber issues
+                    eventArgs.CompetitionId = fixture.Tags.ContainsKey("SSLNCompetitionId")
+                        ? fixture.Tags["SSLNCompetitionId"].ToString()
+                        : null;
+
+                    eventArgs.CompetitionName = fixture.Tags.ContainsKey("SSLNCompetitionName")
+                        ? fixture.Tags["SSLNCompetitionName"].ToString()
+                        : null;
                 }
-                
+
+                eventToRaise(this, eventArgs);
             }
+            catch (Exception ex)
+            {
+                _logger.ErrorFormat("Error occured while raising event in fixtureId={0}", FixtureId);
+                //DO NOT Rethrow - this would affect listener with event subscriber issues
+            }
+
+
         }
 
         /// <summary>
