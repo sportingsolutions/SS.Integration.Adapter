@@ -99,6 +99,7 @@
     <Compile Include="Attributes\HandleServerErrorAttribute.cs" />
     <Compile Include="Controllers\ErrorController.cs" />
     <Compile Include="Controllers\FixtureController.cs" />
+    <Compile Include="Controllers\SearchController.cs" />
     <Compile Include="Controllers\SportController.cs" />
     <Compile Include="Controllers\SupervisorController.cs" />
     <Compile Include="Handlers\MediaTypeHeaderDelegate.cs" />
