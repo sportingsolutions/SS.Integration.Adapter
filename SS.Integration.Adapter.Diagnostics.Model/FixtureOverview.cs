@@ -29,8 +29,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         private List<ErrorOverview> _errors = new List<ErrorOverview>(MAX_AUDIT_SIZE);
         private List<FeedUpdateOverview> _feedUpdates = new List<FeedUpdateOverview>(MAX_AUDIT_SIZE);
         private DateTime? _startTime;
-        private int? _sequence1;
-
+        
         public FixtureOverview()
         {
             _errors = new List<ErrorOverview>(10);
@@ -54,11 +53,11 @@ namespace SS.Integration.Adapter.Diagnostics.Model
 
         public int? Sequence
         {
-            get { return _sequence1; }
+            get { return _sequence; }
             set
             {
                 OnChanged(_sequence,value,v=> Delta.Sequence = v);
-                _sequence1 = value;
+                _sequence = value;
             }
         }
 
@@ -197,15 +196,23 @@ namespace SS.Integration.Adapter.Diagnostics.Model
                 _name = value;
             }
         }
-        
+
+        public string Sport
+        {
+            get; 
+            set;
+        }
+
         public string CompetitionId
         {
             get { return _competitionId; }
+            set { _competitionId = value; }
         }
 
         public string CompetitionName
         {
             get { return _competitionName; }
+            set { _competitionName = value; }
         }
 
         public MatchStatus? MatchStatus
@@ -221,7 +228,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         public DateTime TimeStamp
         {
             get { return _timeStamp; }
-            private set { _timeStamp = value; }
+            set { _timeStamp = value; }
         }
         
         private bool HasChanged<T>(T? oldValue, T? newValue) where T:struct

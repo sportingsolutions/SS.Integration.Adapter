@@ -7,8 +7,8 @@
     <ProjectGuid>{F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SS.Integration.Adapter.Diagnostic</RootNamespace>
-    <AssemblyName>SS.Integration.Adapter.Diagnostic</AssemblyName>
+    <RootNamespace>SS.Integration.Adapter.Diagnostics</RootNamespace>
+    <AssemblyName>SS.Integration.Adapter.Diagnostics</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>

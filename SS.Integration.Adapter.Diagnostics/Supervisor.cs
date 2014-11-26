@@ -8,7 +8,7 @@ using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model.Interfaces;
 
-namespace SS.Integration.Adapter.Diagnostic
+namespace SS.Integration.Adapter.Diagnostics
 {
     public class Supervisor : StreamListenerManager, ISupervisor
     {
@@ -53,7 +53,8 @@ namespace SS.Integration.Adapter.Diagnostic
             }
 
             UpdateStateFromStreamListener(streamListener);
-            _changeTracker.OnNext(GetFixtureOverview(listener.FixtureId).GetDelta());
+            var fixtureOverview = GetFixtureOverview(listener.FixtureId) as FixtureOverview;
+            _changeTracker.OnNext(fixtureOverview.GetDelta());
         }
         
 
@@ -93,7 +94,7 @@ namespace SS.Integration.Adapter.Diagnostic
 
         private void StreamListenerBeginStreamUpdate(object sender, StreamListenerEventArgs e)
         {
-            var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId);
+            var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId) as FixtureOverview;
 
             fixtureOverview.FeedUpdate = CreateFeedUpdate(e);
 
@@ -107,7 +108,7 @@ namespace SS.Integration.Adapter.Diagnostic
 
         private void StreamListenerSuspended(object sender, StreamListenerEventArgs e)
         {
-            var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId);
+            var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId) as FixtureOverview;
             fixtureOverview.IsSuspended = true;
             UpdateStateFromEventDetails(e);
         }
@@ -126,7 +127,7 @@ namespace SS.Integration.Adapter.Diagnostic
 
         private void StreamListenerSnapshot(object sender, StreamListenerEventArgs e)
         {
-            var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId);
+            var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId) as FixtureOverview;
 
             //assumption
             fixtureOverview.IsSuspended = false;
@@ -143,7 +144,7 @@ namespace SS.Integration.Adapter.Diagnostic
 
         private void StreamListenerErrored(object sender, StreamListenerEventArgs e)
         {
-            var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId);
+            var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId) as FixtureOverview;
             fixtureOverview.LastError = new ErrorOverview()
             {
                 ErroredAt = DateTime.UtcNow,
@@ -190,7 +191,7 @@ namespace SS.Integration.Adapter.Diagnostic
         private void UpdateStateFromEventDetails(StreamListenerEventArgs streamListenerEventArgs)
         {
             UpdateStateFromStreamListener(streamListenerEventArgs.Listener as StreamListener);
-            var fixtureOverview = GetFixtureOverview(streamListenerEventArgs.Listener.FixtureId);
+            var fixtureOverview = GetFixtureOverview(streamListenerEventArgs.Listener.FixtureId) as FixtureOverview;
             fixtureOverview.Sequence = streamListenerEventArgs.CurrentSequence;
             fixtureOverview.Epoch = streamListenerEventArgs.Epoch;
 
@@ -212,13 +213,15 @@ namespace SS.Integration.Adapter.Diagnostic
                 return;
 
             //this is accessing a dictionary object
-            var fixtureOverview = GetFixtureOverview(listener.FixtureId);
+            var fixtureOverview = GetFixtureOverview(listener.FixtureId) as FixtureOverview;
 
             fixtureOverview.Id = listener.FixtureId;
+            fixtureOverview.Sport = listener.Sport;
             fixtureOverview.IsDeleted = listener.IsFixtureDeleted;
             fixtureOverview.IsStreaming = listener.IsStreaming;
             fixtureOverview.IsOver = listener.IsFixtureEnded;
             fixtureOverview.IsErrored = listener.IsErrored;
+            fixtureOverview.TimeStamp = DateTime.UtcNow;
         }
 
 
@@ -232,7 +235,7 @@ namespace SS.Integration.Adapter.Diagnostic
             return _fixtures.Values;
         }
 
-        public FixtureOverview GetFixtureOverview(string fixtureId)
+        public IFixtureOverview GetFixtureOverview(string fixtureId)
         {
             return _fixtures.ContainsKey(fixtureId) ? _fixtures[fixtureId] : _fixtures[fixtureId] = new FixtureOverview();
         }

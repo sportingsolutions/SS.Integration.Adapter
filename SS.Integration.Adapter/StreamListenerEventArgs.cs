@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.Serialization;
+using System.Security;
 using SS.Integration.Adapter.Interface;
 
 namespace SS.Integration.Adapter
@@ -11,5 +12,10 @@ namespace SS.Integration.Adapter
         public int Epoch { get; set; }
         public int CurrentSequence { get; set; }
         public DateTime? StartTime { get; set; }
+
+        public bool IsSnapshot { get; set; }
+        public string CompetitionId { get; set; }
+        public string CompetitionName { get; set; }
+        
     }
 }

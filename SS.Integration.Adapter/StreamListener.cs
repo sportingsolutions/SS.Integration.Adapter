@@ -1039,19 +1039,33 @@ namespace SS.Integration.Adapter
             }
         }
 
-        private void RaiseEvent(EventHandler<StreamListenerEventArgs> eventName, Exception exception = null, Fixture fixture = null)
+        private void RaiseEvent(EventHandler<StreamListenerEventArgs> eventToRaise, Exception exception = null, Fixture fixture = null)
         {
-            if (eventName != null)
+            if (eventToRaise != null)
             {
                 try
                 {
-                    eventName(this, new StreamListenerEventArgs
+                    var eventArgs = new StreamListenerEventArgs
                     {
                         CurrentSequence = fixture != null ? fixture.Sequence : _currentSequence,
                         Epoch = fixture != null ? fixture.Epoch : _currentEpoch,
                         Exception = exception,
-                        Listener = this
-                    });
+                        Listener = this,
+                    };
+
+                    eventArgs.IsSnapshot = fixture != null && fixture.Tags.Count > 0;
+                    if (eventArgs.IsSnapshot)
+                    {
+                        eventArgs.CompetitionId = fixture.Tags.ContainsKey("SSLNCompetitionId")
+                            ? fixture.Tags["SSLNCompetitionId"].ToString()
+                            : null;
+
+                        eventArgs.CompetitionName = fixture.Tags.ContainsKey("SSLNCompetitionName")
+                            ? fixture.Tags["SSLNCompetitionName"].ToString()
+                            : null;
+                    }
+
+                    eventToRaise(this,eventArgs);
                 }
                 catch (Exception ex)
                 {

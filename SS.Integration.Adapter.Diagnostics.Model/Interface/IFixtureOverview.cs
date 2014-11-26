@@ -7,10 +7,11 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Interface
     public interface IFixtureOverview : IFixtureOverviewDelta
     {
         string Name { get; set; }
+        string Sport { get; }
 
         string CompetitionId { get; }
         string CompetitionName { get; }
-
+        
         MatchStatus? MatchStatus { get; set; }
         DateTime TimeStamp { get; }
         

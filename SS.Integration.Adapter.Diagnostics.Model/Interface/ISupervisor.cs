@@ -9,7 +9,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Interface
         void ForceSnapshot(string fixtureId);
         IObservable<IFixtureOverviewDelta> GetFixtureOverviewStream();
         IEnumerable<IFixtureOverview> GetFixtures();
-        FixtureOverview GetFixtureOverview(string fixtureId);
+        IFixtureOverview GetFixtureOverview(string fixtureId);
 
         void RemoveFixtureEventState(string fixtureId);
 
