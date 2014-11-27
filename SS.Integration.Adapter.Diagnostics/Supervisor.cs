@@ -12,6 +12,7 @@ using SS.Integration.Adapter.Diagnostics.RestService;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
+using SS.Integration.Adapter.ProcessState;
 
 namespace SS.Integration.Adapter.Diagnostics
 {
@@ -352,6 +353,18 @@ namespace SS.Integration.Adapter.Diagnostics
         public IAdapterVersion GetAdapterVersion()
         {
             throw new NotImplementedException();
+        }
+
+        public virtual bool RemoveStreamListener(string fixtureId)
+        {
+            base.RemoveStreamListener(fixtureId);
+
+            var fixtureState = EventState.GetFixtureState(fixtureId);
+            if(fixtureState != null && fixtureState.MatchStatus == MatchStatus.MatchOver)
+            {
+                FixtureOverview tempObj = null;
+                _fixtures.TryRemove(fixtureId, out tempObj);
+            }
         }
     }
 }

@@ -27,7 +27,7 @@ namespace SS.Integration.Adapter
         public event Adapter.StreamEventHandler StreamCreated;
         public event Adapter.StreamEventHandler StreamRemoved;
 
-        internal IEventState EventState { get; set; }
+        public IEventState EventState { get; set; }
 
         public StreamListenerManager(ISettings settings)
         {
@@ -88,7 +88,7 @@ namespace SS.Integration.Adapter
             SaveEventState();
         }
 
-        public bool RemoveStreamListener(string fixtureId)
+        public virtual bool RemoveStreamListener(string fixtureId)
         {
             _logger.InfoFormat("Removing listener for fixtureId={0}", fixtureId);
 
