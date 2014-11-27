@@ -160,11 +160,14 @@ namespace SS.Integration.Adapter
             {
                 _logger.DebugFormat("Attempting to create a Listener for sport={0} and {1}", resource.Sport, resource);
                 
-                var listener = new StreamListener(resource, platformConnector, EventState, stateManager);
+                var listener = CreateStreamListenerObject(resource, platformConnector, EventState, stateManager);
 
                 if (!listener.Start())
                 {
                     _logger.WarnFormat("Couldn't start stream listener for {0}", resource);
+                    listener.Dispose();
+
+                    DisposedStreamListener(listener);
                     return;
                 }
 
@@ -181,6 +184,16 @@ namespace SS.Integration.Adapter
                 SaveEventState();
                 _logger.DebugFormat("Finished processing fixture {0}", resource);
             }
+        }
+
+        protected virtual void DisposedStreamListener(IListener listener)
+        {
+            // in case there's additional clean up needed   
+        }
+
+        protected virtual IListener CreateStreamListenerObject(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IStateManager stateManager)
+        {
+            return new StreamListener(resource, platformConnector, eventState, stateManager);
         }
 
 

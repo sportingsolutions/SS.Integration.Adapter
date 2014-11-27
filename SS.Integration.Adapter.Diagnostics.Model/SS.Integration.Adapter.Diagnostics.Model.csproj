@@ -67,6 +67,7 @@
     <Compile Include="Service\Interface\ISupervisorServiceConfiguration.cs" />
     <Compile Include="Service\Model\SportDetails.cs" />
     <Compile Include="Service\Model\SportOverview.cs" />
+    <Compile Include="SportOverview.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj">

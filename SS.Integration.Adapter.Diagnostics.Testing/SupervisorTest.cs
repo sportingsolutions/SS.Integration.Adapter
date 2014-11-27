@@ -2,17 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using SportingSolutions.Udapi.Sdk.Events;
-using SS.Integration.Adapter.Diagnostics;
-using SS.Integration.Adapter.Diagnostics;
-using SS.Integration.Adapter.Diagnostics.Model;
 using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
@@ -42,6 +36,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
 
             _resource = new Mock<IResourceFacade>();
             _resource.Setup(r => r.Sport).Returns("FantasyFootball");
+            _resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, new EventArgs());
 
             _connector = new Mock<IAdapterPlugin>();
 
@@ -72,8 +67,11 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             _supervisor.ForceSnapshot(fixture.Id);
             _supervisor.ForceSnapshot(fixture.Id);
 
-            _resource.Verify(x => x.GetSnapshot(), Times.Exactly(2));
-            _connector.Verify(x => x.ProcessSnapshot(It.Is<Fixture>(f => f.Markets.Count == 1), It.IsAny<bool>()), Times.Exactly(2));
+            
+
+            //inital snapshot + 2 forced snapshots = 3
+            _resource.Verify(x => x.GetSnapshot(), Times.Exactly(3));
+            _connector.Verify(x => x.ProcessSnapshot(It.Is<Fixture>(f => f.Markets.Count == 1), It.IsAny<bool>()), Times.Exactly(3));
         }
 
         [Test]
@@ -107,6 +105,40 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             fixtureOverviews.Any(f=> f.Sport == "TestSport1").Should().BeTrue();
             fixtureOverviews.Any(f => f.Sport == "TestSport2").Should().BeTrue();
         }
+
+        [Test]
+        public void GetSportsTest()
+        {
+            var fixtureOneId = "fixtureOne";
+            var fixtureTwoId = "fixtureTwo";
+
+            var resourceOne = new Mock<IResourceFacade>();
+            var resourceTwo = new Mock<IResourceFacade>();
+
+            resourceOne.Setup(x => x.Id).Returns(fixtureOneId);
+            resourceOne.Setup(x => x.Content).Returns(new Summary());
+            resourceOne.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resourceOne.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId)));
+            resourceOne.Setup(x => x.Sport).Returns("TestSport1");
+            resourceOne.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
+
+
+            resourceTwo.Setup(x => x.Id).Returns(fixtureTwoId);
+            resourceTwo.Setup(x => x.Content).Returns(new Summary());
+            resourceTwo.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resourceTwo.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureTwoId)));
+            resourceTwo.Setup(x => x.Sport).Returns("TestSport2");
+            resourceTwo.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
+
+            _supervisor.CreateStreamListener(resourceOne.Object, _provider, _connector.Object);
+            _supervisor.CreateStreamListener(resourceTwo.Object, _provider, _connector.Object);
+            
+            _supervisor.GetSports().Should().NotBeEmpty();
+            _supervisor.GetSports().Count().Should().Be(2);
+            _supervisor.GetSportOverview("TestSport1").Should().NotBeNull();
+            _supervisor.GetSportOverview("TestSport1").InPlay.Should().Be(1);
+        }
+        
 
         [Test]
         public void GetDeltaOverviewTest()

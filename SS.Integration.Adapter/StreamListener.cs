@@ -15,6 +15,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using SS.Integration.Adapter.Interface;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Events;
@@ -53,6 +54,7 @@ namespace SS.Integration.Adapter
         private bool _hasRecoveredFromError;
         private bool _isFirstSnapshotProcessed;
         private bool _isProcessingFirstSnapshot;
+        private static readonly object _sync = new object();
 
         //The events are for diagnostic purposes only
         public event EventHandler<StreamListenerEventArgs> OnConnected;
@@ -841,7 +843,12 @@ namespace SS.Integration.Adapter
         {
             var snapshot = RetrieveSnapshot();
             if (snapshot != null)
-                ProcessSnapshot(snapshot, true, hasEpochChanged, !IsErrored, skipMarketRules);
+            {
+                //This lock is to prevent forced snapshot and normal feed snapshot from causing race condition in the plugin
+                //under normal circumstances this should be used by single thread only
+                lock(_sync)
+                    ProcessSnapshot(snapshot, true, hasEpochChanged, !IsErrored, skipMarketRules);
+            }
         }
 
         private void RetrieveAndProcessSnapshotIfNeeded()
@@ -1052,9 +1059,15 @@ namespace SS.Integration.Adapter
                     Epoch = fixture != null ? fixture.Epoch : _currentEpoch,
                     Exception = exception,
                     Listener = this,
-                    StartTime = fixture != null ? fixture.StartTime : null
                 };
-                
+
+                if (fixture != null)
+                {
+                    eventArgs.StartTime = fixture.StartTime;
+                    eventArgs.MatchStatus = (MatchStatus?) (!string.IsNullOrWhiteSpace(fixture.MatchStatus) ? Enum.Parse(typeof(MatchStatus),fixture.MatchStatus) : null);
+                    eventArgs.LastEpochChangeReason = fixture.LastEpochChangeReason;
+                }
+
                 eventArgs.IsSnapshot = fixture != null && fixture.Tags.Count > 0;
                 if (eventArgs.IsSnapshot)
                 {

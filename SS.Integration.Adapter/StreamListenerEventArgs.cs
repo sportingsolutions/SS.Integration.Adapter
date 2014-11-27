@@ -2,6 +2,7 @@ using System;
 using System.Runtime.Serialization;
 using System.Security;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter
 {
@@ -17,5 +18,7 @@ namespace SS.Integration.Adapter
         public string CompetitionId { get; set; }
         public string CompetitionName { get; set; }
         public string Name { get; set; }
+        public MatchStatus? MatchStatus { get; set; }
+        public int[] LastEpochChangeReason { get; set; }
     }
 }

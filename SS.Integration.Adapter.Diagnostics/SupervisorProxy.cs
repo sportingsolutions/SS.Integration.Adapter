@@ -24,6 +24,7 @@ using SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
 using SS.Integration.Adapter.Model.Enums;
 using FixtureOverview = SS.Integration.Adapter.Diagnostics.Model.Service.Model.FixtureOverview;
 using IFixtureOverview = SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface.IFixtureOverview;
+using SportOverview = SS.Integration.Adapter.Diagnostics.Model.Service.Model.SportOverview;
 
 namespace SS.Integration.Adapter.Diagnostics
 {
