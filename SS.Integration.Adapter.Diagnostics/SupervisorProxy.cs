@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using SS.Integration.Adapter.Diagnostics.Model;
 using SS.Integration.Adapter.Diagnostics.Model.Interface;
@@ -39,13 +40,13 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public ISupervisor Supervisor { get; private set; }
 
-        public IEnumerable<ISportOverview> GetSports()
+        public IEnumerable<Model.Service.Model.Interface.ISportOverview> GetSports()
         {
-            Dictionary<string, ISportOverview> sports = new Dictionary<string, ISportOverview>();
+            Dictionary<string, Model.Service.Model.Interface.ISportOverview> sports = new Dictionary<string, Model.Service.Model.Interface.ISportOverview>();
             
             foreach(var fixture in Supervisor.GetFixtures())
             {
-                ISportOverview sportoverview = null;
+                Model.Service.Model.Interface.ISportOverview sportoverview = null;
                 if (!sports.ContainsKey(fixture.Sport))
                 {
                     sportoverview = new SportOverview
@@ -139,7 +140,16 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public IAdapterStatus GetAdapterStatus()
         {
-            throw new NotImplementedException();
+            // TODO
+            return new AdapterStatus
+            {
+                AdapterVersion = "1.2",
+                PluginName = "Testing",
+                PluginVersion = "3.4",
+                UdapiSDKVersion = "5.6",
+                MemoryUsage = GC.GetTotalMemory(false).ToString(),
+                RunningThreads = Process.GetCurrentProcess().Threads.Count.ToString()
+            };
         }
 
         public IEnumerable<IFixtureProcessingEntry> GetFixtureHistory(string fixtureId)

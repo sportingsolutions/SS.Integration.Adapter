@@ -9,12 +9,20 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Interface
     {
         ISupervisorProxy Proxy { get; }
 
-        void ForceSnapshot(string fixtureId);
-        IObservable<IFixtureOverviewDelta> GetFixtureOverviewStream();
+        
+        IObservable<IFixtureOverviewDelta> GetFixtureOverviewStream(string fixtureId);
         IEnumerable<IFixtureOverview> GetFixtures();
         IFixtureOverview GetFixtureOverview(string fixtureId);
 
+        IEnumerable<ISportOverview> GetSports();
+        ISportOverview GetSportOverview(string sportCode);
+        IObservable<ISportOverview> GetSportOverviewStream(string sportCode);
+
+        IAdapterVersion GetAdapterVersion();
+
+
         void RemoveFixtureEventState(string fixtureId);
+        void ForceSnapshot(string fixtureId);
 
         void Initialise();
     }

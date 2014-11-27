@@ -177,7 +177,7 @@ namespace SS.Integration.Adapter.WindowsService
             _adapter.Start();
 
             _logger.Info("Adapter has started");
-        }
+            }
 
         protected override void OnStop()
         {

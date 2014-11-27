@@ -270,5 +270,31 @@ namespace SS.Integration.Adapter.Diagnostics
         }
 
         #endregion
+
+
+        public IObservable<IFixtureOverviewDelta> GetFixtureOverviewStream(string fixtureId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<ISportOverview> GetSports()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ISportOverview GetSportOverview(string sportCode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IObservable<ISportOverview> GetSportOverviewStream(string sportCode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IAdapterVersion GetAdapterVersion()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

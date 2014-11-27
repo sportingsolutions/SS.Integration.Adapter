@@ -132,19 +132,26 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
             private static void UseFileServer(IAppBuilder app)
             {
                 // configure the static web server middleware
-                app.UseFileServer(new FileServerOptions
+                var options = new FileServerOptions
                 {
-                    FileSystem = new PhysicalFileSystem(GetRootDirectory()),
+                    FileSystem = new PhysicalFileSystem(GetRootDirectory(ServiceInstance.ServiceConfiguration.UIPath)),
                     EnableDirectoryBrowsing = true,
-                    RequestPath = new Microsoft.Owin.PathString("/ui")
-                });
+                    RequestPath = new Microsoft.Owin.PathString("/ui"),
+                    EnableDefaultFiles = true
+                };
 
+                app.UseFileServer(options);
             }
 
-            private static string GetRootDirectory()
+            private static string GetRootDirectory(string path)
             {
                 var currentDirectory = Directory.GetCurrentDirectory();
-                var path = ServiceInstance.ServiceConfiguration.UIPath.Replace("/", "");
+
+                if (path.StartsWith("/"))
+                {
+                    path = path.Substring(1);
+                }
+
                 return Path.Combine(currentDirectory, path);
             }
         }

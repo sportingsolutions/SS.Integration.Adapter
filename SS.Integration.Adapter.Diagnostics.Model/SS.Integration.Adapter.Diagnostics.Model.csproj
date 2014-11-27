@@ -45,8 +45,10 @@
     <Compile Include="FeedUpdateOverview.cs" />
     <Compile Include="FixtureOverview.cs" />
     <Compile Include="FixtureOverviewDelta.cs" />
+    <Compile Include="Interface\IAdapterVersion.cs" />
     <Compile Include="Interface\IFixtureOverview.cs" />
     <Compile Include="Interface\IFixtureOverviewDelta.cs" />
+    <Compile Include="Interface\ISportOverview.cs" />
     <Compile Include="Interface\ISupervisor.cs" />
     <Compile Include="Service\Model\AdapterStatus.cs" />
     <Compile Include="Service\Model\FixtureDetails.cs" />
