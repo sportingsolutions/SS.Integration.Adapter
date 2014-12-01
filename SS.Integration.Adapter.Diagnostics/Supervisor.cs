@@ -324,6 +324,8 @@ namespace SS.Integration.Adapter.Diagnostics
         {
             if (Service != null)
                 Service.Stop();
+
+            Proxy.Dispose();
         }
 
         #endregion
@@ -351,7 +353,27 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public IAdapterVersion GetAdapterVersion()
         {
-            throw new NotImplementedException();
+            // TODO
+            return null;
+        }
+
+
+        public IObservable<IFixtureOverviewDelta> GetAllFixtureOverviewStreams()
+        {
+            // TODO
+            return null;
+        }
+
+        public IObservable<IFixtureOverviewDelta> GetFixtureStreams()
+        {
+            // TODO
+            return null;
+        }
+
+        public IObservable<ISportOverview> GetAllSportOverviewStreams()
+        {
+            // TODO
+            return null;
         }
     }
 }

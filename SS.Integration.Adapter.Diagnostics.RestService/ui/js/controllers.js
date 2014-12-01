@@ -27,7 +27,6 @@
     var models = {
 
         AdapterDetail: function AdapterDetail(){
-
             this.AdapterVersion = "";
             this.UdapiSDKVersion = "";
             this.PluginName = "";
@@ -49,18 +48,9 @@
             this.InSetup = 0;
             
             this.FixtureGroups = {
-                InPlay: {
-                    InErrorState: 0,
-                    Items: new Array(),
-                },
-                InPreMatch: {
-                    InErrorState: 0,
-                    Items: new Array(),
-                },
-                InSetup: {
-                    InErrorState: 0,
-                    Items: new Array(),
-                }
+                InPlay:     { InErrorState: 0, Items: new Array()},
+                InPreMatch: { InErrorState: 0, Items: new Array()},
+                InSetup:    { InErrorState: 0, Items: new Array()}
             };
 
             this.groupFixtures = function () {
@@ -70,31 +60,20 @@
                     var group = null;
                     switch (value.State) {
                         // 0: setup - 1: Ready
-                        case 0:
-                        case 1:
-                            group = outer.FixtureGroups.InSetup;
-                            break;
+                        case 0: case 1: group = outer.FixtureGroups.InSetup; break;
                         // 2: pre-match
-                        case 2:
-                            group = outer.FixtureGroups.InPreMatch;
-                            break;
+                        case 2: group = outer.FixtureGroups.InPreMatch;      break;
                         // 3: in-play, 4: match over
-                        case 3:
-                        case 4:
-                            group = outer.FixtureGroups.InPlay;
-                            break;
-                        default:
-                            break;
+                        case 3: case 4: group = outer.FixtureGroups.InPlay;  break;
+                        default: break;
                     }
 
                     if (group) {
-                        if (value.IsInErrorState) group.InErrorState++;
                         group.Items.push(value);
+                        if (value.IsInErrorState) group.InErrorState++;
                     }
 
-                    if (value.IsInErrorState)
-                        outer.InErrorState++;
-
+                    if (value.IsInErrorState) outer.InErrorState++;
                 });
             }
         },
@@ -122,12 +101,9 @@
 
             this.FillData = function () {
 
-                this.ProcessingEntries.sort(function (a, b) {
-                    return new Date(a.Timestamp) - new Date(b.Timestamp);
-                });
+                this.ProcessingEntries.sort(function (a, b) {return new Date(a.Timestamp) - new Date(b.Timestamp);});
 
                 if (this.ProcessingEntries.length > 0) {
-
                     var lastEntry = this.ProcessingEntries[this.ProcessingEntries.length - 1];
                     this.LastEpoch = lastEntry.Epoch;
                     this.LastTimestamp = lastEntry.Timestamp;
@@ -137,6 +113,7 @@
 
                 var last = "";
                 var outer = this;
+                // this groups processing entries using the sequence number (we can have multiple processing entries with the same sequence)
                 $.each(this.ProcessingEntries, function (index, value) {
                     if (last != value.Sequence) {
                         outer.GroupedProcessingEntries.push({ sequence: value.Sequence, items: new Array() });
@@ -154,12 +131,8 @@
     
         GetSportsDetails : function(array, config)
         {
-            if (!array)
-                return new Array();
-
-            if(!Array.isArray(array))
-                array = [array];
-
+            if (!array) return new Array();
+            if (!Array.isArray(array)) array = [array];
             var result = new Array();
 
             $.each(array, function(index, value) {
@@ -217,9 +190,9 @@
     controllers.controller('AdapterCtrl', ['$scope', '$location', '$rootScope', 'Supervisor',
         function ($scope, $location, $rootScope, Supervisor) {
 
-            // as the current layout (index.html) uses ngView and adds
-            // this controller outside ngView's supervision, its scope
-            // is only destroyed when we leave the ngView's routing capabilities
+            // as the current layout (index.html) uses ngView and we add
+            // this controller outside ngView's supervision, the controller's scope
+            // is destroyed only when we leave the ngView's routing capabilities
             
             $scope.searching = {};
             $scope.searching.data = null;
@@ -227,75 +200,54 @@
             $scope.details = new models.AdapterDetail();
 
             // 1) get the adapter's details
-
             var promise = Supervisor.getAdapterDetails();
             if (!promise) return;
 
+            //...shows the "loading..." message
             $rootScope.$broadcast('my-loading-started');
 
-            promise['finally'](function () {
-                $rootScope.$broadcast('my-loading-complete');
-            });
-
-            promise.then(function (data) {
-                $scope.details = data;
-            });
-
+            promise['finally'](function () { $rootScope.$broadcast('my-loading-complete'); });
+            promise.then(function (data) { $scope.details = data; });
 
             // 2) subscribe to push notifications
-
             var config = Supervisor.getConfig();
-
             var streaming = Supervisor.getStreamingService();
             streaming.adapterSubscription().subscribe();
 
             $scope.$on(config.pushNotification.events.Errors, function (events, args) {
-
                 // TODO
             });
 
-            $scope.$on(config.pushNotification.events.AdapterUpdate, function (events, args) {
-
-                // update the adpter's detail with new data
-                $.extend($scope.details, args);
-                
-            });
+            // update the adapter's details with new data
+            $scope.$on(config.pushNotification.events.AdapterUpdate, function (events, args) {$.extend($scope.details, args); });
 
 
             // if the scope is destroyed, stop listening to notifications
-            $scope.$on('destroy', function () {
-                streaming.adapterSubscription().unsubscribe();
-            });
+            $scope.$on('destroy', function () { streaming.adapterSubscription().unsubscribe(); });
 
-
-            
 
             // TODO: get rid of this code after dev phase is completed
-            this.testNotification = function () {
+            $scope.testNotification = function () {
                 $rootScope.$broadcast('on-error-notification-received', {text: new Date().toString()});
             }
 
             // this allows us to clear all the currently displayed notifications
-            this.clearNotifications = function () {
+            $scope.clearNotifications = function () {
                 $rootScope.$broadcast('on-error-notification-clear-all', { text: new Date().toString() });
             }
 
-
+            // function for redirecting to the fixture's page when a fixture's id is given
             this.search = function () {
                 if ($scope.searching.data && 0 !== $scope.searching.data.length) {
                     var searchPromise = Supervisor.searchFixture($scope.searching.data);
                     $scope.searching.data = null;
+                    $scope.searching.noResults = false;
 
-                    if (!searchPromise)
-                        return;
+                    if (!searchPromise) return;
 
                     searchPromise.then(function (data) {
-                        if (data && data.Id) {
-                            $location.path('/ui/fixture/' + data.Id);
-                        }
-                        else {
-                            $scope.searching.noResults = true;
-                        }
+                        if (data && data.Id) $location.path('/ui/fixture/' + data.Id);
+                        else  $scope.searching.noResults = true;
                     });
                 }
             }
@@ -304,23 +256,40 @@
     controllers.controller('SportListCtrl', ['$scope', '$routeParams', '$rootScope', 'Supervisor',
         function ($scope, $routeParams, $rootScope, Supervisor) {
 
-            // 1) get the list of sports
-
             $scope.sports = [];
 
+            // 1) get the list of sports
             var promise = Supervisor.getListOfSports();
             if (!promise) return;
 
             // this allows us to display the "waiting layer"
             $rootScope.$broadcast('my-loading-started');
-
-            promise['finally'](function () {
-                $rootScope.$broadcast('my-loading-complete');
-            });
-
+            promise['finally'](function () { $rootScope.$broadcast('my-loading-complete'); });
 
             // 2) subscribe to push notifications
+            var config = Supervisor.getConfig();
             var streaming = Supervisor.getStreamingService();
+
+            $scope.$on(config.pushNotification.events.SportUpdate, function (event, args) {
+
+                // convert data using fn.GetSportsDetails (it always returns an array)
+                if (!args) return;
+
+                var sport = fn.GetSportsDetails(args, config);
+                if(!Array.isArray(sport) || 0 == sport.length) return;
+
+                sport = sport[0];
+                var i = 0;
+
+                // if we have received a notifications, it means that the sport
+                // exists in $scope.sports - this means that to display a new
+                // sport, a page refresh is necessary. However, 
+                // this is not really an issue, as in the majority of the cases 
+                // the list of sports is immediately known by the adapter
+                for (; i < $scope.sports.length; i++) {
+                    if ($scope.sports[i].Name === sport.Name) { $.extend($scope.sports[i], sport); break; }
+                }
+            });
 
             promise.then(function (data) {
                 $scope.sports = fn.GetSportsDetails(data, Supervisor.getConfig());
@@ -328,16 +297,14 @@
                 // subscribe to push-notifications
                 $.each($scope.sports, function (index, value) {
                     var tmp = streaming.sportSubscription(value.Name);
-                    if (tmp != null)
-                        tmp.subscribe();
+                    if (tmp != null) tmp.subscribe();
                 });
             });
 
             $scope.$on('destroy', function () {
                 $.each($scope.sports, function (index, value) {
                     var tmp = streaming.sportSubscription(value.Name);
-                    if (tmp != null)
-                        tmp.unsubscribe();
+                    if (tmp != null) tmp.unsubscribe();
                 });
             });
 
@@ -346,57 +313,44 @@
     controllers.controller('SportDetailCtrl', ['$scope', '$routeParams', '$rootScope', '$location', 'Supervisor',
         function ($scope, $routeParams, $rootScope, $location, Supervisor) {
 
-            if (!$routeParams.hasOwnProperty("sportCode")) {
-                $location.path(Supervisor.getConfig().uiRelations.Home);
-            }
+            // if sportCode is missing, redirect the user to the homepage
+            if (!$routeParams.hasOwnProperty("sportCode")) $location.path(Supervisor.getConfig().uiRelations.Home);
 
             $scope.sport = new models.SportDetail();
+            $scope.sport.Name = $routeParams.sportCode;
             $scope.tab = "all";
             $scope.search = null;
+            $scope.lastUpdate = Date.now();
+            $scope.sportCode = $routeParams.sportCode;
 
             /**
              * Allows us to switch to the tab
              * indicated by "tab".
              * @param {string} tab
              */
-            $scope.changeTab = function (tab) {
-                $scope.tab = tab;
-            };
+            $scope.changeTab = function (tab) { $scope.tab = tab; };
 
             /** 
              * Returns the list of fixtures to display
              * in the current active tab, eventually filtered
-             * by the user through the search functionality
+             * by the user through the page's "search" functionality
              */
             $scope.getFixturesForTab = function(){
 
                 // make sure we have some valid values
-                if(!$scope.tab)
-                    $scope.tab = 'all';
-
-                if ($scope.search == "")
-                    $scope.search = null;
+                if(!$scope.tab) $scope.tab = 'all';
+                if ($scope.search == "") $scope.search = null;
 
                 var fixtures = null;
                 switch ($scope.tab) {
-                    case 'in-play':
-                        fixtures = $scope.sport.FixtureGroups.InPlay.Items;
-                        break;
-                    case 'in-prematch':
-                        fixtures = $scope.sport.FixtureGroups.InPreMatch.Items;
-                        break;
-                    case 'in-setup':
-                        fixtures = $scope.sport.FixtureGroups.InSetup.Items;
-                        break;
-                    default:
-                        fixtures = $scope.sport.Fixtures;
-                        break;
+                    case 'in-play': fixtures = $scope.sport.FixtureGroups.InPlay.Items; break;
+                    case 'in-prematch': fixtures = $scope.sport.FixtureGroups.InPreMatch.Items; break;
+                    case 'in-setup': fixtures = $scope.sport.FixtureGroups.InSetup.Items; break;
+                    default: fixtures = $scope.sport.Fixtures; break;
                 }
 
                 // filter using user specified data
-                if ($scope.search) {
-                    fixtures = fn.SearchFixtures(fixtures, $scope.search);
-                }
+                if ($scope.search) fixtures = fn.SearchFixtures(fixtures, $scope.search);
 
                 return fixtures;
             };
@@ -409,16 +363,12 @@
              */
             $scope.getInErrorFixtureCountForTab = function() {
 
-                if(!$scope.tab)
-                    $scope.tab = 'all';
+                if(!$scope.tab) $scope.tab = 'all';
 
                 switch ($scope.tab) {
-                    case 'in-play':
-                        return $scope.sport.FixtureGroups.InPlay.InErrorState;
-                    case 'in-prematch':
-                        return $scope.sport.FixtureGroups.InPreMatch.InErrorState;
-                    case 'in-setup':
-                        return $scope.sport.FixtureGroups.InSetup.InErrorState;
+                    case 'in-play': return $scope.sport.FixtureGroups.InPlay.InErrorState;
+                    case 'in-prematch': return $scope.sport.FixtureGroups.InPreMatch.InErrorState;
+                    case 'in-setup': return $scope.sport.FixtureGroups.InSetup.InErrorState;
                 }
 
                 return $scope.sport.InErrorState;
@@ -430,8 +380,7 @@
              */
             $scope.openFixtureDetails = function (fixtureId) {
                 
-                if (!fixtureId)
-                    return;
+                if (!fixtureId) return;
 
                 var config = Supervisor.getConfig();
                 var path = config.uiRelations.FixtureDetail;
@@ -442,25 +391,43 @@
                 $location.path(path);
             }
 
+            $scope.update = function ()
+            {
+                var promise = Supervisor.getSportDetail($scope.sportCode);
+                if (!promise) $location.path(Supervisor.getConfig().uiRelations.Home);
 
-            var promise = Supervisor.getSportDetail($routeParams.sportCode);
-            if (!promise) {
-                $location.path(Supervisor.getConfig().uiRelations.Home);
+                $rootScope.$broadcast('my-loading-started');
+                promise['finally'](function () { $rootScope.$broadcast('my-loading-complete'); });
+
+                promise.then(function (data) {
+
+                    // there will always be only one sport, but 
+                    // getSportsDetails returns an array...
+                    var tmp = fn.GetSportsDetails(data, Supervisor.getConfig());
+                    if (tmp.length && tmp.length > 0) $scope.sport = tmp[0];
+                    $scope.lastUpdate = Date.now();
+                });
             }
 
-            $rootScope.$broadcast('my-loading-started');
+            // 1) get the sport's details
+            $scope.update();
 
-            promise['finally'](function () {
-                $rootScope.$broadcast('my-loading-complete');
+            // 2) subscribe to push notifications
+            var config = Supervisor.getConfig();
+            var streaming = Supervisor.getStreamingService();
+
+            $scope.$on(config.pushNotification.event.SportUpdate, function (event, args) {
+                if (!args) return;
+
+                var sport = fn.GetSportsDetails(args, config);
+                if (!Array.isArray(sport) || 0 == sport.length) return;
+
+                $.extend($scope.sport, sport[0]);
             });
 
-            promise.then(function (data) {
-                
-                // there will always be only one sport, but 
-                // getSportsDetails returns an array...
-                var tmp = fn.GetSportsDetails(data, Supervisor.getConfig());
-                if (tmp.length && tmp.length > 0)
-                    $scope.sport = tmp[0];
+            $scope.$on('destroy', function () {
+                var tmp = streaming.sportSubscription($scope.sport.Name);
+                if (tmp != null) tmp.unsubscribe();
             });
 
         }]);
@@ -469,9 +436,7 @@
         function ($scope, $routeParams, $rootScope, $location, Supervisor) {
 
             // check if we have the fixtureId
-            if (!$routeParams.hasOwnProperty("fixtureId")) {
-                $location.path(Supervisor.getConfig().uiRelations.Home);
-            }
+            if (!$routeParams.hasOwnProperty("fixtureId")) $location.path(Supervisor.getConfig().uiRelations.Home);
 
             $scope.fixture = new models.FixtureDetail();
             var sequenceDetailsVisibility = new Array();  // stores information about the visibility of the details table
@@ -483,9 +448,7 @@
              * @param {String} sequence
              */
             $scope.isDetailVisibile = function (sequence) {
-                if (sequenceDetailsVisibility[sequence] === undefined)
-                    return false;
-
+                if (sequenceDetailsVisibility[sequence] === undefined) return false;
                 return sequenceDetailsVisibility[sequence];
             };
 
@@ -494,17 +457,13 @@
              * @param {String} sequence
              * @param {Boolean} value
              */
-            $scope.setDetailVisible = function (sequence, value) {
-                sequenceDetailsVisibility[sequence] = value;
-            };
+            $scope.setDetailVisible = function (sequence, value) { sequenceDetailsVisibility[sequence] = value; };
 
             var promise = Supervisor.getFixtureDetail($routeParams.fixtureId);
 
             $rootScope.$broadcast('my-loading-started');
 
-            promise['finally'](function () {
-                $rootScope.$broadcast('my-loading-complete');
-            });
+            promise['finally'](function () { $rootScope.$broadcast('my-loading-complete'); });
 
             promise.then(function (data) {
                 $.extend($scope.fixture, data);

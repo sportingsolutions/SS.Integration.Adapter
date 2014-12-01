@@ -16,7 +16,7 @@ using Microsoft.AspNet.SignalR;
 
 namespace SS.Integration.Adapter.Diagnostics.RestService.PushNotifications
 {
-    public class SupervisorStreaming : Hub
+    public class SupervisorStreamingHub : Hub
     {
     
 
@@ -25,7 +25,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.PushNotifications
             if(string.IsNullOrEmpty(sport))
                 return;
 
-            Groups.Add(Context.ConnectionId, SupervisorConstants.SPORT_GROUP_PREFIX + sport);
+            Groups.Add(Context.ConnectionId, SupervisorStreamingConstants.SPORT_GROUP_PREFIX + sport);
         }
 
         public void LeaveSportGroup(string sport)
@@ -33,7 +33,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.PushNotifications
             if (string.IsNullOrEmpty(sport))
                 return;
 
-            Groups.Remove(Context.ConnectionId, SupervisorConstants.SPORT_GROUP_PREFIX + sport);
+            Groups.Remove(Context.ConnectionId, SupervisorStreamingConstants.SPORT_GROUP_PREFIX + sport);
         }
 
         public void JoinFixtureGroup(string fixtureId)
@@ -41,7 +41,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.PushNotifications
             if (string.IsNullOrEmpty(fixtureId))
                 return;
 
-            Groups.Add(Context.ConnectionId, SupervisorConstants.FIXTURE_GROUP_PREFIX + fixtureId);
+            Groups.Add(Context.ConnectionId, SupervisorStreamingConstants.FIXTURE_GROUP_PREFIX + fixtureId);
         }
 
         public void LeaveFixtureGroup(string fixtureId)
@@ -49,17 +49,17 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.PushNotifications
             if (string.IsNullOrEmpty(fixtureId))
                 return;
 
-            Groups.Remove(Context.ConnectionId, SupervisorConstants.FIXTURE_GROUP_PREFIX + fixtureId);
+            Groups.Remove(Context.ConnectionId, SupervisorStreamingConstants.FIXTURE_GROUP_PREFIX + fixtureId);
         }
 
         public void JoinAdapterGroup()
         {
-            Groups.Add(Context.ConnectionId, SupervisorConstants.ADAPTER_GROUP);
+            Groups.Add(Context.ConnectionId, SupervisorStreamingConstants.ADAPTER_GROUP);
         }
 
         public void LeaveAdapterGroup()
         {
-            Groups.Remove(Context.ConnectionId, SupervisorConstants.ADAPTER_GROUP);
+            Groups.Remove(Context.ConnectionId, SupervisorStreamingConstants.ADAPTER_GROUP);
         }
     }
 }

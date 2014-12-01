@@ -16,12 +16,10 @@
 
 'use strict';
 
-
 (function () {
 
     var app = angular.module('adapterSupervisorApp', [
         'ngRoute',
-
         'adapterSupervisorControllers',
         'adapterSupervisorServices'
     ]);
@@ -54,7 +52,7 @@
      * Allows to display a "waiting" (modal) layer
      * 
      * Brodcast 
-     * 1) "my-loading-started" to show it
+     * 1) "my-loading-started"  to show it
      * 2) "my-loading-complete" to hide it
      *
      */
@@ -62,25 +60,18 @@
         return {
             restrict: 'A',
             link: function (scope, element) {
-
-                scope.$on('my-loading-started', function () {
-                    element.css({ "display": "block" });
-                });
-
-                scope.$on('my-loading-complete', function () {
-                    element.css({ "display": "none" });
-                });
+                scope.$on('my-loading-started',  function () { element.css({ "display": "block" }); });
+                scope.$on('my-loading-complete', function () { element.css({ "display": "none" }); });
             },
         };
     });
-
 
     app.directive("myNotifications", function () {
         return {
             restrict: 'A',
             link: function (scope, element, attrs) {
 
-                var limit = 10;
+                var limit = 10;  // max number of notifications to display
                 var global = null;
                 var globalCount = 0;
 
@@ -99,14 +90,10 @@
                     type: "error",
                     width: "100%",
                     hide: false,
-                    buttons: {
-                        sticker:false
-                    },
+                    buttons: { sticker:false },
                     confirm: {
                         confirm: true,
-                        buttons: [{
-                            text: "Show me",
-                            addClass: "btn-danger",
+                        buttons: [{ text: "Show me", addClass: "btn-danger",
                             click: function (notice) {
                                 // TODO redirect here using $locationProvider
                                 // TODO remove notice from noticies list
@@ -117,32 +104,21 @@
 
                 scope.$on('on-error-notification-received', function (evt, args) {
                     opts.text = args.text;
-                    if(scope.noticies === undefined)
-                        scope.noticies = new Array();
+                    if(scope.noticies === undefined) scope.noticies = new Array();
 
                     globalCount++;
-                    if(scope.noticies.length < limit)
-                        scope.noticies.push(new PNotify(opts));
-                    else if (scope.noticies.length >= limit) {
-                        if (global !== null) {
-                            global.remove();
-                        }
-
+                    if(scope.noticies.length < limit) scope.noticies.push(new PNotify(opts));
+                    else {
+                        if (global !== null) global.remove(); 
                         opts.text = "There are more than " + globalCount + " errors";
                         global = new PNotify(opts);
                     }
                 });
 
                 scope.$on('on-error-notification-clear-all', function () {
-                    $.each(scope.noticies, function (index, value) {
-                        value.remove();
-                    });
-
+                    $.each(scope.noticies, function (index, value) { value.remove(); });
                     scope.noticies.length = 0;
-                    if (global !== null) {
-                        global.remove();
-                    }
-
+                    if (global !== null) global.remove();
                     global = null;
                     globalCount = 0;
                 });
@@ -174,11 +150,7 @@
             }).
             otherwise({
                 redirectTo: function (routeParams, path, search) {
-
-                    if (search && search.path && (search.path.indexOf("/ui/sport") > -1 || search.path.indexOf("/ui/fixture/") > -1)) {
-                        return search.path;
-                    }
-
+                    if (search && search.path && (search.path.indexOf("/ui/sport") > -1 || search.path.indexOf("/ui/fixture/") > -1)) { return search.path; }
                     return "/ui/sports";
                 }
             });

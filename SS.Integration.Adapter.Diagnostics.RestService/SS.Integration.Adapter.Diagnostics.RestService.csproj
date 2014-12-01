@@ -105,9 +105,10 @@
     <Compile Include="Handlers\MediaTypeHeaderDelegate.cs" />
     <Compile Include="MockedSupervisor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PushNotifications\SupervisorConstants.cs" />
-    <Compile Include="PushNotifications\SupervisorFacade.cs" />
-    <Compile Include="PushNotifications\SupervisorStreaming.cs" />
+    <Compile Include="PushNotifications\SupervisorStreamingConstants.cs" />
+    <Compile Include="PushNotifications\SupervisorNullStreamingService.cs" />
+    <Compile Include="PushNotifications\SupervisorStreamingService.cs" />
+    <Compile Include="PushNotifications\SupervisorStreamingHub.cs" />
     <Compile Include="Service.cs" />
     <Compile Include="ServiceConfiguration.cs" />
     <Compile Include="UrlUtilities.cs" />

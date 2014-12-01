@@ -22,6 +22,7 @@ using Microsoft.Owin.Hosting;
 using Microsoft.Owin.StaticFiles;
 using Owin;
 using SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
+using SS.Integration.Adapter.Diagnostics.RestService.PushNotifications;
 
 namespace SS.Integration.Adapter.Diagnostics.RestService
 {
@@ -52,15 +53,22 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
             ServiceInstance = this;
         }
 
+        #region ISupervisorService
 
         public ISupervisorProxy Supervisor { get; private set; }
 
         public ISupervisorServiceConfiguration ServiceConfiguration { get; private set; }
 
-        /// <summary>
-        /// Global static access to this object instance
-        /// </summary>
-        public static ISupervisorService ServiceInstance { get; private set; }
+        public ISupervisorStreamingService StreamingService
+        {
+            get
+            {
+                if(ServiceConfiguration.UsePushNotifications)
+                    return SupervisorStreamingService.Instance;
+
+                return SupervisorNullStreamingService.Instance;
+            }
+        }
 
         public void Start()
         {
@@ -78,10 +86,17 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
             _log.Info("Self-hosted web server stopped");
         }
 
+        #endregion
+
         internal static ISupervisorServiceConfiguration GetDefaultConfiguration()
         {
             return new ServiceConfiguration();
         }
+
+        /// <summary>
+        /// Global static access to this object instance
+        /// </summary>
+        public static ISupervisorService ServiceInstance { get; private set; }
 
         /// <summary>
         /// Start up class required by OWIN

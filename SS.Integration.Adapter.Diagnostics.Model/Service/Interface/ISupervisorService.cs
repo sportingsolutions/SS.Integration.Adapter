@@ -21,6 +21,12 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Service.Interface
         /// to query the supervisor
         /// </summary>
         ISupervisorProxy Supervisor { get; }
+        
+        /// <summary>
+        /// Returns a reference to the ISupervisorStreamingService
+        /// used to send push-notifications
+        /// </summary>
+        ISupervisorStreamingService StreamingService { get; }
 
         /// <summary>
         /// Returns the service configuration object

@@ -15,7 +15,7 @@
 
 namespace SS.Integration.Adapter.Diagnostics.RestService.PushNotifications
 {
-    public class SupervisorConstants
+    public class SupervisorStreamingConstants
     {
         public static readonly string SPORT_GROUP_PREFIX = "SportGroup-";
         public static readonly string FIXTURE_GROUP_PREFIX = "FixtureGroup-";

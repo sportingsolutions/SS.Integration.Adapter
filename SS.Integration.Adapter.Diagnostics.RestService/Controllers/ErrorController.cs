@@ -46,7 +46,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
 
                 if (Request.RequestUri.LocalPath.Contains(Service.ServiceInstance.ServiceConfiguration.UIPath))
                 {
-                    var response = Request.CreateResponse(HttpStatusCode.Moved);
+                    var response = Request.CreateResponse(HttpStatusCode.Redirect);
                     response.Headers.Location = BuildRedirectUrl(Request.RequestUri);
 
                     return response;

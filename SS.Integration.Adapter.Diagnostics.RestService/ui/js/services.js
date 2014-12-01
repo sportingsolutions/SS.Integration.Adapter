@@ -29,7 +29,7 @@
             url: 'http://localhost',
             port: '9000',
             path: '/streaming',
-            hub: 'SupervisorStreaming',
+            hub: 'SupervisorStreamingHub',
             enabled: true,
             sportGroupPath: 'SportGroup-:sportCode',
             fixtureGroupPath: 'FixtureGroup-:fixtureId',
@@ -41,11 +41,20 @@
                 Errors: 'on-error-received',
             },
 
-            serverEvents: {
+            serverCallbacks: {
                 AdapterUpdate: 'OnAdapterUpdate',
                 FixtureUpdate: 'OnFixtureUpdate',
                 SportUpdate: 'OnSportUpdate',
                 Errors: 'OnError',
+            },
+
+            serverProcedures: {
+                JoinSportGroup: 'JoinSportGroup',
+                JoinFixtureGroup: 'JoinFixtureGroup',
+                JoinAdapterGroup: 'JoinAdapterGroup',
+                LeaveSportGroup: 'LeaveSportGroup',
+                LeaveFixtureGroup: 'LeaveFixtureGroup',
+                LeaveAdapterGroup: 'LeaveAdapterGroup',
             },
         },
 
@@ -111,8 +120,8 @@
      * Use the specific "subscribe" methods in order to {un}-subscribe. Internally, the service sends broadcast messages 
      * (see MyConfig.pushNotifications.events) when a message is received from the server. 
      *
-     * To use the service, a client should 1) subscribe itself to service and 2) register specific listeners on $rootScope
-     * to receive the desired notifications.
+     * To use the service, a client should 1) subscribe itself to the service and 2) register specific listeners on $rootScope
+     * to receive the desired broadcasted message.
      */
     services.factory('Streaming', ['$rootScope', '$log', '$q', 'MyConfig', function ($rootScope, $log, $q, MyConfig) {
 
@@ -126,29 +135,11 @@
             var connected = false;
 
             connection.start()
-                .done(function () {
-                    $log.info('Successfully connected to the streaming server');
-                    connected = true;
-                    defered.resolve();
-                })
-                .fail(function (error) {
-                    $log.error('Not conncted to the streaming server');
-                    MyConfig.pushNotification.enabled = false;
-                    defered.reject();
-                });
+                .done(function () { $log.info('Successfully connected to the streaming server'); connected = true; defered.resolve(); })
+                .fail(function (error) { $log.error('Not connected to the streaming server: ' + error); MyConfig.pushNotification.enabled = false; connected = false; defered.reject(); });
 
 
-            var on = function (eventName, callback) {
-
-                if (MyConfig.pushNotification.enabled) {
-                    proxy.on(eventName, function (data) {
-                        $rootScope.$apply(function () {
-                            if (callback)
-                                callback(data);
-                        });
-                    });
-                }
-            };
+            var on = function (eventName, callback) { if (MyConfig.pushNotification.enabled) { proxy.on(eventName, function (data) { $rootScope.$apply(function () { if (callback) callback(data); }); }); } };
 
             var invoke = function (methodName, params, callback) {
 
@@ -158,89 +149,54 @@
 
                 var tmp = function () {
                     if (MyConfig.pushNotification.enabled) {
-                        proxy.invoke(methodName, params).done(function (data) {
-                            if (callback)
-                                callback(data);
-                        });
+                        var res = null;
+
+                        // if the RPC method doesn't accept any argument,
+                        // we need to call invoke without any argument
+                        // otherwise it won't work (even if we pass null)
+                        if (params !== null) res = proxy.invoke(methodName, params);
+                        else res = proxy.invoke(methodName);
+
+                        res.done(function (data) { if (callback) callback(data); });
                     }
                 };
 
-                if (!connected) {
-                    promise.then(tmp);
-                }
-                else {
-                    tmp();
-                }
+                if (!connected)  promise.then(tmp);
+                else tmp();
             };
 
-            // register listeners and dispatch broadcast messages upon messages' arrivals
-            on(MyConfig.pushNotification.serverEvents.AdapterUpdate, function (data) {
-                $rootScope.$broadcast(MyConfig.pushNotification.events.AdapterUpdate, data);
-            });
-
-            on(MyConfig.pushNotification.serverEvents.SportUpdate, function (data) {
-                $rootScope.$broadcast(MyConfig.pushNotification.events.SportUpdate, data);
-            });
-
-            on(MyConfig.pushNotification.serverEvents.FixtureUpdate, function (data) {
-                $rootScope.$broadcast(MyConfig.pushNotification.events.FixtureUpdate, data);
-            });
+            // register listeners and dispatch broadcast messages upon messages arrivals
+            on(MyConfig.pushNotification.serverCallbacks.AdapterUpdate, function (data) { $rootScope.$broadcast(MyConfig.pushNotification.events.AdapterUpdate, data); });
+            on(MyConfig.pushNotification.serverCallbacks.Errors, function (data) { $rootScope.$broadcast(MyConfig.pushNotification.events.Errors, data); });
+            on(MyConfig.pushNotification.serverCallbacks.FixtureUpdate, function (data) { $rootScope.$broadcast(MyConfig.pushNotification.events.FixtureUpdate, data); });
+            on(MyConfig.pushNotification.serverCallbacks.SportUpdate, function (data) { $rootScope.$broadcast(MyConfig.pushNotification.events.SportUpdate, data); });
 
             var rtn = {
 
                 sportSubscription: function (sportCode) {
 
-                    if (!sportCode || 0 === sportCode.length)
-                        return null;
+                    if (!sportCode || 0 === sportCode.length) return null;
 
                     return {
-                        subscribe: function () {
-                            invoke('JoinSportGroup', sportCode, function () {
-                                $log.debug("Correctly subscribed to sport=" + sportCode);
-                            });
-                        },
-
-                        unsubscribe: function () {
-                            invoke('LeaveSportGroup', sportCode, function () {
-                                $log.debug("Correctly un-subscribed from sport=" + sportCode);
-                            });
-                        },
+                        subscribe:   function () { invoke(MyConfig.pushNotification.serverProcedures.JoinSportGroup, sportCode, function () { $log.debug("Correctly subscribed to sport=" + sportCode); }); },
+                        unsubscribe: function () { invoke(MyConfig.pushNotification.serverProcedures.LeaveSportGroup, sportCode, function () { $log.debug("Correctly un-subscribed from sport=" + sportCode); });},
                     };
                 },
 
                 fixtureSubscription: function (fixtureId) {
 
-                    if (!fixtureId || 0 === fixtureId.length)
-                        return null;
+                    if (!fixtureId || 0 === fixtureId.length) return null;
 
                     return {
-                        subscribe: function () {
-                            invoke('JoinFixtureGroup', fixtureId, function () {
-                                $log.debug("Correctly subscribed to fixtureId=" + fixtureId);
-                            });
-                        },
-
-                        unsubscribe: function () {
-                            invoke('LeaveFixtureGroup', fixtureId, function () {
-                                $log.debug("Correctly un-subscribed from fixtureId=" + fixtureId);
-                            });
-                        },
+                        subscribe:   function () { invoke(MyConfig.pushNotification.serverProcedures.JoinFixtureGroup, fixtureId, function () { $log.debug("Correctly subscribed to fixtureId=" + fixtureId); }); },
+                        unsubscribe: function () { invoke(MyConfig.pushNotification.serverProcedures.LeaveFixtureGroup, fixtureId, function () { $log.debug("Correctly un-subscribed from fixtureId=" + fixtureId); }); },
                     };
                 },
 
                 adapterSubscription: function () {
                     return {
-                        subscribe: function () {
-                            invoke('AdapterGroup', {}, function () {
-                                $log.debug("Correctly subscribed to adapter's notifications");
-                            });
-                        },
-
-                        unsubscribe: function () {
-                            invoke('AdapterGroup', {}, function () {
-                                $log.debug("Correctly un-subscribed from adapter's notifications");
-                            });
-                        },
+                        subscribe:   function () { invoke(MyConfig.pushNotification.serverProcedures.JoinAdapterGroup, null, function () { $log.debug("Correctly subscribed to adapter's notifications"); }); },
+                        unsubscribe: function () { invoke(MyConfig.pushNotification.serverProcedures.LeaveAdapterGroup, null, function () { $log.debug("Correctly un-subscribed from adapter's notifications");});},
                     };
                 }
             };
@@ -267,9 +223,7 @@
              * Returns the config object
              * @return {!Object}
              */
-            getConfig: function () {
-                return MyConfig;
-            },
+            getConfig: function () { return MyConfig; },
 
             /**
              * Allows to obtain a reference to the Streaming service.
@@ -277,9 +231,7 @@
              * the standard angularjs's way
              * @return {!Object}
              */
-            getStreamingService: function () {
-                return Streaming;
-            },
+            getStreamingService: function () { return Streaming; },
 
             /** 
              * Gets the adapter's details
@@ -291,14 +243,8 @@
 
                 var deferred = $q.defer();
                 $http.get(path)
-                    .success(function (data) {
-                        $log.debug("Adapter details correctly retrieved");
-                        deferred.resolve(data);
-                    })
-                    .error(function () {
-                        $log.error("An error occured while retrieving adapter details");
-                        deferred.resolve({});
-                    });
+                    .success(function (data) { $log.debug("Adapter details correctly retrieved"); deferred.resolve(data); })
+                    .error(function () { $log.error("An error occured while retrieving adapter details"); deferred.resolve({}); });
 
                 return deferred.promise;
             },
@@ -313,14 +259,8 @@
 
                 var deferred = $q.defer();
                 $http.get(path)
-                    .success(function (data) {
-                        $log.debug("List of sports correctly retrieved");
-                        deferred.resolve(data);
-                    })
-                    .error(function () {
-                        $log.error("An error occured while retrieving the list of sports");
-                        deferred.resolve({});
-                    });
+                    .success(function (data) { $log.debug("List of sports correctly retrieved"); deferred.resolve(data); })
+                    .error(function () { $log.error("An error occured while retrieving the list of sports"); deferred.resolve({}); });
 
                 return deferred.promise;
             },
@@ -342,14 +282,8 @@
                 $log.debug('Requesting sport details for sport=' + sportcode);
                 var deferred = $q.defer();
                 $http.get(path)
-                    .success(function (data) {
-                        $log.debug('Sport details correctly retrieved');
-                        deferred.resolve(data);
-                    })
-                    .error(function () {
-                        $log.error('An error occured while retrieving sport details');
-                        deferred.resolve({});
-                    });
+                    .success(function (data) { $log.debug('Sport details correctly retrieved'); deferred.resolve(data); })
+                    .error(function () { $log.error('An error occured while retrieving sport details'); deferred.resolve({}); });
 
                 return deferred.promise;
             },
@@ -361,8 +295,7 @@
              */
             getFixtureDetail: function (fixtureId) {
 
-                if (!fixtureId || 0 === fixtureId.length)
-                    return null;
+                if (!fixtureId || 0 === fixtureId.length) return null;
 
                 var path = MyConfig.relations.FixtureDetail;
                 path = MyConfig.fn.getFixturePath(path, fixtureId);
@@ -371,14 +304,8 @@
                 $log.debug('Requesting fixture details for fixtureId=' + fixtureId);
                 var deferred = $q.defer();
                 $http.get(path)
-                    .success(function (data) {
-                        $log.debug('Fixture details correctly retrieved');
-                        deferred.resolve(data);
-                    })
-                    .error(function () {
-                        $log.error('An error occured while retrieving fixture details');
-                        deferred.resolve({});
-                    });
+                    .success(function (data) { $log.debug('Fixture details correctly retrieved'); deferred.resolve(data); })
+                    .error(function () { $log.error('An error occured while retrieving fixture details'); deferred.resolve({}); });
 
                 return deferred.promise;
             },
@@ -390,8 +317,7 @@
              */
             getFixtureHistory: function (fixtureId) {
 
-                if (!fixtureId || 0 === fixtureId.length)
-                    return null;
+                if (!fixtureId || 0 === fixtureId.length) return null;
 
                 var path = MyConfig.relations.FixtureHistory;
                 path = MyConfig.fn.getFixturePath(path, fixtureId);
@@ -400,37 +326,25 @@
                 $log.debug('Requesting fixture history for fixtureId=' + fixtureId);
                 var deferred = $q.defer();
                 $http.get(path)
-                    .success(function (data) {
-                        $log.debug('Fixture history correctly retrieved');
-                        deferred.resolve(data);
-                    })
-                    .error(function () {
-                        $log.error('An error occured while retrieving fixture history');
-                        deferred.resolve({});
-                    });
+                    .success(function (data) { $log.debug('Fixture history correctly retrieved'); deferred.resolve(data); })
+                    .error(function () { $log.error('An error occured while retrieving fixture history'); deferred.resolve({}); });
 
                 return deferred.promise;
             },
 
             searchFixture: function (searchData) {
-                if (!searchData || 0 === searchData.length)
-                    return null;
+
+                if (!searchData || 0 === searchData.length) return null;
 
                 var path = MyConfig.relations.FixtureSearch;
                 path = MyConfig.fn.buildPath(path, MyConfig);
 
                 var deferred = $q.defer();
                 $http.post(path, searchData)
-                    .success(function (data) {
-                        deferred.resolve(data);
-                    })
-                    .error(function () {
-                        $log.error('An error occured while searching for fixtures');
-                        deferred.resolve({});
-                    });
+                    .success(function (data) { deferred.resolve(data); })
+                    .error(function () { $log.error('An error occured while searching for fixtures'); deferred.resolve({}); });
 
                 return deferred.promise;
-                
             }
         };
     }]);
