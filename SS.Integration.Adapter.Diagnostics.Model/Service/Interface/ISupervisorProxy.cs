@@ -66,5 +66,26 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Service.Interface
         /// </summary>
         /// <returns></returns>
         IEnumerable<IFixtureOverview> GetFixtures();
+
+        /// <summary>
+        /// Forces the adapter in taking a new snasphot for
+        /// the specified fixture
+        /// </summary>
+        /// <param name="fixtureId"></param>
+        void TakeSnapshot(string fixtureId);
+
+        /// <summary>
+        /// Forces the adapter to restart the IListener object
+        /// for the specified fixture
+        /// </summary>
+        /// <param name="fixtureId"></param>
+        void RestartListener(string fixtureId);
+
+        /// <summary>
+        /// Forces the adapter to clear the state it is
+        /// keeping for the specified fixture
+        /// </summary>
+        /// <param name="fixtureId"></param>
+        void ClearState(string fixtureId);
     }
 }

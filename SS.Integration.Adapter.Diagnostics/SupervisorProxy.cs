@@ -283,5 +283,31 @@ namespace SS.Integration.Adapter.Diagnostics
             to.Message = from.Exception != null ? from.Exception.Message : "Unknown";
             to.Timestamp = from.ErroredAt;
         }
+
+
+        public void TakeSnapshot(string fixtureId)
+        {
+            if(string.IsNullOrEmpty(fixtureId))
+                return;
+
+            Supervisor.ForceSnapshot(fixtureId);
+
+        }
+
+        public void RestartListener(string fixtureId)
+        {
+            if (string.IsNullOrEmpty(fixtureId))
+                return;
+
+            Supervisor.RestartListener(fixtureId);
+        }
+
+        public void ClearState(string fixtureId)
+        {
+            if (string.IsNullOrEmpty(fixtureId))
+                return;
+
+            Supervisor.RemoveFixtureState(fixtureId);
+        }
     }
 }

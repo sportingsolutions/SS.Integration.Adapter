@@ -24,8 +24,9 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Interface
         IAdapterVersion GetAdapterVersion();
 
 
-        void RemoveFixtureEventState(string fixtureId);
+        void RemoveFixtureState(string fixtureId);
         void ForceSnapshot(string fixtureId);
+        void RestartListener(string fixtureId);
 
         void Initialise();
     }
