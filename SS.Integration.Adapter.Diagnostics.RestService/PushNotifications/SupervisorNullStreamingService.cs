@@ -33,6 +33,6 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.PushNotifications
 
         public void OnAdapterUpdate(Model.Service.Model.Interface.IAdapterStatus adapter) { }                    
 
-        public void OnError(object update) { }
+        public void OnError(Model.Service.Model.Interface.IProcessingEntryError update) { }
     }
 }

@@ -39,13 +39,19 @@ namespace SS.Integration.Adapter.Diagnostics
 
             Supervisor = supervisor;
 
-
-            // adapter status is sent out every ADAPTER_STATUS_UPDATE_TIMEOUT_SECONDS
-            var timer = Observable.Interval(TimeSpan.FromSeconds(ADAPTER_STATUS_UPDATE_TIMEOUT_SECONDS), ThreadPoolScheduler.Instance);
-            timer.Subscribe(OnAdapterStatusChanged);
+            Init();
         }
 
         public ISupervisor Supervisor { get; private set; }
+
+        private void Init()
+        {
+            // adapter status is sent out every ADAPTER_STATUS_UPDATE_TIMEOUT_SECONDS
+            Observable.Interval(TimeSpan.FromSeconds(ADAPTER_STATUS_UPDATE_TIMEOUT_SECONDS), ThreadPoolScheduler.Instance).Subscribe(OnAdapterStatusChanged);
+
+            Supervisor.GetAllSportOverviewStreams().ObserveOn(ThreadPoolScheduler.Instance).Subscribe(OnSportUpdate);
+            Supervisor.GetAllFixtureOverviewStreams().ObserveOn(ThreadPoolScheduler.Instance).Subscribe(OnFixtureUpdate);
+        }
 
         #region ISupervisorProxy
 
@@ -133,7 +139,6 @@ namespace SS.Integration.Adapter.Diagnostics
 
             List<IFixtureProcessingEntry> ret = new List<IFixtureProcessingEntry>();
 
-            
             var tmp = Supervisor.GetFixtureOverview(fixtureId);
             foreach(var update in tmp.GetFeedAudit())
             {
@@ -183,14 +188,30 @@ namespace SS.Integration.Adapter.Diagnostics
             if (fixture == null)
                 return;
 
-            FixtureDetails details = new FixtureDetails();
-            details.Id = fixture.Id;
+            FixtureDetails details = new FixtureDetails {Id = fixture.Id};
 
-            // TODO set properties
+            if(fixture.FeedUpdate != null)
+            {
+                FixtureProcessingEntry entry = new FixtureProcessingEntry();
+                FillProcessingEntry(entry, fixture.FeedUpdate);
+                details.AddProcessingEntry(entry);
+            }
 
             Supervisor.Service.StreamingService.OnFixtureUpdate(details);
 
-            // TODO register exception - need extra work: we need to be notified when a fixture has been created
+            if(fixture.LastError != null && fixture.LastError.IsErrored)
+            {
+                ProcessingEntryError error = new ProcessingEntryError
+                {
+                    FixtureId = fixture.Id,
+                    FixtureDescription = "TEST", //fixture.Name,
+                    Sequence = fixture.Sequence.HasValue ? fixture.Sequence.Value : -1
+                };
+
+                FillProcessingEntryError(error, fixture.LastError);
+                Supervisor.Service.StreamingService.OnError(error);
+            }
+
         }
 
         #endregion
@@ -222,6 +243,28 @@ namespace SS.Integration.Adapter.Diagnostics
             to.CompetitionId = from.CompetitionId;
             to.Description = from.Name;
             to.Sequence = from.Sequence.GetValueOrDefault().ToString();
+
+            if (from.MatchStatus.HasValue)
+            {
+                switch (from.MatchStatus)
+                {
+                    case Integration.Adapter.Model.Enums.MatchStatus.InRunning:
+                        to.State = FixtureState.Running;
+                        break;
+                    case Integration.Adapter.Model.Enums.MatchStatus.MatchOver:
+                        to.State = FixtureState.Over;
+                        break;
+                    case Integration.Adapter.Model.Enums.MatchStatus.Prematch:
+                        to.State = FixtureState.PreMatch;
+                        break;
+                    case Integration.Adapter.Model.Enums.MatchStatus.Ready:
+                        to.State = FixtureState.Ready;
+                        break;
+                    case Integration.Adapter.Model.Enums.MatchStatus.Setup:
+                        to.State = FixtureState.Setup;
+                        break;
+                }
+            }
         }
 
         private static void FillProcessingEntry(FixtureProcessingEntry entry, FeedUpdateOverview update)
@@ -233,6 +276,12 @@ namespace SS.Integration.Adapter.Diagnostics
             entry.Sequence = update.Sequence.ToString();
             entry.Timestamp = update.Issued;
             entry.State = update.IsProcessed ? FixtureProcessingState.PROCESSED : FixtureProcessingState.PROCESSING;
+        }
+
+        private static void FillProcessingEntryError(ProcessingEntryError to, ErrorOverview from)
+        { 
+            to.Message = from.Exception != null ? from.Exception.Message : "Unknown";
+            to.Timestamp = from.ErroredAt;
         }
     }
 }

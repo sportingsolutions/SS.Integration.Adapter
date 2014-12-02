@@ -88,7 +88,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.PushNotifications
             }
         }
 
-        public void OnError(object update)
+        public void OnError(IProcessingEntryError update)
         {
             if (update == null)
                 return;

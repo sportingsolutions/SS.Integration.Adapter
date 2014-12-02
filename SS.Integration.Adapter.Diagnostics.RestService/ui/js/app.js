@@ -66,7 +66,7 @@
         };
     });
 
-    app.directive("myNotifications", function () {
+    app.directive("myNotifications", ['$location', function ($location) {
         return {
             restrict: 'A',
             link: function (scope, element, attrs) {
@@ -74,6 +74,12 @@
                 var limit = 10;  // max number of notifications to display
                 var global = null;
                 var globalCount = 0;
+
+                scope.removeNotice = function (notice) {
+                    var index = scope.noticies.indexOf(notice);
+                    if (index > -1) scope.noticies.splice(index, 1);
+                    notice.remove();
+                };
 
                 var stack_context = {
                     "dir1": "right",
@@ -90,28 +96,49 @@
                     type: "error",
                     width: "100%",
                     hide: false,
-                    buttons: { sticker:false },
+                    buttons: { sticker:false, closer:false },
                     confirm: {
                         confirm: true,
-                        buttons: [{ text: "Show me", addClass: "btn-danger",
+                        buttons: [{
+                            text: "Show me", addClass: "btn-danger",
                             click: function (notice) {
-                                // TODO redirect here using $locationProvider
-                                // TODO remove notice from noticies list
+                                if (!notice || !notice.fixtureId) return;
+                                $location.path('/ui/fixture/' + notice.fixtureId);
+                                scope.removeNotice(notice);
+                                scope.$apply();
                             }
+                        }, {
+                            text:"Cancel", 
+                            click: function (notice) { scope.removeNotice(notice); }
                         }]
                     }
                 };
 
+                var globalOpts = {
+                    title: "Something went wrong...",
+                    stack: stack_context,
+                    type: "error",
+                    width: "100%",
+                    hide: false,
+                    buttons: { sticker: false }
+                };
+
                 scope.$on('on-error-notification-received', function (evt, args) {
-                    opts.text = args.text;
+                    opts.text = "<p>On <i>" + args.FixtureDescription + "<i></p>";
+                    opts.text += "<p>" + args.Message + "</p>";
+                    
                     if(scope.noticies === undefined) scope.noticies = new Array();
 
                     globalCount++;
-                    if(scope.noticies.length < limit) scope.noticies.push(new PNotify(opts));
+                    if (scope.noticies.length < limit) {
+                        var notice = new PNotify(opts);
+                        notice.fixtureId = args.FixtureId;
+                        scope.noticies.push(notice);
+                    }
                     else {
-                        if (global !== null) global.remove(); 
-                        opts.text = "There are more than " + globalCount + " errors";
-                        global = new PNotify(opts);
+                        if (global !== null) global.remove();
+                        globalOpts.text = "There are more than " + globalCount + " errors";
+                        global = new PNotify(globalOpts);
                     }
                 });
 
@@ -122,9 +149,11 @@
                     global = null;
                     globalCount = 0;
                 });
+
+
             },
         };
-    });
+    }]);
 
     app.config(['$routeProvider', '$locationProvider', function ($routeProvider, $locationProvider) {
         $routeProvider.

@@ -12,18 +12,22 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
 
-namespace SS.Integration.Adapter.Diagnostics.Model.Service.Interface
+namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model
 {
-    public interface ISupervisorStreamingService
+    public class ProcessingEntryError : IProcessingEntryError
     {
-        void OnSportUpdate(ISportDetails sport);
+      
+        public DateTime Timestamp { get; set; }
 
-        void OnFixtureUpdate(IFixtureDetails fixture);
+        public int Sequence { get; set; }
+              
+        public string Message { get; set; }
 
-        void OnAdapterUpdate(IAdapterStatus adapter);
+        public string FixtureId { get; set; }
 
-        void OnError(IProcessingEntryError update);
+        public string FixtureDescription { get; set; }
     }
 }

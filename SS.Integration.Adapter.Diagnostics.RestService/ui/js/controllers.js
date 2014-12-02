@@ -46,14 +46,18 @@
             this.InPlay = 0;
             this.InPreMatch = 0;
             this.InSetup = 0;
-            
-            this.FixtureGroups = {
-                InPlay:     { InErrorState: 0, Items: new Array()},
-                InPreMatch: { InErrorState: 0, Items: new Array()},
-                InSetup:    { InErrorState: 0, Items: new Array()}
-            };
 
+            this.initGroups = function () {
+                return {
+                    InPlay: { InErrorState: 0, Items: new Array() },
+                    InPreMatch: { InErrorState: 0, Items: new Array() },
+                    InSetup: { InErrorState: 0, Items: new Array() }
+                };
+            };
+            
             this.groupFixtures = function () {
+
+                this.FixtureGroups = this.initGroups();
 
                 var outer = this;
                 $.each(this.Fixtures, function (index, value) {
@@ -61,10 +65,10 @@
                     switch (value.State) {
                         // 0: setup - 1: Ready
                         case 0: case 1: group = outer.FixtureGroups.InSetup; break;
-                        // 2: pre-match
-                        case 2: group = outer.FixtureGroups.InPreMatch;      break;
-                        // 3: in-play, 4: match over
-                        case 3: case 4: group = outer.FixtureGroups.InPlay;  break;
+                            // 2: pre-match
+                        case 2: group = outer.FixtureGroups.InPreMatch; break;
+                            // 3: in-play, 4: match over
+                        case 3: case 4: group = outer.FixtureGroups.InPlay; break;
                         default: break;
                     }
 
@@ -75,7 +79,9 @@
 
                     if (value.IsInErrorState) outer.InErrorState++;
                 });
-            }
+            };
+
+            this.FixtureGroups = this.initGroups();
         },
 
         FixtureDetail: function FixtureDetail() {
@@ -100,6 +106,8 @@
             this.GroupedProcessingEntries = new Array();
 
             this.FillData = function () {
+
+                this.GroupedProcessingEntries = new Array();
 
                 this.ProcessingEntries.sort(function (a, b) {return new Date(a.Timestamp) - new Date(b.Timestamp);});
 
@@ -215,7 +223,7 @@
             streaming.adapterSubscription().subscribe();
 
             $scope.$on(config.pushNotification.events.Errors, function (events, args) {
-                // TODO
+                if (!args) return;
             });
 
             // update the adapter's details with new data
@@ -270,6 +278,19 @@
             var config = Supervisor.getConfig();
             var streaming = Supervisor.getStreamingService();
 
+
+            promise.then(function (data) {
+                $scope.sports = fn.GetSportsDetails(data, Supervisor.getConfig());
+
+                // subscribe to push-notifications
+                $.each($scope.sports, function (index, value) {
+                    var tmp = streaming.sportSubscription(value.Name);
+                    if (tmp != null) tmp.subscribe();
+                });
+            });
+
+            // 3) set up event handlers
+
             $scope.$on(config.pushNotification.events.SportUpdate, function (event, args) {
 
                 // convert data using fn.GetSportsDetails (it always returns an array)
@@ -289,16 +310,6 @@
                 for (; i < $scope.sports.length; i++) {
                     if ($scope.sports[i].Name === sport.Name) { $.extend($scope.sports[i], sport); break; }
                 }
-            });
-
-            promise.then(function (data) {
-                $scope.sports = fn.GetSportsDetails(data, Supervisor.getConfig());
-
-                // subscribe to push-notifications
-                $.each($scope.sports, function (index, value) {
-                    var tmp = streaming.sportSubscription(value.Name);
-                    if (tmp != null) tmp.subscribe();
-                });
             });
 
             $scope.$on('destroy', function () {
@@ -415,20 +426,26 @@
             // 2) subscribe to push notifications
             var config = Supervisor.getConfig();
             var streaming = Supervisor.getStreamingService();
+            var tmp = streaming.sportSubscription($scope.sport.Name);
+            if (tmp) tmp.subscribe();
 
-            $scope.$on(config.pushNotification.event.SportUpdate, function (event, args) {
+            // 3) set up broadcasting message handlers
+            $scope.$on(config.pushNotification.events.SportUpdate, function (event, args) {
                 if (!args) return;
 
                 var sport = fn.GetSportsDetails(args, config);
                 if (!Array.isArray(sport) || 0 == sport.length) return;
 
+                // sport updates don't contain any fixture information
+                // hence, if we don't store the Fixtures list before using extend
+                // then that call will overwrite the fixtures list
+                var fixtures = $scope.sport.Fixtures;
                 $.extend($scope.sport, sport[0]);
+                $scope.sport.Fixtures = fixtures;
+                $scope.sport.groupFixtures();
             });
 
-            $scope.$on('destroy', function () {
-                var tmp = streaming.sportSubscription($scope.sport.Name);
-                if (tmp != null) tmp.unsubscribe();
-            });
+            $scope.$on('destroy', function () { if (tmp != null) tmp.unsubscribe(); });
 
         }]);
 

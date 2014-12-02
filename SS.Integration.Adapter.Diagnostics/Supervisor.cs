@@ -361,7 +361,7 @@ namespace SS.Integration.Adapter.Diagnostics
         public IObservable<IFixtureOverviewDelta> GetAllFixtureOverviewStreams()
         {
             // TODO
-            return null;
+            return _fixtureTracker;
         }
 
         public IObservable<IFixtureOverviewDelta> GetFixtureStreams()
@@ -373,7 +373,7 @@ namespace SS.Integration.Adapter.Diagnostics
         public IObservable<ISportOverview> GetAllSportOverviewStreams()
         {
             // TODO
-            return null;
+            return _sportTracker;
         }
     }
 }

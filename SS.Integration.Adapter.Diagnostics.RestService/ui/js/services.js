@@ -135,11 +135,24 @@
             var connected = false;
 
             connection.start()
-                .done(function () { $log.info('Successfully connected to the streaming server'); connected = true; defered.resolve(); })
-                .fail(function (error) { $log.error('Not connected to the streaming server: ' + error); MyConfig.pushNotification.enabled = false; connected = false; defered.reject(); });
+                .done(function () {
+                    $log.info('Successfully connected to the streaming server'); connected = true; defered.resolve();
+                })
+                .fail(function (error) {
+                    $log.error('Not connected to the streaming server: ' + error); MyConfig.pushNotification.enabled = false; connected = false; defered.reject();
+                });
 
 
-            var on = function (eventName, callback) { if (MyConfig.pushNotification.enabled) { proxy.on(eventName, function (data) { $rootScope.$apply(function () { if (callback) callback(data); }); }); } };
+            var on = function (eventName, callback) {
+                if (MyConfig.pushNotification.enabled) {
+                    proxy.on(eventName, function (data) {
+                        $rootScope.$apply(function () {
+                            if (callback)
+                                callback(data);
+                        });
+                    });
+                }
+            };
 
             var invoke = function (methodName, params, callback) {
 
@@ -168,8 +181,18 @@
             // register listeners and dispatch broadcast messages upon messages arrivals
             on(MyConfig.pushNotification.serverCallbacks.AdapterUpdate, function (data) { $rootScope.$broadcast(MyConfig.pushNotification.events.AdapterUpdate, data); });
             on(MyConfig.pushNotification.serverCallbacks.Errors, function (data) { $rootScope.$broadcast(MyConfig.pushNotification.events.Errors, data); });
-            on(MyConfig.pushNotification.serverCallbacks.FixtureUpdate, function (data) { $rootScope.$broadcast(MyConfig.pushNotification.events.FixtureUpdate, data); });
-            on(MyConfig.pushNotification.serverCallbacks.SportUpdate, function (data) { $rootScope.$broadcast(MyConfig.pushNotification.events.SportUpdate, data); });
+            on(MyConfig.pushNotification.serverCallbacks.FixtureUpdate, function (data) {
+                if (data && data.Id) {
+                    $log.debug("Update arrived for fixtureId=" + data.Id);
+                    $rootScope.$broadcast(MyConfig.pushNotification.events.FixtureUpdate, data);
+                }
+            });
+            on(MyConfig.pushNotification.serverCallbacks.SportUpdate, function (data) {
+                if (data && data.Name) {
+                    $log.debug("Update arrived for sport=" + data.Name);
+                    $rootScope.$broadcast(MyConfig.pushNotification.events.SportUpdate, data);
+                }
+            });
 
             var rtn = {
 
