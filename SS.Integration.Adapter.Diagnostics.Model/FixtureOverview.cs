@@ -35,7 +35,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         private List<ErrorOverview> _errors = new List<ErrorOverview>(MAX_AUDIT_SIZE);
         private List<FeedUpdateOverview> _feedUpdates = new List<FeedUpdateOverview>(MAX_AUDIT_SIZE);
         private DateTime? _startTime;
-        private ListenerOverview _listenerOverview;
+        private IListenerOverview _listenerOverview;
 
         public FixtureOverview()
         {
@@ -59,7 +59,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
 
         public string Id { get; set; }
 
-        public ListenerOverview ListenerOverview
+        public IListenerOverview ListenerOverview
         {
             get { return _listenerOverview; }
             set { _listenerOverview = value; }
@@ -81,6 +81,9 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         {
             _errors.Add(value);
             Delta.LastError = value;
+
+            if (Delta.FeedUpdate != null)
+                Delta.FeedUpdate.LastError = Delta.LastError.Exception.Message;
 
             TrimOldItems(_errors);
         }
@@ -160,7 +163,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             return _feedUpdates.Take(limit);
         }
 
-        private void OnErrorChanged(ListenerOverview listenerOverview)
+        private void OnErrorChanged(IListenerOverview listenerOverview)
         {
             if(!listenerOverview.IsErrored.HasValue)
                 return;
@@ -179,7 +182,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         
         public IFixtureOverviewDelta GetDelta()
         {
-            var listererOverviewDelta = ListenerOverview.GetDelta();
+            var listererOverviewDelta = (ListenerOverview as ListenerOverview).GetDelta();
             if (_delta == null && listererOverviewDelta != null)
             {
                 Delta.ListenerOverview = listererOverviewDelta;

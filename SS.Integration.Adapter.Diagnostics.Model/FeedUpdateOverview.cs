@@ -23,6 +23,8 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         public bool IsSnapshot { get; set; }
         public DateTime Issued { get; set; }
 
+        public string LastError { get; set; }
+
         /// <summary>
         /// The time it took to process the update
         /// This property will be null if the update is being processed

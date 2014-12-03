@@ -12,16 +12,13 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
-using SS.Integration.Adapter.Model.Enums;
-
 namespace SS.Integration.Adapter.Diagnostics.Model.Interface
 {
     public interface IFixtureOverviewDelta
     {
         string Id { get; }
 
-        ListenerOverview ListenerOverview { get; }
+        IListenerOverview ListenerOverview { get; }
         ErrorOverview LastError { get; }
         FeedUpdateOverview FeedUpdate { get; }
     }

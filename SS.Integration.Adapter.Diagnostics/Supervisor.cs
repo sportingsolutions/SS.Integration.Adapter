@@ -252,9 +252,6 @@ namespace SS.Integration.Adapter.Diagnostics
             {
                 fixtureOverview.LastError.ResolvedAt = DateTime.UtcNow;
                 fixtureOverview.LastError.IsErrored = false;
-
-                ////this is to force delta update
-                //fixtureOverview.LastError = fixtureOverview.LastError;
             }         
 
             _fixtureTracker.OnNext(fixtureOverview.GetDelta());

@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -12,17 +12,22 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using SS.Integration.Adapter.Diagnostics.Model.Interface;
+using System;
+using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Diagnostics.Model
 {
-    public class FixtureOverviewDelta : IFixtureOverviewDelta
+    public interface IListenerOverview
     {
-        public string Id { get; internal set; }
-       
-        public IListenerOverview ListenerOverview { get; internal set; }
-        public ErrorOverview LastError { get; internal set; }
-        public FeedUpdateOverview FeedUpdate { get; internal set; }
+        int? Sequence { get; set; }
+        int? Epoch { get; set; }
+        bool? IsStreaming { get; set; }
+        bool? IsDeleted { get; set; }
+        bool? IsErrored { get; set; }
+        bool? IsSuspended { get; set; }
+        bool? IsOver { get; set; }
+        DateTime? StartTime { get; set; }
+        MatchStatus? MatchStatus { get; set; }
+        int[] LastEpochChangeReason { get; set; }
     }
 }
-

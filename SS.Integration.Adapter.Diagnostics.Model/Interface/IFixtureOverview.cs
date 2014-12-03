@@ -14,7 +14,6 @@
 
 using System;
 using System.Collections.Generic;
-using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Diagnostics.Model.Interface
 {
