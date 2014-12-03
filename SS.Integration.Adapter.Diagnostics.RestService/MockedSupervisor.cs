@@ -134,5 +134,13 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
             var sport = GenerateMockedSportDetail("");
             return sport.Fixtures;
         }
+
+        public void Dispose() { }
+
+        public void TakeSnapshot(string fixtureId) { }
+
+        public void RestartListener(string fixtureId) { }
+
+        public void ClearState(string fixtureId) { }
     }
 }

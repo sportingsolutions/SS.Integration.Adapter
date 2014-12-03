@@ -51,6 +51,7 @@
     <Compile Include="Interface\ISportOverview.cs" />
     <Compile Include="Interface\ISupervisor.cs" />
     <Compile Include="ListenerOverview.cs" />
+    <Compile Include="Service\Interface\ISupervisorStreamingService.cs" />
     <Compile Include="Service\Model\AdapterStatus.cs" />
     <Compile Include="Service\Model\FixtureDetails.cs" />
     <Compile Include="Service\Model\FixtureOverview.cs" />
@@ -59,6 +60,7 @@
     <Compile Include="Service\Model\Interface\IFixtureDetails.cs" />
     <Compile Include="Service\Model\Interface\IFixtureOverview.cs" />
     <Compile Include="Service\Model\Interface\IFixtureProcessingEntry.cs" />
+    <Compile Include="Service\Model\Interface\IProcessingEntryError.cs" />
     <Compile Include="Service\Model\Interface\ISportDetails.cs" />
     <Compile Include="Service\Model\Interface\ISportOverview.cs" />
     <Compile Include="Service\Interface\ISupervisorProxy.cs" />
@@ -66,6 +68,7 @@
     <Compile Include="PropertyChanged.cs" />
     <Compile Include="Service\Interface\ISupervisorService.cs" />
     <Compile Include="Service\Interface\ISupervisorServiceConfiguration.cs" />
+    <Compile Include="Service\Model\ProcessingEntryError.cs" />
     <Compile Include="Service\Model\SportDetails.cs" />
     <Compile Include="Service\Model\SportOverview.cs" />
     <Compile Include="SportOverview.cs" />

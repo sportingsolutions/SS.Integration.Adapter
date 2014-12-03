@@ -12,35 +12,35 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-namespace SS.Integration.Adapter.Diagnostics.Model.Service.Interface
+using System;
+
+namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface
 {
-    public interface ISupervisorService
+    public interface IProcessingEntryError
     {
         /// <summary>
-        /// Gives access to th ISupervisorProxy, used
-        /// to query the supervisor
+        /// Timestamp of when the error occured
         /// </summary>
-        ISupervisorProxy Supervisor { get; }
-        
-        /// <summary>
-        /// Returns a reference to the ISupervisorStreamingService
-        /// used to send push-notifications
-        /// </summary>
-        ISupervisorStreamingService StreamingService { get; }
+        DateTime Timestamp { get; }
 
         /// <summary>
-        /// Returns the service configuration object
+        /// The sequence at which the error occured
         /// </summary>
-        ISupervisorServiceConfiguration ServiceConfiguration { get; }
+        int Sequence { get; }
 
         /// <summary>
-        /// Starts the service
+        /// Error's message
         /// </summary>
-        void Start();
+        string Message { get; }
 
         /// <summary>
-        /// Stop the service
+        /// Id of the fixture where the error occured
         /// </summary>
-        void Stop();
+        string FixtureId { get; }
+
+        /// <summary>
+        /// Description of the fixture where the error occured
+        /// </summary>
+        string FixtureDescription { get; }
     }
 }

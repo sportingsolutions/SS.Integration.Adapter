@@ -348,6 +348,8 @@ namespace SS.Integration.Adapter.Diagnostics
         {
             if (Service != null)
                 Service.Stop();
+
+            Proxy.Dispose();
         }
 
         #endregion
@@ -376,6 +378,36 @@ namespace SS.Integration.Adapter.Diagnostics
         public IAdapterVersion GetAdapterVersion()
         {
             //TODO: Implement Adapter version
+            return null;
+        }
+
+        public IObservable<IFixtureOverviewDelta> GetAllFixtureOverviewStreams()
+        {
+            // TODO
+            return _fixtureTracker;
+        }
+
+        public IObservable<IFixtureOverviewDelta> GetFixtureStreams()
+        {
+            // TODO
+            return null;
+        }
+
+        public IObservable<ISportOverview> GetAllSportOverviewStreams()
+        {
+            // TODO
+            return _sportTracker;
+        }
+
+
+        public void RemoveFixtureState(string fixtureId)
+        {
+            //TODO
+        }
+
+        public void RestartListener(string fixtureId)
+        {
+            //TODO
             throw new NotImplementedException();
         }
 

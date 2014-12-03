@@ -16,20 +16,21 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
 using SS.Integration.Adapter.Diagnostics.Model;
 using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
 using SS.Integration.Adapter.Diagnostics.Model.Service.Model;
 using SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
-using SS.Integration.Adapter.Model.Enums;
-using FixtureOverview = SS.Integration.Adapter.Diagnostics.Model.Service.Model.FixtureOverview;
-using IFixtureOverview = SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface.IFixtureOverview;
-using SportOverview = SS.Integration.Adapter.Diagnostics.Model.Service.Model.SportOverview;
+
 
 namespace SS.Integration.Adapter.Diagnostics
 {
     public class SupervisorProxy : ISupervisorProxy
     {
+        private const int ADAPTER_STATUS_UPDATE_TIMEOUT_SECONDS = 60;
+        
 
         public SupervisorProxy(ISupervisor supervisor)
         {
@@ -37,49 +38,35 @@ namespace SS.Integration.Adapter.Diagnostics
                 throw new ArgumentNullException("supervisor");
 
             Supervisor = supervisor;
+
+            Init();
         }
 
         public ISupervisor Supervisor { get; private set; }
 
+        private void Init()
+        {
+            // adapter status is sent out every ADAPTER_STATUS_UPDATE_TIMEOUT_SECONDS
+            Observable.Interval(TimeSpan.FromSeconds(ADAPTER_STATUS_UPDATE_TIMEOUT_SECONDS), ThreadPoolScheduler.Instance).Subscribe(OnAdapterStatusChanged);
+
+            Supervisor.GetAllSportOverviewStreams().ObserveOn(ThreadPoolScheduler.Instance).Subscribe(OnSportUpdate);
+            Supervisor.GetAllFixtureOverviewStreams().ObserveOn(ThreadPoolScheduler.Instance).Subscribe(OnFixtureUpdate);
+        }
+
+        #region ISupervisorProxy
+
         public IEnumerable<Model.Service.Model.Interface.ISportOverview> GetSports()
         {
-            Dictionary<string, Model.Service.Model.Interface.ISportOverview> sports = new Dictionary<string, Model.Service.Model.Interface.ISportOverview>();
-            
-            foreach(var fixture in Supervisor.GetFixtures())
+            List<Model.Service.Model.Interface.ISportOverview> sports = new List<Model.Service.Model.Interface.ISportOverview>();
+
+            foreach (var sport in Supervisor.GetSports())
             {
-                Model.Service.Model.Interface.ISportOverview sportoverview = null;
-                if (!sports.ContainsKey(fixture.Sport))
-                {
-                    sportoverview = new SportOverview
-                    {
-                        Name = fixture.Sport
-                    };
-
-                    sports.Add(fixture.Sport, sportoverview);
-                }
-                else
-                    sportoverview = sports[fixture.Sport];
-
-                sportoverview.Total++;
-
-                switch(fixture.ListenerOverview.MatchStatus)
-                {
-                    case MatchStatus.Ready: case MatchStatus.Setup:
-                        sportoverview.InSetup++;
-                        break;
-                    case MatchStatus.Prematch:
-                        sportoverview.InPreMatch++;
-                        break;
-                    default:
-                        sportoverview.InPlay++;
-                        break;
-                }
-
-                if (fixture.ListenerOverview.IsErrored.HasValue && fixture.ListenerOverview.IsErrored.Value)
-                    sportoverview.InErrorState++;
+                Model.Service.Model.SportOverview sp = new Model.Service.Model.SportOverview();
+                FillSportOverview(sp, sport);
+                sports.Add(sp);
             }
 
-            return sports.Values;
+            return sports;
         }
 
         public ISportDetails GetSportDetail(string sportCode)
@@ -87,30 +74,21 @@ namespace SS.Integration.Adapter.Diagnostics
             if (string.IsNullOrEmpty(sportCode))
                 return null;
 
-            SportDetails details = new SportDetails { Name = sportCode };
+            Model.Interface.ISportOverview overview = Supervisor.GetSportOverview(sportCode);
+            if (overview == null)
+                return null;
+
+            SportDetails details = new SportDetails();
+            FillSportOverview(details, overview);
 
             foreach(var fixture in Supervisor.GetFixtures())
             {
                 if(string.Equals(fixture.Sport, sportCode))
                 {
-                    details.Total++;
-
-                    switch (fixture.ListenerOverview.MatchStatus)
-                    {
-                        case MatchStatus.Ready:
-                        case MatchStatus.Setup:
-                            details.InSetup++;
-                            break;
-                        case MatchStatus.Prematch:
-                            details.InPreMatch++;
-                            break;
-                        default:
-                            details.InPlay++;
-                            break;
-                    }
-
-                    if (fixture.ListenerOverview.IsErrored.HasValue && fixture.ListenerOverview.IsErrored.Value)
-                        details.InErrorState++;
+                    // do not include deleted or matchover fixtures
+                    if (fixture.ListenerOverview.IsDeleted.GetValueOrDefault()  ||
+                        (fixture.ListenerOverview.MatchStatus.HasValue && (int)fixture.ListenerOverview.MatchStatus.Value >= (int)Integration.Adapter.Model.Enums.MatchStatus.MatchOverUnConfirmed))
+                        continue;
 
                     details.AddFixture(CreateFixtureOverview(fixture));
                 }
@@ -141,13 +119,14 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public IAdapterStatus GetAdapterStatus()
         {
-            // TODO
+            var status = Supervisor.GetAdapterVersion();
+
             return new AdapterStatus
             {
-                AdapterVersion = "1.2",
-                PluginName = "Testing",
-                PluginVersion = "3.4",
-                UdapiSDKVersion = "5.6",
+                AdapterVersion = "Test", //status.AdapterVersion,
+                PluginName = "Test", //status.PluginName,
+                PluginVersion = "Test", //status.PluginVersion,
+                UdapiSDKVersion = "Test", // status.UdapiSDKVersion,
                 MemoryUsage = GC.GetTotalMemory(false).ToString(),
                 RunningThreads = Process.GetCurrentProcess().Threads.Count.ToString()
             };
@@ -160,7 +139,6 @@ namespace SS.Integration.Adapter.Diagnostics
 
             List<IFixtureProcessingEntry> ret = new List<IFixtureProcessingEntry>();
 
-            
             var tmp = Supervisor.GetFixtureOverview(fixtureId);
             foreach(var update in tmp.GetFeedAudit())
             {
@@ -172,19 +150,90 @@ namespace SS.Integration.Adapter.Diagnostics
             return ret;
         }
 
-        public IEnumerable<IFixtureOverview> GetFixtures()
+        public IEnumerable<Model.Service.Model.Interface.IFixtureOverview> GetFixtures()
         {
-            return Supervisor.GetFixtures().Select(CreateFixtureOverview).ToList();
+            return Supervisor.GetFixtures()
+                .Where(x => x.ListenerOverview.IsDeleted.GetValueOrDefault() == false && (x.ListenerOverview.MatchStatus.HasValue && (int)x.ListenerOverview.MatchStatus <= (int)Integration.Adapter.Model.Enums.MatchStatus.MatchOverUnConfirmed))
+                .Select(CreateFixtureOverview).ToList();
         }
 
-        private static IFixtureOverview CreateFixtureOverview(Model.Interface.IFixtureOverview fixture)
+        public void Dispose()
         {
-            FixtureOverview ret = new FixtureOverview();
+        }
+
+        #endregion
+
+        #region Push-notifications
+
+        private void OnAdapterStatusChanged(long t)
+        {
+            var status = GetAdapterStatus();
+            Supervisor.Service.StreamingService.OnAdapterUpdate(status);
+        }
+
+        private void OnSportUpdate(Model.Interface.ISportOverview sport)
+        {
+            if (sport == null)
+                return;
+
+            SportDetails details = new SportDetails();
+            // we don't send out the entire list of fixtures as the 
+            // amount of data would be too big
+            FillSportOverview(details, sport);
+            Supervisor.Service.StreamingService.OnSportUpdate(details);
+        }
+
+        private void OnFixtureUpdate(IFixtureOverviewDelta fixture)
+        {
+            if (fixture == null)
+                return;
+
+            FixtureDetails details = new FixtureDetails {Id = fixture.Id};
+
+            if(fixture.FeedUpdate != null)
+            {
+                FixtureProcessingEntry entry = new FixtureProcessingEntry();
+                FillProcessingEntry(entry, fixture.FeedUpdate);
+                details.AddProcessingEntry(entry);
+            }
+
+            Supervisor.Service.StreamingService.OnFixtureUpdate(details);
+
+            if(fixture.LastError != null && fixture.LastError.IsErrored)
+            {
+                ProcessingEntryError error = new ProcessingEntryError
+                {
+                    FixtureId = fixture.Id,
+                    FixtureDescription = "TEST", //fixture.Name,
+                    Sequence = fixture.ListenerOverview.Sequence.HasValue ? fixture.ListenerOverview.Sequence.Value : -1
+                };
+
+                FillProcessingEntryError(error, fixture.LastError);
+                Supervisor.Service.StreamingService.OnError(error);
+            }
+
+        }
+
+        #endregion
+
+        private static Model.Service.Model.Interface.IFixtureOverview CreateFixtureOverview(Model.Interface.IFixtureOverview fixture)
+        {
+            Model.Service.Model.FixtureOverview ret = new Model.Service.Model.FixtureOverview();
             FillFixtureOverview(ret, fixture);
             return ret;
         }
 
-        private static void FillFixtureOverview(FixtureOverview to, Model.Interface.IFixtureOverview from)
+        private static void FillSportOverview(Model.Service.Model.SportOverview to, Model.Interface.ISportOverview from)
+        {
+            to.Name = from.Name;
+            to.InErrorState = from.InErrorState;
+            to.InPlay = from.InPlay;
+            to.InPreMatch = from.InPreMatch;
+            to.InSetup = from.InSetup;
+            to.Total = from.Total;
+        }
+
+        private static void FillFixtureOverview(Model.Service.Model.FixtureOverview to, Model.Interface.IFixtureOverview from)
         {
             to.Id = from.Id;
             to.IsStreaming = from.ListenerOverview.IsStreaming.GetValueOrDefault();
@@ -194,6 +243,28 @@ namespace SS.Integration.Adapter.Diagnostics
             to.CompetitionId = from.CompetitionId;
             to.Description = from.Name;
             to.Sequence = from.ListenerOverview.Sequence.GetValueOrDefault().ToString();
+
+            if (from.ListenerOverview.MatchStatus.HasValue)
+            {
+                switch (from.ListenerOverview.MatchStatus)
+                {
+                    case Integration.Adapter.Model.Enums.MatchStatus.InRunning:
+                        to.State = FixtureState.Running;
+                        break;
+                    case Integration.Adapter.Model.Enums.MatchStatus.MatchOver:
+                        to.State = FixtureState.Over;
+                        break;
+                    case Integration.Adapter.Model.Enums.MatchStatus.Prematch:
+                        to.State = FixtureState.PreMatch;
+                        break;
+                    case Integration.Adapter.Model.Enums.MatchStatus.Ready:
+                        to.State = FixtureState.Ready;
+                        break;
+                    case Integration.Adapter.Model.Enums.MatchStatus.Setup:
+                        to.State = FixtureState.Setup;
+                        break;
+                }
+            }
         }
 
         private static void FillProcessingEntry(FixtureProcessingEntry entry, FeedUpdateOverview update)
@@ -205,6 +276,38 @@ namespace SS.Integration.Adapter.Diagnostics
             entry.Sequence = update.Sequence.ToString();
             entry.Timestamp = update.Issued;
             entry.State = update.IsProcessed ? FixtureProcessingState.PROCESSED : FixtureProcessingState.PROCESSING;
+        }
+
+        private static void FillProcessingEntryError(ProcessingEntryError to, ErrorOverview from)
+        { 
+            to.Message = from.Exception != null ? from.Exception.Message : "Unknown";
+            to.Timestamp = from.ErroredAt;
+        }
+
+
+        public void TakeSnapshot(string fixtureId)
+        {
+            if(string.IsNullOrEmpty(fixtureId))
+                return;
+
+            Supervisor.ForceSnapshot(fixtureId);
+
+        }
+
+        public void RestartListener(string fixtureId)
+        {
+            if (string.IsNullOrEmpty(fixtureId))
+                return;
+
+            Supervisor.RestartListener(fixtureId);
+        }
+
+        public void ClearState(string fixtureId)
+        {
+            if (string.IsNullOrEmpty(fixtureId))
+                return;
+
+            Supervisor.RemoveFixtureState(fixtureId);
         }
     }
 }

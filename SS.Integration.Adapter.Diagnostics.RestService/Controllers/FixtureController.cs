@@ -45,5 +45,38 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
 
             return Request.CreateResponse(HttpStatusCode.OK, history, UrlUtilities.JSON_MEDIA_TYPE);
         }
+
+        [Route("{fixtureId}/takesnapshot")]
+        [HttpPost]
+        public HttpResponseMessage TakeSnapshot(string fixtureId)
+        {
+            if (string.IsNullOrEmpty(fixtureId))
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+
+            Service.ServiceInstance.Supervisor.TakeSnapshot(fixtureId);
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        }
+
+        [Route("{fixtureId}/takesnapshot")]
+        [HttpPost]
+        public HttpResponseMessage RestartListener(string fixtureId)
+        {
+            if (string.IsNullOrEmpty(fixtureId))
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+
+            Service.ServiceInstance.Supervisor.RestartListener(fixtureId);
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        }
+
+        [Route("{fixtureId}/takesnapshot")]
+        [HttpPost]
+        public HttpResponseMessage ClearState(string fixtureId)
+        {
+            if (string.IsNullOrEmpty(fixtureId))
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+
+            Service.ServiceInstance.Supervisor.ClearState(fixtureId);
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        }
     }
 }
