@@ -151,7 +151,7 @@ namespace SS.Integration.Adapter.Diagnostics
         private void StreamListenerSuspended(object sender, StreamListenerEventArgs e)
         {
             var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId) as FixtureOverview;
-            fixtureOverview.IsSuspended = true;
+            fixtureOverview.ListenerOverview.IsSuspended = true;
             UpdateStateFromEventDetails(e);
         }
 
@@ -172,7 +172,7 @@ namespace SS.Integration.Adapter.Diagnostics
             var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId) as FixtureOverview;
 
             //assumption
-            fixtureOverview.IsSuspended = false;
+            fixtureOverview.ListenerOverview.IsSuspended = false;
 
             fixtureOverview.FeedUpdate = CreateFeedUpdate(e, true);
             
@@ -238,11 +238,13 @@ namespace SS.Integration.Adapter.Diagnostics
             UpdateStateFromStreamListener(streamListenerEventArgs.Listener as StreamListener);
             
             var fixtureOverview = GetFixtureOverview(streamListenerEventArgs.Listener.FixtureId) as FixtureOverview;
-            fixtureOverview.Sequence = streamListenerEventArgs.CurrentSequence;
-            fixtureOverview.Epoch = streamListenerEventArgs.Epoch;
-            fixtureOverview.StartTime = streamListenerEventArgs.StartTime ?? streamListenerEventArgs.StartTime;
+            fixtureOverview.ListenerOverview.Sequence = streamListenerEventArgs.CurrentSequence;
+            fixtureOverview.ListenerOverview.Epoch = streamListenerEventArgs.Epoch;
+            fixtureOverview.ListenerOverview.StartTime = streamListenerEventArgs.StartTime ?? fixtureOverview.ListenerOverview.StartTime;
+            fixtureOverview.ListenerOverview.LastEpochChangeReason = streamListenerEventArgs.LastEpochChangeReason ?? fixtureOverview.ListenerOverview.LastEpochChangeReason;
+
             fixtureOverview.Name = streamListenerEventArgs.Name ?? fixtureOverview.Name;
-            fixtureOverview.MatchStatus = streamListenerEventArgs.MatchStatus ?? fixtureOverview.MatchStatus;
+            fixtureOverview.ListenerOverview.MatchStatus = streamListenerEventArgs.MatchStatus ?? fixtureOverview.ListenerOverview.MatchStatus;
 
             if (fixtureOverview.LastError != null
                 && fixtureOverview.LastError.IsErrored
@@ -251,8 +253,8 @@ namespace SS.Integration.Adapter.Diagnostics
                 fixtureOverview.LastError.ResolvedAt = DateTime.UtcNow;
                 fixtureOverview.LastError.IsErrored = false;
 
-                //this is to force delta update
-                fixtureOverview.LastError = fixtureOverview.LastError;
+                ////this is to force delta update
+                //fixtureOverview.LastError = fixtureOverview.LastError;
             }         
 
             _fixtureTracker.OnNext(fixtureOverview.GetDelta());
@@ -267,21 +269,27 @@ namespace SS.Integration.Adapter.Diagnostics
 
             var fixturesForSport = _fixtures.Values.Where(f => f.Sport == sportOverview.Name).ToList();
             sportOverview.Total = fixturesForSport.Count;
-            sportOverview.InErrorState = fixturesForSport.Count(f => f.IsErrored.HasValue && f.IsErrored.Value);
+            sportOverview.InErrorState = fixturesForSport.Count(f => f.ListenerOverview.IsErrored.HasValue && f.ListenerOverview.IsErrored.Value);
 
-            var groupedByMatchStatus = fixturesForSport.GroupBy(f => f.MatchStatus,f=> f.MatchStatus).Where(g=> g.Key.HasValue).ToDictionary(g=> g.Key.Value,g=> g.Count());
+            var groupedByMatchStatus = fixturesForSport
+                .GroupBy(f => f.ListenerOverview.MatchStatus,f=> f.ListenerOverview.MatchStatus)
+                .Where(g=> g.Key.HasValue).ToDictionary(g=> g.Key.Value,g=> g.Count());
 
-            sportOverview.InPlay = groupedByMatchStatus.ContainsKey(MatchStatus.InRunning)
-                ? groupedByMatchStatus[MatchStatus.InRunning]
-                : 0;
+            if (groupedByMatchStatus.Any())
+            {
 
-            sportOverview.InPreMatch = groupedByMatchStatus.ContainsKey(MatchStatus.Prematch)
-                ? groupedByMatchStatus[MatchStatus.Prematch]
-                : 0;
+                sportOverview.InPlay = groupedByMatchStatus.ContainsKey(MatchStatus.InRunning)
+                    ? groupedByMatchStatus[MatchStatus.InRunning]
+                    : 0;
 
-            sportOverview.InSetup = groupedByMatchStatus.ContainsKey(MatchStatus.Setup)
-                ? groupedByMatchStatus[MatchStatus.Setup]
-                : 0;
+                sportOverview.InPreMatch = groupedByMatchStatus.ContainsKey(MatchStatus.Prematch)
+                    ? groupedByMatchStatus[MatchStatus.Prematch]
+                    : 0;
+
+                sportOverview.InSetup = groupedByMatchStatus.ContainsKey(MatchStatus.Setup)
+                    ? groupedByMatchStatus[MatchStatus.Setup]
+                    : 0;
+            }
 
             if (_sportOverviews.ContainsKey(sportOverview.Name) &&
                 _sportOverviews[sportOverview.Name].Equals(sportOverview))
@@ -305,10 +313,11 @@ namespace SS.Integration.Adapter.Diagnostics
 
             fixtureOverview.Id = listener.FixtureId;
             fixtureOverview.Sport = listener.Sport;
-            fixtureOverview.IsDeleted = listener.IsFixtureDeleted;
-            fixtureOverview.IsStreaming = listener.IsStreaming;
-            fixtureOverview.IsOver = listener.IsFixtureEnded;
-            fixtureOverview.IsErrored = listener.IsErrored;
+            fixtureOverview.ListenerOverview.IsDeleted = listener.IsFixtureDeleted;
+            fixtureOverview.ListenerOverview.IsStreaming = listener.IsStreaming;
+            fixtureOverview.ListenerOverview.IsOver = listener.IsFixtureEnded;
+            fixtureOverview.ListenerOverview.IsErrored = listener.IsErrored;
+            
             fixtureOverview.TimeStamp = DateTime.UtcNow;
         }
 
@@ -366,6 +375,7 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public IAdapterVersion GetAdapterVersion()
         {
+            //TODO: Implement Adapter version
             throw new NotImplementedException();
         }
 

@@ -26,7 +26,6 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Interface
         string CompetitionId { get; }
         string CompetitionName { get; }
         
-        MatchStatus? MatchStatus { get; set; }
         DateTime TimeStamp { get; }
         
         IEnumerable<ErrorOverview> GetErrorsAudit(int limit = 0);

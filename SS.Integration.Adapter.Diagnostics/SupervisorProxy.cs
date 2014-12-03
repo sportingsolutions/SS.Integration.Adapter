@@ -62,7 +62,7 @@ namespace SS.Integration.Adapter.Diagnostics
 
                 sportoverview.Total++;
 
-                switch(fixture.MatchStatus)
+                switch(fixture.ListenerOverview.MatchStatus)
                 {
                     case MatchStatus.Ready: case MatchStatus.Setup:
                         sportoverview.InSetup++;
@@ -75,7 +75,7 @@ namespace SS.Integration.Adapter.Diagnostics
                         break;
                 }
 
-                if (fixture.IsErrored.HasValue && fixture.IsErrored.Value)
+                if (fixture.ListenerOverview.IsErrored.HasValue && fixture.ListenerOverview.IsErrored.Value)
                     sportoverview.InErrorState++;
             }
 
@@ -95,7 +95,7 @@ namespace SS.Integration.Adapter.Diagnostics
                 {
                     details.Total++;
 
-                    switch (fixture.MatchStatus)
+                    switch (fixture.ListenerOverview.MatchStatus)
                     {
                         case MatchStatus.Ready:
                         case MatchStatus.Setup:
@@ -109,7 +109,7 @@ namespace SS.Integration.Adapter.Diagnostics
                             break;
                     }
 
-                    if (fixture.IsErrored.HasValue && fixture.IsErrored.Value)
+                    if (fixture.ListenerOverview.IsErrored.HasValue && fixture.ListenerOverview.IsErrored.Value)
                         details.InErrorState++;
 
                     details.AddFixture(CreateFixtureOverview(fixture));
@@ -187,13 +187,13 @@ namespace SS.Integration.Adapter.Diagnostics
         private static void FillFixtureOverview(FixtureOverview to, Model.Interface.IFixtureOverview from)
         {
             to.Id = from.Id;
-            to.IsStreaming = from.IsStreaming.GetValueOrDefault();
-            to.IsInErrorState = from.IsErrored.GetValueOrDefault();
-            to.StartTime = from.StartTime.GetValueOrDefault();
+            to.IsStreaming = from.ListenerOverview.IsStreaming.GetValueOrDefault();
+            to.IsInErrorState = from.ListenerOverview.IsErrored.GetValueOrDefault();
+            to.StartTime = from.ListenerOverview.StartTime.GetValueOrDefault();
             to.Competition = from.CompetitionName;
             to.CompetitionId = from.CompetitionId;
             to.Description = from.Name;
-            to.Sequence = from.Sequence.GetValueOrDefault().ToString();
+            to.Sequence = from.ListenerOverview.Sequence.GetValueOrDefault().ToString();
         }
 
         private static void FillProcessingEntry(FixtureProcessingEntry entry, FeedUpdateOverview update)

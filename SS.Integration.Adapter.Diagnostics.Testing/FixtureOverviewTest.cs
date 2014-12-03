@@ -28,18 +28,20 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             var fixtureOverview = new FixtureOverview
             {
                 Id = "TestId",
-                IsStreaming = false
             };
 
-            fixtureOverview.IsStreaming = true;
+            fixtureOverview.ListenerOverview.IsStreaming = false;
+
+            fixtureOverview.ListenerOverview.IsStreaming = true;
 
             var delta = fixtureOverview.GetDelta();
             delta.Should().NotBeNull();
-            delta.IsStreaming.HasValue.Should().BeTrue();
+            delta.ListenerOverview.Should().NotBeNull();
+            delta.ListenerOverview.IsStreaming.HasValue.Should().BeTrue();
             delta.Id.Should().Be(fixtureOverview.Id);
 
             //hasn't changed
-            delta.IsDeleted.HasValue.Should().BeFalse();
+            delta.ListenerOverview.IsDeleted.HasValue.Should().BeFalse();
         }
 
         [Test]
@@ -47,14 +49,15 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
         {
             var fixtureOverview = new FixtureOverview
             {
-                Id = "TestId",
-                IsStreaming = true
+                Id = "TestId"
             };
+
+            fixtureOverview.ListenerOverview.IsStreaming = true;
 
             //initial set up will also create a delta this call clears it
             fixtureOverview.GetDelta();
 
-            fixtureOverview.IsStreaming = true;
+            fixtureOverview.ListenerOverview.IsStreaming = true;
             var delta = fixtureOverview.GetDelta();
             delta.Should().BeNull();
         }
@@ -79,12 +82,11 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             delta.LastError.Should().NotBeNull();
             delta.LastError.Should().Be(fixtureOverview.LastError);
 
-            fixtureOverview.IsErrored = false;
+            fixtureOverview.ListenerOverview.IsErrored = false;
 
             delta = fixtureOverview.GetDelta();
             delta.LastError.Should().NotBeNull();
             delta.LastError.ResolvedAt.HasValue.Should().BeTrue();
-
         }
     }
 }

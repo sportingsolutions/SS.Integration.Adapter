@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -25,13 +25,6 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         private const int MAX_AUDIT_SIZE = 10;
 
         private string _name;
-        private int? _sequence;
-        private int? _epoch;
-        private bool? _isStreaming;
-        private bool? _isDeleted;
-        private bool? _isErrored;
-        private bool? _isSuspended;
-        private bool? _isOver;
         private ErrorOverview _lastError;
         private FeedUpdateOverview _feedUpdate;
         private string _competitionId;
@@ -42,10 +35,12 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         private List<ErrorOverview> _errors = new List<ErrorOverview>(MAX_AUDIT_SIZE);
         private List<FeedUpdateOverview> _feedUpdates = new List<FeedUpdateOverview>(MAX_AUDIT_SIZE);
         private DateTime? _startTime;
-        
+        private ListenerOverview _listenerOverview;
+
         public FixtureOverview()
         {
             _errors = new List<ErrorOverview>(10);
+            _listenerOverview = new ListenerOverview();
         }
 
         protected FixtureOverviewDelta Delta
@@ -64,86 +59,13 @@ namespace SS.Integration.Adapter.Diagnostics.Model
 
         public string Id { get; set; }
 
-        public int? Sequence
+        public ListenerOverview ListenerOverview
         {
-            get { return _sequence; }
-            set
-            {
-                OnChanged(_sequence,value,v=> Delta.Sequence = v);
-                _sequence = value;
-            }
+            get { return _listenerOverview; }
+            set { _listenerOverview = value; }
         }
 
-
-        public int? Epoch
-        {
-            get { return _epoch; }
-            set
-            {
-                OnChanged(_epoch, value,v=> Delta.Epoch = v);
-                _epoch = value;
-            }
-        }
-
-        public bool? IsStreaming
-        {
-            get { return _isStreaming; }
-            set
-            {
-                OnChanged(_isStreaming, value,v=> Delta.IsStreaming = v);
-                _isStreaming = value;
-            }
-        }
-
-        public bool? IsDeleted
-        {
-            get { return _isDeleted; }
-            set
-            {
-                OnChanged(_isDeleted, value, v => Delta.IsDeleted = v);
-                _isDeleted = value;
-            }
-        }
-
-        public bool? IsErrored
-        {
-            get { return _isErrored; }
-            set
-            {
-                OnChanged(_isErrored, value, OnErrorChanged);
-                _isErrored = value;
-            }
-        }
-        
-        public bool? IsSuspended
-        {
-            get { return _isSuspended; }
-            set
-            {
-                OnChanged(_isSuspended, value, v => Delta.IsSuspended = v);
-                _isSuspended = value;
-            }
-        }
-
-        public bool? IsOver
-        {
-            get { return _isOver; }
-            set
-            {
-                OnChanged(_isOver, value, v => Delta.IsOver = v);
-                _isOver = value;
-            }
-        }
-
-        public DateTime? StartTime
-        {
-            get { return _startTime; }
-            set
-            {
-                OnChanged(_startTime,value,v=> Delta.StartTime = v);
-                _startTime = value;
-            }
-        }
+  
 
         public ErrorOverview LastError
         {
@@ -154,21 +76,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
                 _lastError = value; 
             }
         }
-
-        private void OnErrorChanged(bool? isErrored)
-        {
-            Delta.IsErrored = isErrored;
-
-            //Is Errored changed to false
-            if (!isErrored.Value && this.LastError != null)
-            {
-                LastError.IsErrored = false;
-                LastError.ResolvedAt = DateTime.UtcNow;
-
-                Delta.LastError = LastError;
-            }
-        }
-
+        
         private void UpdateError(ErrorOverview value)
         {
             _errors.Add(value);
@@ -228,40 +136,14 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             set { _competitionName = value; }
         }
 
-        public MatchStatus? MatchStatus
-        {
-            get { return _matchStatus; }
-            set
-            {
-                OnChanged(_matchStatus, value,v => Delta.MatchStatus = v);
-                _matchStatus = value;
-            }
-        }
+        
 
         public DateTime TimeStamp
         {
             get { return _timeStamp; }
             set { _timeStamp = value; }
         }
-        
-        private bool HasChanged<T>(T? oldValue, T? newValue) where T:struct
-        {
-            //If none has a value , the value coudln't have changed
-            //If old value doesn't exist the new value is the change
-            if (!oldValue.HasValue || !newValue.HasValue)
-                return newValue.HasValue;
-
-            return !oldValue.Value.Equals(newValue.Value);
-        }
-        
-        private void OnChanged<T>(T? oldValue, T? newValue, Action<T?> updateDeltaProperty) where T : struct
-        {
-            if(!HasChanged(oldValue,newValue))
-                return;
-            
-            updateDeltaProperty(newValue);
-        }
-        
+    
         public IEnumerable<ErrorOverview> GetErrorsAudit(int limit = 0)
         {
             if (limit == 0)
@@ -277,11 +159,39 @@ namespace SS.Integration.Adapter.Diagnostics.Model
 
             return _feedUpdates.Take(limit);
         }
-        
+
+        private void OnErrorChanged(ListenerOverview listenerOverview)
+        {
+            if(!listenerOverview.IsErrored.HasValue)
+                return;
+
+            var isErrored = listenerOverview.IsErrored.Value;
+
+            //Is Errored changed to false
+            if (!isErrored && LastError != null && LastError.IsErrored)
+            {
+                LastError.IsErrored = false;
+                LastError.ResolvedAt = DateTime.UtcNow;
+
+                Delta.LastError = LastError;
+            }
+        }
         
         public IFixtureOverviewDelta GetDelta()
         {
+            var listererOverviewDelta = ListenerOverview.GetDelta();
+            if (_delta == null && listererOverviewDelta != null)
+            {
+                Delta.ListenerOverview = listererOverviewDelta;
+            }
+
             var responseDelta = _delta;
+
+            if (responseDelta != null)
+            {
+                if (responseDelta.ListenerOverview != null)
+                    OnErrorChanged(responseDelta.ListenerOverview);
+            }
             _delta = null;
 
             return responseDelta;

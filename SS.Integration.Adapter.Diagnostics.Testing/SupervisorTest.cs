@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -158,16 +158,14 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
         public void GetDeltaOverviewTest()
         {
             var fixtureOneId = "fixtureOne";
+            
+            _resource.Setup(x => x.Id).Returns(fixtureOneId);
+            _resource.Setup(x => x.Content).Returns(new Summary());
+            _resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            _resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId)));
+            _resource.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            var resourceOne = new Mock<IResourceFacade>();
-
-            resourceOne.Setup(x => x.Id).Returns(fixtureOneId);
-            resourceOne.Setup(x => x.Content).Returns(new Summary());
-            resourceOne.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
-            resourceOne.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId)));
-            resourceOne.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
-
-            _supervisor.CreateStreamListener(resourceOne.Object, _provider, _connector.Object);
+            _supervisor.CreateStreamListener(_resource.Object, _provider, _connector.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();
@@ -190,9 +188,8 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             SendStreamUpdate(streamUpdate);
 
             deltas.Should().NotBeEmpty();
-            var delta = deltas.First(d => d.FeedUpdate != null);
+            var delta = deltas.First(d => d.FeedUpdate != null && d.FeedUpdate.Sequence == 2);
             deltas.Should().NotBeNull();
-            delta.Sequence.Should().Be(2);
             delta.FeedUpdate.Should().NotBeNull();
             delta.FeedUpdate.IsSnapshot.Should().BeFalse();
             delta.FeedUpdate.IsProcessed.Should().BeFalse();
@@ -305,13 +302,11 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
         public void CheckErrorsAreTrackedTest()
         {
             var fixtureOneId = "fixtureOne";
-
-            var resourceOne = new Mock<IResourceFacade>();
-
-            resourceOne.Setup(x => x.Id).Returns(fixtureOneId);
-            resourceOne.Setup(x => x.Content).Returns(new Summary());
-            resourceOne.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
-            resourceOne.SetupSequence(x => x.GetSnapshot())
+            
+            _resource.Setup(x => x.Id).Returns(fixtureOneId);
+            _resource.Setup(x => x.Content).Returns(new Summary());
+            _resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            _resource.SetupSequence(x => x.GetSnapshot())
                 .Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId)))
                 .Returns(String.Empty)
                 .Returns(String.Empty)
@@ -319,9 +314,9 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
                 .Returns(String.Empty)
                 .Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId, 10, 15)));
 
-            resourceOne.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
+            _resource.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            _supervisor.CreateStreamListener(resourceOne.Object, _provider, _connector.Object);
+            _supervisor.CreateStreamListener(_resource.Object, _provider, _connector.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();
@@ -338,11 +333,16 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
                 MatchStatus = ((int)MatchStatus.InRunning).ToString()
             };
 
-            Enumerable.Range(3, 10).ForEach(s =>
+            var deltas = new List<IFixtureOverviewDelta>();
+
+            using (var subscriber = _supervisor.GetFixtureOverviewStream().Subscribe(deltas.Add))
             {
-                streamUpdate.Sequence = s;
-                SendStreamUpdate(streamUpdate);
-            });
+                Enumerable.Range(3, 10).ForEach(s =>
+                {
+                    streamUpdate.Sequence = s;
+                    SendStreamUpdate(streamUpdate);
+                });
+            }
 
             var fixtureOverview = _supervisor.GetFixtureOverview(fixtureOneId);
             fixtureOverview.GetErrorsAudit().Should().NotBeEmpty();
@@ -353,6 +353,12 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
 
             //the final snapshot sholud have succeeded
             fixtureOverview.LastError.IsErrored.Should().BeFalse();
+
+            //there should be delta notification with LastError update IsErrored = false
+            deltas.FirstOrDefault(d=> 
+                d.LastError != null 
+                && d.LastError.ResolvedAt == fixtureOverview.LastError.ResolvedAt 
+                && d.LastError.Sequence == fixtureOverview.LastError.Sequence).Should().NotBeNull();
         }
 
         private void SendStreamUpdate(Fixture streamUpdate)
