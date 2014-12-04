@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -43,10 +43,13 @@ namespace SS.Integration.Adapter
 
         public IEventState EventState { get; set; }
 
-        public StreamListenerManager(ISettings settings)
+        public StreamListenerManager(ISettings settings, IStateManager stateManager)
         {
             EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
+            StateManager = stateManager;
         }
+
+        protected IStateManager StateManager { get; set; }
 
         protected IListener GetStreamListener(string fixtureId)
         {

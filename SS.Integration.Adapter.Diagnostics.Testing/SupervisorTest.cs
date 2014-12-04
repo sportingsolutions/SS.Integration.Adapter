@@ -53,13 +53,12 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             _resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, new EventArgs());
 
             _connector = new Mock<IAdapterPlugin>();
-
-            _supervisor = new Supervisor(_settings.Object);
             
-
-            var plugin = new Mock<IAdapterPlugin>();
-
             var stateManager = new StateManager(new Mock<ISettings>().Object);
+
+            _supervisor = new Supervisor(_settings.Object,stateManager);
+            var plugin = new Mock<IAdapterPlugin>();
+            
             new SuspensionManager(stateManager, plugin.Object);
 
         }
@@ -177,11 +176,13 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
 
             _supervisor.StartStreaming(fixtureOneId);
 
+            var epoch = 1;
+
             var streamUpdate = new Fixture
             {
                 Id = fixtureOneId,
                 Sequence = 2,
-                Epoch = 1,
+                Epoch = epoch,
                 MatchStatus = ((int)MatchStatus.InRunning).ToString()
             };
 
@@ -193,6 +194,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             delta.FeedUpdate.Should().NotBeNull();
             delta.FeedUpdate.IsSnapshot.Should().BeFalse();
             delta.FeedUpdate.IsProcessed.Should().BeFalse();
+            delta.FeedUpdate.Epoch.Should().Be(epoch);
 
             deltas.FirstOrDefault(d => d.FeedUpdate != null && d.FeedUpdate.Sequence == 2 && d.FeedUpdate.IsProcessed)
                 .Should()

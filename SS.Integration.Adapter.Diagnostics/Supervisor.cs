@@ -42,8 +42,7 @@ namespace SS.Integration.Adapter.Diagnostics
 
         private IDisposable _publisher;
 
-        public Supervisor(ISettings settings)
-            : base(settings)
+        public Supervisor(ISettings settings, IStateManager stateManager) : base(settings,stateManager)
         {
             _fixtures = new ConcurrentDictionary<string, FixtureOverview>();
             _sportOverviews = new ConcurrentDictionary<string, SportOverview>();
@@ -161,7 +160,9 @@ namespace SS.Integration.Adapter.Diagnostics
             {
                 Issued = DateTime.UtcNow,
                 Sequence = streamListenerArgs.CurrentSequence,
-                IsSnapshot = isSnapshot
+                IsSnapshot = isSnapshot,
+                Epoch = streamListenerArgs.Epoch,
+                LastEpochChangeReason = streamListenerArgs.LastEpochChangeReason
             };
 
             return feedUpdate;
@@ -380,32 +381,33 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public IObservable<IFixtureOverviewDelta> GetAllFixtureOverviewStreams()
         {
-            // TODO
             return _fixtureTracker;
         }
 
-        public IObservable<IFixtureOverviewDelta> GetFixtureStreams()
+        public IObservable<IFixtureOverviewDelta> GetFixtureStreams(string fixtureId)
         {
-            // TODO
-            return null;
+            if (string.IsNullOrEmpty(fixtureId))
+                return null;
+
+            return _fixtureTracker.Where(f => f.Id == fixtureId);
         }
 
         public IObservable<ISportOverview> GetAllSportOverviewStreams()
         {
-            // TODO
             return _sportTracker;
         }
 
 
         public void RemoveFixtureState(string fixtureId)
         {
-            //TODO
+            StateManager.ClearState(fixtureId);
         }
 
         public void RestartListener(string fixtureId)
         {
-            //TODO
-            throw new NotImplementedException();
+            StopStreaming(fixtureId);
+
+            //it should start automatically after a minute with the new resource 
         }
 
         public virtual bool RemoveStreamListener(string fixtureId)

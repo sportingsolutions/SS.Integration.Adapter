@@ -23,6 +23,9 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         public bool IsSnapshot { get; set; }
         public DateTime Issued { get; set; }
 
+        public int Epoch { get; set; }
+        public int[] LastEpochChangeReason { get; set; }
+
         public string LastError { get; set; }
 
         /// <summary>

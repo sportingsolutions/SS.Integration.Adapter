@@ -27,7 +27,6 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Interface
         IObservable<IFixtureOverviewDelta> GetFixtureOverviewStream(string fixtureId);
         IObservable<IFixtureOverviewDelta> GetAllFixtureOverviewStreams();
         IEnumerable<IFixtureOverview> GetFixtures();
-        IObservable<IFixtureOverviewDelta> GetFixtureStreams();
         IFixtureOverview GetFixtureOverview(string fixtureId);
 
         IEnumerable<ISportOverview> GetSports();
