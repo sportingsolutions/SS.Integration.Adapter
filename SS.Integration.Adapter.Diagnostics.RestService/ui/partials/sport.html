@@ -50,9 +50,9 @@
 
     <dl class="dl-horizontal">
         <dt>Total fixtures</dt>
-        <dd>{{getFixturesForTab().length}}</dd>
+        <dd>{{sport.Total}}</dd>
         <dt>In error state</dt>
-        <dd>{{getInErrorFixtureCountForTab()}}</dd>
+        <dd>{{sport.InErrorState}}</dd>
     </dl>
     
     <p>Last update: <i>{{lastUpdate | date: 'HH:mm:ss dd-MM-yyyy'}}</i> <button type="button" class="btn btn-primary right" data-ng-click="update()">Update list of fixtures</button></p>

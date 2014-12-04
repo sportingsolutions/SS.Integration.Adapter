@@ -24,8 +24,6 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model
             ProcessingEntries = new List<IFixtureProcessingEntry>();
         }
 
-        //public ConnectionStatus ConnectionState { get; set; }
-
         public bool IsOver { get; set; }
 
         public bool IsDeleted { get; set; }

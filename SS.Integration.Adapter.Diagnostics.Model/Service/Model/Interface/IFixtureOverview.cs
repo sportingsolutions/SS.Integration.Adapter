@@ -68,9 +68,5 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface
         /// </summary>
         string Description { get; }
 
-        /// <summary>
-        /// Last sequence correctly processed for this fixture
-        /// </summary>
-        string Sequence { get; }
     }
 }

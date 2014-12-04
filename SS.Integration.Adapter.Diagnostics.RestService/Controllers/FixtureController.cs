@@ -53,30 +53,36 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
             if (string.IsNullOrEmpty(fixtureId))
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
 
-            Service.ServiceInstance.Supervisor.TakeSnapshot(fixtureId);
-            return new HttpResponseMessage(HttpStatusCode.OK);
+            if(Service.ServiceInstance.Supervisor.TakeSnapshot(fixtureId))
+                return new HttpResponseMessage(HttpStatusCode.OK);
+
+            return new HttpResponseMessage(HttpStatusCode.InternalServerError);
         }
 
-        [Route("{fixtureId}/takesnapshot")]
+        [Route("{fixtureId}/restartlistener")]
         [HttpPost]
         public HttpResponseMessage RestartListener(string fixtureId)
         {
             if (string.IsNullOrEmpty(fixtureId))
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
 
-            Service.ServiceInstance.Supervisor.RestartListener(fixtureId);
-            return new HttpResponseMessage(HttpStatusCode.OK);
+            if(Service.ServiceInstance.Supervisor.RestartListener(fixtureId))
+                return new HttpResponseMessage(HttpStatusCode.OK);
+
+            return new HttpResponseMessage(HttpStatusCode.InternalServerError);
         }
 
-        [Route("{fixtureId}/takesnapshot")]
+        [Route("{fixtureId}/clearstate")]
         [HttpPost]
         public HttpResponseMessage ClearState(string fixtureId)
         {
             if (string.IsNullOrEmpty(fixtureId))
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
 
-            Service.ServiceInstance.Supervisor.ClearState(fixtureId);
-            return new HttpResponseMessage(HttpStatusCode.OK);
+            if (Service.ServiceInstance.Supervisor.ClearState(fixtureId))
+                return new HttpResponseMessage(HttpStatusCode.OK);
+
+            return new HttpResponseMessage(HttpStatusCode.InternalServerError);
         }
     }
 }
