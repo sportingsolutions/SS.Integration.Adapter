@@ -302,10 +302,9 @@ namespace SS.Integration.Adapter
 
                 foreach (var sport in _listeners.Values.GroupBy(x => x.Sport))
                 {
-                    var sportStatsHandle = StatsManager.Instance["adapter.core.fixture." + sport.Key].GetHandle();
-                    sportStatsHandle.SetValueUnsafe(AdapterCoreKeys.SPORT_FIXTURE_TOTAL, sport.Count().ToString());
-                    sportStatsHandle.SetValueUnsafe(AdapterCoreKeys.SPORT_FIXTURE_STREAMING_TOTAL, sport.Count(x => x.IsStreaming).ToString());
-                    sportStatsHandle.SetValueUnsafe(AdapterCoreKeys.SPORT_FIXTURE_IN_PLAY_TOTAL, sport.Count(x => x.IsInPlay).ToString());
+                    _stats.SetValueUnsafe(string.Format(AdapterCoreKeys.SPORT_FIXTURE_TOTAL, sport.Key), sport.Count().ToString());
+                    _stats.SetValueUnsafe(string.Format(AdapterCoreKeys.SPORT_FIXTURE_STREAMING_TOTAL, sport.Key), sport.Count(x => x.IsStreaming).ToString());
+                    _stats.SetValueUnsafe(string.Format(AdapterCoreKeys.SPORT_FIXTURE_IN_PLAY_TOTAL, sport.Key), sport.Count(x => x.IsInPlay).ToString());
                 }
             }
             catch { }
