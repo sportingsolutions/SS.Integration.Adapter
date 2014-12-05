@@ -14,8 +14,8 @@
 
 
 using Ninject.Modules;
+using Ninject;
 using SS.Integration.Adapter.Configuration;
-using SS.Integration.Adapter.Diagnostics;
 using SS.Integration.Adapter.Diagnostics;
 using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Interface;
@@ -32,7 +32,8 @@ namespace SS.Integration.Adapter.WindowsService
             Bind<IReconnectStrategy>().To<DefaultReconnectStrategy>().InSingletonScope();
             Bind<IServiceFacade>().To<UdapiServiceFacade>();
 
-            Bind<IStreamListenerManager, ISupervisor>().To<Supervisor>().InSingletonScope();
+            Bind<IStreamListenerManager>().To<StreamListenerManager>().When(req => Kernel.Get<ISettings>().UseSupervisor == false).InSingletonScope();
+            Bind<IStreamListenerManager, ISupervisor>().To<Supervisor>().When(req => Kernel.Get<ISettings>().UseSupervisor).InSingletonScope();
         }
     }
 }

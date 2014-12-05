@@ -29,7 +29,7 @@ namespace SS.Integration.Adapter.Diagnostics
 {
     public class SupervisorProxy : ISupervisorProxy
     {
-        private const int ADAPTER_STATUS_UPDATE_TIMEOUT_SECONDS = 60;
+        private const int ADAPTER_STATUS_UPDATE_INTERVAL_SECONDS = 60;
         
 
         public SupervisorProxy(ISupervisor supervisor)
@@ -47,7 +47,7 @@ namespace SS.Integration.Adapter.Diagnostics
         private void Init()
         {
             // adapter status is sent out every ADAPTER_STATUS_UPDATE_TIMEOUT_SECONDS
-            Observable.Interval(TimeSpan.FromSeconds(ADAPTER_STATUS_UPDATE_TIMEOUT_SECONDS), ThreadPoolScheduler.Instance).Subscribe(OnAdapterStatusChanged);
+            Observable.Interval(TimeSpan.FromSeconds(ADAPTER_STATUS_UPDATE_INTERVAL_SECONDS), ThreadPoolScheduler.Instance).Subscribe(OnAdapterStatusChanged);
 
             Supervisor.GetAllSportOverviewStreams().ObserveOn(ThreadPoolScheduler.Instance).Subscribe(OnSportUpdate);
             Supervisor.GetAllFixtureOverviewStreams().ObserveOn(ThreadPoolScheduler.Instance).Subscribe(OnFixtureUpdate);
@@ -190,6 +190,17 @@ namespace SS.Integration.Adapter.Diagnostics
 
             FixtureDetails details = new FixtureDetails {Id = fixture.Id};
 
+            // ListenerOverview is not suitable to use here....
+            // we have to get the FixtureOverview to have all data
+            var overview = Supervisor.GetFixtureOverview(fixture.Id);
+            FillFixtureOverview(details, overview);
+
+            if (fixture.ListenerOverview != null)
+            {
+                details.IsDeleted = fixture.ListenerOverview.IsDeleted.GetValueOrDefault();
+                details.IsOver = fixture.ListenerOverview.IsOver.GetValueOrDefault();
+            }
+
             if(fixture.FeedUpdate != null)
             {
                 FixtureProcessingEntry entry = new FixtureProcessingEntry();
@@ -242,7 +253,6 @@ namespace SS.Integration.Adapter.Diagnostics
             to.Competition = from.CompetitionName;
             to.CompetitionId = from.CompetitionId;
             to.Description = from.Name;
-            to.Sequence = from.ListenerOverview.Sequence.GetValueOrDefault().ToString();
 
             if (from.ListenerOverview.MatchStatus.HasValue)
             {
@@ -284,30 +294,48 @@ namespace SS.Integration.Adapter.Diagnostics
             to.Timestamp = from.ErroredAt;
         }
 
-
-        public void TakeSnapshot(string fixtureId)
-        {
-            if(string.IsNullOrEmpty(fixtureId))
-                return;
-
-            Supervisor.ForceSnapshot(fixtureId);
-
-        }
-
-        public void RestartListener(string fixtureId)
+        public bool TakeSnapshot(string fixtureId)
         {
             if (string.IsNullOrEmpty(fixtureId))
-                return;
+                return false;
 
-            Supervisor.ForcetListenerStop(fixtureId);
+            try
+            {
+                Supervisor.ForceSnapshot(fixtureId);
+                return true;
+            }
+            catch { }
+
+            return false;
         }
 
-        public void ClearState(string fixtureId)
+        public bool RestartListener(string fixtureId)
         {
             if (string.IsNullOrEmpty(fixtureId))
-                return;
+                return false;
 
-            Supervisor.RemoveFixtureState(fixtureId);
+            try
+            {
+                Supervisor.ForcetListenerStop(fixtureId);
+                return true;
+            }
+            catch{ }
+
+            return false;
+        }
+
+        public bool ClearState(string fixtureId)
+        {
+            if (string.IsNullOrEmpty(fixtureId))
+                return false;
+
+            try
+            {
+                Supervisor.RemoveFixtureState(fixtureId);
+                return true;
+            }
+            catch { }
+            return false;
         }
     }
 }

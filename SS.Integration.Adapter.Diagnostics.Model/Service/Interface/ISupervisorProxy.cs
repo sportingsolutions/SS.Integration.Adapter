@@ -58,6 +58,13 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Service.Interface
         /// <returns></returns>
         IAdapterStatus GetAdapterStatus();
 
+        /// <summary>
+        /// Returns the list of IFixtureProcessingEntry, each one
+        /// representing a processed/processing sequence as they
+        /// are returned by the ISupervisor implementation
+        /// </summary>
+        /// <param name="fixtureId"></param>
+        /// <returns></returns>
         IEnumerable<IFixtureProcessingEntry> GetFixtureHistory(string fixtureId);
 
         /// <summary>
@@ -72,20 +79,20 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Service.Interface
         /// the specified fixture
         /// </summary>
         /// <param name="fixtureId"></param>
-        void TakeSnapshot(string fixtureId);
+        bool TakeSnapshot(string fixtureId);
 
         /// <summary>
         /// Forces the adapter to restart the IListener object
         /// for the specified fixture
         /// </summary>
         /// <param name="fixtureId"></param>
-        void RestartListener(string fixtureId);
+        bool RestartListener(string fixtureId);
 
         /// <summary>
         /// Forces the adapter to clear the state it is
         /// keeping for the specified fixture
         /// </summary>
         /// <param name="fixtureId"></param>
-        void ClearState(string fixtureId);
+        bool ClearState(string fixtureId);
     }
 }

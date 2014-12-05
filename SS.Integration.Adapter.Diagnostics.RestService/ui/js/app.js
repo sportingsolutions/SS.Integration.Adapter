@@ -48,6 +48,29 @@
         };
     });
 
+    app.filter('updateDescription', function () {
+        return function (update) {
+
+            if (!update) return "";
+
+            var type = "Update";
+            if (!update.IsUpdate) {
+                type = "Full snapshot";
+            }
+
+            switch (update.State) {
+                case 0:
+                    return type + "/Processed";
+                case 1:
+                    return type + "/Processing";
+                case 2:
+                    return type + "/Skipped";
+            }
+
+            return type;
+        }
+    });
+
     /**
      * Allows to display a "waiting" (modal) layer
      * 

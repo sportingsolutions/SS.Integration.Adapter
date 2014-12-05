@@ -36,6 +36,5 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model
 
         public string Description { get; set; }
 
-        public string Sequence { get; set; }
     }
 }

@@ -100,6 +100,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
 
         /// <summary>
         /// Start up class required by OWIN
+        /// ServiceStartUp.Configuration(IAppBuilder app) is calle directly by the OWIN runtime
         /// </summary>
         private class ServiceStartUp
         {

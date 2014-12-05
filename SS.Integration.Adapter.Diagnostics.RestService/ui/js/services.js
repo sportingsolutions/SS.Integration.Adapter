@@ -67,6 +67,12 @@
             AdapterDetails: '/api/supervisor/details',
         },
 
+        actions: {
+            TakeFixtureSnapshot: '/api/supervisor/fixture/:fixtureId/takesnapshot',
+            ClearFixtureState: '/api/supervisor/fixture/:fixtureId/clearstate',
+            RestartFixtureListener: '/api/supervisor/fixture/:fixtureId/restartlistener'
+        },
+
         uiRelations: {
             Home: '/ui/index.html',
             SportList: '/ui/sports/',
@@ -127,21 +133,51 @@
 
         function signalRHubProxyFactory(url, hubname) {
 
-            var defered = $q.defer();
-            var promise = defered.promise;
+            var promise = null;
+            var proxy = null;
 
-            var connection = $.hubConnection(url);
-            var proxy = connection.createHubProxy(hubname);
-            var connected = false;
+            /**
+             * Connects this client to the signalR streaming server.
+             */
+            var connect = function () {
 
-            connection.start()
-                .done(function () {
-                    $log.info('Successfully connected to the streaming server'); connected = true; defered.resolve();
-                })
-                .fail(function (error) {
-                    $log.error('Not connected to the streaming server: ' + error); MyConfig.pushNotification.enabled = false; connected = false; defered.reject();
-                });
+                var defered = $q.defer();
+                var connection = $.hubConnection(url);
+                proxy = connection.createHubProxy(hubname);
+                promise = defered.promise;
 
+                connection.start()
+                    .done(function () {
+                        $log.info('Successfully connected to the streaming server');
+
+                        // register listeners and dispatch broadcast messages upon messages arrivals
+                        on(MyConfig.pushNotification.serverCallbacks.AdapterUpdate, function (data) {
+                            $rootScope.$broadcast(MyConfig.pushNotification.events.AdapterUpdate, data);
+                        });
+
+                        on(MyConfig.pushNotification.serverCallbacks.Errors, function (data) {
+                            $rootScope.$broadcast(MyConfig.pushNotification.events.Errors, data);
+                        });
+
+                        on(MyConfig.pushNotification.serverCallbacks.FixtureUpdate, function (data) {
+                            if (data && data.Id) {
+                                $log.debug("Update arrived for fixtureId=" + data.Id);
+                                $rootScope.$broadcast(MyConfig.pushNotification.events.FixtureUpdate, data);
+                            }
+                        });
+                        on(MyConfig.pushNotification.serverCallbacks.SportUpdate, function (data) {
+                            if (data && data.Name) {
+                                $log.debug("Update arrived for sport=" + data.Name);
+                                $rootScope.$broadcast(MyConfig.pushNotification.events.SportUpdate, data);
+                            }
+                        });
+
+                        defered.resolve();
+                    })
+                    .fail(function (error) {
+                        $log.error('Not connected to the streaming server: ' + error); MyConfig.pushNotification.enabled = false; defered.reject();
+                    });
+            }
 
             var on = function (eventName, callback) {
                 if (MyConfig.pushNotification.enabled) {
@@ -159,7 +195,6 @@
                 // we need to use defer/promise here as at the time
                 // the first subscribe() call is made, the connection
                 // might not be yet ready
-
                 var tmp = function () {
                     if (MyConfig.pushNotification.enabled) {
                         var res = null;
@@ -174,27 +209,28 @@
                     }
                 };
 
-                if (!connected)  promise.then(tmp);
-                else tmp();
+                if (proxy == null) {
+                    connect();
+                    promise.then(tmp);
+                }
+                else {
+                    switch (proxy.connection.state) {
+                        case $.signalR.connectionState.connecting:
+                        case $.signalR.connectionState.reconnecting:
+                            promise.then(tmp);
+                            break;
+                        case $.signalR.connectionState.disconnected:
+                            connect();
+                            promise.then(tmp);
+                            break;
+                        case $.signalR.connectionState.connected:
+                            tmp();
+                            break;
+                    }
+                }
             };
 
-            // register listeners and dispatch broadcast messages upon messages arrivals
-            on(MyConfig.pushNotification.serverCallbacks.AdapterUpdate, function (data) { $rootScope.$broadcast(MyConfig.pushNotification.events.AdapterUpdate, data); });
-            on(MyConfig.pushNotification.serverCallbacks.Errors, function (data) { $rootScope.$broadcast(MyConfig.pushNotification.events.Errors, data); });
-            on(MyConfig.pushNotification.serverCallbacks.FixtureUpdate, function (data) {
-                if (data && data.Id) {
-                    $log.debug("Update arrived for fixtureId=" + data.Id);
-                    $rootScope.$broadcast(MyConfig.pushNotification.events.FixtureUpdate, data);
-                }
-            });
-            on(MyConfig.pushNotification.serverCallbacks.SportUpdate, function (data) {
-                if (data && data.Name) {
-                    $log.debug("Update arrived for sport=" + data.Name);
-                    $rootScope.$broadcast(MyConfig.pushNotification.events.SportUpdate, data);
-                }
-            });
-
-            var rtn = {
+            return {
 
                 sportSubscription: function (sportCode) {
 
@@ -224,7 +260,6 @@
                 }
             };
 
-            return rtn;
         };
 
         return signalRHubProxyFactory(MyConfig.fn.buildPath(MyConfig.pushNotification.path, MyConfig.pushNotification), MyConfig.pushNotification.hub);
@@ -368,7 +403,56 @@
                     .error(function () { $log.error('An error occured while searching for fixtures'); deferred.resolve({}); });
 
                 return deferred.promise;
-            }
+            },
+
+            takeFixtureSnapshot: function (fixtureId) {
+                if (!fixtureId || 0 === fixtureId.length) return null;
+
+                var path = MyConfig.actions.TakeFixtureSnapshot;
+                path = MyConfig.fn.getFixturePath(path, fixtureId);
+                path = MyConfig.fn.buildPath(path, MyConfig);
+
+                $log.debug("Sending command to acquire a new snapshot for fixtureId=" + fixtureId);
+                var deferred = $q.defer();
+                $http.post(path)
+                    .success(function (data) { $log.debug('Command correctly sent'); deferred.resolve(true); })
+                    .error(function () { $log.error('Error while sending the command to the server'); deferred.resolve(false); });
+
+                return deferred.promise;
+
+            },
+
+            clearFixtureState: function (fixtureId) {
+                if (!fixtureId || 0 === fixtureId.length) return null;
+
+                var path = MyConfig.actions.TakeFixtureSnapshot;
+                path = MyConfig.fn.getFixturePath(path, fixtureId);
+                path = MyConfig.fn.buildPath(path, MyConfig);
+
+                $log.debug("Sending command to clear the state for fixtureId=" + fixtureId);
+                var deferred = $q.defer();
+                $http.post(path)
+                    .success(function (data) { $log.debug('Command correctly sent'); deferred.resolve(true); })
+                    .error(function () { $log.error('Error while sending the command to the server'); deferred.resolve(false); });
+
+                return deferred.promise;
+            },
+
+            restartFixtureListener: function (fixtureId) {
+                if (!fixtureId || 0 === fixtureId.length) return null;
+
+                var path = MyConfig.actions.TakeFixtureSnapshot;
+                path = MyConfig.fn.getFixturePath(path, fixtureId);
+                path = MyConfig.fn.buildPath(path, MyConfig);
+
+                $log.debug("Sending command to restart the listener for fixtureId=" + fixtureId);
+                var deferred = $q.defer();
+                $http.post(path)
+                    .success(function (data) { $log.debug('Command correctly sent'); deferred.resolve(true); })
+                    .error(function () { $log.error('Error while sending the command to the server'); deferred.resolve(false); });
+
+                return deferred.promise;
+            },
         };
     }]);
 

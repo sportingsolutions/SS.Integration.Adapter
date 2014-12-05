@@ -50,11 +50,11 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
                 InErrorState = 2
             };
 
-            detail.AddFixture(new FixtureOverview { Id = "123", IsStreaming = true,  State = FixtureState.Running,  IsInErrorState = false,  Competition = "Premier League",    CompetitionId = "123212112", StartTime = new DateTime(2014, 2, 17, 9, 0, 0),  Description = "Chelsea v QPR", Sequence = "10"});
-            detail.AddFixture(new FixtureOverview { Id = "234", IsStreaming = true,  State = FixtureState.PreMatch, IsInErrorState = true,   Competition = "Premier League",    CompetitionId = "fffffffff", StartTime = new DateTime(2014, 2, 17, 14, 0, 0), Description = "Manchester United v Arsenal", Sequence = "12" });
-            detail.AddFixture(new FixtureOverview { Id = "345", IsStreaming = false, State = FixtureState.Over,     IsInErrorState = false,  Competition = "Champions League",  CompetitionId = "AAAAAAAAA", StartTime = new DateTime(2014, 3, 18, 20, 0, 0), Description = "Tottenham v Juventus", Sequence = "84" });
-            detail.AddFixture(new FixtureOverview { Id = "456", IsStreaming = false, State = FixtureState.Setup,    IsInErrorState = true,   Competition = "Serie A",           CompetitionId = "823702122", StartTime = new DateTime(2014, 2, 17, 9, 0, 0),  Description = "Milan v Inter", Sequence = "3" });
-            detail.AddFixture(new FixtureOverview { Id = "567", IsStreaming = false, State = FixtureState.Ready,    IsInErrorState = false , Competition = "French Division 1", CompetitionId = "1qqqqqqas", StartTime = new DateTime(2014, 3, 17, 17, 0, 0), Description = "PSG v Lion", Sequence = "99" });
+            detail.AddFixture(new FixtureOverview { Id = "123", IsStreaming = true,  State = FixtureState.Running,  IsInErrorState = false,  Competition = "Premier League",    CompetitionId = "123212112", StartTime = new DateTime(2014, 2, 17, 9, 0, 0),  Description = "Chelsea v QPR" });
+            detail.AddFixture(new FixtureOverview { Id = "234", IsStreaming = true,  State = FixtureState.PreMatch, IsInErrorState = true,   Competition = "Premier League",    CompetitionId = "fffffffff", StartTime = new DateTime(2014, 2, 17, 14, 0, 0), Description = "Manchester United v Arsenal" });
+            detail.AddFixture(new FixtureOverview { Id = "345", IsStreaming = false, State = FixtureState.Over,     IsInErrorState = false,  Competition = "Champions League",  CompetitionId = "AAAAAAAAA", StartTime = new DateTime(2014, 3, 18, 20, 0, 0), Description = "Tottenham v Juventus" });
+            detail.AddFixture(new FixtureOverview { Id = "456", IsStreaming = false, State = FixtureState.Setup,    IsInErrorState = true,   Competition = "Serie A",           CompetitionId = "823702122", StartTime = new DateTime(2014, 2, 17, 9, 0, 0),  Description = "Milan v Inter" });
+            detail.AddFixture(new FixtureOverview { Id = "567", IsStreaming = false, State = FixtureState.Ready,    IsInErrorState = false , Competition = "French Division 1", CompetitionId = "1qqqqqqas", StartTime = new DateTime(2014, 3, 17, 17, 0, 0), Description = "PSG v Lion" });
 
             return detail;
         }
@@ -70,10 +70,8 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
                 CompetitionId = "1qqqqqq",
                 StartTime = new DateTime(2014, 3, 17, 17, 0, 0),
                 Description = "PSG v Lion",
-                Sequence = "5",
                 IsOver = false,
-                IsDeleted = false,
-                //ConnectionState = FixtureDetails.ConnectionStatus.CONNECTED
+                IsDeleted = false                
             };
 
             tmp.AddProcessingEntry(new FixtureProcessingEntry { Sequence = "1", Epoch = "1", IsUpdate = false, State = FixtureProcessingState.PROCESSED, Timestamp = new DateTime(2013, 06, 11, 14, 33, 0) });
@@ -121,13 +119,10 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
             };            
         }
 
-
         public IEnumerable<IFixtureProcessingEntry> GetFixtureHistory(string fixtureId)
         {
-            // TODO
             return new List<IFixtureProcessingEntry>();
         }
-
 
         public IEnumerable<IFixtureOverview> GetFixtures()
         {
@@ -137,10 +132,10 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
 
         public void Dispose() { }
 
-        public void TakeSnapshot(string fixtureId) { }
+        public bool TakeSnapshot(string fixtureId) { return true; }
 
-        public void RestartListener(string fixtureId) { }
+        public bool RestartListener(string fixtureId) { return true; }
 
-        public void ClearState(string fixtureId) { }
+        public bool ClearState(string fixtureId) { return true; }
     }
 }

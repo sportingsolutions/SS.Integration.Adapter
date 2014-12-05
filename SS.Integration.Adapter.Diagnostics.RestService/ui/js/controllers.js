@@ -94,15 +94,14 @@
             this.Competition = "";
             this.CompetitionId = "";
             this.Description = "";
-            this.Sequence = "";
-            this.ConnectionState = "";
-            this.IsIgnored = false;
+            this.IsOver = false;
             this.IsDeleted = false;
-            this.LastEpoch = ""; 
-            this.LastTimestamp = "";
-            this.LastEpochChangeReason = "";
-            this.LastException = "";
             this.ProcessingEntries = new Array();
+
+            // these fields are computed
+            this.LastSequence = "";
+            this.LastEpoch = ""; 
+            this.LastException = "";
             this.GroupedProcessingEntries = new Array();
 
             this.FillData = function () {
@@ -114,9 +113,8 @@
                 if (this.ProcessingEntries.length > 0) {
                     var lastEntry = this.ProcessingEntries[this.ProcessingEntries.length - 1];
                     this.LastEpoch = lastEntry.Epoch;
-                    this.LastTimestamp = lastEntry.Timestamp;
-                    this.LastEpochChangeReason = lastEntry.EpochChangeReason;
                     this.LastException = lastEntry.Exception;
+                    this.LastSequence = lastEntry.Sequence;
                 }
 
                 var last = "";
@@ -128,7 +126,21 @@
                         last = value.Sequence;
                     }
 
-                    outer.GroupedProcessingEntries[outer.GroupedProcessingEntries.length - 1].items.unshift(value);
+                    var group = outer.GroupedProcessingEntries[outer.GroupedProcessingEntries.length - 1].items;
+
+                    // in the situation where a sequence update (i.e. seq=4) requires a new snasphot,
+                    // what we will receive are three updates: 1) entry with seq=4, State = 1 (aka Processing) and IsUpdate=true
+                    // and then 2) update with seq=4, State = 1 and IsUpdate=false, 
+                    // 3) update with seq=4, State=0 (Processed), IsUpdate=false
+                    // in other words we will never receive the closing update for 1) - we swap the state value here
+
+                    if (group.length > 0) {
+                        var entryValue = group[group.length - 1];
+                        if (entryValue.State == 1)
+                            entryValue.State = 0;
+                    }
+
+                    group.unshift(value);
                 });
             };
         },
@@ -367,25 +379,6 @@
             };
 
             /**
-             * Returns the number of fixture displayed on 
-             * the current active tabe that are in 
-             * error state.
-             * @return {int}
-             */
-            $scope.getInErrorFixtureCountForTab = function() {
-
-                if(!$scope.tab) $scope.tab = 'all';
-
-                switch ($scope.tab) {
-                    case 'in-play': return $scope.sport.FixtureGroups.InPlay.InErrorState;
-                    case 'in-prematch': return $scope.sport.FixtureGroups.InPreMatch.InErrorState;
-                    case 'in-setup': return $scope.sport.FixtureGroups.InSetup.InErrorState;
-                }
-
-                return $scope.sport.InErrorState;
-            }
-
-            /**
              * Opens the fixture page
              * @param {String} fixtureId
              */
@@ -456,8 +449,24 @@
             if (!$routeParams.hasOwnProperty("fixtureId")) $location.path(Supervisor.getConfig().uiRelations.Home);
 
             $scope.fixture = new models.FixtureDetail();
+            $scope.fixture.Id = $routeParams.fixtureId;
+            $scope.commandResult = -1;
+            $scope.commandInProgress = 0;
             var sequenceDetailsVisibility = new Array();  // stores information about the visibility of the details table
 
+            var postCommandProcessing = function (commandPromise) {
+                if (!commandPromise) return;
+
+                $scope.commandInProgress = 1;
+                commandPromise.then(function (result) {
+                    if (result) {
+                        $scope.commandResult = 0;
+                    } else {
+                        $scope.commandResult = 1;
+                    }
+                    $scope.commandInProgress = 0;
+                });
+            };
 
             /**
              * Returns true if the details for the sequence
@@ -476,6 +485,37 @@
              */
             $scope.setDetailVisible = function (sequence, value) { sequenceDetailsVisibility[sequence] = value; };
 
+            /**
+             * Allows to send a command to the server to acquire a new snapshot
+             * for the fixture
+             */
+            $scope.takeSnapshot = function () {
+
+                if ($scope.commandInProgress) return;
+                $scope.commandResult = -1;
+                postCommandProcessing(Supervisor.takeFixtureSnapshot($scope.fixture.Id));
+            }
+
+            /**
+             * Allows to send a command to the server to clear 
+             * the fixture's state
+             */
+            $scope.clearState = function () {
+                if ($scope.commandInProgress) return;
+                $scope.commandResult = -1;
+                postCommandProcessing(Supervisor.clearFixtureState($scope.fixture.Id));
+            }
+
+            /**
+             * Allows to send a command to the server to 
+             * restart the fixture's listner
+             */
+            $scope.restartListener = function () {
+                if ($scope.commandInProgress) return;
+                $scope.commandResult = -1;
+                postCommandProcessing(Supervisor.restartFixtureListener($scope.fixture.Id));
+            }
+
             var promise = Supervisor.getFixtureDetail($routeParams.fixtureId);
 
             $rootScope.$broadcast('my-loading-started');
@@ -487,6 +527,57 @@
 
                 // fill up all the missing data
                 $scope.fixture.FillData();
+            });
+
+
+            // subscribe to push notifications
+            var config = Supervisor.getConfig();
+            var streaming = Supervisor.getStreamingService();
+            var tmp = streaming.fixtureSubscription($scope.fixture.Id);
+            if (tmp) tmp.subscribe();
+
+            $scope.$on(config.pushNotification.events.FixtureUpdate, function (event, args) {
+
+                if (!args) return;
+
+                // fixture updates might not contain new processing entries...
+                var entries = $scope.fixture.ProcessingEntries;
+                $.extend($scope.fixture, args);
+                $scope.fixture.ProcessingEntries = entries;
+
+                if (args.ProcessingEntries && args.ProcessingEntries.length > 0) {
+                    // we can take advantage of the fact that the processing entries are sorted
+                    // using the timestamp and the update might only contain new entries
+                    // with greater timestampss
+                    $.each(args.ProcessingEntries, function (index, value) {
+
+                        var i = $scope.fixture.ProcessingEntries.length - 1;
+
+                        if (i >= 0) {
+                            for (; i >= 0; i--) {
+                                var cur = $scope.fixture.ProcessingEntries[i];
+
+                                // if the entry is new, add it a the beginning (we will sort the list later)
+                                if (new Date(cur.Timestamp) < new Date(value.Timestamp)) {
+                                    $scope.fixture.ProcessingEntries.unshift(value);
+                                    break;
+                                }
+
+                                // if we have the same timestamp, then we need to update the existing
+                                // entry instead of adding it
+                                if (cur.Timestamp == value.Timestamp) {
+                                    $.extend(cur, value);
+                                    break;
+                                }
+                            }
+                        }
+                        else {
+                            $scope.fixture.ProcessingEntries.unshift(value);
+                        }
+                    });
+
+                    $scope.fixture.FillData();
+                }
             });
 
         }]);   
