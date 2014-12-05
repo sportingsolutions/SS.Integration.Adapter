@@ -23,9 +23,6 @@ using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 using log4net;
 using SS.Integration.Common.Extensions;
-using SS.Integration.Common.Stats;
-using SS.Integration.Common.Stats.Interface;
-using SS.Integration.Common.Stats.Keys;
 
 namespace SS.Integration.Adapter.MarketRules
 {
@@ -38,7 +35,6 @@ namespace SS.Integration.Adapter.MarketRules
         private readonly IStoredObjectProvider _stateProvider;
         private readonly IEnumerable<IMarketRule> _rules;
         private IUpdatableMarketStateCollection _currentTransaction;
-        private IStatsHandle _Stats;
 
         internal MarketRulesManager(string fixtureId, IStoredObjectProvider stateProvider, IEnumerable<IMarketRule> filteringRules)
         {
@@ -78,12 +74,6 @@ namespace SS.Integration.Adapter.MarketRules
             var oldstate = _stateProvider.GetObject(fixture.Id);
             BeginTransaction(oldstate, fixture);
 
-            if (_Stats == null)
-            {
-                var key = string.Concat("adapter.core.fixture.", CurrentState.Sport, ".", fixture.FixtureName);
-                _Stats = StatsManager.Instance[key].GetHandle();
-            }
-
             ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
 
             // we create a temp dictionary so we can apply the rules in parallel 
@@ -105,9 +95,6 @@ namespace SS.Integration.Adapter.MarketRules
 
 
             MergeIntents(fixture, tmp);
-
-            //GatherMetrics();
-
             _logger.InfoFormat("Market state update for {0}", fixture);
         }
 
@@ -299,7 +286,7 @@ namespace SS.Integration.Adapter.MarketRules
             // EDIT
             MergeEditIntents(fixture, toedit);
 
-            int filtered = 0;
+            
             // REMOVE
             foreach (var mkt in toRemove.Keys)
             {
@@ -309,14 +296,7 @@ namespace SS.Integration.Adapter.MarketRules
                 {
                     _logger.DebugFormat("{0} of {1} will be removed from snapshot due market rules", mkt, fixture);
                     fixture.Markets.Remove(mkt);
-                    filtered++;
                 }
-            }
-
-            if (_Stats != null)
-            {
-                _Stats.AddValue(AdapterCoreKeys.FIXTURE_FILTERED_MARKETS, filtered.ToString());
-                _Stats.SetValue(AdapterCoreKeys.FIXTURE_TOTAL_MARKETS, CurrentState.MarketCount.ToString());
             }
         }
 
@@ -373,44 +353,5 @@ namespace SS.Integration.Adapter.MarketRules
                 }
             }
         }
-
-        private void GatherMetrics()
-        {
-            if (_Stats == null)
-                return;
-
-            Task.Factory.StartNew(() =>
-            {
-                try
-                {
-
-                    foreach (var mkt in CurrentState.Markets)
-                    {
-                        IMarketState state = CurrentState[mkt];
-                        var key = string.Concat("market.", state.Name, ".");
-
-                        _Stats.SetValueUnsafe(key + AdapterCoreKeys.MARKET_IS_ACTIVE, state.IsActive ? "1" : "0");
-                        _Stats.SetValueUnsafe(key + AdapterCoreKeys.MARKET_IS_RESULTED, state.IsResulted ? "1" : "0");
-                        _Stats.SetValueUnsafe(key + AdapterCoreKeys.MARKET_IS_SUSPENDED, state.IsSuspended ? "1" : "0");
-                        _Stats.AddValueUnsafe(key + AdapterCoreKeys.MARKET_TOTAL_SELECTIONS, state.SelectionsCount.ToString());
-
-                        foreach (var seln in state.Selections)
-                        {
-                            var seln_key = string.Concat(key, "selection.", seln.Name, ".");
-
-                            _Stats.SetValueUnsafe(seln_key + AdapterCoreKeys.SELECTION_IS_ACTIVE, seln.Status == SelectionStatus.Active ? "1" : "0");
-                            _Stats.SetValueUnsafe(seln_key + AdapterCoreKeys.SELECTION_IS_SETTLED, seln.Status == SelectionStatus.Settled ? "1" : "0");
-
-                            if(seln.Price.HasValue)
-                                _Stats.AddValueUnsafe(seln_key + AdapterCoreKeys.SELECTION_PRICE, seln.Price.Value.ToString());
-                        }
-
-                    }
-                }
-                catch { }
-            });
-
-        }
-
     }
 }

@@ -98,7 +98,7 @@ namespace SS.Integration.Adapter
             IsFixtureDeleted = false;
             IsInPlay = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.InRunning : _resource.MatchStatus == MatchStatus.InRunning;
 
-            _Stats = StatsManager.Instance[string.Concat("adapter.core.fixture.", resource.Sport, ".", resource.Name)].GetHandle();
+            _Stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
 
             SetupListener();
             _logger.DebugFormat("Listener instantiated for {0}", resource);
@@ -358,7 +358,6 @@ namespace SS.Integration.Adapter
 
         private void SetupListener()
         {
-            _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_STREAMING, "0");
             _resource.StreamConnected += ResourceOnStreamConnected;
             _resource.StreamDisconnected += ResourceOnStreamDisconnected;
             _resource.StreamEvent += ResourceOnStreamEvent;
@@ -628,8 +627,6 @@ namespace SS.Integration.Adapter
                     _logger.InfoFormat("Listener disconnected for {0} - fixture is over/deleted", _resource);
                 }
 
-                _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_STREAMING, "0");
-
             }
             catch (Exception ex)
             {
@@ -657,9 +654,7 @@ namespace SS.Integration.Adapter
                 // directly
                 _isFirstSnapshotProcessed = true;
 
-
                 _logger.InfoFormat("Listener for {0} is now connected to the streaming server", _resource);
-                _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_STREAMING, "1");
 
                 RetrieveAndProcessSnapshotIfNeeded();
             }
@@ -745,7 +740,7 @@ namespace SS.Integration.Adapter
                 if (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id))
                     throw new Exception(string.Format("Received a snapshot that resulted in an empty snapshot object {0}", _resource));
 
-                _Stats.IncrementValue(AdapterCoreKeys.FIXTURE_SNAPSHOT_COUNTER);
+                _Stats.IncrementValue(AdapterCoreKeys.SNAPSHOT_COUNTER);
 
                 return snapshot;
             }
@@ -876,9 +871,6 @@ namespace SS.Integration.Adapter
                 bool is_inplay = string.Equals(snapshot.MatchStatus, ((int)MatchStatus.InRunning).ToString(), StringComparison.OrdinalIgnoreCase);
                 IsInPlay = is_inplay;
 
-                _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_IN_PLAY, is_inplay ? "1" : "0");
-                _Stats.AddValue(AdapterCoreKeys.FIXTURE_MARKETS_IN_SNAPSHOT, snapshot.Markets.Count.ToString());
-
                 _logger.DebugFormat("Applying market rules for {0}", snapshot);
 
                 _marketsRuleManager.ApplyRules(snapshot);
@@ -898,7 +890,7 @@ namespace SS.Integration.Adapter
                 _logger.Error("FixtureIgnoredException", ie);
                 IsIgnored = true;
 
-                _Stats.IncrementValue(AdapterCoreKeys.FIXTURE_ERRORS_COUNTER);
+                _Stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
             }
             catch (AggregateException ex)
             {
@@ -909,7 +901,7 @@ namespace SS.Integration.Adapter
                     _logger.Error(string.Format("There has been an aggregate error while trying to process {0} {1}",logString, snapshot), innerException);
                 }
 
-                _Stats.IncrementValue(AdapterCoreKeys.FIXTURE_ERRORS_COUNTER);
+                _Stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
 
                 if (setErrorState)
                     SetErrorState();
@@ -920,7 +912,7 @@ namespace SS.Integration.Adapter
             {
                 _marketsRuleManager.RollbackChanges();
 
-                _Stats.IncrementValue(AdapterCoreKeys.FIXTURE_ERRORS_COUNTER);
+                _Stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
 
                 _logger.Error(string.Format("An error occured while trying to process {0} {1}",logString, snapshot), e);
 
@@ -933,9 +925,9 @@ namespace SS.Integration.Adapter
             {
                 timer.Stop();
                 if (isFullSnapshot)
-                    _Stats.AddValue(AdapterCoreKeys.FIXTURE_SNAPSHOT_PROCESSING_TIME, timer.ElapsedMilliseconds.ToString());
+                    _Stats.AddValue(AdapterCoreKeys.SNAPSHOT_PROCESSING_TIME, timer.ElapsedMilliseconds.ToString());
                 else
-                    _Stats.AddValue(AdapterCoreKeys.FIXTURE_UPDATE_PROCESSING_TIME, timer.ElapsedMilliseconds.ToString());
+                    _Stats.AddValue(AdapterCoreKeys.UPDATE_PROCESSING_TIME, timer.ElapsedMilliseconds.ToString());
             }
         }
 
@@ -1017,8 +1009,6 @@ namespace SS.Integration.Adapter
                 this.IsFixtureEnded = true;
 
                 _stateManager.ClearState(_resource.Id);
-
-                _Stats.SetValue(AdapterCoreKeys.FIXTURE_IS_MATCH_OVER, "1");
             }
             catch (Exception e)
             {
