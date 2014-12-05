@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AdapterVersionInfo.cs" />
     <Compile Include="CachedObjectStore.cs" />
     <Compile Include="CachedObjectStoreWithPersistance.cs" />
     <Compile Include="Enums\EpochChangeReasonEnum.cs" />
@@ -53,6 +54,7 @@
     <Compile Include="Fixture.cs" />
     <Compile Include="FixtureState.cs" />
     <Compile Include="GameState\FootballGameState.cs" />
+    <Compile Include="Interfaces\IAdapterVersion.cs" />
     <Compile Include="Interfaces\IPluginFixtureState.cs" />
     <Compile Include="Interfaces\IStateProvider.cs" />
     <Compile Include="Interfaces\IPluginBootstrapper.cs" />

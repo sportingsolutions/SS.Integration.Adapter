@@ -39,7 +39,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Interface
 
         void RemoveFixtureState(string fixtureId);
         void ForceSnapshot(string fixtureId);
-        void RestartListener(string fixtureId);
+        void ForcetListenerStop(string fixtureId);
 
         void Initialise();
     }

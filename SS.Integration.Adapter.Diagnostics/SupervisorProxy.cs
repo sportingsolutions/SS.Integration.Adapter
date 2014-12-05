@@ -299,7 +299,7 @@ namespace SS.Integration.Adapter.Diagnostics
             if (string.IsNullOrEmpty(fixtureId))
                 return;
 
-            Supervisor.RestartListener(fixtureId);
+            Supervisor.ForcetListenerStop(fixtureId);
         }
 
         public void ClearState(string fixtureId)

@@ -41,12 +41,12 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AdapterVersion.cs" />
     <Compile Include="ErrorOverview.cs" />
     <Compile Include="FeedUpdateOverview.cs" />
     <Compile Include="FixtureOverview.cs" />
     <Compile Include="FixtureOverviewDelta.cs" />
     <Compile Include="Interface\IListenerOverview.cs" />
-    <Compile Include="Interface\IAdapterVersion.cs" />
     <Compile Include="Interface\IFixtureOverview.cs" />
     <Compile Include="Interface\IFixtureOverviewDelta.cs" />
     <Compile Include="Interface\ISportOverview.cs" />

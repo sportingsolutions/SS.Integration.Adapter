@@ -71,6 +71,36 @@ namespace SS.Integration.Adapter.Tests
 
         [Category("Adapter")]
         [Test]
+        public void AdapterGetVersionTest()
+        {
+            var settings = new Mock<ISettings>();
+            settings.Setup(x => x.EventStateFilePath).Returns(".");
+            
+            var streamListenerManager = new StreamListenerManager(settings.Object, _state.Object);
+            var service = new Mock<IServiceFacade>();
+            service.Setup(x => x.IsConnected).Returns(true);
+            var connector = new Mock<IAdapterPlugin>();
+            var listener = new Mock<IListener>();
+
+            settings.Setup(s => s.FixtureCheckerFrequency).Returns(10000);
+            service.Setup(s => s.Connect());
+
+            var adapter = new Adapter(
+                settings.Object,
+                service.Object,
+                connector.Object,
+                streamListenerManager);
+
+            adapter.Start();
+            adapter.Stop();
+
+            var adapterVersionInfo = new AdapterVersionInfo();
+            adapterVersionInfo.AdapterVersion.Should().NotBeNullOrEmpty();
+            adapterVersionInfo.UdapiSDKVersion.Should().NotBeNullOrEmpty();
+        }
+
+        [Category("Adapter")]
+        [Test]
         public void ShouldStartAndStopWithFewSportsNoFixtures()
         {
             var streamListenerManager = new Mock<IStreamListenerManager>();

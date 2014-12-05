@@ -339,20 +339,7 @@ namespace SS.Integration.Adapter.Diagnostics
         {
             return GetStreamListener(fixtureId) as StreamListener;
         }
-
-        #region IDisposable
-
-        public void Dispose()
-        {
-            if (Service != null)
-                Service.Stop();
-
-            Proxy.Dispose();
-        }
-
-        #endregion
-
-
+        
         public IObservable<IFixtureOverviewDelta> GetFixtureOverviewStream(string fixtureId)
         {
             return _fixtureTracker.Where(f => f.Id == fixtureId);
@@ -375,8 +362,7 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public IAdapterVersion GetAdapterVersion()
         {
-            //TODO: Implement Adapter version
-            return null;
+            return new AdapterVersionInfo();
         }
 
         public IObservable<IFixtureOverviewDelta> GetAllFixtureOverviewStreams()
@@ -403,11 +389,9 @@ namespace SS.Integration.Adapter.Diagnostics
             StateManager.ClearState(fixtureId);
         }
 
-        public void RestartListener(string fixtureId)
+        public void ForcetListenerStop(string fixtureId)
         {
             StopStreaming(fixtureId);
-
-            //it should start automatically after a minute with the new resource 
         }
 
         public virtual bool RemoveStreamListener(string fixtureId)
@@ -423,6 +407,18 @@ namespace SS.Integration.Adapter.Diagnostics
 
             return result;
         }
+
+        #region IDisposable
+
+        public void Dispose()
+        {
+            if (Service != null)
+                Service.Stop();
+
+            Proxy.Dispose();
+        }
+
+        #endregion
     }
 }
 

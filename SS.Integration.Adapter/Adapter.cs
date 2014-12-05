@@ -51,7 +51,7 @@ namespace SS.Integration.Adapter
         public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector, IStreamListenerManager listenersManager)
         {
             _listenersManager = listenersManager;
-
+            
             Settings = settings;
             UDAPIService = udapiServiceFacade;
             PlatformConnector = platformConnector;
@@ -79,6 +79,8 @@ namespace SS.Integration.Adapter
             _creationTasks = new Task[settings.FixtureCreationConcurrency];
 
             _stats = StatsManager.Instance["adapter.core"].GetHandle();
+
+            PopuplateAdapterVersionInfo();
         }
         
         internal IStateManager StateManager { get; set; }
@@ -387,36 +389,35 @@ namespace SS.Integration.Adapter
             }
 
         }
-
-        private bool RemoveAndStopListener(string fixtureId)
+        
+        private void PopuplateAdapterVersionInfo()
         {
-            return _listenersManager.RemoveStreamListener(fixtureId);
-        }
+            var adapterVersionInfo = AdapterVersionInfo.GetAdapterVersionInfo() as AdapterVersionInfo;
 
-        ///// <summary>
-        ///// Stops and remove the listener if the fixture is over.
-        ///// Returns true if the fixture was over and the listener is removed.
-        ///// False otherwise
-        ///// </summary>
-        ///// <param name="sport"></param>
-        ///// <param name="resource"></param>
-        ///// <returns></returns>
-        //private bool StopListenerIfFixtureEnded(string sport, IResourceFacade resource)
-        //{
-        //    return _listenersManager.RemoveStreamListenerIfFinishedProcessing(resource);
-        //}
-
-        private void LogVersions()
-        {
             var executingAssembly = Assembly.GetExecutingAssembly();
             var version = executingAssembly.GetName().Version;
-            var e = version.ToString();
+            var adapterAssemblyVersion = version.ToString();
+
+            adapterVersionInfo.AdapterVersion = adapterAssemblyVersion;
 
             var sdkAssembly = Assembly.GetAssembly(typeof(ISession));
             var sdkVersion = sdkAssembly.GetName().Version;
-            var s = sdkVersion.ToString();
+            var sdkVersionString = sdkVersion.ToString();
 
-            _logger.InfoFormat("Sporting Solutions Adapter version={0} using Sporting Solutions SDK version={1}", e, s);
+            adapterVersionInfo.UdapiSDKVersion = sdkVersionString;
+
+            if (PlatformConnector != null)
+            {
+                var pluginAssembly = Assembly.GetAssembly(PlatformConnector.GetType());
+                adapterVersionInfo.PluginName = pluginAssembly.GetName().Name;
+                adapterVersionInfo.PluginVersion = pluginAssembly.GetName().Version.ToString();
+            }
+        }
+        
+        private void LogVersions()
+        {
+            var adapterVersionInfo = AdapterVersionInfo.GetAdapterVersionInfo();
+            _logger.InfoFormat("Sporting Solutions Adapter version={0} using Sporting Solutions SDK version={1}, with plugin={2} pluginVersion={3}", adapterVersionInfo.AdapterVersion, adapterVersionInfo.UdapiSDKVersion, adapterVersionInfo.PluginName, adapterVersionInfo.PluginVersion);
         }
 
     }
