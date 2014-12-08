@@ -40,7 +40,7 @@ namespace SS.Integration.Adapter.Interface
         /// for a given sport
         /// </summary>
         void UpdateCurrentlyAvailableFixtures(string sport, Dictionary<string, IResourceFacade> currentfixturesLookup);
-        void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector);
+        void CreateStreamListener(IResourceFacade resource, IAdapterPlugin platformConnector);
         bool RemoveStreamListener(string fixtureId);
 
         IEnumerable<IGrouping<string, IListener>> GetListenersBySport();

@@ -49,7 +49,7 @@ namespace SS.Integration.Adapter
             StateManager = stateManager;
         }
 
-        protected IStateManager StateManager { get; set; }
+        public IStateManager StateManager { get; set; }
 
         protected IListener GetStreamListener(string fixtureId)
         {
@@ -171,13 +171,13 @@ namespace SS.Integration.Adapter
             }
         }
 
-        public virtual void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector)
+        public virtual void CreateStreamListener(IResourceFacade resource, IAdapterPlugin platformConnector)
         {
             try
             {
                 _logger.DebugFormat("Attempting to create a Listener for sport={0} and {1}", resource.Sport, resource);
                 
-                var listener = CreateStreamListenerObject(resource, platformConnector, EventState, stateManager);
+                var listener = CreateStreamListenerObject(resource, platformConnector, EventState, StateManager);
 
                 if (!listener.Start())
                 {
