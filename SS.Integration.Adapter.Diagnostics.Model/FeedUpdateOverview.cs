@@ -13,10 +13,12 @@
 //limitations under the License.
 
 using System;
+using System.Reflection;
+using SS.Integration.Common;
 
 namespace SS.Integration.Adapter.Diagnostics.Model
 {
-    public class FeedUpdateOverview
+    public class FeedUpdateOverview : ICloneable
     {
         public int Sequence { get; set; }
         public bool IsProcessed { get; set; }
@@ -33,6 +35,11 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         /// This property will be null if the update is being processed
         /// </summary>
         public TimeSpan ProcessingTime { get; set; }
+
+        public object Clone()
+        {
+            return Reflection.PropertyCopy<FeedUpdateOverview>.CopyFrom(this);
+        }
     }
 }
 

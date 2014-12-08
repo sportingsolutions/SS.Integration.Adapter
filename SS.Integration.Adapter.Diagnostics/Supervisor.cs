@@ -57,9 +57,8 @@ namespace SS.Integration.Adapter.Diagnostics
             Service.Start();
         }
 
-        public ISupervisorProxy Proxy { get; private set; }
-
-        public ISupervisorService Service { get; private set; }
+        public ISupervisorProxy Proxy { get; set; }
+        public ISupervisorService Service { get; set; }
 
         protected override IListener CreateStreamListenerObject(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState,
             IStateManager stateManager)
@@ -82,6 +81,13 @@ namespace SS.Integration.Adapter.Diagnostics
             }
 
             return streamListener;
+        }
+
+        private void PublishDelta(FixtureOverview fixtureOverview)
+        {
+            var delta = fixtureOverview.GetDelta();
+            if (delta != null)
+                _fixtureTracker.OnNext(delta);
         }
 
         protected override void DisposedStreamListener(IListener listener)
@@ -108,10 +114,10 @@ namespace SS.Integration.Adapter.Diagnostics
             
             UpdateStateFromStreamListener(listener);
             var fixtureOverview = GetFixtureOverview(listener.FixtureId) as FixtureOverview;
-            _fixtureTracker.OnNext(fixtureOverview.GetDelta());
+            
+            PublishDelta(fixtureOverview);
         }
         
-
         public override void StopStreaming(string fixtureId)
         {
             var listener = GetStreamListener(fixtureId);
@@ -122,13 +128,14 @@ namespace SS.Integration.Adapter.Diagnostics
 
         private void StreamListenerFinishedProcessingUpdate(object sender, StreamListenerEventArgs e)
         {
-            var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId);
+            var fixtureOverview = GetFixtureOverview(e.Listener.FixtureId) as FixtureOverview;
 
             if (fixtureOverview.FeedUpdate != null && fixtureOverview.FeedUpdate.Sequence == e.CurrentSequence)
             {
-                var feedUpdate = fixtureOverview.FeedUpdate;
+                var feedUpdate = fixtureOverview.FeedUpdate.Clone() as FeedUpdateOverview;
                 feedUpdate.IsProcessed = true;
                 feedUpdate.ProcessingTime = DateTime.UtcNow - feedUpdate.Issued;
+                fixtureOverview.FeedUpdate = feedUpdate;
             }
 
             UpdateStateFromEventDetails(e);
@@ -256,7 +263,7 @@ namespace SS.Integration.Adapter.Diagnostics
                 fixtureOverview.LastError.IsErrored = false;
             }         
 
-            _fixtureTracker.OnNext(fixtureOverview.GetDelta());
+            PublishDelta(fixtureOverview);
 
             UpdateSportDetails(streamListenerEventArgs);
         }
@@ -395,7 +402,7 @@ namespace SS.Integration.Adapter.Diagnostics
             StopStreaming(fixtureId);
         }
 
-        public virtual bool RemoveStreamListener(string fixtureId)
+        public override bool RemoveStreamListener(string fixtureId)
         {
             var result = base.RemoveStreamListener(fixtureId);
 
@@ -413,6 +420,9 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public void Dispose()
         {
+            _fixtureTracker.OnCompleted();
+            _sportTracker.OnCompleted();
+
             if (Service != null)
                 Service.Stop();
 

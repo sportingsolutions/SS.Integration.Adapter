@@ -15,13 +15,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
 using System.Reflection;
+using System.Threading;
 using FluentAssertions;
 using Moq;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using SportingSolutions.Udapi.Sdk.Events;
 using SS.Integration.Adapter.Diagnostics.Model.Interface;
+using SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
@@ -58,6 +62,14 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
 
             _supervisor = new Supervisor(_settings.Object);
             _supervisor.StateManager = stateManager;
+
+            var supervisorService = new Mock<ISupervisorService>();
+            supervisorService.Setup(x => x.StreamingService).Returns(new Mock<ISupervisorStreamingService>().Object);
+
+
+            _supervisor.Service = supervisorService.Object;
+            _supervisor.Proxy = new Mock<ISupervisorProxy>().Object;
+            
             var plugin = new Mock<IAdapterPlugin>();
             
             new SuspensionManager(stateManager, plugin.Object);
@@ -165,16 +177,15 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             _resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId)));
             _resource.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
+            var deltas = new List<IFixtureOverviewDelta>();
+            var subscriber = _supervisor.GetFixtureOverviewStream().ObserveOn(NewThreadScheduler.Default).Subscribe(deltas.Add);
+
             _supervisor.CreateStreamListener(_resource.Object, _connector.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();
             fixtureOverviews.Should().Contain(f => f.Id == fixtureOneId);
-
-            var deltas = new List<IFixtureOverviewDelta>();
-
-            var subscriber = _supervisor.GetFixtureOverviewStream().Subscribe(deltas.Add);
-
+            
             _supervisor.StartStreaming(fixtureOneId);
 
             var epoch = 1;
@@ -188,19 +199,22 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             };
 
             SendStreamUpdate(streamUpdate);
+            
+            Thread.Sleep(1000);
 
             deltas.Should().NotBeEmpty();
-            var delta = deltas.First(d => d.FeedUpdate != null && d.FeedUpdate.Sequence == 2);
-            deltas.Should().NotBeNull();
-            delta.FeedUpdate.Should().NotBeNull();
-            delta.FeedUpdate.IsSnapshot.Should().BeFalse();
-            delta.FeedUpdate.IsProcessed.Should().BeFalse();
-            delta.FeedUpdate.Epoch.Should().Be(epoch);
+            var sequenceTwoDeltas = deltas.Where(d => d.FeedUpdate != null && d.FeedUpdate.Sequence == 2).ToList();
+            sequenceTwoDeltas.Should().NotBeNull();
+            sequenceTwoDeltas.Count.Should().Be(2);
+            
+            //FeedUpdate with IsProcessed in both states exists
+            sequenceTwoDeltas.Any(d => d.FeedUpdate.IsProcessed).Should().BeTrue();
+            sequenceTwoDeltas.Any(d => !d.FeedUpdate.IsProcessed).Should().BeTrue();
 
-            deltas.FirstOrDefault(d => d.FeedUpdate != null && d.FeedUpdate.Sequence == 2 && d.FeedUpdate.IsProcessed)
-                .Should()
-                .NotBeNull();
-
+            //deltas are filtered by sequence = 2 and there was only stream update with that sequence
+            sequenceTwoDeltas.All(d => !d.FeedUpdate.IsSnapshot).Should().BeTrue();
+            sequenceTwoDeltas.All(d => d.FeedUpdate.Epoch == epoch).Should().BeTrue();
+            
             subscriber.Dispose();
         }
 

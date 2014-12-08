@@ -846,8 +846,12 @@ namespace SS.Integration.Adapter
             {
                 //This lock is to prevent forced snapshot and normal feed snapshot from causing race condition in the plugin
                 //under normal circumstances this should be used by single thread only
-                lock(_sync)
+                lock (_sync)
+                {
+                    RaiseEvent(OnBeginSnapshotProcessing, null, snapshot);
                     ProcessSnapshot(snapshot, true, hasEpochChanged, !IsErrored, skipMarketRules);
+                    RaiseEvent(OnFinishedSnapshotProcessing);
+                }
             }
         }
 
@@ -904,8 +908,6 @@ namespace SS.Integration.Adapter
 
             try
             {
-                RaiseEvent(OnBeginSnapshotProcessing, null, snapshot);
-
                 bool is_inplay = string.Equals(snapshot.MatchStatus, ((int)MatchStatus.InRunning).ToString(), StringComparison.OrdinalIgnoreCase);
                 IsInPlay = is_inplay;
 
@@ -926,7 +928,6 @@ namespace SS.Integration.Adapter
                 UpdateState(snapshot, isFullSnapshot);
 
                 IsErrored = false;
-                RaiseEvent(OnFinishedSnapshotProcessing);
             }
             catch (FixtureIgnoredException ie)
             {
