@@ -79,6 +79,9 @@ namespace SS.Integration.Adapter.Configuration
 
             value = ConfigurationManager.AppSettings["statsEnabled"];
             StatsEnabled = string.IsNullOrEmpty(value) ? DEFAULT_USE_STATS : Convert.ToBoolean(value);
+
+            value = ConfigurationManager.AppSettings["stateProviderPath"];
+            StateProviderPath = string.IsNullOrEmpty(value) ? null : value;
         }
 
         public string MarketFiltersDirectory { get; private set; }
@@ -105,14 +108,15 @@ namespace SS.Integration.Adapter.Configuration
 
         public bool SuspendAllMarketsOnShutdown { get; private set; }
 
-        public int HeartBeatIntervalSeconds { get; private set; }
-
         public string EventStateFilePath { get; private set; }
 
-        public int FixtureCreationConcurrency { get; set; }
+        public int FixtureCreationConcurrency { get; private set; }
 
-        public bool DeltaRuleEnabled { get; set; }
+        public bool DeltaRuleEnabled { get; private set; }
 
-        public bool StatsEnabled { get; set; }
+        public bool StatsEnabled { get; private set; }
+
+        public string StateProviderPath { get; private set; }
+
     }
 }

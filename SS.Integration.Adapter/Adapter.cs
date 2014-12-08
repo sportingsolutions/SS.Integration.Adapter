@@ -60,7 +60,7 @@ namespace SS.Integration.Adapter
             Settings = settings;
             UDAPIService = udapiServiceFacade;
             PlatformConnector = platformConnector;
-            EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
+            EventState = ProcessState.EventState.Create(new FileStoreProvider(settings.StateProviderPath), settings);
             
             var statemanager = new StateManager(settings, platformConnector);
             StateManager = statemanager;
