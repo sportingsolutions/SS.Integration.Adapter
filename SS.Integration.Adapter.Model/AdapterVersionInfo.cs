@@ -12,50 +12,25 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using SS.Integration.Adapter.Interface;
+
+using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Model
 {
     public class AdapterVersionInfo : IAdapterVersion
     {
-        private static string _udapiSdkVersion;
-        private static string _adapterVersion;
-        private static string _pluginName;
-        private static string _pluginVersion;
+        private static readonly IAdapterVersion _instance = new AdapterVersionInfo();
 
-        static AdapterVersionInfo()
-        {
+        private AdapterVersionInfo() { }
 
-        }
-
-        public string UdapiSDKVersion
-        {
-            get { return _udapiSdkVersion; }
-            set { _udapiSdkVersion = value; }
-        }
-
-        public string AdapterVersion
-        {
-            get { return _adapterVersion; }
-            set { _adapterVersion = value; }
-        }
-
-        public string PluginName
-        {
-            get { return _pluginName; }
-            set { _pluginName = value; }
-        }
-
-        public string PluginVersion
-        {
-            get { return _pluginVersion; }
-            set { _pluginVersion = value; }
-        }
+        public string UdapiSDKVersion { get; set; }
+        public string AdapterVersion { get; set; }
+        public string PluginName { get; set; }
+        public string PluginVersion { get; set; }
 
         public static IAdapterVersion GetAdapterVersionInfo()
         {
-            //all properties are static
-            return new AdapterVersionInfo();
+            return _instance;
         }
     }
 }

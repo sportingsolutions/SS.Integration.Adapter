@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Diagnostics.Model.Interface
 {
@@ -39,7 +40,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Interface
 
         void RemoveFixtureState(string fixtureId);
         void ForceSnapshot(string fixtureId);
-        void ForcetListenerStop(string fixtureId);
+        void ForceListenerStop(string fixtureId);
 
         void Initialise();
     }

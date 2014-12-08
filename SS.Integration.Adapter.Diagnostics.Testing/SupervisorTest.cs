@@ -56,7 +56,8 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             
             var stateManager = new StateManager(new Mock<ISettings>().Object);
 
-            _supervisor = new Supervisor(_settings.Object,stateManager);
+            _supervisor = new Supervisor(_settings.Object);
+            _supervisor.StateManager = stateManager;
             var plugin = new Mock<IAdapterPlugin>();
             
             new SuspensionManager(stateManager, plugin.Object);

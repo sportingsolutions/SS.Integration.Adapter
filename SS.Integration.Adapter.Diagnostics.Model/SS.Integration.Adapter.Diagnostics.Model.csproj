@@ -41,7 +41,6 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AdapterVersion.cs" />
     <Compile Include="ErrorOverview.cs" />
     <Compile Include="FeedUpdateOverview.cs" />
     <Compile Include="FixtureOverview.cs" />

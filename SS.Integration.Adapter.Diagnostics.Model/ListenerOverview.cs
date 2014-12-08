@@ -14,6 +14,7 @@
 
 using System;
 using System.Linq;
+using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Diagnostics.Model

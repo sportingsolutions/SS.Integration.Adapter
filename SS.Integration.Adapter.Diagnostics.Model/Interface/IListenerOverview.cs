@@ -15,7 +15,7 @@
 using System;
 using SS.Integration.Adapter.Model.Enums;
 
-namespace SS.Integration.Adapter.Diagnostics.Model
+namespace SS.Integration.Adapter.Diagnostics.Model.Interface
 {
     public interface IListenerOverview
     {

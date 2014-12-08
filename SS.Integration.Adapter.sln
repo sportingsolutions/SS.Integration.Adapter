@@ -19,7 +19,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{B4C9F6
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.WindowsService", "SS.Integration.Adapter.WindowsService\SS.Integration.Adapter.WindowsService.csproj", "{83ADA2B6-1947-43C9-B4E4-5F7474A663D2}"
 	ProjectSection(ProjectDependencies) = postProject
-		{AB236001-8C88-4511-A70B-41571A83BB4F} = {AB236001-8C88-4511-A70B-41571A83BB4F}
 		{BF7E4403-53DA-43C9-868A-C7510584D207} = {BF7E4403-53DA-43C9-868A-C7510584D207}
 		{F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE} = {F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE}
 	EndProjectSection
@@ -58,8 +57,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diagnostics.RestService", "SS.Integration.Adapter.Diagnostics.RestService\SS.Integration.Adapter.Diagnostics.RestService.csproj", "{358E7882-2EBB-49AC-A3A1-4986B40D56BF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diagnostics", "SS.Integration.Adapter.Diagnostics\SS.Integration.Adapter.Diagnostics.csproj", "{F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diagnostics.RestServiceStartup", "SS.Integration.Adapter.Diagnostics.RestServiceStartup\SS.Integration.Adapter.Diagnostics.RestServiceStartup.csproj", "{AB236001-8C88-4511-A70B-41571A83BB4F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -211,16 +208,6 @@ Global
 		{F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE}.Release|x86.ActiveCfg = Release|Any CPU
-		{AB236001-8C88-4511-A70B-41571A83BB4F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AB236001-8C88-4511-A70B-41571A83BB4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AB236001-8C88-4511-A70B-41571A83BB4F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{AB236001-8C88-4511-A70B-41571A83BB4F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{AB236001-8C88-4511-A70B-41571A83BB4F}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{AB236001-8C88-4511-A70B-41571A83BB4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AB236001-8C88-4511-A70B-41571A83BB4F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AB236001-8C88-4511-A70B-41571A83BB4F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{AB236001-8C88-4511-A70B-41571A83BB4F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{AB236001-8C88-4511-A70B-41571A83BB4F}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -229,7 +216,6 @@ Global
 		{D46E4B4A-A3C0-4128-91E5-A5DEB238C5B2} = {E06B2C39-5847-41D4-BBC1-076BA8D98E3B}
 		{FFDE838C-859F-4BCE-B791-53B8697175D1} = {E06B2C39-5847-41D4-BBC1-076BA8D98E3B}
 		{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF} = {E06B2C39-5847-41D4-BBC1-076BA8D98E3B}
-		{AB236001-8C88-4511-A70B-41571A83BB4F} = {E06B2C39-5847-41D4-BBC1-076BA8D98E3B}
 		{B622855C-9331-4792-9FBF-339F737DB982} = {D1AB5C9B-B4E4-4A78-B681-6F66D9958691}
 		{BF7E4403-53DA-43C9-868A-C7510584D207} = {D1AB5C9B-B4E4-4A78-B681-6F66D9958691}
 	EndGlobalSection

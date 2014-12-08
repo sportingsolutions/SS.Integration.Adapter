@@ -12,13 +12,8 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SportingSolutions.Udapi.Sdk;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Interface
@@ -31,7 +26,9 @@ namespace SS.Integration.Adapter.Interface
 
         event Adapter.StreamEventHandler StreamCreated;
         event Adapter.StreamEventHandler StreamRemoved;
-        
+
+        IStateManager StateManager { get; set; }
+
         int ListenersCount { get; }
         void StopAll();
         

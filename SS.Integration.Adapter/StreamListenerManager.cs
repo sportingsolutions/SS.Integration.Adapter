@@ -43,13 +43,12 @@ namespace SS.Integration.Adapter
 
         public IEventState EventState { get; set; }
 
-        public StreamListenerManager(ISettings settings, IStateManager stateManager)
+        public StreamListenerManager(ISettings settings)
         {
             EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
-            StateManager = stateManager;
         }
 
-        protected IStateManager StateManager { get; set; }
+        public IStateManager StateManager { get; set; }
 
         protected IListener GetStreamListener(string fixtureId)
         {

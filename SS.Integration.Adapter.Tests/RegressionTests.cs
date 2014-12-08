@@ -71,7 +71,8 @@ namespace SS.Integration.Adapter.Tests
             settings.Setup(x => x.FixtureCheckerFrequency).Returns(1000);
             settings.Setup(x => x.EventStateFilePath).Returns(".");
 
-            var streamListenerManager = new StreamListenerManager(settings.Object,new Mock<IStateManager>().Object);
+            var streamListenerManager = new StreamListenerManager(settings.Object);
+            streamListenerManager.StateManager = new Mock<IStateManager>().Object;
 
             feature.Setup(x => x.Name).Returns("Football");
 

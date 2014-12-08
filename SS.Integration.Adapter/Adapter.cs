@@ -24,7 +24,6 @@ using log4net;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Adapter.ProcessState;
 using SS.Integration.Common.Stats;
 using SS.Integration.Common.Stats.Interface;
 using SS.Integration.Common.Stats.Keys;
@@ -59,6 +58,8 @@ namespace SS.Integration.Adapter
             var statemanager = new StateManager(settings);
             StateManager = statemanager;
             StateProviderProxy.Init(statemanager);
+
+            listenersManager.StateManager = statemanager;
 
             if (settings.StatsEnabled)
                 StatsManager.Configure();

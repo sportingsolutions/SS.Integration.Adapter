@@ -46,7 +46,7 @@ namespace SS.Integration.Adapter.Diagnostics
 
         private void Init()
         {
-            // adapter status is sent out every ADAPTER_STATUS_UPDATE_TIMEOUT_SECONDS
+            // adapter status is sent out every ADAPTER_STATUS_UPDATE_INTERVAL_SECONDS
             Observable.Interval(TimeSpan.FromSeconds(ADAPTER_STATUS_UPDATE_INTERVAL_SECONDS), ThreadPoolScheduler.Instance).Subscribe(OnAdapterStatusChanged);
 
             Supervisor.GetAllSportOverviewStreams().ObserveOn(ThreadPoolScheduler.Instance).Subscribe(OnSportUpdate);
@@ -123,10 +123,10 @@ namespace SS.Integration.Adapter.Diagnostics
 
             return new AdapterStatus
             {
-                AdapterVersion = "Test", //status.AdapterVersion,
-                PluginName = "Test", //status.PluginName,
-                PluginVersion = "Test", //status.PluginVersion,
-                UdapiSDKVersion = "Test", // status.UdapiSDKVersion,
+                AdapterVersion =  status.AdapterVersion,
+                PluginName = status.PluginName,
+                PluginVersion = status.PluginVersion,
+                UdapiSDKVersion = status.UdapiSDKVersion,
                 MemoryUsage = GC.GetTotalMemory(false).ToString(),
                 RunningThreads = Process.GetCurrentProcess().Threads.Count.ToString()
             };
@@ -279,9 +279,9 @@ namespace SS.Integration.Adapter.Diagnostics
 
         private static void FillProcessingEntry(FixtureProcessingEntry entry, FeedUpdateOverview update)
         {
-            //entry.Epoch
-            //entry.EpochChangeReasons
-            //entry.Exception
+            entry.Epoch = update.Epoch.ToString();
+            entry.EpochChangeReasons = update.LastEpochChangeReason;
+            entry.Exception = update.LastError;
             entry.IsUpdate = !update.IsSnapshot;
             entry.Sequence = update.Sequence.ToString();
             entry.Timestamp = update.Issued;
@@ -316,7 +316,7 @@ namespace SS.Integration.Adapter.Diagnostics
 
             try
             {
-                Supervisor.ForcetListenerStop(fixtureId);
+                Supervisor.ForceListenerStop(fixtureId);
                 return true;
             }
             catch{ }

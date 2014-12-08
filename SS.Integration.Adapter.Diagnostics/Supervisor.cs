@@ -24,6 +24,7 @@ using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
 using SS.Integration.Adapter.Diagnostics.RestService;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Adapter.ProcessState;
@@ -42,7 +43,7 @@ namespace SS.Integration.Adapter.Diagnostics
 
         private IDisposable _publisher;
 
-        public Supervisor(ISettings settings, IStateManager stateManager) : base(settings,stateManager)
+        public Supervisor(ISettings settings) : base(settings)
         {
             _fixtures = new ConcurrentDictionary<string, FixtureOverview>();
             _sportOverviews = new ConcurrentDictionary<string, SportOverview>();
@@ -362,7 +363,7 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public IAdapterVersion GetAdapterVersion()
         {
-            return new AdapterVersionInfo();
+            return AdapterVersionInfo.GetAdapterVersionInfo();
         }
 
         public IObservable<IFixtureOverviewDelta> GetAllFixtureOverviewStreams()
@@ -389,7 +390,7 @@ namespace SS.Integration.Adapter.Diagnostics
             StateManager.ClearState(fixtureId);
         }
 
-        public void ForcetListenerStop(string fixtureId)
+        public void ForceListenerStop(string fixtureId)
         {
             StopStreaming(fixtureId);
         }

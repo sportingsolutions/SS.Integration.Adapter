@@ -45,8 +45,8 @@ namespace SS.Integration.Adapter.Tests
             settings.Setup(x => x.EventStateFilePath).Returns(".");
 
 
-
-            var streamListenerManager = new StreamListenerManager(settings.Object,_state.Object);
+            var streamListenerManager = new StreamListenerManager(settings.Object);
+            streamListenerManager.StateManager = _state.Object;
             var service = new Mock<IServiceFacade>();
             service.Setup(x => x.IsConnected).Returns(true);
             var connector = new Mock<IAdapterPlugin>();
@@ -76,7 +76,8 @@ namespace SS.Integration.Adapter.Tests
             var settings = new Mock<ISettings>();
             settings.Setup(x => x.EventStateFilePath).Returns(".");
             
-            var streamListenerManager = new StreamListenerManager(settings.Object, _state.Object);
+            var streamListenerManager = new StreamListenerManager(settings.Object);
+            streamListenerManager.StateManager = _state.Object;
             var service = new Mock<IServiceFacade>();
             service.Setup(x => x.IsConnected).Returns(true);
             var connector = new Mock<IAdapterPlugin>();
@@ -94,7 +95,7 @@ namespace SS.Integration.Adapter.Tests
             adapter.Start();
             adapter.Stop();
 
-            var adapterVersionInfo = new AdapterVersionInfo();
+            var adapterVersionInfo = AdapterVersionInfo.GetAdapterVersionInfo();
             adapterVersionInfo.AdapterVersion.Should().NotBeNullOrEmpty();
             adapterVersionInfo.UdapiSDKVersion.Should().NotBeNullOrEmpty();
         }
@@ -203,7 +204,8 @@ namespace SS.Integration.Adapter.Tests
             settings.Setup(x => x.FixtureCreationConcurrency).Returns(1);
             settings.Setup(x => x.FixtureCheckerFrequency).Returns(500);
 
-            var streamListenerManager = new StreamListenerManager(settings.Object,_state.Object);
+            var streamListenerManager = new StreamListenerManager(settings.Object);
+            streamListenerManager.StateManager = _state.Object;
             var sport = new Mock<IFeature>();
 
             var resource = new Mock<IResourceFacade>();
@@ -281,8 +283,8 @@ namespace SS.Integration.Adapter.Tests
             service.Setup(x => x.GetResources(It.IsAny<string>())).Returns(new List<IResourceFacade> { resource.Object });
             service.Setup(x => x.IsConnected).Returns(true);
 
-
-            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object,new StreamListenerManager(settings.Object,_state.Object));
+            streamListenerManager.Setup(x => x.StateManager).Returns(_state.Object);
+            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object, streamListenerManager.Object);
             streamListenerManager.Object.StreamCreated += adapter_StreamCreated;
 
             adapter.Start();
@@ -334,7 +336,8 @@ namespace SS.Integration.Adapter.Tests
             settings.Setup(x => x.FixtureCheckerFrequency).Returns(1200000); 
 
             var service = new Mock<IServiceFacade>();
-            var streamListenerManager = new StreamListenerManager(settings.Object,_state.Object);
+            var streamListenerManager = new StreamListenerManager(settings.Object);
+            streamListenerManager.StateManager = _state.Object;
             var connector = new Mock<IAdapterPlugin>();
             var fixtureOne = new Mock<IResourceFacade>();
             var fixtureTwo = new Mock<IResourceFacade>();
