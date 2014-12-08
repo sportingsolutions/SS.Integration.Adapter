@@ -170,13 +170,13 @@ namespace SS.Integration.Adapter
             }
         }
 
-        public virtual void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector)
+        public virtual void CreateStreamListener(IResourceFacade resource, IAdapterPlugin platformConnector)
         {
             try
             {
                 _logger.DebugFormat("Attempting to create a Listener for sport={0} and {1}", resource.Sport, resource);
                 
-                var listener = CreateStreamListenerObject(resource, platformConnector, EventState, stateManager);
+                var listener = CreateStreamListenerObject(resource, platformConnector, EventState, StateManager);
 
                 if (!listener.Start())
                 {

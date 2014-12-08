@@ -73,7 +73,6 @@ namespace SS.Integration.Adapter.Tests
 
             var streamListenerManager = new StreamListenerManager(settings.Object);
             streamListenerManager.StateManager = new Mock<IStateManager>().Object;
-
             feature.Setup(x => x.Name).Returns("Football");
 
             service.Setup(x => x.GetSports()).Returns(new List<IFeature> { feature.Object });

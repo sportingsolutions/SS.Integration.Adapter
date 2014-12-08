@@ -366,7 +366,7 @@ namespace SS.Integration.Adapter
                         if (_listenersManager.HasStreamListener(resource.Id))
                             continue;
 
-                        _listenersManager.CreateStreamListener(resource, StateManager,PlatformConnector);
+                        _listenersManager.CreateStreamListener(resource, PlatformConnector);
                     }
                     catch (Exception ex)
                     {

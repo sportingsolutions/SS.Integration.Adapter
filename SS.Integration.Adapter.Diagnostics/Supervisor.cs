@@ -101,9 +101,9 @@ namespace SS.Integration.Adapter.Diagnostics
             streamListener.OnDisconnected -= StreamListenerDisconnected;
         }
 
-        public override void CreateStreamListener(IResourceFacade resource, IStateManager stateManager, IAdapterPlugin platformConnector)
+        public override void CreateStreamListener(IResourceFacade resource, IAdapterPlugin platformConnector)
         {
-            base.CreateStreamListener(resource, stateManager, platformConnector);
+            base.CreateStreamListener(resource, platformConnector);
             var listener = GetStreamListenerObject(resource.Id);
             
             UpdateStateFromStreamListener(listener);

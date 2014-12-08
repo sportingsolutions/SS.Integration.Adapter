@@ -76,7 +76,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             _resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
             _resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
-            _supervisor.CreateStreamListener(_resource.Object, _provider, _connector.Object);
+            _supervisor.CreateStreamListener(_resource.Object, _connector.Object);
 
             _supervisor.ForceSnapshot(fixture.Id);
             _supervisor.ForceSnapshot(fixture.Id);
@@ -109,8 +109,8 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             resourceTwo.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureTwoId)));
             resourceTwo.Setup(x => x.Sport).Returns("TestSport2");
 
-            _supervisor.CreateStreamListener(resourceOne.Object, _provider, _connector.Object);
-            _supervisor.CreateStreamListener(resourceTwo.Object, _provider, _connector.Object);
+            _supervisor.CreateStreamListener(resourceOne.Object, _connector.Object);
+            _supervisor.CreateStreamListener(resourceTwo.Object, _connector.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();
@@ -144,8 +144,8 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             resourceTwo.Setup(x => x.Sport).Returns("TestSport2");
             resourceTwo.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            _supervisor.CreateStreamListener(resourceOne.Object, _provider, _connector.Object);
-            _supervisor.CreateStreamListener(resourceTwo.Object, _provider, _connector.Object);
+            _supervisor.CreateStreamListener(resourceOne.Object, _connector.Object);
+            _supervisor.CreateStreamListener(resourceTwo.Object, _connector.Object);
             
             _supervisor.GetSports().Should().NotBeEmpty();
             _supervisor.GetSports().Count().Should().Be(2);
@@ -165,7 +165,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             _resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId)));
             _resource.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            _supervisor.CreateStreamListener(_resource.Object, _provider, _connector.Object);
+            _supervisor.CreateStreamListener(_resource.Object, _connector.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();
@@ -221,7 +221,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
 
             resourceOne.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            _supervisor.CreateStreamListener(resourceOne.Object, _provider, _connector.Object);
+            _supervisor.CreateStreamListener(resourceOne.Object, _connector.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();
@@ -270,7 +270,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
 
             resourceOne.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            _supervisor.CreateStreamListener(resourceOne.Object, _provider, _connector.Object);
+            _supervisor.CreateStreamListener(resourceOne.Object, _connector.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();
@@ -319,7 +319,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
 
             _resource.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            _supervisor.CreateStreamListener(_resource.Object, _provider, _connector.Object);
+            _supervisor.CreateStreamListener(_resource.Object, _connector.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();
