@@ -425,7 +425,7 @@
             clearFixtureState: function (fixtureId) {
                 if (!fixtureId || 0 === fixtureId.length) return null;
 
-                var path = MyConfig.actions.TakeFixtureSnapshot;
+                var path = MyConfig.actions.ClearFixtureState;
                 path = MyConfig.fn.getFixturePath(path, fixtureId);
                 path = MyConfig.fn.buildPath(path, MyConfig);
 
@@ -441,7 +441,7 @@
             restartFixtureListener: function (fixtureId) {
                 if (!fixtureId || 0 === fixtureId.length) return null;
 
-                var path = MyConfig.actions.TakeFixtureSnapshot;
+                var path = MyConfig.actions.RestartFixtureListener;
                 path = MyConfig.fn.getFixturePath(path, fixtureId);
                 path = MyConfig.fn.buildPath(path, MyConfig);
 
