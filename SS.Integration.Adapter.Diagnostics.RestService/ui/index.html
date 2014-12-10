@@ -54,13 +54,13 @@
     <div class="container-fluid">
         <div class="row">
 
-            <div data-ng-view=""></div>
+            <div class="col-md-8" id="main" data-ng-view=""></div>
 
-            <div class="col-md-4 well" data-ng-controller="AdapterCtrl as adapter">
+            <div class="col-md-4 well" style="min-height:255px; margin-left:15px;" data-ng-controller="AdapterCtrl as adapter">
 
                 <h2>Adapter Supervisor</h2>
 
-                <dl class="dl-horizontal">
+                <dl class="dl-horizontal nowrap-ellipsis">
                     <dt>Adapter Version </dt>
                     <dd>v.{{details.AdapterVersion}}</dd>
                     <dt>Sdk Version </dt>
@@ -75,7 +75,7 @@
 
                 <form role="search" class="navbar-form navbar-left">
                     <div class="form-group">
-                        <input type="text" class="form-control" placeholder="Search fixture" data-ng-model="searching.data"/>
+                        <input type="text" class="form-control" placeholder="Search fixture" data-ng-model="searching.data" />
                     </div>
                     <button type="submit" class="btn btn-primary" data-ng-click="adapter.search()">Submit</button>
                     <span data-ng-show="searching.noResults === true" class="icon-alert">No fixtures found</span>

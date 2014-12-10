@@ -41,6 +41,12 @@ header.site_header .corner {
     background-position: top left;
 }
 
+#main {
+    min-width:1000px;
+    width: auto !important;
+    width:1000px; /* As IE ignores !important it will set width as 1000px; */
+}
+
 .transition {
     -webkit-transition: all 250ms ease-in-out;
     -moz-transition: all 250ms ease-in-out;
@@ -287,6 +293,12 @@ header.site_header .corner {
 
 .clickable {
     cursor: pointer;
+}
+
+.nowrap-ellipsis {
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
 }
 
 /* PNotify */
