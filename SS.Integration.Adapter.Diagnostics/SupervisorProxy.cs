@@ -215,14 +215,14 @@ namespace SS.Integration.Adapter.Diagnostics
                 ProcessingEntryError error = new ProcessingEntryError
                 {
                     FixtureId = fixture.Id,
-                    FixtureDescription = "TEST", //fixture.Name,
-                    Sequence = fixture.ListenerOverview.Sequence.HasValue ? fixture.ListenerOverview.Sequence.Value : -1
+                    FixtureDescription = overview.Name,
+                    Sequence = fixture.LastError.Sequence
                 };
 
                 FillProcessingEntryError(error, fixture.LastError);
                 Supervisor.Service.StreamingService.OnError(error);
             }
-
+            
         }
 
         #endregion

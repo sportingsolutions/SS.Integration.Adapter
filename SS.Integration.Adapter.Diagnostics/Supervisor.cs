@@ -273,7 +273,11 @@ namespace SS.Integration.Adapter.Diagnostics
             var sportOverview = new SportOverview();
             sportOverview.Name = streamListenerEventArgs.Listener.Sport;
 
-            var fixturesForSport = _fixtures.Values.Where(f => f.Sport == sportOverview.Name).ToList();
+            
+            var fixturesForSport = _fixtures.Values.Where(f => 
+                                                            f.Sport == sportOverview.Name 
+                                                            && (f.ListenerOverview.IsDeleted.HasValue && !f.ListenerOverview.IsDeleted.Value || !f.ListenerOverview.IsDeleted.HasValue))
+                                                            .ToList();
             sportOverview.Total = fixturesForSport.Count;
             sportOverview.InErrorState = fixturesForSport.Count(f => f.ListenerOverview.IsErrored.HasValue && f.ListenerOverview.IsErrored.Value);
 
