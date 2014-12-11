@@ -37,6 +37,7 @@ namespace SS.Integration.Adapter
         private readonly ConcurrentDictionary<string, int> _listenerDisposingQueue = new ConcurrentDictionary<string, int>();
         private readonly HashSet<string> _currentlyProcessedFixtures = new HashSet<string>();
         private readonly static object _sync = new object();
+        protected readonly ISettings _settings;
 
         public event Adapter.StreamEventHandler StreamCreated;
         public event Adapter.StreamEventHandler StreamRemoved;
@@ -45,6 +46,7 @@ namespace SS.Integration.Adapter
 
         public StreamListenerManager(ISettings settings)
         {
+            _settings = settings;
             EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
         }
 
@@ -209,7 +211,7 @@ namespace SS.Integration.Adapter
 
         protected virtual IListener CreateStreamListenerObject(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IStateManager stateManager)
         {
-            return new StreamListener(resource, platformConnector, eventState, stateManager);
+            return new StreamListener(resource, platformConnector, eventState, stateManager,_settings);
         }
 
 

@@ -49,6 +49,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             _settings = new Mock<ISettings>();
             _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
             _settings.Setup(x => x.EventStateFilePath).Returns(".");
+            _settings.Setup(x => x.ProcessingLockTimeOutInSecs).Returns(10);
 
             _provider = new StateManager(_settings.Object);
 

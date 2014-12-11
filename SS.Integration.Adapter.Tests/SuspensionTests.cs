@@ -220,7 +220,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 4: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -293,7 +293,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 4: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider,settings.Object);
 
             listener.Start();
 
@@ -364,7 +364,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 4: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -421,7 +421,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 4: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider,settings.Object);
 
             listener.Start();
 

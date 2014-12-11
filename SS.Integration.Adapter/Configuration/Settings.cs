@@ -33,6 +33,7 @@ namespace SS.Integration.Adapter.Configuration
         private const bool DEFAULT_ENABLE_DELTA_RULE = false;
         private const bool DEFAULT_USE_STATS = false;
         private const bool DEFAULT_USE_SUPERVISOR = false;
+        private const int DEFAULT_PROCESSING_LOCK_TIMEOUT = 720;
 
         public Settings()
         {
@@ -79,6 +80,9 @@ namespace SS.Integration.Adapter.Configuration
 
             value = ConfigurationManager.AppSettings["useSupervisor"];
             UseSupervisor = string.IsNullOrEmpty(value) ? DEFAULT_USE_SUPERVISOR : Convert.ToBoolean(value);
+
+            value = ConfigurationManager.AppSettings["processingLockTimeOutInSecs"];
+            ProcessingLockTimeOutInSecs = string.IsNullOrEmpty(value) ? DEFAULT_PROCESSING_LOCK_TIMEOUT : Convert.ToInt32(value);
         }
 
         public string MarketFiltersDirectory { get; private set; }
@@ -112,5 +116,7 @@ namespace SS.Integration.Adapter.Configuration
         public bool StatsEnabled { get; private set; }
 
         public bool UseSupervisor { get; private set; }
+        
+        public int ProcessingLockTimeOutInSecs { get; private set; }
     }
 }

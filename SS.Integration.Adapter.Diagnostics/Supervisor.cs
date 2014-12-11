@@ -42,7 +42,7 @@ namespace SS.Integration.Adapter.Diagnostics
         private readonly Subject<ISportOverview> _sportTracker = new Subject<ISportOverview>();
 
         private IDisposable _publisher;
-
+        
         public Supervisor(ISettings settings) : base(settings)
         {
             _fixtures = new ConcurrentDictionary<string, FixtureOverview>();
@@ -224,7 +224,7 @@ namespace SS.Integration.Adapter.Diagnostics
                 throw new NullReferenceException("Can't convert Listener to StreamListener in ForceSnapshot method");
 
             //skips market rules
-            listener.RetrieveAndProcessSnapshot(false, true);
+            listener.ForceSnapshot();
 
             _logger.InfoFormat("Forced snapshot for fixtureId={0}",fixtureId);
         }
@@ -254,6 +254,12 @@ namespace SS.Integration.Adapter.Diagnostics
 
             fixtureOverview.Name = streamListenerEventArgs.Name ?? fixtureOverview.Name;
             fixtureOverview.ListenerOverview.MatchStatus = streamListenerEventArgs.MatchStatus ?? fixtureOverview.ListenerOverview.MatchStatus;
+
+            if (streamListenerEventArgs.IsSnapshot)
+            {
+                fixtureOverview.CompetitionId = streamListenerEventArgs.CompetitionId;
+                fixtureOverview.CompetitionName = streamListenerEventArgs.CompetitionName;
+            }
 
             if (fixtureOverview.LastError != null
                 && fixtureOverview.LastError.IsErrored
@@ -404,6 +410,7 @@ namespace SS.Integration.Adapter.Diagnostics
         public void ForceListenerStop(string fixtureId)
         {
             StopStreaming(fixtureId);
+            RemoveStreamListener(fixtureId);
         }
 
         public override bool RemoveStreamListener(string fixtureId)

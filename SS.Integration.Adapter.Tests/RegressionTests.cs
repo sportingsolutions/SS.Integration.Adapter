@@ -70,6 +70,7 @@ namespace SS.Integration.Adapter.Tests
             settings.Setup(x => x.FixtureCreationConcurrency).Returns(1);
             settings.Setup(x => x.FixtureCheckerFrequency).Returns(1000);
             settings.Setup(x => x.EventStateFilePath).Returns(".");
+            settings.Setup(x => x.ProcessingLockTimeOutInSecs).Returns(10);
 
             var streamListenerManager = new StreamListenerManager(settings.Object);
             streamListenerManager.StateManager = new Mock<IStateManager>().Object;
@@ -153,7 +154,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider,settings.Object);
 
             listener.Start();
 

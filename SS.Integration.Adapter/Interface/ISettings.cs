@@ -106,5 +106,7 @@ namespace SS.Integration.Adapter.Interface
         /// True to instantiate the adapter's supervisor
         /// </summary>
         bool UseSupervisor { get; }
+
+        int ProcessingLockTimeOutInSecs { get; }
     }
 }
