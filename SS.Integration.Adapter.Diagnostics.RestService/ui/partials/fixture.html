@@ -1,8 +1,8 @@
-﻿<div class="well col-md-8">
+﻿<div class="well">
     <h3>Fixture: {{fixture.Description}} ({{fixture.Id}}) @ {{fixture.StartTime | date:'dd MMM yyyy hh:mm' }}</h3>
     <div class="panel" data-ng-class="{'panel-danger':fixture.IsInErrorState, 'panel-success': !fixture.IsInErrorState}">
         <div class="panel-heading">
-            <div class="container">
+            <div class="container-fluid">
                 <div class="col-md-8">
                     <dl class="dl-horizontal">
                         <dt>Streaming state</dt>
@@ -47,14 +47,13 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4"></div>
-                <div class="col-md-4">
-                    <div class="panel panel-info">
+                <div class="col-md-8">
+                    <div class="panel panel-info right">
                         <div class="panel-heading">
                             <span class="text-center text-uppercase"><strong>Actions</strong></span>
                         </div>
                         <div class="panel-body">
-                            <div class="btn-group" style="margin-left:28px">
+                            <div class="btn-group">
                                 <button type="button" class="btn btn-danger"  data-ng-click="restartListener();">Restart</button>
                                 <button type="button" class="btn btn-primary" data-ng-click="takeSnapshot();">Take snapshot</button>
                                 <button type="button" class="btn btn-warning" data-ng-click="clearState();">Clear state</button>
