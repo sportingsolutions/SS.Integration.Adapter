@@ -1,4 +1,6 @@
-﻿@font-face {
+﻿/* Min resolution: 1280x768 */
+
+@font-face {
     font-family: 'sports';
     src: url('../fonts/sports.eot');
     src: url('../fonts/sports.eot?#iefix') format('embedded-opentype'), url('../fonts/sports.svg#sports') format('svg'), url('../fonts/sports.woff') format('woff'), url('../fonts/sports.ttf') format('truetype');
@@ -42,9 +44,7 @@ header.site_header .corner {
 }
 
 #main {
-    min-width:1000px;
-    width: auto !important;
-    width:1000px; /* As IE ignores !important it will set width as 1000px; */
+    min-width:1155px;
 }
 
 .transition {

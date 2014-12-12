@@ -133,8 +133,10 @@
 
         function signalRHubProxyFactory(url, hubname) {
 
-            var promise = null;
+            var enabled = false;
+            var reconnecting = false;
             var proxy = null;
+            var callbacks = new Array();
 
             /**
              * Connects this client to the signalR streaming server.
@@ -142,49 +144,70 @@
             var connect = function () {
 
                 var defered = $q.defer();
-                var connection = $.hubConnection(url);
-                proxy = connection.createHubProxy(hubname);
-                promise = defered.promise;
+                var promise = defered.promise;
+
+                $log.debug("Attempting to connect to the streaming server");
 
                 connection.start()
                     .done(function () {
                         $log.info('Successfully connected to the streaming server');
-
-                        // register listeners and dispatch broadcast messages upon messages arrivals
-                        on(MyConfig.pushNotification.serverCallbacks.AdapterUpdate, function (data) {
-                            $rootScope.$broadcast(MyConfig.pushNotification.events.AdapterUpdate, data);
-                        });
-
-                        on(MyConfig.pushNotification.serverCallbacks.Errors, function (data) {
-                            $rootScope.$broadcast(MyConfig.pushNotification.events.Errors, data);
-                        });
-
-                        on(MyConfig.pushNotification.serverCallbacks.FixtureUpdate, function (data) {
-                            if (data && data.Id) {
-                                $log.debug("Update arrived for fixtureId=" + data.Id);
-                                $rootScope.$broadcast(MyConfig.pushNotification.events.FixtureUpdate, data);
-                            }
-                        });
-                        on(MyConfig.pushNotification.serverCallbacks.SportUpdate, function (data) {
-                            if (data && data.Name) {
-                                $log.debug("Update arrived for sport=" + data.Name);
-                                $rootScope.$broadcast(MyConfig.pushNotification.events.SportUpdate, data);
-                            }
-                        });
-
+                        enabled = true;
                         defered.resolve();
                     })
                     .fail(function (error) {
-                        $log.error('Not connected to the streaming server: ' + error); MyConfig.pushNotification.enabled = false; defered.reject();
+                        $log.error('Could not connect to the streaming server: ' + error);
+                        enabled = false;
+                        defered.reject();
                     });
-            }
+
+                return promise;
+            };
+
+            var setup = function () {
+
+
+                // this method must called only if we have a valid connection (checks are within the "on" method)
+
+                $log.debug("Configuring streaming event handlers");
+
+                // register listeners and dispatch broadcast messages upon messages arrivals
+                on(MyConfig.pushNotification.serverCallbacks.AdapterUpdate, function (data) {
+                    $log.debug("Adapter updated has arrived");
+                    $rootScope.$broadcast(MyConfig.pushNotification.events.AdapterUpdate, data);
+                });
+
+                on(MyConfig.pushNotification.serverCallbacks.Errors, function (data) {
+                    $log.debug("An error notification has arrived");
+                    $rootScope.$broadcast(MyConfig.pushNotification.events.Errors, data);
+                });
+
+                on(MyConfig.pushNotification.serverCallbacks.FixtureUpdate, function (data) {
+                    if (data && data.Id) {
+                        $log.debug("An update for fixtureId=" + data.Id + " has arrived");
+                        $rootScope.$broadcast(MyConfig.pushNotification.events.FixtureUpdate, data);
+                    }
+                });
+
+                on(MyConfig.pushNotification.serverCallbacks.SportUpdate, function (data) {
+                    if (data && data.Name) {
+                        $log.debug("An update for sport=" + data.Name + " has arrived");
+                        $rootScope.$broadcast(MyConfig.pushNotification.events.SportUpdate, data);
+                    }
+                });
+
+                // execute all the calls that couldn't be execute before 
+                $.each(callbacks, function (index, value) {
+                    invoke(value.methodName, value.params, value.callback);
+                });
+
+                callbacks = new Array();
+            };
 
             var on = function (eventName, callback) {
-                if (MyConfig.pushNotification.enabled) {
+                if (enabled && proxy !== null) {
                     proxy.on(eventName, function (data) {
                         $rootScope.$apply(function () {
-                            if (callback)
-                                callback(data);
+                            if (callback) callback(data);
                         });
                     });
                 }
@@ -192,11 +215,13 @@
 
             var invoke = function (methodName, params, callback) {
 
-                // we need to use defer/promise here as at the time
-                // the first subscribe() call is made, the connection
-                // might not be yet ready
-                var tmp = function () {
-                    if (MyConfig.pushNotification.enabled) {
+                if (MyConfig.pushNotification.enabled) {
+
+                    if (!enabled || proxy == null || proxy.connection.state !== $.signalR.connectionState.connected) {
+                        $log.debug("invoke() called but the connection to the streaming server is not ready yet - queueing call");
+                        callbacks.unshift({ method: methodName, params: params, callback: callback });
+                    }
+                    else {
                         var res = null;
 
                         // if the RPC method doesn't accept any argument,
@@ -207,29 +232,29 @@
 
                         res.done(function (data) { if (callback) callback(data); });
                     }
-                };
-
-                if (proxy == null) {
-                    connect();
-                    promise.then(tmp);
-                }
-                else {
-                    switch (proxy.connection.state) {
-                        case $.signalR.connectionState.connecting:
-                        case $.signalR.connectionState.reconnecting:
-                            promise.then(tmp);
-                            break;
-                        case $.signalR.connectionState.disconnected:
-                            connect();
-                            promise.then(tmp);
-                            break;
-                        case $.signalR.connectionState.connected:
-                            tmp();
-                            break;
-                    }
                 }
             };
 
+
+            if (MyConfig.pushNotification.enabled) {
+
+                var connection = $.hubConnection(url);
+                proxy = connection.createHubProxy(hubname);
+
+                connect().then(setup);
+
+                connection.reconnecting(function () { reconnecting = true; });
+
+                connection.reconnected(function () { reconnecting = false; });
+
+                connection.disconnected(function () {
+                    if (!reconnecting) {
+                        $log.debug("Lost connection to the streaming server - trying to reconnect");
+                        connect();
+                    }
+                });
+            }
+            
             return {
 
                 sportSubscription: function (sportCode) {
@@ -398,7 +423,11 @@
                 path = MyConfig.fn.buildPath(path, MyConfig);
 
                 var deferred = $q.defer();
-                $http.post(path, searchData)
+
+                // WebAPI binding model is fairly idiot, 
+                // data must wrapped around double quote to be recognized
+                // as a string
+                $http.post(path, '"' + searchData + '"')
                     .success(function (data) { deferred.resolve(data); })
                     .error(function () { $log.error('An error occured while searching for fixtures'); deferred.resolve({}); });
 

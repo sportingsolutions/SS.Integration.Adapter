@@ -52,11 +52,11 @@
     </div>
 
     <div class="container-fluid">
-        <div class="row">
+        <div class="row" id="main">
 
             <div class="col-md-8" id="main" data-ng-view=""></div>
 
-            <div class="col-md-4 well" style="min-height:255px; margin-left:15px;" data-ng-controller="AdapterCtrl as adapter">
+            <div class="col-md-4 well" style="min-height:255px;" data-ng-controller="AdapterCtrl as adapter">
 
                 <h2>Adapter Supervisor</h2>
 
@@ -85,7 +85,7 @@
 
 
                 <div data-my-notifications="my-stack-context"></div>
-                <div id="my-stack-context" style="position: absolute; width: 586px; top: 280px;">
+                <div id="my-stack-context" style="position: absolute; width: 586px; top: 280px; left:5px;">
                     <p>
                         <span class="glyphicon glyphicon-comment lead">&nbsp;Notifications</span>
                         <a href="#" data-ng-click="clearNotifications()">(Clear all)</a>

@@ -26,7 +26,7 @@
         </div>
         <div class="panel-body">
             <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <div class="panel panel-primary">
                         <div class="panel-heading">
                             <span class="text-center text-uppercase "><strong>Fixture data</strong></span>
@@ -47,7 +47,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-8">
+                <div class="col-md-6">
                     <div class="panel panel-info right">
                         <div class="panel-heading">
                             <span class="text-center text-uppercase"><strong>Actions</strong></span>
@@ -57,7 +57,9 @@
                                 <button type="button" class="btn btn-danger"  data-ng-click="restartListener();">Restart</button>
                                 <button type="button" class="btn btn-primary" data-ng-click="takeSnapshot();">Take snapshot</button>
                                 <button type="button" class="btn btn-warning" data-ng-click="clearState();">Clear state</button>
-                                <!--
+                                <!-- 
+                                    --- feature not yet supported ---
+
                                     <div class="btn-group">
                                         <button type="button" class="btn btn-warning dropdown-toggle" data-toggle="dropdown">
                                             Clear state
@@ -70,11 +72,12 @@
                                             <li><a href="#">Clear Plugin state and cache</a></li>
                                         </ul>
                                     </div>
-                                 -->
+                                    -->
                             </div>
-                            <strong style="margin-left:28px" data-ng-if="commandInProgress === 1" class="label label-warning">Sending command...</strong>
-                            <strong style="margin-left:28px" data-ng-if="commandResult === 0" class="label label-success">OK! Command correctly sent</strong>
-                            <strong style="margin-left:28px" data-ng-if="commandResult === 1" class="label label-danger">OPSSS! The command could not be sent</strong>
+                            <br/>
+                            <strong data-ng-if="commandInProgress === 1" class="label label-warning">Sending command...</strong>
+                            <strong data-ng-if="commandResult === 0" class="label label-success">OK! Command correctly sent</strong>
+                            <strong data-ng-if="commandResult === 1" class="label label-danger">OPSSS! The command could not be sent</strong>
                         </div>
                     </div>
                 </div>
@@ -110,12 +113,12 @@
                                 <span class="label label-info"    data-ng-if="update.items[0].State == 1">{{update.items[0] | updateDescription}}</span>
                                 <span class="label label-warning" data-ng-if="update.items[0].State == 2">{{update.items[0] | updateDescription}}</span>
                             </td>
-                            <td class="col-md-1">
+                            <td class="col-md-7">
                                 <span class="right glyphicon glyphicon-th-list clickable" data-ng-show="update.items.length > 1" data-ng-click="setDetailVisible(update.sequence, !isDetailVisibile(update.sequence))"></span>
                             </td>
                         </tr>
                         <tr data-ng-repeat-end="" data-ng-show="isDetailVisibile(update.sequence)">
-                            <td colspan="12">
+                            <td colspan="5">
                                 <p><ins>Processing attempts for sequence={{update.sequence}}</ins></p>
                                 <table class="table">
                                     <tr data-ng-repeat="received in update.items | orderBy:'-Timestamp'" data-ng-class="{danger: received.Exception}">
