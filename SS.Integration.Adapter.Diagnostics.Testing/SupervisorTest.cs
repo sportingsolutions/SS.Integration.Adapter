@@ -220,6 +220,57 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
         }
 
         [Test]
+        public void GetFixtureOverviewAfterStreamUpdatesTest()
+        {
+            var fixtureOneId = "fixtureOne";
+
+            _resource.Setup(x => x.Id).Returns(fixtureOneId);
+            _resource.Setup(x => x.Content).Returns(new Summary());
+            _resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            _resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId)));
+            _resource.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
+
+            var deltas = new List<IFixtureOverviewDelta>();
+            var subscriber = _supervisor.GetFixtureOverviewStream().ObserveOn(NewThreadScheduler.Default).Subscribe(deltas.Add);
+
+            _supervisor.CreateStreamListener(_resource.Object, _connector.Object);
+
+            var fixtureOverviews = _supervisor.GetFixtures();
+            fixtureOverviews.Should().NotBeNullOrEmpty();
+            fixtureOverviews.Should().Contain(f => f.Id == fixtureOneId);
+
+            _supervisor.StartStreaming(fixtureOneId);
+
+            var epoch = 1;
+
+            var streamUpdate = new Fixture
+            {
+                Id = fixtureOneId,
+                Sequence = 2,
+                Epoch = epoch,
+                MatchStatus = ((int)MatchStatus.InRunning).ToString()
+            };
+
+            SendStreamUpdate(streamUpdate);
+
+            Thread.Sleep(1000);
+
+            deltas.Should().NotBeEmpty();
+            var sequenceTwoDeltas = deltas.Where(d => d.FeedUpdate != null && d.FeedUpdate.Sequence == 2).ToList();
+            sequenceTwoDeltas.Should().NotBeNull();
+            sequenceTwoDeltas.Count.Should().Be(2);
+
+            //FeedUpdate with IsProcessed in both states exists
+            sequenceTwoDeltas.Any(d => d.FeedUpdate.IsProcessed).Should().BeTrue();
+            sequenceTwoDeltas.Any(d => !d.FeedUpdate.IsProcessed).Should().BeTrue();
+
+            var fixtureOverview = _supervisor.GetFixtureOverview(fixtureOneId);
+            fixtureOverview.GetFeedAudit().Count(f => f.Sequence == 2).Should().Be(1);
+
+            subscriber.Dispose();
+        }
+
+        [Test]
         public void GetDeltaErrorsTest()
         {
             var fixtureOneId = "fixtureOne";

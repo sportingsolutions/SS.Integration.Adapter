@@ -353,8 +353,9 @@ namespace SS.Integration.Adapter
             IsFixtureSetup = (resource.MatchStatus == MatchStatus.Setup ||
                               resource.MatchStatus == MatchStatus.Ready);
 
-
             SequenceOnStreamingAvailable = resource.Content.Sequence;
+            
+            _logger.InfoFormat("In feed there is a sequence={0} currentlyProcessedSequence={1} {2}",SequenceOnStreamingAvailable,_currentSequence,resource);
 
             StartStreaming();
         }

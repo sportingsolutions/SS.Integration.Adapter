@@ -94,6 +94,15 @@ namespace SS.Integration.Adapter.Diagnostics.Model
                 auditList.RemoveAt(0);
         }
 
+        private void GroupProcessedFeedUpdates(FeedUpdateOverview newUpdate)
+        {
+            if (newUpdate != null && newUpdate.IsProcessed)
+            {
+                var oldFeedUpdate = _feedUpdates.Find(f => f.Sequence == newUpdate.Sequence && !f.IsProcessed);
+                _feedUpdates.Remove(oldFeedUpdate);
+            }
+        }
+
         public FeedUpdateOverview FeedUpdate
         {
             get { return _feedUpdate; }
@@ -104,10 +113,11 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             }
         }
 
-        private void FeedUpdated(FeedUpdateOverview value)
+        private void FeedUpdated(FeedUpdateOverview newFeedUpdate)
         {
-            _feedUpdates.Add(value);
-            Delta.FeedUpdate = value;
+            _feedUpdates.Add(newFeedUpdate);
+            Delta.FeedUpdate = newFeedUpdate;
+            GroupProcessedFeedUpdates(newFeedUpdate);
             TrimOldItems(_feedUpdates);
         }
 

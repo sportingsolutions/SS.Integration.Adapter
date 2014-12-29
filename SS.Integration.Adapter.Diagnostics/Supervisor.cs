@@ -200,7 +200,7 @@ namespace SS.Integration.Adapter.Diagnostics
             {
                 ErroredAt = DateTime.UtcNow,
                 Exception = e.Exception,
-                IsErrored = e.Listener.IsErrored,
+                IsErrored = true,
                 Sequence = e.CurrentSequence
             };
             
