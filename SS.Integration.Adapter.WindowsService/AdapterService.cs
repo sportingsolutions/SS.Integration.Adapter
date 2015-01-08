@@ -35,7 +35,7 @@ namespace SS.Integration.Adapter.WindowsService
         private static Task _adapterWorkerThread;
         private Adapter _adapter;
         private ISupervisor _supervisor;
-        
+
         [Import]
         public IAdapterPlugin PlatformConnector { get; set; }
 
@@ -46,7 +46,7 @@ namespace SS.Integration.Adapter.WindowsService
         {
             InitializeComponent();
 
-            TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;    
+            TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
 
             Compose();
@@ -59,9 +59,9 @@ namespace SS.Integration.Adapter.WindowsService
             {
                 foreach (var exception in unobservedTaskExceptionEventArgs.Exception.Flatten().InnerExceptions)
                 {
-                    _logger.Fatal("Adapter received unobserved exception from TaskScheduler: ",exception);
+                    _logger.Fatal("Adapter received unobserved exception from TaskScheduler: ", exception);
                 }
-                
+
             }
             else
             {
@@ -132,7 +132,7 @@ namespace SS.Integration.Adapter.WindowsService
                 return;
             }
 
-            List<INinjectModule> modules = new List<INinjectModule> {new BootStrapper()};
+            List<INinjectModule> modules = new List<INinjectModule> { new BootStrapper() };
 
             if (PluginBootstrapper != null)
             {
@@ -177,7 +177,7 @@ namespace SS.Integration.Adapter.WindowsService
             _adapter.Start();
 
             _logger.Info("Adapter has started");
-            }
+        }
 
         protected override void OnStop()
         {

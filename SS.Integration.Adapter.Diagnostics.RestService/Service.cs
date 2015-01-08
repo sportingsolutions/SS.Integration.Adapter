@@ -120,7 +120,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
             {
                 // prepare the signalr middleware
                 app.UseCors(CorsOptions.AllowAll);
-                app.MapSignalR("/streaming", new Microsoft.AspNet.SignalR.HubConfiguration
+                app.MapSignalR(ServiceInstance.ServiceConfiguration.PushNotificationsPath, new Microsoft.AspNet.SignalR.HubConfiguration
                 {
                     EnableJavaScriptProxies = false,
                     EnableJSONP = false,
@@ -152,7 +152,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
                 {
                     FileSystem = new PhysicalFileSystem(GetRootDirectory(ServiceInstance.ServiceConfiguration.UIPath)),
                     EnableDirectoryBrowsing = true,
-                    RequestPath = new Microsoft.Owin.PathString("/ui"),
+                    RequestPath = new Microsoft.Owin.PathString(ServiceInstance.ServiceConfiguration.UIPath),
                     EnableDefaultFiles = true
                 };
 

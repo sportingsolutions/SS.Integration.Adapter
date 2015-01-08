@@ -59,6 +59,9 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
 
             };
 
+            if (responseMessage.Content == null)
+                responseMessage.Content = new StringContent("");
+
             responseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue(UrlUtilities.JSON_MEDIA_TYPE);
             return responseMessage;
         }

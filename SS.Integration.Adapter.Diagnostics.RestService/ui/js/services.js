@@ -197,7 +197,7 @@
 
                 // execute all the calls that couldn't be execute before 
                 $.each(callbacks, function (index, value) {
-                    invoke(value.methodName, value.params, value.callback);
+                    invoke(value.method, value.params, value.callback);
                 });
 
                 callbacks = new Array();

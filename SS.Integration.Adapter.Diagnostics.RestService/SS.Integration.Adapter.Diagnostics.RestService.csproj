@@ -54,10 +54,11 @@
       <HintPath>..\packages\Microsoft.Owin.FileSystems.3.0.0\lib\net45\Microsoft.Owin.FileSystems.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Owin.Host.HttpListener">
-      <HintPath>..\packages\Microsoft.Owin.Host.HttpListener.2.0.2\lib\net45\Microsoft.Owin.Host.HttpListener.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Owin.Host.HttpListener.3.0.0\lib\net45\Microsoft.Owin.Host.HttpListener.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Owin.Hosting">
-      <HintPath>..\packages\Microsoft.Owin.Hosting.2.0.2\lib\net45\Microsoft.Owin.Hosting.dll</HintPath>
+    <Reference Include="Microsoft.Owin.Hosting, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Microsoft.Owin.Hosting.3.0.0\lib\net45\Microsoft.Owin.Hosting.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Owin.Security">
       <HintPath>..\packages\Microsoft.Owin.Security.2.0.1\lib\net45\Microsoft.Owin.Security.dll</HintPath>
@@ -114,93 +115,93 @@
     <Compile Include="UrlUtilities.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ui\favicon.ico">
+    <None Include="ui\favicon.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\jquery-2.1.1.intellisense.js">
+    </None>
+    <None Include="ui\js\jquery-2.1.1.intellisense.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\jquery-2.1.1.js">
+    </None>
+    <None Include="ui\js\jquery-2.1.1.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\jquery-2.1.1.min.js">
+    </None>
+    <None Include="ui\js\jquery-2.1.1.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\css\bootstrap.css">
+    </None>
+    <None Include="ui\css\bootstrap.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\css\bootstrap.min.css">
+    </None>
+    <None Include="ui\css\bootstrap.min.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\css\main.css">
+    </None>
+    <None Include="ui\css\main.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\fonts\glyphicons-halflings-regular.svg">
+    </None>
+    <None Include="ui\fonts\glyphicons-halflings-regular.svg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\fonts\sports.svg">
+    </None>
+    <None Include="ui\fonts\sports.svg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\images\bg.png">
+    </None>
+    <None Include="ui\images\bg.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\images\header_bg.png">
+    </None>
+    <None Include="ui\images\header_bg.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\images\header_corner.png">
+    </None>
+    <None Include="ui\images\header_corner.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\index.html">
+    </None>
+    <None Include="ui\index.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\angular-route.js">
+    </None>
+    <None Include="ui\js\angular-route.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\angular-route.min.js">
+    </None>
+    <None Include="ui\js\angular-route.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\angular.js">
+    </None>
+    <None Include="ui\js\angular.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\angular.min.js">
+    </None>
+    <None Include="ui\js\angular.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\app.js">
+    </None>
+    <None Include="ui\js\app.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\bootstrap.min.js">
+    </None>
+    <None Include="ui\js\bootstrap.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\controllers.js">
+    </None>
+    <None Include="ui\js\controllers.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\jquery.signalR-2.1.2.js">
+    </None>
+    <None Include="ui\js\jquery.signalR-2.1.2.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\jquery.signalR-2.1.2.min.js">
+    </None>
+    <None Include="ui\js\jquery.signalR-2.1.2.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\pnotify.custom.js">
+    </None>
+    <None Include="ui\js\pnotify.custom.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\pnotify.custom.min.js">
+    </None>
+    <None Include="ui\js\pnotify.custom.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\js\services.js">
+    </None>
+    <None Include="ui\js\services.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\partials\fixture.html">
+    </None>
+    <None Include="ui\partials\fixture.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\partials\sport.html">
+    </None>
+    <None Include="ui\partials\sport.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\partials\sports.html">
+    </None>
+    <None Include="ui\partials\sports.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ui\partials\waiting.html">
+    </None>
+    <None Include="ui\partials\waiting.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

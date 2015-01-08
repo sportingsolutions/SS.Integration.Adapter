@@ -21,6 +21,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Wind
 	ProjectSection(ProjectDependencies) = postProject
 		{BF7E4403-53DA-43C9-868A-C7510584D207} = {BF7E4403-53DA-43C9-868A-C7510584D207}
 		{F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE} = {F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE}
+		{358E7882-2EBB-49AC-A3A1-4986B40D56BF} = {358E7882-2EBB-49AC-A3A1-4986B40D56BF}
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Model", "SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj", "{29461692-6DE2-47FA-ACC4-ECAAE9462AE3}"
@@ -57,6 +58,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diagnostics.RestService", "SS.Integration.Adapter.Diagnostics.RestService\SS.Integration.Adapter.Diagnostics.RestService.csproj", "{358E7882-2EBB-49AC-A3A1-4986B40D56BF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diagnostics", "SS.Integration.Adapter.Diagnostics\SS.Integration.Adapter.Diagnostics.csproj", "{F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B11DBC1F-95E5-44D3-8896-78482D84FB07} = {B11DBC1F-95E5-44D3-8896-78482D84FB07}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
