@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using log4net;
 using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
@@ -164,7 +165,7 @@ namespace SS.Integration.Adapter
                 _logger.Error(string.Format("An error occured while performing suspend action on fixtureId={0}", fixtureId), e);
             }
         }
-
+        
         private void BuildDefaultStrategies()
         {
             DoNothingStrategy = x => { };
@@ -247,9 +248,9 @@ namespace SS.Integration.Adapter
                             _logger.DebugFormat("marketId={0} of fixtureId={1} will not be suspended as it has not been active before", mkt_id, fixture.Id);
                             continue;
                         }
-
+                        
                         includedMarketStates.Add(state);
-                        fixture.Markets.Add(CreateSuspendedMarket(x[mkt_id]));
+                        fixture.Markets.Add(CreateMarket(x[mkt_id]));
                     }
 
 
@@ -260,32 +261,85 @@ namespace SS.Integration.Adapter
                     ((IUpdatableMarketStateCollection)x).OnMarketsForcedSuspension(includedMarketStates);
                 };
         }
+
+        public void Unsuspend(string fixtureId)
+        {
+            IMarketStateCollection state = _stateProvider.GetMarketsState(fixtureId);
+            List<IMarketState> marketStates;
+
+            if (state == null)
+            {
+                _logger.WarnFormat("State is not present for fixtureId={0} - can't unsuspend", fixtureId);
+                return;
+            }
+            
+            var fixture = GetUnsuspendedFixture(state,out marketStates);
+
+            if (fixture.Markets.Any())
+            {
+                _logger.InfoFormat("Unsuspending previously suspended markets in {0}", fixture);
+                _plugin.ProcessStreamUpdate(fixture);
+            }
+
+            ((IUpdatableMarketStateCollection)state).OnMarketsForcedUnsuspension(marketStates);
+        }
+
+        private Fixture GetUnsuspendedFixture(IMarketStateCollection state,out List<IMarketState> marketStates)
+        {
+            marketStates = new List<IMarketState>();
+
+            var fixture = new Fixture
+            {
+                Id = state.FixtureId,
+                MatchStatus = ((int)state.FixtureStatus).ToString(),
+                Sequence = state.FixtureSequence
+            };
+
+            foreach (var mkt_id in state.Markets)
+            {
+                var marketState = state[mkt_id];
+                if(marketState == null)
+                    continue;
+
+                marketStates.Add(marketState);
+                //only unsuspend market if it's suspended by Adapter and not suspended in the feed
+                if (marketState.IsForcedSuspended && !marketState.IsSuspended)
+                {
+                    fixture.Markets.Add(CreateMarket(state[mkt_id], false));
+                }
+
+            }
+
+            return fixture;
+        }
     
-        private static Fixture GetFixtureWithSuspendedMarkets(IMarketStateCollection x, out IEnumerable<IMarketState> includedMarketStates)
+        private static Fixture GetFixtureWithSuspendedMarkets(IMarketStateCollection state, out IEnumerable<IMarketState> includedMarketStates)
         {
             includedMarketStates = new List<IMarketState>();
 
             var fixture = new Fixture
             {
-                Id = x.FixtureId,
-                MatchStatus = ((int) x.FixtureStatus).ToString(),
-                Sequence = x.FixtureSequence
+                Id = state.FixtureId,
+                MatchStatus = ((int) state.FixtureStatus).ToString(),
+                Sequence = state.FixtureSequence
             };
 
-            foreach (var mkt_id in x.Markets)
+            foreach (var mkt_id in state.Markets)
             {
-                ((List<IMarketState>)includedMarketStates).Add(x[mkt_id]);
-                fixture.Markets.Add(CreateSuspendedMarket(x[mkt_id]));
+                ((List<IMarketState>)includedMarketStates).Add(state[mkt_id]);
+                fixture.Markets.Add(CreateMarket(state[mkt_id]));
             }
 
             return fixture;
         }
 
-        private static Market CreateSuspendedMarket(IMarketState marketState)
+        
+
+        private static Market CreateMarket(IMarketState marketState,bool isSuspended = true)
         {
-            var market = new Market(marketState.Id) { IsSuspended = true };
+            var market = new Market(marketState.Id) { IsSuspended = isSuspended };
             foreach (var seln in marketState.Selections)
-                market.Selections.Add(new Selection { Id = seln.Id, Status = SelectionStatus.Pending, Tradable = false });
+                market.Selections.Add(new Selection { Id = seln.Id, Status = SelectionStatus.Pending, Tradable = !isSuspended });
 
             return market;
         }

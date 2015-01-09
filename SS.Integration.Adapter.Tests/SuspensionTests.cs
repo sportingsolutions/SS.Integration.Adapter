@@ -434,5 +434,88 @@ namespace SS.Integration.Adapter.Tests
                 It.IsAny<bool>()), Times.Once);
 
         }
+
+
+
+
+
+
+
+        /// <summary>
+        /// I want to test that when a StreamListener
+        /// object is disposed, a proper suspension 
+        /// request is sent
+        /// </summary>
+        [Test]
+        [Category("Suspension")]
+        public void UnsuspendFixtureAndMarketsTest()
+        {
+            // STEP 1: prepare stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+            var provider = new StateManager(settings.Object, connector.Object);
+
+            provider.SuspensionManager.RegisterAction(provider.SuspensionManager.SuspendInPlayMarketsStrategy, SuspensionReason.DISCONNECT_EVENT);
+
+            // STEP 2: prepare the fixture data
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+            fixture.Tags.Add("Sport", "Football"); // add at least one tags, so the MarketsRulesManager recognize it as a full-snapshot
+
+            var mkt1 = new Market { Id = "MKT-1" };
+            mkt1.Selections.Add(new Selection { Id = "SELN", Status = SelectionStatus.Active, Tradable = true });
+            fixture.Markets.Add(mkt1);
+
+            var mkt = new Market("MKT-2");
+            mkt.AddOrUpdateTagValue("traded_in_play", "false");
+            fixture.Markets.Add(mkt);
+            
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary() { Sequence = 1 } );
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.StopStreaming()).Raises(x => x.StreamDisconnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 4: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+            
+            connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
+
+            listener.Dispose();
+
+            // STEP 5: check the result, note tha MKT-2 is not in-play
+            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
+                y => y.Id == "ABC" &&
+                     y.Markets.Count == 1 &&
+                     y.Markets.FirstOrDefault(z => z.Id == "MKT-1") != null),
+                It.IsAny<bool>()), Times.Once);
+
+            //recreate listener
+            //must have state setup otherwise it will process snapshot not unsuspend
+            state.Setup(x => x.GetFixtureState(It.Is<string>(fId => fId == fixture.Id)))
+                .Returns(new FixtureState()
+                {
+                    Id = fixture.Id,
+                    MatchStatus = MatchStatus.InRunning,
+                    Sequence = fixture.Sequence
+                });
+
+            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            listener.Start();
+
+            // Unsuspend should be called on reconnect causing markets to unsuspend:
+            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
+                y => y.Id == "ABC" &&
+                     y.Markets.Count == 1 &&
+                     y.Markets.FirstOrDefault(z => z.Id == "MKT-1").IsSuspended == false),
+                It.IsAny<bool>()), Times.Once);
+
+        }
     }
 }

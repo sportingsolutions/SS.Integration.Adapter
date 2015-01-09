@@ -39,5 +39,12 @@ namespace SS.Integration.Adapter.MarketRules.Interfaces
         /// </summary>
         /// <param name="markets"></param>
         void OnMarketsForcedSuspension(IEnumerable<IMarketState> markets);
+
+        /// <summary>
+        /// Allows to unsuspend previously suspended market.
+        /// IMarketState.IsForcedSuspended property will return false
+        /// </summary>
+        /// <param name="markets"></param>
+        void OnMarketsForcedUnsuspension(IEnumerable<IMarketState> markets);
     }
 }

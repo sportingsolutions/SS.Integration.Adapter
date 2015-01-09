@@ -344,6 +344,11 @@ namespace SS.Integration.Adapter
             StartStreaming();
         }
 
+        private void Unsuspend()
+        {
+            _stateManager.StateProvider.SuspensionManager.Unsuspend(FixtureId);
+        }
+
         /// <summary>
         /// Allows to send a suspension request
         ///        
@@ -803,8 +808,6 @@ namespace SS.Integration.Adapter
                     _isFirstSnapshotProcessed = tmp;
                     _isProcessingFirstSnapshot = false;
                 }
-
-
             }
         }
 
@@ -840,9 +843,11 @@ namespace SS.Integration.Adapter
 
                 if (state != null)
                     fixture.MatchStatus = state.MatchStatus.ToString();
-
+                
                 try
                 {
+                    //unsuspends markets suspended by adapter
+                    _stateManager.StateProvider.SuspensionManager.Unsuspend(fixture.Id);
                     _platformConnector.UnSuspend(fixture);
                 }
                 catch (Exception e)
