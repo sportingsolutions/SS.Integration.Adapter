@@ -148,12 +148,22 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public void OnMarketsForcedSuspension(IEnumerable<IMarketState> markets)
         {
+            SetForcedSuspensionOnState(markets,true);
+        }
+
+        public void OnMarketsForcedUnsuspension(IEnumerable<IMarketState> markets)
+        {
+            SetForcedSuspensionOnState(markets,false);
+        }
+
+        private void SetForcedSuspensionOnState(IEnumerable<IMarketState> markets,bool isForceSuspended)
+        {
             if (markets == null)
                 return;
 
             foreach (var mkt in markets)
             {
-                _States[mkt.Id].SetForcedSuspensionState();
+                _States[mkt.Id].SetForcedSuspensionState(isForceSuspended);
             }
         }
 

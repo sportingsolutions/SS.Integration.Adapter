@@ -316,9 +316,9 @@ namespace SS.Integration.Adapter.MarketRules.Model
             return clone;
         }
 
-        public void SetForcedSuspensionState()
+        public void SetForcedSuspensionState(bool isSuspended = true)
         {
-            IsForcedSuspended = true;
+            IsForcedSuspended = isSuspended;
         }
 
         #endregion

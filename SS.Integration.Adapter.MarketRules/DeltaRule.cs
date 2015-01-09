@@ -65,7 +65,7 @@ namespace SS.Integration.Adapter.MarketRules
                     IMarketState state = oldState[mkt.Id];
                     
                     // do not apply the delta rule on markets which have 
-                    // been put in a foreced suspended state
+                    // been put in a forced suspended state
                     if (state.IsForcedSuspended)
                         continue;
 
