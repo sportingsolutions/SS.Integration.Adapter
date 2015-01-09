@@ -40,7 +40,7 @@
                 case 0: return 'In Setup';
                 case 1: return 'Ready';
                 case 2: return 'PreMatch';
-                case 3: return 'Running';
+                case 3: return 'In Play';
                 case 4: return 'Over';
             }
 
@@ -172,8 +172,6 @@
                     global = null;
                     globalCount = 0;
                 });
-
-
             },
         };
     }]);

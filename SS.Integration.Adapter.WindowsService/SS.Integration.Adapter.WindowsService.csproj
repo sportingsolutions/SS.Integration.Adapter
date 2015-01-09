@@ -115,6 +115,10 @@
       <Project>{b11dbc1f-95e5-44d3-8896-78482d84fb07}</Project>
       <Name>SS.Integration.Adapter.Diagnostics.Model</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Adapter.Diagnostics.RestService\SS.Integration.Adapter.Diagnostics.RestService.csproj">
+      <Project>{358e7882-2ebb-49ac-a3a1-4986b40d56bf}</Project>
+      <Name>SS.Integration.Adapter.Diagnostics.RestService</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Adapter.Diagnostics\SS.Integration.Adapter.Diagnostics.csproj">
       <Project>{f12cc40d-b6bb-4142-bab0-af3a6e5a4eee}</Project>
       <Name>SS.Integration.Adapter.Diagnostics</Name>

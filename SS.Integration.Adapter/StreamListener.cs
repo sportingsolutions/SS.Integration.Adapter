@@ -958,6 +958,7 @@ namespace SS.Integration.Adapter
             
             try
             {
+
                 if (isFullSnapshot && !VerifySequenceOnSnapshot(snapshot)) return;
                 if (IsDisposing || IsStopping)
                 {

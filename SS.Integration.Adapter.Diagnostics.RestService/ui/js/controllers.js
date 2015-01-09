@@ -122,7 +122,7 @@
                 // this groups processing entries using the sequence number (we can have multiple processing entries with the same sequence)
                 $.each(this.ProcessingEntries, function (index, value) {
                     if (last != value.Sequence) {
-                        outer.GroupedProcessingEntries.push({ sequence: value.Sequence, items: new Array() });
+                        outer.GroupedProcessingEntries.push({ sequence: parseInt(value.Sequence), items: new Array() });
                         last = value.Sequence;
                     }
 
@@ -236,6 +236,8 @@
 
             $scope.$on(config.pushNotification.events.Errors, function (events, args) {
                 if (!args) return;
+
+                $rootScope.$broadcast('on-error-notification-received', args);
             });
 
             // update the adapter's details with new data
@@ -253,7 +255,7 @@
 
             // this allows us to clear all the currently displayed notifications
             $scope.clearNotifications = function () {
-                $rootScope.$broadcast('on-error-notification-clear-all', { text: new Date().toString() });
+                $rootScope.$broadcast('on-error-notification-clear-all');
             }
 
             // function for redirecting to the fixture's page when a fixture's id is given
