@@ -1,5 +1,5 @@
 ﻿<div class="well">
-    <h3>Fixture: {{fixture.Description}} ({{fixture.Id}}) @ {{fixture.StartTime | date:'dd MMM yyyy hh:mm' }}</h3>
+    <h3>Fixture: {{fixture.Description}} ({{fixture.Id}}) @ {{fixture.StartTime | date:"dd MMM yyyy '-' hh:mm" }}</h3>
     <div class="panel" data-ng-class="{'panel-danger':fixture.IsInErrorState, 'panel-success': !fixture.IsInErrorState}">
         <div class="panel-heading">
             <div class="container-fluid">
@@ -36,7 +36,7 @@
                                 <dt>Description</dt>
                                 <dd><i>{{fixture.Description}}</i></dd>
                                 <dt>Start Time</dt>
-                                <dd><i>{{fixture.StartTime | date:'dd MMM yyyy at hh:mm' }}</i></dd>
+                                <dd><i>{{fixture.StartTime | date:"dd MMM yyyy 'at' hh:mm" }}</i></dd>
                                 <dt>Competition</dt>
                                 <dd><i>{{fixture.Competition}}</i></dd>
                                 <dt>Competition Id</dt>
@@ -104,7 +104,7 @@
                             <th class="col-md-1">Status</th>
                             <th class="col-md-7"></th>
                         </tr>
-                        <tr data-ng-repeat-start="update in fixture.GroupedProcessingEntries | orderBy:+sequence" data-ng-class="{danger: update.Exception}">
+                        <tr data-ng-repeat-start="update in fixture.GroupedProcessingEntries | orderBy:'-sequence'" data-ng-class="{danger: update.Exception}">
                             <td class="col-md-1"><strong>{{update.sequence}}</strong></td>
                             <td class="col-md-2"><i>{{update.items[0].Timestamp | date:'dd MMM yyyy hh:mm:ss'}}</i></td>
                             <td class="col-md-1">{{update.items[0].Epoch}}</td>

@@ -32,7 +32,9 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
             if(details == null)
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
 
-            return Request.CreateResponse(HttpStatusCode.OK, details, UrlUtilities.JSON_MEDIA_TYPE);
+            var res = Request.CreateResponse(HttpStatusCode.OK, details, UrlUtilities.JSON_MEDIA_TYPE);
+            res.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true };
+            return res;
         }
 
         [Route("{fixtureId}/history")]
@@ -43,7 +45,9 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
             if (history == null)
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
 
-            return Request.CreateResponse(HttpStatusCode.OK, history, UrlUtilities.JSON_MEDIA_TYPE);
+            var res = Request.CreateResponse(HttpStatusCode.OK, history, UrlUtilities.JSON_MEDIA_TYPE);
+            res.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true };
+            return res;
         }
 
         [Route("{fixtureId}/takesnapshot")]

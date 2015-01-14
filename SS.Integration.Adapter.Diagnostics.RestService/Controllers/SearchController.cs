@@ -33,7 +33,10 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
                 foreach (var fixture in Service.ServiceInstance.Supervisor.GetFixtures())
                 {
                     if (string.Equals(fixtureId, fixture.Id))
-                        return Request.CreateResponse(HttpStatusCode.OK, fixture, UrlUtilities.JSON_MEDIA_TYPE);
+                    {
+                        var res = Request.CreateResponse(HttpStatusCode.OK, fixture, UrlUtilities.JSON_MEDIA_TYPE);
+                        res.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true };
+                    }
                 }
             }
 

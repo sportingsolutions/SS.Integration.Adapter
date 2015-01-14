@@ -32,7 +32,9 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
         public HttpResponseMessage GetSports()
         {
             var sports = Service.ServiceInstance.Supervisor.GetSports();
-            return Request.CreateResponse(HttpStatusCode.OK, sports, UrlUtilities.JSON_MEDIA_TYPE);
+            var res = Request.CreateResponse(HttpStatusCode.OK, sports, UrlUtilities.JSON_MEDIA_TYPE);
+            res.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true };
+            return res;
         }
 
         [Route("sports/{sportCode}")]
@@ -43,7 +45,9 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
             if(sport == null)
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
 
-            return Request.CreateResponse(HttpStatusCode.OK, sport, UrlUtilities.JSON_MEDIA_TYPE);
+            var res =  Request.CreateResponse(HttpStatusCode.OK, sport, UrlUtilities.JSON_MEDIA_TYPE);
+            res.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true };
+            return res;
         }
     }
 }

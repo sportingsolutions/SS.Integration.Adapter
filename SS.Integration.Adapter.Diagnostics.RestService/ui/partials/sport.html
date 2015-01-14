@@ -42,6 +42,9 @@
                     </div>
                     <button type="submit" class="btn btn-primary"><i class="glyphicon glyphicon-refresh"></i></button>
                 </form>
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="~/ui/index.html">See other sports</a></li>
+                </ul>
             </div>
 
         </div>
@@ -55,8 +58,10 @@
         <dd>{{sport.InErrorState}}</dd>
     </dl>
     
-    <p>Last update: <i>{{lastUpdate | date: 'HH:mm:ss dd-MM-yyyy'}}</i> <button type="button" class="btn btn-primary right" data-ng-click="update()">Update list of fixtures</button></p>
+    <p>Fixture count updated at: <i>{{lastUpdate | date: 'HH:mm:ss dd-MM-yyyy'}}</i> <button type="button" class="btn btn-primary right" data-ng-click="update()">Update list of fixtures</button></p>
+    <small><i>The list of fixtures is not automatically updated - refresh the page or click on "Update list of fixture" to update it</i></small>
     <br/>
+    <br />
     <table class="table table-hover">
         <tr>
             <th>Id</th>
