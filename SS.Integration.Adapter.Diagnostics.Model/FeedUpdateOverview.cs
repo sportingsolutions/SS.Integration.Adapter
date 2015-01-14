@@ -18,6 +18,7 @@ using SS.Integration.Common;
 
 namespace SS.Integration.Adapter.Diagnostics.Model
 {
+    [Serializable]
     public class FeedUpdateOverview : ICloneable
     {
         public int Sequence { get; set; }

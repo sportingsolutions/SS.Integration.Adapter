@@ -13,6 +13,8 @@
 //limitations under the License.
 
 
+using System.Security.Cryptography.X509Certificates;
+
 namespace SS.Integration.Adapter.Interface
 {
     public interface ISettings
@@ -108,5 +110,7 @@ namespace SS.Integration.Adapter.Interface
         bool UseSupervisor { get; }
 
         int ProcessingLockTimeOutInSecs { get; }
+
+        string SupervisorStatePath { get; }
     }
 }

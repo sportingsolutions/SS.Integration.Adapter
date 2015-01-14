@@ -20,6 +20,7 @@ using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Diagnostics.Model
 {
+    [Serializable]
     public class FixtureOverview : IFixtureOverview
     {
         private const int MAX_AUDIT_SIZE = 10;

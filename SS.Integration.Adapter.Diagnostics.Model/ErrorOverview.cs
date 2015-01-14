@@ -16,6 +16,7 @@ using System;
 
 namespace SS.Integration.Adapter.Diagnostics.Model
 {
+    [Serializable]
     public class ErrorOverview
     {
         public bool IsErrored { get; set; }

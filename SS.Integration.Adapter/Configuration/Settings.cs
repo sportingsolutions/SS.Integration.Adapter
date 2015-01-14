@@ -34,6 +34,7 @@ namespace SS.Integration.Adapter.Configuration
         private const bool DEFAULT_USE_STATS = false;
         private const bool DEFAULT_USE_SUPERVISOR = false;
         private const int DEFAULT_PROCESSING_LOCK_TIMEOUT = 720;
+        private const string DEFAULT_SUPERVISOR_STATE_PATH = @"SupervisorState";
 
         public Settings()
         {
@@ -83,6 +84,9 @@ namespace SS.Integration.Adapter.Configuration
 
             value = ConfigurationManager.AppSettings["processingLockTimeOutInSecs"];
             ProcessingLockTimeOutInSecs = string.IsNullOrEmpty(value) ? DEFAULT_PROCESSING_LOCK_TIMEOUT : Convert.ToInt32(value);
+
+            value = ConfigurationManager.AppSettings["supervisorStatePath"];
+            SupervisorStatePath = string.IsNullOrEmpty(value) ? DEFAULT_SUPERVISOR_STATE_PATH : value;
         }
 
         public string MarketFiltersDirectory { get; private set; }
@@ -118,5 +122,7 @@ namespace SS.Integration.Adapter.Configuration
         public bool UseSupervisor { get; private set; }
         
         public int ProcessingLockTimeOutInSecs { get; private set; }
+
+        public string SupervisorStatePath { get; private set; }
     }
 }

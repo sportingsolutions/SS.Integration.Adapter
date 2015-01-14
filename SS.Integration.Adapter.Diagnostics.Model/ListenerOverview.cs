@@ -19,6 +19,7 @@ using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Diagnostics.Model
 {
+    [Serializable]
     public class ListenerOverview : IListenerOverview
     {
         private bool _hasChanged = false;

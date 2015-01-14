@@ -27,7 +27,6 @@ using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Adapter.ProcessState;
 
 namespace SS.Integration.Adapter.Diagnostics
 {
@@ -35,19 +34,35 @@ namespace SS.Integration.Adapter.Diagnostics
     {
         private ILog _logger = LogManager.GetLogger(typeof(Supervisor));
 
-        private readonly ConcurrentDictionary<string, FixtureOverview> _fixtures;
+        private ConcurrentDictionary<string, FixtureOverview> _fixtures;
         private readonly ConcurrentDictionary<string, SportOverview> _sportOverviews;
 
         private readonly Subject<IFixtureOverviewDelta> _fixtureTracker = new Subject<IFixtureOverviewDelta>();
         private readonly Subject<ISportOverview> _sportTracker = new Subject<ISportOverview>();
 
         private IDisposable _publisher;
-        
-        public Supervisor(ISettings settings) : base(settings)
+        private IObjectProvider<ConcurrentDictionary<string, FixtureOverview>> _objectStore;
+
+        public Supervisor(ISettings settings, IObjectProvider<ConcurrentDictionary<string, FixtureOverview>> supervisorStore)
+            : base(settings)
         {
-            _fixtures = new ConcurrentDictionary<string, FixtureOverview>();
+            _objectStore = supervisorStore;
+            _fixtures = _objectStore.GetObject(null) ?? new ConcurrentDictionary<string, FixtureOverview>();
             _sportOverviews = new ConcurrentDictionary<string, SportOverview>();
+            SetupSports();
             Proxy = new SupervisorProxy(this);
+        }
+
+        public ISupervisorProxy Proxy { get; set; }
+        public ISupervisorService Service { get; set; }
+
+        private void SetupSports()
+        {
+            foreach (var sportGroup in _fixtures.Values.GroupBy(f => f.Sport))
+            {
+                UpdateSportDetails(sportGroup.Key);
+            }
+
         }
 
         public void Initialise()
@@ -57,8 +72,17 @@ namespace SS.Integration.Adapter.Diagnostics
             Service.Start();
         }
 
-        public ISupervisorProxy Proxy { get; set; }
-        public ISupervisorService Service { get; set; }
+        private void SaveState()
+        {
+            try
+            {
+                _objectStore.SetObject(null, _fixtures);
+            }
+            catch (Exception ex)
+            {
+                _logger.ErrorFormat("Error during saving supervisor state {0}",ex);
+            }
+        }
 
         protected override IListener CreateStreamListenerObject(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState,
             IStateManager stateManager)
@@ -105,19 +129,21 @@ namespace SS.Integration.Adapter.Diagnostics
             streamListener.OnSuspend -= StreamListenerSuspended;
             streamListener.OnStop -= StreamListenerStop;
             streamListener.OnDisconnected -= StreamListenerDisconnected;
-        }
 
+            SaveState();
+        }
+        
         public override void CreateStreamListener(IResourceFacade resource, IAdapterPlugin platformConnector)
         {
             base.CreateStreamListener(resource, platformConnector);
             var listener = GetStreamListenerObject(resource.Id);
-            
+
             UpdateStateFromStreamListener(listener);
             var fixtureOverview = GetFixtureOverview(listener.FixtureId) as FixtureOverview;
-            
+
             PublishDelta(fixtureOverview);
         }
-        
+
         public override void StopStreaming(string fixtureId)
         {
             var listener = GetStreamListener(fixtureId);
@@ -184,8 +210,10 @@ namespace SS.Integration.Adapter.Diagnostics
             fixtureOverview.ListenerOverview.IsSuspended = false;
 
             fixtureOverview.FeedUpdate = CreateFeedUpdate(e, true);
-            
+
             UpdateStateFromEventDetails(e);
+
+            SaveState();
         }
 
         private void StreamListenerFlagsChanged(object sender, StreamListenerEventArgs e)
@@ -203,7 +231,7 @@ namespace SS.Integration.Adapter.Diagnostics
                 IsErrored = e.Exception != null,
                 Sequence = e.CurrentSequence
             };
-            
+
             UpdateStateFromEventDetails(e);
         }
 
@@ -211,7 +239,7 @@ namespace SS.Integration.Adapter.Diagnostics
         {
             UpdateStateFromEventDetails(e);
         }
-        
+
         private void StreamListenerConnected(object sender, StreamListenerEventArgs e)
         {
             UpdateStateFromEventDetails(e);
@@ -226,7 +254,7 @@ namespace SS.Integration.Adapter.Diagnostics
             //skips market rules
             listener.ForceSnapshot();
 
-            _logger.InfoFormat("Forced snapshot for fixtureId={0}",fixtureId);
+            _logger.InfoFormat("Forced snapshot for fixtureId={0}", fixtureId);
         }
 
         public override void StartStreaming(string fixtureId)
@@ -245,7 +273,7 @@ namespace SS.Integration.Adapter.Diagnostics
         private void UpdateStateFromEventDetails(StreamListenerEventArgs streamListenerEventArgs)
         {
             UpdateStateFromStreamListener(streamListenerEventArgs.Listener as StreamListener);
-            
+
             var fixtureOverview = GetFixtureOverview(streamListenerEventArgs.Listener.FixtureId) as FixtureOverview;
             fixtureOverview.ListenerOverview.Sequence = streamListenerEventArgs.CurrentSequence;
             fixtureOverview.ListenerOverview.Epoch = streamListenerEventArgs.Epoch;
@@ -267,29 +295,29 @@ namespace SS.Integration.Adapter.Diagnostics
             {
                 fixtureOverview.LastError.ResolvedAt = DateTime.UtcNow;
                 fixtureOverview.LastError.IsErrored = false;
-            }         
+            }
 
             PublishDelta(fixtureOverview);
 
-            UpdateSportDetails(streamListenerEventArgs);
+            UpdateSportDetails(streamListenerEventArgs.Listener.Sport);
         }
 
-        private void UpdateSportDetails(StreamListenerEventArgs streamListenerEventArgs)
+        private void UpdateSportDetails(string sportName)
         {
             var sportOverview = new SportOverview();
-            sportOverview.Name = streamListenerEventArgs.Listener.Sport;
+            sportOverview.Name = sportName;
 
-            
-            var fixturesForSport = _fixtures.Values.Where(f => 
-                                                            f.Sport == sportOverview.Name 
+
+            var fixturesForSport = _fixtures.Values.Where(f =>
+                                                            f.Sport == sportOverview.Name
                                                             && (f.ListenerOverview.IsDeleted.HasValue && !f.ListenerOverview.IsDeleted.Value || !f.ListenerOverview.IsDeleted.HasValue))
                                                             .ToList();
             sportOverview.Total = fixturesForSport.Count;
             sportOverview.InErrorState = fixturesForSport.Count(f => f.ListenerOverview.IsErrored.HasValue && f.ListenerOverview.IsErrored.Value);
 
             var groupedByMatchStatus = fixturesForSport
-                .GroupBy(f => f.ListenerOverview.MatchStatus,f=> f.ListenerOverview.MatchStatus)
-                .Where(g=> g.Key.HasValue).ToDictionary(g=> g.Key.Value,g=> g.Count());
+                .GroupBy(f => f.ListenerOverview.MatchStatus, f => f.ListenerOverview.MatchStatus)
+                .Where(g => g.Key.HasValue).ToDictionary(g => g.Key.Value, g => g.Count());
 
             if (groupedByMatchStatus.Any())
             {
@@ -333,7 +361,7 @@ namespace SS.Integration.Adapter.Diagnostics
             fixtureOverview.ListenerOverview.IsStreaming = listener.IsStreaming;
             fixtureOverview.ListenerOverview.IsOver = listener.IsFixtureEnded;
             fixtureOverview.ListenerOverview.IsErrored = listener.IsErrored;
-            
+
             fixtureOverview.TimeStamp = DateTime.UtcNow;
         }
 
@@ -357,7 +385,7 @@ namespace SS.Integration.Adapter.Diagnostics
         {
             return GetStreamListener(fixtureId) as StreamListener;
         }
-        
+
         public IObservable<IFixtureOverviewDelta> GetFixtureOverviewStream(string fixtureId)
         {
             return _fixtureTracker.Where(f => f.Id == fixtureId);
@@ -418,10 +446,12 @@ namespace SS.Integration.Adapter.Diagnostics
             var result = base.RemoveStreamListener(fixtureId);
 
             var fixtureState = EventState.GetFixtureState(fixtureId);
-            if(fixtureState != null && fixtureState.MatchStatus == MatchStatus.MatchOver)
+            if (fixtureState != null && fixtureState.MatchStatus == MatchStatus.MatchOver)
             {
                 FixtureOverview tempObj = null;
                 _fixtures.TryRemove(fixtureId, out tempObj);
+
+                SaveState();
             }
 
             return result;
@@ -438,6 +468,8 @@ namespace SS.Integration.Adapter.Diagnostics
                 Service.Stop();
 
             Proxy.Dispose();
+
+            SaveState();
         }
 
         #endregion

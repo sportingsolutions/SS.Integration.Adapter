@@ -13,12 +13,15 @@
 //limitations under the License.
 
 
+using System.Collections.Concurrent;
 using Ninject.Modules;
 using Ninject;
 using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Diagnostics;
+using SS.Integration.Adapter.Diagnostics.Model;
 using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Adapter.UdapiClient;
 
 namespace SS.Integration.Adapter.WindowsService
@@ -31,6 +34,10 @@ namespace SS.Integration.Adapter.WindowsService
             Bind<ISettings>().To<Settings>().InSingletonScope();
             Bind<IReconnectStrategy>().To<DefaultReconnectStrategy>().InSingletonScope();
             Bind<IServiceFacade>().To<UdapiServiceFacade>();
+
+            var supervisorStateManager = new SupervisorStateManager(Kernel.Get<ISettings>());
+            Bind<IObjectProvider<ConcurrentDictionary<string, FixtureOverview>>>()
+                .ToConstant(supervisorStateManager.StateProvider);
 
             Bind<IStreamListenerManager>().To<StreamListenerManager>().When(req => Kernel.Get<ISettings>().UseSupervisor == false).InSingletonScope();
             Bind<IStreamListenerManager, ISupervisor>().To<Supervisor>().When(req => Kernel.Get<ISettings>().UseSupervisor).InSingletonScope();

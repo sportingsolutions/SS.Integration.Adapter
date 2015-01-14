@@ -12,10 +12,12 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using SS.Integration.Adapter.Diagnostics.Model.Interface;
 
 namespace SS.Integration.Adapter.Diagnostics.Model
 {
+    [Serializable]
     public class FixtureOverviewDelta : IFixtureOverviewDelta
     {
         public string Id { get; internal set; }

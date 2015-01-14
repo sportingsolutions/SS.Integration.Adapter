@@ -19,6 +19,7 @@ using Moq;
 using NUnit.Framework;
 using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Adapter.ProcessState;
 
 namespace SS.Integration.Adapter.Tests

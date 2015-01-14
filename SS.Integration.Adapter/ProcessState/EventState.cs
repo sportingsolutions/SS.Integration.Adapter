@@ -23,6 +23,7 @@ using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using log4net;
 using Newtonsoft.Json;
+using SS.Integration.Adapter.Model.Interfaces;
 
 
 namespace SS.Integration.Adapter.ProcessState

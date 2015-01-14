@@ -14,7 +14,7 @@
 
 using System.Reflection;
 using System.IO;
-using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.ProcessState
 {

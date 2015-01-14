@@ -63,6 +63,7 @@
     <Compile Include="Interfaces\IMarketState.cs" />
     <Compile Include="Interfaces\IMarketStateCollection.cs" />
     <Compile Include="Interfaces\ISelectionState.cs" />
+    <Compile Include="Interfaces\IStoreProvider.cs" />
     <Compile Include="MarketRuleAddIntent.cs" />
     <Compile Include="MarketRuleEditIntent.cs" />
     <Compile Include="MarketRuleResultIntent.cs" />
@@ -71,6 +72,8 @@
     <Compile Include="Interfaces\IAdapterPlugin.cs" />
     <Compile Include="Market.cs" />
     <Compile Include="Participant.cs" />
+    <Compile Include="ProcessState\BinaryStoreProvider.cs" />
+    <Compile Include="ProcessState\FileStoreProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RollingMarket.cs" />
     <Compile Include="RollingMarketScore.cs" />

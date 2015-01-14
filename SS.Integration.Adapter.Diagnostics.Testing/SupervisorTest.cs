@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Concurrency;
@@ -24,6 +25,7 @@ using Moq;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using SportingSolutions.Udapi.Sdk.Events;
+using SS.Integration.Adapter.Diagnostics.Model;
 using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
 using SS.Integration.Adapter.Interface;
@@ -42,6 +44,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
         private static Mock<IAdapterPlugin> _connector;
         private static Supervisor _supervisor;
         private static StateManager _provider;
+        private static Mock<IObjectProvider<ConcurrentDictionary<string, FixtureOverview>>> _objectProvider;
 
         [SetUp]
         public static void SetUpMocks()
@@ -56,12 +59,13 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             _resource = new Mock<IResourceFacade>();
             _resource.Setup(r => r.Sport).Returns("FantasyFootball");
             _resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, new EventArgs());
+            _objectProvider = new Mock <IObjectProvider<ConcurrentDictionary<string, FixtureOverview>>>();
 
             _connector = new Mock<IAdapterPlugin>();
             
             var stateManager = new StateManager(new Mock<ISettings>().Object);
 
-            _supervisor = new Supervisor(_settings.Object);
+            _supervisor = new Supervisor(_settings.Object,_objectProvider.Object);
             _supervisor.StateManager = stateManager;
 
             var supervisorService = new Mock<ISupervisorService>();

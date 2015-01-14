@@ -17,6 +17,7 @@ using SS.Integration.Adapter.Diagnostics.Model.Interface;
 
 namespace SS.Integration.Adapter.Diagnostics.Model
 {
+    [Serializable]
     public class SportOverview : ISportOverview, IEquatable<SportOverview>
     {
         public string Name { get; set; }

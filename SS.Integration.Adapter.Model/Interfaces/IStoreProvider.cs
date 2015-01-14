@@ -13,7 +13,7 @@
 //limitations under the License.
 
 
-namespace SS.Integration.Adapter.Interface
+namespace SS.Integration.Adapter.Model.Interfaces
 {
     public interface IStoreProvider
     {
