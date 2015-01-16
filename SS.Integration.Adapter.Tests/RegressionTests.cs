@@ -148,7 +148,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 

@@ -33,6 +33,8 @@ namespace SS.Integration.Adapter.Configuration
         private const int DEFAULT_CACHE_EXPIRY_MINUTES_VALUE = 15;
         private const bool DEFAULT_ENABLE_DELTA_RULE = false;
         private const bool DEFAULT_USE_STATS = false;
+        private const string DEFAULT_STOP_STREAMING_DELAYED_SPORTS = "";
+        private const double DEFAULT_STOP_STREAMING_DELAY_MINUTES = 0;
 
         public Settings()
         {
@@ -82,6 +84,12 @@ namespace SS.Integration.Adapter.Configuration
 
             value = ConfigurationManager.AppSettings["stateProviderPath"];
             StateProviderPath = string.IsNullOrEmpty(value) ? null : value;
+
+            value = ConfigurationManager.AppSettings["stopStreamingDelayMinutes"];
+            StopStreamingDelayMinutes = string.IsNullOrEmpty(value) ? DEFAULT_STOP_STREAMING_DELAY_MINUTES : Convert.ToInt32(value);
+
+            value = ConfigurationManager.AppSettings["stopStreamingDelayedSports"];
+            StopStreamingDelayedSports = string.IsNullOrEmpty(value) ? DEFAULT_STOP_STREAMING_DELAYED_SPORTS : value;
         }
 
         public string MarketFiltersDirectory { get; private set; }
@@ -118,5 +126,13 @@ namespace SS.Integration.Adapter.Configuration
 
         public string StateProviderPath { get; private set; }
 
+        public double StopStreamingDelayMinutes { get; private set; }
+
+        public string StopStreamingDelayedSports { get; private set; }
+
+        public bool ShouldDelayStopStreaming(string sport)
+        {
+            return string.IsNullOrEmpty(StopStreamingDelayedSports) || StopStreamingDelayedSports.Contains(sport);
+        }
     }
 }
