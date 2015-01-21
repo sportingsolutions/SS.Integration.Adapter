@@ -510,6 +510,7 @@ namespace SS.Integration.Adapter
                 IsErrored = true;
                 SuspendAndReprocessSnapshot();
                 IsErrored = !_hasRecoveredFromError;
+                RaiseEvent(OnFlagsChanged);
             }
             catch (Exception ex)
             {

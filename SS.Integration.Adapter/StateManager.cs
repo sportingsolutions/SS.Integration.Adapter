@@ -164,6 +164,14 @@ namespace SS.Integration.Adapter
             _pluginPersistanceLayer.SetObject(PLUGIN_STORE_PREFIX + state.FixtureId, state);
         }
 
+        public void RemovePluginState(string fixtureId)
+        {
+            if (string.IsNullOrEmpty(fixtureId))
+                throw new Exception("FixtureId cannot be null");
+
+            _pluginPersistanceLayer.Remove(PLUGIN_STORE_PREFIX + fixtureId);
+        }
+
         #endregion
 
         #region IStateManager

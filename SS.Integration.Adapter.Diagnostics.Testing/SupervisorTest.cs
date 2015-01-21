@@ -284,6 +284,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             resourceOne.Setup(x => x.Id).Returns(fixtureOneId);
             resourceOne.Setup(x => x.Content).Returns(new Summary());
             resourceOne.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resourceOne.Setup(x => x.Sport).Returns("Football");
             resourceOne.SetupSequence(x => x.GetSnapshot())
                 .Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureOneId)))
                 .Returns(String.Empty)
@@ -315,7 +316,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
                 //in order to generate error the resource is setup to return empty snapshot
                 //the snapshot should be taken because epoch is changed
                 SendStreamUpdate(streamUpdate);
-
+                
                 deltas.Should().NotBeEmpty();
                 deltas.FirstOrDefault(d => d.LastError != null).Should().NotBeNull();
 

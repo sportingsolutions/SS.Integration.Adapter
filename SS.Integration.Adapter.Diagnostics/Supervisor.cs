@@ -164,6 +164,7 @@ namespace SS.Integration.Adapter.Diagnostics
                 fixtureOverview.FeedUpdate = feedUpdate;
             }
 
+            UpdateLastErrorResolved(e, fixtureOverview);
             UpdateStateFromEventDetails(e);
         }
 
@@ -216,9 +217,25 @@ namespace SS.Integration.Adapter.Diagnostics
             SaveState();
         }
 
-        private void StreamListenerFlagsChanged(object sender, StreamListenerEventArgs e)
+        private void StreamListenerFlagsChanged(object sender, StreamListenerEventArgs streamListenerEventArgs)
         {
-            UpdateStateFromEventDetails(e);
+            var fixtureOverview = GetFixtureOverview(streamListenerEventArgs.Listener.FixtureId) as FixtureOverview;
+
+            UpdateLastErrorResolved(streamListenerEventArgs, fixtureOverview);
+
+            UpdateStateFromEventDetails(streamListenerEventArgs);
+        }
+
+        private static void UpdateLastErrorResolved(StreamListenerEventArgs streamListenerEventArgs,
+            FixtureOverview fixtureOverview)
+        {
+            if (fixtureOverview.LastError != null
+                && fixtureOverview.LastError.IsErrored
+                && !streamListenerEventArgs.Listener.IsErrored)
+            {
+                fixtureOverview.LastError.ResolvedAt = DateTime.UtcNow;
+                fixtureOverview.LastError.IsErrored = false;
+            }
         }
 
         private void StreamListenerErrored(object sender, StreamListenerEventArgs e)
@@ -288,15 +305,7 @@ namespace SS.Integration.Adapter.Diagnostics
                 fixtureOverview.CompetitionId = streamListenerEventArgs.CompetitionId;
                 fixtureOverview.CompetitionName = streamListenerEventArgs.CompetitionName;
             }
-
-            if (fixtureOverview.LastError != null
-                && fixtureOverview.LastError.IsErrored
-                && !streamListenerEventArgs.Listener.IsErrored)
-            {
-                fixtureOverview.LastError.ResolvedAt = DateTime.UtcNow;
-                fixtureOverview.LastError.IsErrored = false;
-            }
-
+            
             PublishDelta(fixtureOverview);
 
             UpdateSportDetails(streamListenerEventArgs.Listener.Sport);
@@ -429,10 +438,20 @@ namespace SS.Integration.Adapter.Diagnostics
             return _sportTracker;
         }
 
-
+        /// <summary>
+        /// Stops stream listener and removed all Adapter state + plugin state
+        /// </summary>
+        /// <param name="fixtureId"></param>
         public void RemoveFixtureState(string fixtureId)
         {
+            //we don't want to have stream listener running while we remove it's state
+            StopStreaming(fixtureId);
+            RemoveStreamListener(fixtureId);
+
             StateManager.ClearState(fixtureId);
+            EventState.RemoveFixture(fixtureId);
+
+            StateProviderProxy.StateProvider.RemovePluginState(fixtureId);
         }
 
         public void ForceListenerStop(string fixtureId)
