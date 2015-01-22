@@ -324,44 +324,45 @@ namespace SS.Integration.Adapter
                 _logger.WarnFormat("Cannot find sport={0} in UDAPI....", sport);
                 return;
             }
-            
+
             if (resources.Count == 0)
             {
                 _logger.DebugFormat("There are currently no fixtures for sport={0} in UDAPI", sport);
-                return;
             }
-            
-            var processingFactor = resources.Count / 10;
-
-            _logger.DebugFormat("Received count={0} fixtures to process in sport={1}", resources.Count, sport);
-
-            var po = new ParallelOptions { MaxDegreeOfParallelism = processingFactor == 0 ? 1 : processingFactor };
-
-            if (resources.Count > 1)
+            else
             {
-                resources.Sort((x, y) =>
-                {
-                    if (x.Content.MatchStatus > y.Content.MatchStatus)
-                        return -1;
 
-                    return x.Content.MatchStatus < y.Content.MatchStatus ? 1 : DateTime.Parse(x.Content.StartTime).CompareTo(DateTime.Parse(y.Content.StartTime));
-                });
+                var processingFactor = resources.Count / 10;
+
+                _logger.DebugFormat("Received count={0} fixtures to process in sport={1}", resources.Count, sport);
+
+                var po = new ParallelOptions { MaxDegreeOfParallelism = processingFactor == 0 ? 1 : processingFactor };
+
+                if (resources.Count > 1)
+                {
+                    resources.Sort((x, y) =>
+                    {
+                        if (x.Content.MatchStatus > y.Content.MatchStatus)
+                            return -1;
+
+                        return x.Content.MatchStatus < y.Content.MatchStatus ? 1 : DateTime.Parse(x.Content.StartTime).CompareTo(DateTime.Parse(y.Content.StartTime));
+                    });
+                }
+
+                Parallel.ForEach(resources,
+                    po,
+                    resource =>
+                    {
+                        try
+                        {
+                            ProcessResource(sport, resource);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Error(string.Format("An error occured while processing {0} for sport={1}", resource, sport), ex);
+                        }
+                    });
             }
-
-            Parallel.ForEach(resources,
-                po,
-                resource =>
-                {
-                    try
-                    {
-                        ProcessResource(sport, resource);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Error(string.Format("An error occured while processing {0} for sport={1}", resource, sport), ex);
-                    }
-                });
-            
 
             RemoveDeletedFixtures(sport, resources);
             
