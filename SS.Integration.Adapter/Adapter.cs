@@ -485,7 +485,7 @@ namespace SS.Integration.Adapter
 
                         _logger.DebugFormat("Attempting to create a Listener for sport={0} and {1}", resource.Sport, resource);
 
-                        var listener = new StreamListener(resource, PlatformConnector, EventState, StateManager);
+                        var listener = new StreamListener(resource, PlatformConnector, EventState, StateManager, Settings);
 
                         if (!listener.Start())
                         {

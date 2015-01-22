@@ -15,6 +15,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Events;
@@ -46,6 +47,7 @@ namespace SS.Integration.Adapter
         private readonly IStateManager _stateManager;
         private readonly IStatsHandle _Stats;
         private readonly IMarketRulesManager _marketsRuleManager;
+        private readonly ISettings _settings;
 
         private int _currentSequence;
         private int _currentEpoch;
@@ -53,8 +55,9 @@ namespace SS.Integration.Adapter
         private bool _hasRecoveredFromError;
         private bool _isFirstSnapshotProcessed;
         private bool _isProcessingFirstSnapshot;
+        private bool _performingDelayedStop;
 
-        public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IStateManager stateManager)
+        public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IStateManager stateManager, ISettings settings)
         {
 
             if (resource == null)
@@ -70,6 +73,7 @@ namespace SS.Integration.Adapter
             _platformConnector = platformConnector;
             _eventState = eventState;
             _stateManager = stateManager;
+            _settings = settings;
 
             _currentSequence = resource.Content.Sequence;
             _lastSequenceProcessedInSnapshot = -1;
@@ -77,6 +81,7 @@ namespace SS.Integration.Adapter
             _hasRecoveredFromError = true;
             _isFirstSnapshotProcessed = false;
             _isProcessingFirstSnapshot = false;
+            _performingDelayedStop = false;
 
             _marketsRuleManager = stateManager.CreateNewMarketRuleManager(resource.Id);
 
@@ -564,6 +569,7 @@ namespace SS.Integration.Adapter
                         _platformConnector.ProcessMatchStatus(fixtureDelta);
                     }
 
+                    bool stopStreaming = true;
                     if ((fixtureDelta.IsMatchStatusChanged && fixtureDelta.IsMatchOver) || fixtureDelta.IsDeleted)
                     {
 
@@ -573,10 +579,12 @@ namespace SS.Integration.Adapter
                         }
                         else  // Match Over
                         {
-                            ProcessMatchOver(fixtureDelta);
+                            stopStreaming = ProcessMatchOver(fixtureDelta);
                         }
 
-                        Stop();
+                        if(stopStreaming)
+                            Stop();
+
                         return;
                     }
 
@@ -996,7 +1004,7 @@ namespace SS.Integration.Adapter
             ProcessFixtureDelete(fixture);
         }
 
-        private void ProcessMatchOver(Fixture fixtureDelta)
+        private bool ProcessMatchOver(Fixture fixtureDelta)
         {
             _logger.InfoFormat("{0} is Match Over. Suspending all markets and stopping the stream.", _resource);
 
@@ -1008,17 +1016,41 @@ namespace SS.Integration.Adapter
                 if (IsErrored)
                 {
                     _logger.WarnFormat("Fixture {0} couldn't retrieve or process the match over snapshot. It will retry shortly.",fixtureDelta);
-                    return;
+                    return true;
                 }
                 
-                this.IsFixtureEnded = true;
 
+                if (_settings.StopStreamingDelayMinutes != 0 && _settings.ShouldDelayStopStreaming(Sport))
+                {
+                    _logger.InfoFormat("Streaming for {0} will be stopped in {1} minutes", _resource, _settings.StopStreamingDelayMinutes);
+                    Task.Factory.StartNew(PerformDelayedStop);
+                    return false;
+                }
+                
+                
                 _stateManager.ClearState(_resource.Id);
             }
             catch (Exception e)
             {
                 _logger.Error(string.Format("An error occured while trying to process match over snapshot {0}", fixtureDelta), e);
             }
+
+            return true;
+        }
+
+        private void PerformDelayedStop()
+        {
+            if (_performingDelayedStop)
+                return;
+
+            // make sure we perform this only once
+            _performingDelayedStop = true;
+
+            Task.Delay(TimeSpan.FromMinutes(_settings.StopStreamingDelayMinutes)).Wait();
+            _logger.InfoFormat("Performing delayed stop for {0}", _resource);
+            this.IsFixtureEnded = true;
+            _stateManager.ClearState(_resource.Id);
+            Stop();
         }
 
         /// <summary>

@@ -13,6 +13,8 @@
 //limitations under the License.
 
 
+using System.Collections.Generic;
+
 namespace SS.Integration.Adapter.Interface
 {
     public interface ISettings
@@ -114,5 +116,32 @@ namespace SS.Integration.Adapter.Interface
         /// True to collect statistics
         /// </summary>
         bool StatsEnabled { get; }
+
+        /// <summary>
+        /// If != 0, the adapter will wait N
+        /// minutes after a fixture receives
+        /// a MatchOver message before
+        /// stopping streaming.
+        /// </summary>
+        double StopStreamingDelayMinutes { get; }
+
+        /// <summary>
+        /// Comma separated list of sports for which
+        /// the adapter should introduce a delay
+        /// before stopping streaming
+        /// after a fixture received a MatchOver message.
+        /// 
+        /// Null or empty string signigy "ALL" sports 
+        /// </summary>
+        string StopStreamingDelayedSports { get; }
+
+        /// <summary>
+        /// Indicates if the adapter should introduce
+        /// a delay before stop streaming for fixtures
+        /// that belong to a given sport
+        /// </summary>
+        /// <param name="sport"></param>
+        /// <returns></returns>
+        bool ShouldDelayStopStreaming(string sport);
     }
 }

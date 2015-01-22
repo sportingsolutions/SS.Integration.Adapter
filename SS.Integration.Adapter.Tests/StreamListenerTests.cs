@@ -65,9 +65,9 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixtureSnapshot));
             resource.Setup(r => r.Id).Returns("TestId");
             eventState.Setup(e => e.GetCurrentSequence(It.IsAny<string>(), It.IsAny<string>())).Returns(-1);
-            
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
+
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
 
             listener.Start();
 
@@ -98,7 +98,7 @@ namespace SS.Integration.Adapter.Tests
             //marketFilterObjectStore.Setup(x => x.GetObject(It.IsAny<string>())).Returns(new MarketStateCollection());
 
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
 
             listener.Start();
             listener.Stop();
@@ -129,7 +129,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixtureSnapshot));
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
 
             listener.Start();
 
@@ -160,7 +160,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.GetSnapshot()).Returns(() => TestHelper.GetSnapshotJson(1, 20, 0, 30));
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
 
             listener.Start();
 
@@ -188,7 +188,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
 
             listener.Start();
             listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
@@ -218,7 +218,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
 
             listener.Start();
             listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
@@ -246,7 +246,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Content).Returns(new Summary());
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
 
             listener.Start();
             listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
@@ -271,7 +271,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Content).Returns(new Summary());
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
 
             listener.Start();
             listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
@@ -299,7 +299,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Content).Returns(new Summary());
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
 
             listener.Start();
             listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
@@ -326,7 +326,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Content).Returns(new Summary());
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
 
             listener.Start();
             listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
@@ -357,7 +357,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
 
             listener.ResourceOnStreamConnected(this, EventArgs.Empty);
             listener.ResourceOnStreamDisconnected(this, EventArgs.Empty);
@@ -391,7 +391,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -402,7 +402,7 @@ namespace SS.Integration.Adapter.Tests
 
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Ready);
 
-            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.IsStreaming.Should().BeFalse();
         }
@@ -429,7 +429,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -461,7 +461,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -506,7 +506,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -559,7 +559,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -608,7 +608,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamDisconnected += null, EventArgs.Empty);
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -657,7 +657,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
 
             // STEP 3: raise 100 calls at random (short) delayes to listener.Start()
@@ -710,7 +710,7 @@ namespace SS.Integration.Adapter.Tests
             state.Setup(x => x.GetFixtureState("ABC")).Returns(fixture_state);
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -759,7 +759,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.Id).Returns("ABC");
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -809,7 +809,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -866,7 +866,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -916,7 +916,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -972,7 +972,7 @@ namespace SS.Integration.Adapter.Tests
                 .Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -1027,7 +1027,7 @@ namespace SS.Integration.Adapter.Tests
                 .Returns(FixtureJsonHelper.ToJson(secondSnapshot));
             
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -1098,7 +1098,7 @@ namespace SS.Integration.Adapter.Tests
                 .Returns(FixtureJsonHelper.ToJson(secondSnapshot));
             
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
             
             listener.Start();
 
@@ -1163,7 +1163,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -1209,7 +1209,7 @@ namespace SS.Integration.Adapter.Tests
 
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -1252,7 +1252,7 @@ namespace SS.Integration.Adapter.Tests
             resource.SetupSequence(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture)).Returns(null);
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -1313,7 +1313,7 @@ namespace SS.Integration.Adapter.Tests
 
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -1364,7 +1364,7 @@ namespace SS.Integration.Adapter.Tests
             // with returning an empty string we force the stream listener to raise an exception
             resource.Setup(x => x.GetSnapshot()).Returns(string.Empty);
 
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -1399,7 +1399,7 @@ namespace SS.Integration.Adapter.Tests
             );
 
 
-            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start().Should().BeTrue();
             listener.IsErrored.Should().BeFalse();
@@ -1414,8 +1414,8 @@ namespace SS.Integration.Adapter.Tests
             // a new snapshot while we are processing the previous one.
             connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()))
                 .Throws(new Exception("While processing the first snapshot, the plugin raised an exception"));
-            
-            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+
+            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             // an exception is raised while we process the first snapshot
             listener.Start().Should().BeFalse();
@@ -1466,7 +1466,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
             connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>())).Throws<Exception>();
 
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start().Should().BeFalse();
 
@@ -1509,7 +1509,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
             connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>())).Throws<Exception>();
 
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start().Should().BeFalse();
 
@@ -1573,7 +1573,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -1648,7 +1648,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -1720,7 +1720,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -1754,7 +1754,7 @@ namespace SS.Integration.Adapter.Tests
             matchover = false;
             deleted = false;
 
-            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider);
+            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
             listener.Start();
 
@@ -1793,6 +1793,64 @@ namespace SS.Integration.Adapter.Tests
             deleted.Should().BeFalse();
             disposed.Should().BeFalse();
             matchover.Should().BeFalse();
+        }
+    
+    
+        /// <summary>
+        /// I want to test whether a fixture correctly gets
+        /// a deleayed stop streaming request after it received
+        /// a MatchOver message
+        /// </summary>
+        [Test]
+        [Category("StreamListener")]
+        public void DelayedStopStreamingTest()
+        {
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+            settings.Setup(x => x.StopStreamingDelayMinutes).Returns(0.5);
+            settings.Setup(x => x.ShouldDelayStopStreaming(It.IsAny<string>())).Returns(true);
+
+            var provider = new StateManager(settings.Object, connector.Object);
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+
+            resource.Setup(x => x.Sport).Returns("Football");
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+
+            Fixture update = new Fixture
+            {
+                Id = "ABCD",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.MatchOver).ToString(),
+                Epoch = 2,
+                LastEpochChangeReason = new[] { (int)EpochChangeReason.MatchStatus }
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+
+            // with returning an empty string we force the stream listener to raise an exception
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+
+            listener.Start().Should().BeTrue();
+            listener.IsStreaming.Should().BeTrue();
+            listener.IsFixtureEnded.Should().BeFalse();
+
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+            listener.IsFixtureDeleted.Should().BeFalse();
+            listener.IsStreaming.Should().BeTrue();
+
+            Task.Delay(TimeSpan.FromMinutes(1)).Wait();
+
+            listener.IsFixtureEnded.Should().BeTrue();
+            listener.IsStreaming.Should().BeFalse();
+
         }
     }
 }
