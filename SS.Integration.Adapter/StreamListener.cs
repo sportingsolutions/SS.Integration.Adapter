@@ -1026,8 +1026,8 @@ namespace SS.Integration.Adapter
                     Task.Factory.StartNew(PerformDelayedStop);
                     return false;
                 }
-                
-                
+
+                IsFixtureEnded = true;
                 _stateManager.ClearState(_resource.Id);
             }
             catch (Exception e)
