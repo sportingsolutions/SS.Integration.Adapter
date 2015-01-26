@@ -69,7 +69,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixtureSnapshot));
             resource.Setup(r => r.Id).Returns("TestId");
             eventState.Setup(e => e.GetCurrentSequence(It.IsAny<string>(), It.IsAny<string>())).Returns(-1);
-            
+
             var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore,_settings.Object);
             
             listener.MonitorEvents();
@@ -1803,10 +1803,10 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            
+
             _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
 
-            var provider = new StateManager(_settings.Object,connector.Object);
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             var suspensionManager = new SuspensionManager(provider, connector.Object);
 
@@ -1824,7 +1824,7 @@ namespace SS.Integration.Adapter.Tests
                 .Returns(FixtureJsonHelper.ToJson(fixtureSnapshot))
                 .Returns(String.Empty)
                 .Returns(FixtureJsonHelper.ToJson(settledSnapshot));
-            
+
 
             // STEP 2: start the listener
             StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
@@ -1855,17 +1855,17 @@ namespace SS.Integration.Adapter.Tests
             //as a result of match status change it will get a second snapshot which is String.Empty
             //this should generate an exception
             listener.ShouldRaise("OnError")
-                .WithArgs<StreamListenerEventArgs>(e=> e.Exception != null);
-            
+                .WithArgs<StreamListenerEventArgs>(e => e.Exception != null);
+
             listener.ShouldRaise("OnSuspend");
-            
+
             //when recovered the IsErrored should clear
             listener.IsErrored.Should().BeFalse();
             listener.ShouldRaise("OnFlagsChanged")
-                .WithArgs<StreamListenerEventArgs>(e => ((StreamListener) e.Listener).IsErrored == false);
+                .WithArgs<StreamListenerEventArgs>(e => ((StreamListener)e.Listener).IsErrored == false);
 
             //simulate stream disconnection 
-            listener.ResourceOnStreamDisconnected(null,null);
+            listener.ResourceOnStreamDisconnected(null, null);
 
             listener.ShouldRaise("OnDisconnected");
 
@@ -1875,8 +1875,6 @@ namespace SS.Integration.Adapter.Tests
 
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(3), "The StreamListener was supposed to acquire 3 snasphots");
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
-
-            
         }
     }
 }

@@ -45,5 +45,6 @@ namespace SS.Integration.Adapter.Model.Interfaces
 
         void Suspend(string fixtureId, SuspensionReason reason);
 
+        void Unsuspend(string fixutreId);
     }
 }

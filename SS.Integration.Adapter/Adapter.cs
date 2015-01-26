@@ -289,11 +289,12 @@ namespace SS.Integration.Adapter
             }
             else
             {
-                var processingFactor = resources.Count/10;
+
+                var processingFactor = resources.Count / 10;
 
                 _logger.DebugFormat("Received count={0} fixtures to process in sport={1}", resources.Count, sport);
 
-                var po = new ParallelOptions {MaxDegreeOfParallelism = processingFactor == 0 ? 1 : processingFactor};
+                var po = new ParallelOptions { MaxDegreeOfParallelism = processingFactor == 0 ? 1 : processingFactor };
 
                 if (resources.Count > 1)
                 {
@@ -302,9 +303,8 @@ namespace SS.Integration.Adapter
                         if (x.Content.MatchStatus > y.Content.MatchStatus)
                             return -1;
 
-                        return x.Content.MatchStatus < y.Content.MatchStatus
-                            ? 1
-                            : DateTime.Parse(x.Content.StartTime).CompareTo(DateTime.Parse(y.Content.StartTime));
+                        return x.Content.MatchStatus < y.Content.MatchStatus ? 1 : DateTime.Parse(x.Content.StartTime).CompareTo(DateTime.Parse(y.Content.StartTime));
+                         
                     });
                 }
 
@@ -318,9 +318,7 @@ namespace SS.Integration.Adapter
                         }
                         catch (Exception ex)
                         {
-                            _logger.Error(
-                                string.Format("An error occured while processing {0} for sport={1}", resource, sport),
-                                ex);
+                            _logger.Error(string.Format("An error occured while processing {0} for sport={1}", resource, sport), ex);
                         }
                     });
             }
