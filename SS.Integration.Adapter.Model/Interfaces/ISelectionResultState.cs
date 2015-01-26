@@ -12,16 +12,17 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using SS.Integration.Adapter.Model.Interfaces;
 
-namespace SS.Integration.Adapter.Interface
+namespace SS.Integration.Adapter.Model.Interfaces
 {
-    public interface IStateManager
+    public interface ISelectionResultState
     {
-        IStateProvider StateProvider { get; }
+        int WinParticipants { get; }
+        int StakeParticipants { get; }
+        int WinPlaces { get; }
+        int StakePlaces { get; }
 
-        IMarketRulesManager CreateNewMarketRuleManager(string fixtureId);
-
-        void ClearState(string fixtureId);
+        bool IsEqualTo(ISelectionResultState result);
+        bool IsEquivalentTo(Result result);
     }
 }

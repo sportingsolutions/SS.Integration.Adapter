@@ -198,5 +198,12 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// equivalence for the selections</param>
         /// <returns></returns>
         bool IsEquivalentTo(Market market, bool checkTags, bool checkSelections);
+
+        /// <summary>
+        /// Allows to force the suspension state on a market.
+        /// When called, the IMarketState.IsForcedSuspension
+        /// property will return true.
+        /// </summary>
+        void SetForcedSuspensionState();
     }
 }

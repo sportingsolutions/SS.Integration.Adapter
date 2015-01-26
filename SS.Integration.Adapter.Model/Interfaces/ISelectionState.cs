@@ -54,6 +54,14 @@ namespace SS.Integration.Adapter.Model.Interfaces
 
         double? Line { get; }
 
+        #region Specific fields for racing fixtures
+
+        ISelectionResultState Result { get; }
+
+        ISelectionResultState PlaceResult { get; }
+
+        #endregion
+
         #region Tags
 
         /// <summary>

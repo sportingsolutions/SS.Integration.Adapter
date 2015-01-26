@@ -41,7 +41,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
     {
         private static Mock<ISettings> _settings;
         private static Mock<IResourceFacade> _resource;
-        private static Mock<IAdapterPlugin> _connector;
+        private static Mock<IAdapterPlugin> _plugin;
         private static Supervisor _supervisor;
         private static StateManager _provider;
         private static Mock<IObjectProvider<ConcurrentDictionary<string, FixtureOverview>>> _objectProvider;
@@ -53,17 +53,15 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
             _settings.Setup(x => x.EventStateFilePath).Returns(".");
             _settings.Setup(x => x.ProcessingLockTimeOutInSecs).Returns(10);
-
-            _provider = new StateManager(_settings.Object);
+            
+            _plugin = new Mock<IAdapterPlugin>();
 
             _resource = new Mock<IResourceFacade>();
             _resource.Setup(r => r.Sport).Returns("FantasyFootball");
             _resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, new EventArgs());
             _objectProvider = new Mock <IObjectProvider<ConcurrentDictionary<string, FixtureOverview>>>();
-
-            _connector = new Mock<IAdapterPlugin>();
             
-            var stateManager = new StateManager(new Mock<ISettings>().Object);
+            var stateManager = new StateManager(new Mock<ISettings>().Object,_plugin.Object);
 
             _supervisor = new Supervisor(_settings.Object,_objectProvider.Object);
             _supervisor.StateManager = stateManager;
@@ -75,9 +73,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             _supervisor.Service = supervisorService.Object;
             _supervisor.Proxy = new Mock<ISupervisorProxy>().Object;
             
-            var plugin = new Mock<IAdapterPlugin>();
-            
-            new SuspensionManager(stateManager, plugin.Object);
+            new SuspensionManager(stateManager, _plugin.Object);
 
         }
 
@@ -93,7 +89,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             _resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
             _resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
-            _supervisor.CreateStreamListener(_resource.Object, _connector.Object);
+            _supervisor.CreateStreamListener(_resource.Object, _plugin.Object);
 
             _supervisor.ForceSnapshot(fixture.Id);
             _supervisor.ForceSnapshot(fixture.Id);
@@ -102,7 +98,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
 
             //inital snapshot + 2 forced snapshots = 3
             _resource.Verify(x => x.GetSnapshot(), Times.Exactly(3));
-            _connector.Verify(x => x.ProcessSnapshot(It.Is<Fixture>(f => f.Markets.Count == 1), It.IsAny<bool>()), Times.Exactly(3));
+            _plugin.Verify(x => x.ProcessSnapshot(It.Is<Fixture>(f => f.Markets.Count == 1), It.IsAny<bool>()), Times.Exactly(3));
         }
 
         [Test]
@@ -126,8 +122,8 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             resourceTwo.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(GetSnapshotWithMarkets(fixtureTwoId)));
             resourceTwo.Setup(x => x.Sport).Returns("TestSport2");
 
-            _supervisor.CreateStreamListener(resourceOne.Object, _connector.Object);
-            _supervisor.CreateStreamListener(resourceTwo.Object, _connector.Object);
+            _supervisor.CreateStreamListener(resourceOne.Object, _plugin.Object);
+            _supervisor.CreateStreamListener(resourceTwo.Object, _plugin.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();
@@ -161,8 +157,8 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             resourceTwo.Setup(x => x.Sport).Returns("TestSport2");
             resourceTwo.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            _supervisor.CreateStreamListener(resourceOne.Object, _connector.Object);
-            _supervisor.CreateStreamListener(resourceTwo.Object, _connector.Object);
+            _supervisor.CreateStreamListener(resourceOne.Object, _plugin.Object);
+            _supervisor.CreateStreamListener(resourceTwo.Object, _plugin.Object);
             
             _supervisor.GetSports().Should().NotBeEmpty();
             _supervisor.GetSports().Count().Should().Be(2);
@@ -185,7 +181,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             var deltas = new List<IFixtureOverviewDelta>();
             var subscriber = _supervisor.GetFixtureOverviewStream().ObserveOn(NewThreadScheduler.Default).Subscribe(deltas.Add);
 
-            _supervisor.CreateStreamListener(_resource.Object, _connector.Object);
+            _supervisor.CreateStreamListener(_resource.Object, _plugin.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();
@@ -237,7 +233,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             var deltas = new List<IFixtureOverviewDelta>();
             var subscriber = _supervisor.GetFixtureOverviewStream().ObserveOn(NewThreadScheduler.Default).Subscribe(deltas.Add);
 
-            _supervisor.CreateStreamListener(_resource.Object, _connector.Object);
+            _supervisor.CreateStreamListener(_resource.Object, _plugin.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();
@@ -292,7 +288,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
 
             resourceOne.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            _supervisor.CreateStreamListener(resourceOne.Object, _connector.Object);
+            _supervisor.CreateStreamListener(resourceOne.Object, _plugin.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();
@@ -341,7 +337,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
 
             resourceOne.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            _supervisor.CreateStreamListener(resourceOne.Object, _connector.Object);
+            _supervisor.CreateStreamListener(resourceOne.Object, _plugin.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();
@@ -390,7 +386,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
 
             _resource.Setup(x => x.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            _supervisor.CreateStreamListener(_resource.Object, _connector.Object);
+            _supervisor.CreateStreamListener(_resource.Object, _plugin.Object);
 
             var fixtureOverviews = _supervisor.GetFixtures();
             fixtureOverviews.Should().NotBeNullOrEmpty();

@@ -56,6 +56,7 @@
     <Compile Include="GameState\FootballGameState.cs" />
     <Compile Include="Interfaces\IAdapterVersion.cs" />
     <Compile Include="Interfaces\IPluginFixtureState.cs" />
+    <Compile Include="Interfaces\ISelectionResultState.cs" />
     <Compile Include="Interfaces\IStateProvider.cs" />
     <Compile Include="Interfaces\IPluginBootstrapper.cs" />
     <Compile Include="Interfaces\IMarketRule.cs" />
@@ -64,6 +65,7 @@
     <Compile Include="Interfaces\IMarketStateCollection.cs" />
     <Compile Include="Interfaces\ISelectionState.cs" />
     <Compile Include="Interfaces\IStoreProvider.cs" />
+    <Compile Include="Interfaces\ISuspensionManager.cs" />
     <Compile Include="MarketRuleAddIntent.cs" />
     <Compile Include="MarketRuleEditIntent.cs" />
     <Compile Include="MarketRuleResultIntent.cs" />

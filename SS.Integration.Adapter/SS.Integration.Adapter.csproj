@@ -74,7 +74,9 @@
     <Compile Include="Interface\IStreamListenerManager.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketState.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableMarketStateCollection.cs" />
+    <Compile Include="MarketRules\Interfaces\IUpdatableSelectionResultState.cs" />
     <Compile Include="MarketRules\Interfaces\IUpdatableSelectionState.cs" />
+    <Compile Include="MarketRules\Model\SelectionResultState.cs" />
     <Compile Include="ProcessState\EventState.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StateManager.cs" />

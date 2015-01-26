@@ -34,16 +34,14 @@ namespace SS.Integration.Adapter.Tests
 
         public string _fixtureId = "y9s1fVzAoko805mzTnnTRU_CQy8";
         public Mock<ISettings> _settings;
+        private Mock<IAdapterPlugin> _plugin;
 
         [SetUp]
         public void SetupSuspensionManager()
         {
-            var stateManager = new StateManager(new Mock<ISettings>().Object);
-            var plugin = new Mock<IAdapterPlugin>();
+            _plugin = new Mock<IAdapterPlugin>();
 
-            new SuspensionManager(stateManager, plugin.Object);
-
-            var state = new StateManager(new Mock<ISettings>().Object);
+            var state = new StateManager(new Mock<ISettings>().Object, _plugin.Object);
             state.ClearState(_fixtureId);
             state.ClearState(TestHelper.GetFixtureFromResource("rugbydata_snapshot_2").Id);
 
@@ -56,12 +54,13 @@ namespace SS.Integration.Adapter.Tests
         public void ShouldStartAndStopListening()
         {
             var fixtureSnapshot = new Fixture { Id = "TestId", MatchStatus = "30", Sequence = 1 };
-            
+            var plugin = new Mock<IAdapterPlugin>();
+
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
             
-            var marketFilterObjectStore = new StateManager(_settings.Object);
+            var marketFilterObjectStore = new StateManager(_settings.Object,plugin.Object);
             
             resource.Setup(r => r.Sport).Returns("Football");
             resource.Setup(r => r.Content).Returns(new Summary());
@@ -97,7 +96,7 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
             //var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
-            var marketFilterObjectStore = new StateManager(_settings.Object);
+            var marketFilterObjectStore = new StateManager(_settings.Object,_plugin.Object);
 
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
             resource.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);
@@ -126,7 +125,7 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
 
-            var marketFilterObjectStore = new StateManager(_settings.Object);
+            var marketFilterObjectStore = new StateManager(_settings.Object,_plugin.Object);
             int matchStatusDelta = 40;
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(matchStatus: matchStatusDelta);
             
@@ -160,7 +159,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var marketFilterObjectStore = new StateManager(_settings.Object);
+            var marketFilterObjectStore = new StateManager(_settings.Object,_plugin.Object);
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage();
 
@@ -187,7 +186,7 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
 
-            var marketFilterObjectStore = new StateManager(_settings.Object);
+            var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage();
 
@@ -219,7 +218,7 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
 
-            var marketFilterObjectStore = new StateManager(_settings.Object);
+            var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage();   // Start Time has changed
 
@@ -244,7 +243,7 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
 
-            var marketFilterObjectStore = new StateManager(_settings.Object);
+            var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
 
             resource.Setup(r => r.GetSnapshot()).Returns(TestHelper.GetSnapshotJson(3, 2, 40));
             resource.Setup(r => r.Sport).Returns("Football");
@@ -271,8 +270,8 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            
-            var marketFilterObjectStore = new StateManager(_settings.Object);
+
+            var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage();
 
@@ -299,8 +298,8 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            
-            var marketFilterObjectStore = new StateManager(_settings.Object);
+
+            var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage();   // Fixture Deleted
 
@@ -326,8 +325,8 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            
-            var marketFilterObjectStore = new StateManager(_settings.Object);
+
+            var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(3, 2, matchStatus: 50, epochChangeReason: 10); // deleted
 
@@ -354,7 +353,7 @@ namespace SS.Integration.Adapter.Tests
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
             
-            var marketFilterObjectStore = new StateManager(_settings.Object);
+            var marketFilterObjectStore = new StateManager(_settings.Object,_plugin.Object);
 
             var snapshot = TestHelper.GetSnapshotJson();
             resource.Setup(r => r.GetSnapshot()).Returns(snapshot);
@@ -390,7 +389,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            IStateManager provider = new StateManager(_settings.Object);
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             resource.Setup(x => x.Content).Returns(new Summary());
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Setup);
@@ -427,7 +426,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            IStateManager provider = new StateManager(_settings.Object);
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             resource.Setup(x => x.Content).Returns(new Summary());
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
@@ -459,7 +458,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            IStateManager provider = new StateManager(_settings.Object);
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             resource.Setup(x => x.Content).Returns(new Summary());
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Setup);
@@ -499,12 +498,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
-
-            var provider = new StateManager(_settings.Object);
-
-            var supsensionManager = new SuspensionManager(provider, connector.Object);
-
+            var provider = new StateManager(_settings.Object, connector.Object);            
+            
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
 
             resource.Setup(r => r.Id).Returns("ABC");
@@ -546,9 +541,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IEventState> state = new Mock<IEventState>();
             
             _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
-            var provider = new StateManager(_settings.Object);
-
-            var suspensionManager = new SuspensionManager(provider, connector.Object);
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
             Fixture update = new Fixture
@@ -607,7 +600,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            IStateManager provider = new StateManager(_settings.Object);
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
 
             resource.Setup(x => x.Content).Returns(new Summary());
@@ -659,7 +652,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            IStateManager provider = new StateManager(_settings.Object);
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             resource.Setup(x => x.Content).Returns(new Summary());
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
@@ -703,7 +696,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            IStateManager provider = new StateManager(_settings.Object);
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             FixtureState fixture_state = new FixtureState
             {
@@ -747,7 +740,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            IStateManager provider = new StateManager(_settings.Object);
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             // Please note Sequence = 3
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 3, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
@@ -797,9 +790,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IEventState> state = new Mock<IEventState>();
             
             _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
-            var provider = new StateManager(_settings.Object);
-
-            var suspensionManager = new SuspensionManager(provider, connector.Object);
+            var provider = new StateManager(_settings.Object, connector.Object);
             
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
 
@@ -856,8 +847,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            var provider = new StateManager(_settings.Object);
-            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             // Please note Sequence = 1
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
@@ -909,7 +899,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            IStateManager provider = new StateManager(_settings.Object);
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
 
@@ -960,8 +950,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            var provider = new StateManager(_settings.Object);
-            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             // Please note Sequence = 1
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.Prematch).ToString() };
@@ -1003,8 +992,8 @@ namespace SS.Integration.Adapter.Tests
         }
 
         /// <summary>
-        /// I want to test stream listener generates full suspenssion 
-        /// even if it missed fixture deletion
+        /// I want to test whether the StreamListener generates a full 
+        /// suspension even if it missed the fixture deletion msg
         /// </summary>
         [Test]
         [Category("StreamListener")]
@@ -1016,7 +1005,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            IStateManager provider = new StateManager(_settings.Object);
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             var firstSnapshot = TestHelper.GetFixtureFromResource("rugbydata_snapshot_2");
             var secondSnapshot = TestHelper.GetFixtureFromResource("rugbydata_snapshot_withRemovedMarkets_5");
@@ -1051,7 +1040,7 @@ namespace SS.Integration.Adapter.Tests
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
             
             connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
-            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Never);
+            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Once);
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(2), "The streamlistener is supposed to send second");
             
@@ -1070,8 +1059,9 @@ namespace SS.Integration.Adapter.Tests
             }
 
         /// <summary>
-        /// I want to test stream listener generates full suspenssion 
-        /// even if it missed fixture deletion
+        /// I want to test whether the StreamListener generates 
+        /// a full suspenssion even if it missed 
+        /// the fixture deletion msg
         /// </summary>
         [Test]
         [Category("StreamListener")]
@@ -1083,7 +1073,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            IStateManager provider = new StateManager(_settings.Object);
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             var firstSnapshot = TestHelper.GetFixtureFromResource("rugbydata_snapshot_2");
             var secondSnapshot = TestHelper.GetFixtureFromResource("rugbydata_snapshot_withRemovedMarkets_5");
@@ -1127,7 +1117,7 @@ namespace SS.Integration.Adapter.Tests
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
 
             connector.Verify(x => x.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);
-            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Never);
+            connector.Verify(x => x.Suspend(It.IsAny<string>()), Times.Exactly(2));
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(3));
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(3), "The streamlistener is supposed to send second");
 
@@ -1154,9 +1144,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IEventState> state = new Mock<IEventState>();
             
             _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
-            var provider = new StateManager(_settings.Object);
-
-            var suspensionManager = new SuspensionManager(provider, connector.Object);
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
 
@@ -1210,12 +1198,9 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
+            var provider = new StateManager(_settings.Object, connector.Object);
             _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
-
-            var provider = new StateManager(_settings.Object);
-
-            var suspensionManager = new SuspensionManager(provider, connector.Object);
-
+            
             resource.Setup(x => x.Id).Returns("ABC");
             resource.Setup(x => x.Content).Returns(new Summary());
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
@@ -1236,6 +1221,59 @@ namespace SS.Integration.Adapter.Tests
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never);            
         }
 
+        [Test]
+        [Category("StreamListener")]
+        public void ShouldNotSetIsFixtureEndedIfThereWasAnErrorProcessingSnapshot()
+        {
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+            Mock<ISettings> settings = new Mock<ISettings>();
+            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            var provider = new StateManager(settings.Object,connector.Object);
+
+            var suspensionManager = new SuspensionManager(provider, connector.Object);
+
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+
+            Fixture update = new Fixture
+            {
+                Id = "ABC",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.MatchOver).ToString(),
+                Epoch = 2,
+                LastEpochChangeReason = new[] { (int)EpochChangeReason.MatchStatus }
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.SetupSequence(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture)).Returns(null);
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider,_settings.Object);
+
+            listener.Start();
+
+            listener.IsStreaming.Should().BeTrue();
+
+            // STEP 4: send the update containing a wrong sequence number
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+
+            // STEP 5: check that ProcessSnapshot is called only twice (first snapshot and when the fixture is ended, we get another one)!
+            connector.Verify(x => x.Suspend(It.Is<string>(y => y == "ABC")));
+            connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once());
+            resource.Verify(x => x.GetSnapshot(), Times.AtLeast(2), "The StreamListener was supposed to acquire a new snapshot");
+
+            listener.IsFixtureEnded.Should().BeFalse();
+            listener.IsErrored.Should().BeTrue();
+        }
+
+
         /// <summary>
         /// I want to test that if the StreamListener
         /// is in an error state and an update arrives,
@@ -1253,9 +1291,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IEventState> state = new Mock<IEventState>();
             
             _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
-            var provider = new StateManager(_settings.Object);
-
-            var suspensionManager = new SuspensionManager(provider, connector.Object);
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABCD", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
             Fixture update = new Fixture
@@ -1317,7 +1353,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            IStateManager provider = new StateManager(_settings.Object);
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.Setup).ToString() };
 
@@ -1418,7 +1454,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            IStateManager provider = new StateManager(_settings.Object);
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             Fixture fixture = new Fixture {Id = "ABC", Sequence = 1, MatchStatus = ((int) MatchStatus.Setup).ToString()};
 
@@ -1461,7 +1497,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            IStateManager provider = new StateManager(_settings.Object);
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.Prematch).ToString() };
 
@@ -1507,8 +1543,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IEventState> state = new Mock<IEventState>();
             
             _settings.Setup(x => x.DeltaRuleEnabled).Returns(true);
-            var provider = new StateManager(_settings.Object);
-            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             //var suspended = false;
             //Action<IMarketStateCollection> suspension_strategy = x => {suspended = true;};
@@ -1582,9 +1617,9 @@ namespace SS.Integration.Adapter.Tests
             Mock<IEventState> state = new Mock<IEventState>();
             
             _settings.Setup(x => x.DeltaRuleEnabled).Returns(true);
-            var provider = new StateManager(_settings.Object);
-            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
-            suspension.RegisterAction(suspension.SuspendAllMarketsStrategy, SuspensionReason.SUSPENSION);
+            var provider = new StateManager(_settings.Object, connector.Object);
+            
+            provider.SuspensionManager.RegisterAction(provider.SuspensionManager.SuspendAllMarketsStrategy, SuspensionReason.SUSPENSION);
 
             //var suspended = false;
             //Action<IMarketStateCollection> suspension_strategy = x => {suspended = true;};
@@ -1647,20 +1682,19 @@ namespace SS.Integration.Adapter.Tests
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
             
-            var provider = new StateManager(_settings.Object);
-            SuspensionManager suspension = new SuspensionManager(provider, connector.Object);
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             bool disposed = false;
             bool matchover = false;
             bool deleted = false;
 
-            Action<IMarketStateCollection> disponsing_strategy = (x) => {disposed = true;};
-            Action<IMarketStateCollection> matchover_strategy = (x) => { matchover = true; };
-            Action<IMarketStateCollection> deleted_strategy = (x) => { deleted = true; };
+            Action<IMarketStateCollection> disponsing_strategy = x => {disposed = true;};
+            Action<IMarketStateCollection> matchover_strategy = x => { matchover = true; };
+            Action<IMarketStateCollection> deleted_strategy = x => { deleted = true; };
 
-            suspension.RegisterAction(disponsing_strategy, SuspensionReason.FIXTURE_DISPOSING);
-            suspension.RegisterAction(deleted_strategy, SuspensionReason.FIXTURE_DELETED);
-            suspension.RegisterAction(matchover_strategy, SuspensionReason.SUSPENSION);
+            provider.SuspensionManager.RegisterAction(disponsing_strategy, SuspensionReason.FIXTURE_DISPOSING);
+            provider.SuspensionManager.RegisterAction(deleted_strategy, SuspensionReason.FIXTURE_DELETED);
+            provider.SuspensionManager.RegisterAction(matchover_strategy, SuspensionReason.SUSPENSION);
            
 
             Fixture fixture = new Fixture { Id = "ABCDE", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString(), Epoch = 1 };
@@ -1772,7 +1806,7 @@ namespace SS.Integration.Adapter.Tests
             
             _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
 
-            var provider = new StateManager(_settings.Object);
+            var provider = new StateManager(_settings.Object,connector.Object);
 
             var suspensionManager = new SuspensionManager(provider, connector.Object);
 

@@ -20,6 +20,7 @@ using System.Text;
 using FluentAssertions;
 using NUnit.Framework;
 using SportingSolutions.Udapi.Sdk.Extensions;
+using SS.Integration.Adapter.MarketRules.Model;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.ProcessState;
 
@@ -170,5 +171,77 @@ namespace SS.Integration.Adapter.Tests
             fixture.Markets.FirstOrDefault(x => x.Id == "RMKT3").Selections.Count.Should().Be(0);
         }
 
+        /// <summary>
+        /// I want to test that ISelectionResultState
+        /// behaves correctly with respect to its
+        /// interface contract
+        /// </summary>
+        [Test]
+        public void SelectionResulStateTest()
+        {
+            Market mkt = new Market("123");
+
+            var seln = new Selection()
+            {
+                Id = "A1",
+                Result = new Result()
+                {
+                    StakeParticipants = 1,
+                    StakePlaces = 2,
+                    WinParticipants = 3,
+                    WinPlaces = 4
+                }
+            };
+
+            mkt.Selections.Add(seln);
+
+            Fixture fxt = new Fixture()
+            {
+                Id = "FXT",
+                FixtureName = "TestSelectionResultTest",
+                MatchStatus = "40",
+            };
+
+            fxt.Markets.Add(mkt);
+
+            MarketStateCollection collection = new MarketStateCollection("FXT");
+            collection.Update(fxt, true);
+
+            var model = collection["123"]["A1"].Result as SelectionResultState;
+            model.Should().NotBeNull();
+
+            model.IsEquivalentTo(seln.Result).Should().BeTrue();
+
+            var clone = model.Clone();
+            model.IsEqualTo(clone).Should().BeTrue();
+
+            seln.Result.WinParticipants = 2;
+            model.IsEquivalentTo(seln.Result).Should().BeFalse();
+
+        }
+
+        [Test]
+        public void SelectionResultStateFromSnapshotTest()
+        {
+            var fixture = TestHelper.GetFixtureFromResource("horseracing");
+            fixture.Should().NotBeNull();
+
+            var mkt = fixture.Markets.FirstOrDefault(x => x.Type == "winner");
+            mkt.Should().NotBeNull();
+
+            var seln = mkt.Selections.FirstOrDefault(x => x.Id == "WFgqLzN9BiseBQB8UprYsY4GGuY");
+            seln.PlaceResult.Should().NotBeNull();
+            seln.PlaceResult.WinParticipants.Should().Be(1);
+            seln.PlaceResult.StakeParticipants.Should().Be(1);
+            seln.PlaceResult.WinPlaces.Should().Be(1);
+            seln.PlaceResult.StakePlaces.Should().Be(1);
+
+            seln.Result.Should().NotBeNull();
+            seln.Result.WinParticipants.Should().Be(1);
+            seln.Result.StakeParticipants.Should().Be(1);
+            seln.Result.StakePlaces.Should().Be(1);
+            seln.Result.WinPlaces.Should().Be(1);
+
+        }
     }
 }

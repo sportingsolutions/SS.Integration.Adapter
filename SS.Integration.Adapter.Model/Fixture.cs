@@ -28,7 +28,7 @@ namespace SS.Integration.Adapter.Model
     {
         public Fixture()
         {
-            Tags = new Dictionary<string, object>();
+            Tags = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase);
             GameState = new Dictionary<string, object>();
             Participants = new List<Participant>();
             Markets = new List<Market>();

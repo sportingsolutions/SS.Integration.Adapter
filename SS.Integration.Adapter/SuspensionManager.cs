@@ -22,16 +22,8 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter
 {
-    public enum SuspensionReason
-    {
-        SUSPENSION,
-        DISCONNECT_EVENT,
-        FIXTURE_DELETED,
-        FIXTURE_DISPOSING,
-        FIXTURE_ERRORED
-    }
-
-    public class SuspensionManager
+    
+    public class SuspensionManager : ISuspensionManager
     {
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(SuspensionManager));
@@ -62,17 +54,8 @@ namespace SS.Integration.Adapter
             _disconnected = SuspendFixtureStrategy;
             _default = SuspendFixtureStrategy;
             _fixtureDeleted = SuspendFixtureAndSetMatchStatusDeleted;
-            
-            // Not really a singleton
-            Instance = this;
         }
 
-
-        public static SuspensionManager Instance
-        {
-            get;
-            private set;
-        }
 
         public Action<IMarketStateCollection> DoNothingStrategy
         {
@@ -246,6 +229,7 @@ namespace SS.Integration.Adapter
 
                     foreach (var mkt_id in x.Markets)
                     {
+
                         // we take a conservative approach here.
                         // If, for any reason, the traded_in_play
                         // is not present, we assume it is. Better
@@ -254,6 +238,13 @@ namespace SS.Integration.Adapter
                         if (state.HasTag("traded_in_play") && 
                             string.Equals(state.GetTagValue("traded_in_play"), "false", StringComparison.OrdinalIgnoreCase))
                         {
+                            _logger.DebugFormat("marketId={0} of fixtureId={1} will not be suspended as it is not traded in play", mkt_id, fixture.Id);
+                            continue;
+                        }
+
+                        if (!state.HasBeenActive)
+                        {
+                            _logger.DebugFormat("marketId={0} of fixtureId={1} will not be suspended as it has not been active before", mkt_id, fixture.Id);
                             continue;
                         }
 
@@ -269,9 +260,7 @@ namespace SS.Integration.Adapter
                     ((IUpdatableMarketStateCollection)x).OnMarketsForcedSuspension(includedMarketStates);
                 };
         }
-
-        
-
+    
         private static Fixture GetFixtureWithSuspendedMarkets(IMarketStateCollection x, out IEnumerable<IMarketState> includedMarketStates)
         {
             includedMarketStates = new List<IMarketState>();

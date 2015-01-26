@@ -26,6 +26,10 @@ namespace SS.Integration.Adapter.Plugin.Logger
     {
         private static readonly ILog _Logger = LogManager.GetLogger(typeof(LoggerConnector));
 
+        public LoggerConnector()
+        {
+            _Logger.InfoFormat("LoggerConnector plugin constructor called");
+        }
 
         public void Initialise()
         {

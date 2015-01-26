@@ -47,7 +47,7 @@ namespace SS.Integration.Adapter
         public StreamListenerManager(ISettings settings)
         {
             _settings = settings;
-            EventState = ProcessState.EventState.Create(new FileStoreProvider(), settings);
+            EventState = ProcessState.EventState.Create(new FileStoreProvider(settings.StateProviderPath), settings);
         }
 
         public IStateManager StateManager { get; set; }

@@ -112,17 +112,19 @@ namespace SS.Integration.Adapter.Configuration
         public int EchoDelay { get; private set; }
 
         public string EventStateFilePath { get; private set; }
-
-        public int FixtureCreationConcurrency { get; private set; }
-
+        
         public bool DeltaRuleEnabled { get; private set; }
-
+        
+        public int FixtureCreationConcurrency { get; private set; }
+        
         public bool StatsEnabled { get; private set; }
 
-        public bool UseSupervisor { get; private set; }
+        public string StateProviderPath { get; private set; }
         
         public int ProcessingLockTimeOutInSecs { get; private set; }
 
         public string SupervisorStatePath { get; private set; }
+
+        public bool UseSupervisor { get; private set; }
     }
 }

@@ -33,7 +33,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
         public MarketState() 
         {
             _selectionStates = new Dictionary<string, IUpdatableSelectionState>();
-            _tags = new Dictionary<string, string>();
+            _tags = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
         }
 
         internal MarketState(string Id)
@@ -270,12 +270,12 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
             if (fullSnapshot)
             {
-                _tags = new Dictionary<string, string>();
+                _tags = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
                 foreach (var key in market.TagKeys)
                     _tags.Add(key, market.GetTagValue(key));
 
                 if (_tags.ContainsKey("traded_in_play"))
-                    IsTradedInPlay = string.Equals(_tags["traded_in_play"], "true", StringComparison.OrdinalIgnoreCase);
+                    IsTradedInPlay = string.Equals(_tags["traded_in_play"], "true", StringComparison.InvariantCultureIgnoreCase);
             }
 
             if (!HasBeenActive && IsActive)

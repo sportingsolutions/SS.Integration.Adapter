@@ -23,31 +23,15 @@ namespace SS.Integration.Common.Stats.Keys
         public static readonly string ADAPTER_RUNNING_THREADS = "threads";
         public static readonly string ADAPTER_FIXTURE_TOTAL = "fixtures_total";
 
-        public static readonly string SPORT_FIXTURE_TOTAL = "fixtures_total";
-        public static readonly string SPORT_FIXTURE_IN_PLAY_TOTAL = "in_play_fixtures_total";
-        public static readonly string SPORT_FIXTURE_STREAMING_TOTAL = "streaming_fixtures_total";
+        public static readonly string SPORT_FIXTURE_TOTAL = "sport.{0}.fixtures_total";
+        public static readonly string SPORT_FIXTURE_IN_PLAY_TOTAL = "sport.{0}.in_play_fixtures_total";
+        public static readonly string SPORT_FIXTURE_STREAMING_TOTAL = "sport.{0}.streaming_fixtures_total";
 
-        public static readonly string FIXTURE_MARKETS_IN_SNAPSHOT = "markets_in_snapshot";
-        public static readonly string FIXTURE_TOTAL_MARKETS = "markets_total";        
-        public static readonly string FIXTURE_FILTERED_MARKETS = "markets_filtered_total";
+        public static readonly string SNAPSHOT_COUNTER = "snapshots_total";
+        public static readonly string ERROR_COUNTER = "errors_total";
 
-        public static readonly string FIXTURE_SNAPSHOT_COUNTER = "snapshots_total";
-        public static readonly string FIXTURE_ERRORS_COUNTER = "errors_total";
+        public static readonly string SNAPSHOT_PROCESSING_TIME = "snapshot_processing_time";
+        public static readonly string UPDATE_PROCESSING_TIME = "update_processing_time";
 
-        public static readonly string FIXTURE_SNAPSHOT_PROCESSING_TIME = "snapshot_processing_time";
-        public static readonly string FIXTURE_UPDATE_PROCESSING_TIME = "update_processing_time";
-
-        public static readonly string FIXTURE_IS_IN_PLAY = "is_in_play";
-        public static readonly string FIXTURE_IS_STREAMING = "is_streaming";
-        public static readonly string FIXTURE_IS_MATCH_OVER = "is_match_over";
-
-        public static readonly string MARKET_IS_ACTIVE = "is_active";
-        public static readonly string MARKET_IS_RESULTED = "is_resulted";
-        public static readonly string MARKET_IS_SUSPENDED = "is_suspended";
-        public static readonly string MARKET_TOTAL_SELECTIONS = "selections_total";
-
-        public static readonly string SELECTION_IS_ACTIVE = "is_active";
-        public static readonly string SELECTION_IS_SETTLED = "is_settled";
-        public static readonly string SELECTION_PRICE = "price";
     }
 }

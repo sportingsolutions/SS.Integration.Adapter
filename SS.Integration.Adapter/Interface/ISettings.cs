@@ -82,6 +82,12 @@ namespace SS.Integration.Adapter.Interface
         string EventStateFilePath { get; }
 
         /// <summary>
+        /// Returns the path for the
+        /// fixture's state storage
+        /// </summary>
+        string StateProviderPath { get; }
+
+        /// <summary>
         /// Returns the directory
         /// where the adapter stores the 
         /// fixtures' statuses        

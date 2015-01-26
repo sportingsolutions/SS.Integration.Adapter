@@ -36,7 +36,7 @@ namespace SS.Integration.Adapter
         private readonly HashSet<IMarketRule> _Rules;
 
 
-        public StateManager(ISettings settings)
+        public StateManager(ISettings settings, IAdapterPlugin plugin)
         {
             if (settings == null)
                 throw new ArgumentNullException("settings", "ISettings cannot be null");
@@ -51,6 +51,9 @@ namespace SS.Integration.Adapter
             
             _rulesManagers = new ConcurrentDictionary<string, MarketRulesManager>();
             
+            Plugin = plugin;
+            SuspensionManager = new SuspensionManager(this, plugin);
+
             _Rules = new HashSet<IMarketRule>
             {
                 VoidUnSettledMarket.Instance,
@@ -109,6 +112,8 @@ namespace SS.Integration.Adapter
                 return _Rules;
             }
         }
+
+        private IAdapterPlugin Plugin { get; set; }
 
         #region IStoredObjectProvider
 
@@ -172,6 +177,8 @@ namespace SS.Integration.Adapter
             _pluginPersistanceLayer.Remove(PLUGIN_STORE_PREFIX + fixtureId);
         }
 
+        public ISuspensionManager SuspensionManager { get; private set; }
+
         #endregion
 
         #region IStateManager
@@ -205,6 +212,8 @@ namespace SS.Integration.Adapter
 
             _persistanceLayer.Remove(fixtureId);
         }
+
+        public IStateProvider StateProvider { get { return this; } }
 
         #endregion
 

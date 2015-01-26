@@ -55,27 +55,21 @@ namespace SS.Integration.Adapter.ProcessState
             }
         }
 
-        protected string GetFullDirectoryPath(string subDirectory)
+        private string GetFullDirectoryPath(string path)
         {
-            var path = Assembly.GetExecutingAssembly().Location;
-            var directory = Path.GetDirectoryName(path);
-            return Path.Combine(directory, subDirectory);
+            if (Path.IsPathRooted(path))
+                return path;
+
+            var directory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            return Path.Combine(directory, path);
         }
 
-        protected string GetFullPath(string pathFileName)
+        public string GetFullPath(string pathFileName)
         {
             if (Path.IsPathRooted(pathFileName))
                 return pathFileName;
-            
-            if (!string.IsNullOrEmpty(_directory))
-            {
-               return Path.Combine(_directory, pathFileName);
-            }
 
-            var path = Assembly.GetExecutingAssembly().Location;
-            var directoryPath = Path.GetDirectoryName(path);
-
-            return Path.Combine(directoryPath, pathFileName);
+            return Path.Combine(_directory, pathFileName);
         }
 
     }

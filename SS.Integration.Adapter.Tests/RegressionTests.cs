@@ -62,7 +62,7 @@ namespace SS.Integration.Adapter.Tests
             var feature = new Mock<IFeature>();
             var resource = new Mock<IResourceFacade>();
             var eventstate = new Mock<IEventState>();
-            var provider = new StateManager(settings.Object);
+            var provider = new StateManager(settings.Object, plugin.Object);
 
             Fixture fixture = new Fixture {Id = "ABC", FixtureName = "ABC", Sequence = 2, MatchStatus = "10" };
             fixture.Tags.Add("Sport", "Football");
@@ -143,8 +143,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IEventState> state = new Mock<IEventState>();
             Mock<ISettings> settings = new Mock<ISettings>();
 
-            var provider = new StateManager(settings.Object);
-            var instance = new SuspensionManager(provider, connector.Object);
+            var provider = new StateManager(settings.Object, connector.Object);
 
             Fixture fixture = new Fixture { Id = "Reconnect", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
 
