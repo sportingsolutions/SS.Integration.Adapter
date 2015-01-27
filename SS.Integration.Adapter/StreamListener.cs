@@ -864,8 +864,8 @@ namespace SS.Integration.Adapter
             bool tmp = false;
             try
             {
-                ProcessSnapshot(RetrieveSnapshot(), true, false);
-
+                RetrieveAndProcessSnapshot();
+                
                 //is errored will be set to false in ProcessSnapshot if it's processed succcessfully
                 tmp = !IsErrored;
             }
