@@ -21,7 +21,7 @@ using SS.Integration.Adapter.MarketRules;
 using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Adapter.ProcessState;
+using SS.Integration.Adapter.Model.ProcessState;
 
 namespace SS.Integration.Adapter
 {

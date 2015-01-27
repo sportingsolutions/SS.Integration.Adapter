@@ -18,7 +18,8 @@ using SS.Integration.Adapter.Diagnostics.Model;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Adapter.ProcessState;
+using SS.Integration.Adapter.Model;
+using SS.Integration.Adapter.Model.ProcessState;
 
 namespace SS.Integration.Adapter.Diagnostics
 {

@@ -24,7 +24,7 @@ using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Adapter.ProcessState;
+using SS.Integration.Adapter.Model;
 
 namespace SS.Integration.Adapter
 {
@@ -47,7 +47,7 @@ namespace SS.Integration.Adapter
         public StreamListenerManager(ISettings settings)
         {
             _settings = settings;
-            EventState = ProcessState.EventState.Create(new FileStoreProvider(settings.StateProviderPath), settings);
+            EventState = Model.EventState.Create(new FileStoreProvider(settings.StateProviderPath), settings);
         }
 
         public IStateManager StateManager { get; set; }

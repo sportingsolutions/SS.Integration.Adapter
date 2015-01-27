@@ -26,7 +26,7 @@ using Newtonsoft.Json;
 using SS.Integration.Adapter.Model.Interfaces;
 
 
-namespace SS.Integration.Adapter.ProcessState
+namespace SS.Integration.Adapter.Model
 {
     public class EventState : IEventState
     {
