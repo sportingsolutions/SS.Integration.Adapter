@@ -146,6 +146,11 @@ namespace SS.Integration.Adapter.WindowsService
             var settings = iocContainer.Get<ISettings>();
             var service = iocContainer.Get<IServiceFacade>();
             var streamListenerManager = iocContainer.Get<IStreamListenerManager>();
+            
+            iocContainer.Settings.InjectNonPublic = true;
+            
+            //needed for Plugin properties since plugin is not instantiated by Ninject
+            iocContainer.Inject(PlatformConnector);
 
             _adapter = new Adapter(settings, service, PlatformConnector, streamListenerManager);
 
