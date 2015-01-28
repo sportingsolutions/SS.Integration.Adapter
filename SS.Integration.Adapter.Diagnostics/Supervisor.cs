@@ -27,6 +27,7 @@ using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
+using SS.Integration.Common.Extensions;
 
 namespace SS.Integration.Adapter.Diagnostics
 {
@@ -41,13 +42,15 @@ namespace SS.Integration.Adapter.Diagnostics
         private readonly Subject<ISportOverview> _sportTracker = new Subject<ISportOverview>();
 
         private IDisposable _publisher;
-        private IObjectProvider<ConcurrentDictionary<string, FixtureOverview>> _objectStore;
+        private IObjectProvider<Dictionary<string, FixtureOverview>> _objectStore;
 
-        public Supervisor(ISettings settings, IObjectProvider<ConcurrentDictionary<string, FixtureOverview>> supervisorStore)
+        public Supervisor(ISettings settings, IObjectProvider<Dictionary<string, FixtureOverview>> supervisorStore)
             : base(settings)
         {
             _objectStore = supervisorStore;
-            _fixtures = _objectStore.GetObject(null) ?? new ConcurrentDictionary<string, FixtureOverview>();
+            var storedObject = _objectStore.GetObject(null);
+            _fixtures = storedObject != null ? new ConcurrentDictionary<string, FixtureOverview>(storedObject) : new ConcurrentDictionary<string, FixtureOverview>();
+
             _sportOverviews = new ConcurrentDictionary<string, SportOverview>();
             SetupSports();
             Proxy = new SupervisorProxy(this);
@@ -76,7 +79,11 @@ namespace SS.Integration.Adapter.Diagnostics
         {
             try
             {
-                _objectStore.SetObject(null, _fixtures);
+                var tempFixtures = _fixtures.Values;
+
+                //have to remove exception because it might not be serializable
+                tempFixtures.ForEach(x => x.LastError.Exception = null);
+                _objectStore.SetObject(null,tempFixtures.ToDictionary(f => f.Id));
             }
             catch (Exception ex)
             {

@@ -85,6 +85,10 @@
       <Project>{1ad0b149-3a7b-4725-abde-9455d953f036}</Project>
       <Name>SS.Integration.Adapter</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Common\SS.Integration.Common.csproj">
+      <Project>{756C25C1-9FF6-4299-8825-EEEA5565AC58}</Project>
+      <Name>SS.Integration.Common</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

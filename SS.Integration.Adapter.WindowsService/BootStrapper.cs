@@ -13,7 +13,7 @@
 //limitations under the License.
 
 
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using Ninject.Modules;
 using Ninject;
 using SS.Integration.Adapter.Configuration;
@@ -36,8 +36,7 @@ namespace SS.Integration.Adapter.WindowsService
             Bind<IServiceFacade>().To<UdapiServiceFacade>();
 
             var supervisorStateManager = new SupervisorStateManager(Kernel.Get<ISettings>());
-            Bind<IObjectProvider<ConcurrentDictionary<string, FixtureOverview>>>()
-                .ToConstant(supervisorStateManager.StateProvider);
+            Bind<IObjectProvider<Dictionary<string, FixtureOverview>>>().ToConstant(supervisorStateManager.StateProvider);
 
             Bind<IStreamListenerManager>().To<StreamListenerManager>().When(req => Kernel.Get<ISettings>().UseSupervisor == false).InSingletonScope();
             Bind<IStreamListenerManager, ISupervisor>().To<Supervisor>().When(req => Kernel.Get<ISettings>().UseSupervisor).InSingletonScope();

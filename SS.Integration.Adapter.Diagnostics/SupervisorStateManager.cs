@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using SS.Integration.Adapter.Diagnostics.Model;
 using SS.Integration.Adapter.Interface;
@@ -25,16 +26,16 @@ namespace SS.Integration.Adapter.Diagnostics
 {
     public class SupervisorStateManager 
     {
-        private static IObjectProvider<ConcurrentDictionary<string, FixtureOverview>> _stateProvider;
+        private static IObjectProvider<Dictionary<string, FixtureOverview>> _stateProvider;
 
         public SupervisorStateManager(ISettings settings)
         {
             _stateProvider = 
-                new BinaryStoreProvider<ConcurrentDictionary<string, FixtureOverview>>(settings.SupervisorStatePath,
+                new BinaryStoreProvider<Dictionary<string, FixtureOverview>>(settings.SupervisorStatePath,
                     "Supervisor.bin");
         }
 
-        public IObjectProvider<ConcurrentDictionary<string, FixtureOverview>> StateProvider
+        public IObjectProvider<Dictionary<string, FixtureOverview>> StateProvider
         {
             get
             {

@@ -44,7 +44,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
         private static Mock<IAdapterPlugin> _plugin;
         private static Supervisor _supervisor;
         private static StateManager _provider;
-        private static Mock<IObjectProvider<ConcurrentDictionary<string, FixtureOverview>>> _objectProvider;
+        private static Mock<IObjectProvider<Dictionary<string, FixtureOverview>>> _objectProvider;
 
         [SetUp]
         public static void SetUpMocks()
@@ -59,7 +59,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
             _resource = new Mock<IResourceFacade>();
             _resource.Setup(r => r.Sport).Returns("FantasyFootball");
             _resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, new EventArgs());
-            _objectProvider = new Mock <IObjectProvider<ConcurrentDictionary<string, FixtureOverview>>>();
+            _objectProvider = new Mock <IObjectProvider<Dictionary<string, FixtureOverview>>>();
             
             var stateManager = new StateManager(new Mock<ISettings>().Object,_plugin.Object);
 

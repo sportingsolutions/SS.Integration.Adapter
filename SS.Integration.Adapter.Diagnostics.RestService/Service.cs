@@ -14,6 +14,7 @@
 
 using System;
 using System.IO;
+using System.Reflection;
 using System.Web.Http;
 using log4net;
 using Microsoft.Owin.Cors;
@@ -161,7 +162,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
 
             private static string GetRootDirectory(string path)
             {
-                var currentDirectory = Directory.GetCurrentDirectory();
+                var currentDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
 
                 if (path.StartsWith("/"))
                 {
