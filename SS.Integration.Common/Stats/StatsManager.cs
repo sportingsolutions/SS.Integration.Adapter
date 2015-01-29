@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
@@ -29,7 +30,7 @@ namespace SS.Integration.Common.Stats
         private static StatsManager _instance;
 
         private readonly StatsSettings _settings;
-        private readonly Dictionary<string, StatsManager> _managers;
+        private readonly ConcurrentDictionary<string, StatsManager> _managers;
         
         private IStatsHandle _handle;
 
@@ -37,7 +38,7 @@ namespace SS.Integration.Common.Stats
         private StatsManager(string code, StatsSettings settings)
         {
             Code = code;
-            _managers = new Dictionary<string, StatsManager>();
+            _managers = new ConcurrentDictionary<string, StatsManager>();
             _settings = settings;
         }
 
@@ -89,7 +90,7 @@ namespace SS.Integration.Common.Stats
                     return this;
 
                 if (!_managers.ContainsKey(code))
-                    _managers.Add(code, new StatsManager(code, _settings));
+                    _managers.TryAdd(code, new StatsManager(code, _settings));
     
                 return _managers[code];
             }
