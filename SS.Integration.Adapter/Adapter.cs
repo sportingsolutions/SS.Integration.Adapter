@@ -441,6 +441,13 @@ namespace SS.Integration.Adapter
                     _logger.DebugFormat("{0} is marked as ignored. Listener wil be removed", resource);
                     RemoveAndStopListener(resource.Id);
                 }
+                else if (!listener.IsStreaming && resource.MatchStatus == MatchStatus.Prematch ||
+                         resource.MatchStatus == MatchStatus.InRunning)
+                {
+                    _logger.WarnFormat("{0} is not streaming but the match status is {1}",resource,resource.MatchStatus);
+                    RemoveAndStopListener(resource.Id);
+                    AddResourceToCreationQueue(resource);
+                }
                 else
                 {
                     if (!StopListenerIfFixtureEnded(sport, resource))
@@ -461,13 +468,17 @@ namespace SS.Integration.Adapter
                     MarkResourceAsProcessable(resource);
                     return;
                 }
-
-
-                _logger.DebugFormat("Adding {0} to the creation queue ", resource);
-                _resourceCreationQueue.Add(resource);
-                _logger.DebugFormat("Added {0} to the creation queue", resource);
+                
+                AddResourceToCreationQueue(resource);
             }
 
+        }
+
+        private void AddResourceToCreationQueue(IResourceFacade resource)
+        {
+            _logger.DebugFormat("Adding {0} to the creation queue ", resource);
+            _resourceCreationQueue.Add(resource);
+            _logger.DebugFormat("Added {0} to the creation queue", resource);
         }
 
         private void CreateFixture()
