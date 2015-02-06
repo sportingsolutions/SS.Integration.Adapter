@@ -135,6 +135,8 @@ namespace SS.Integration.Adapter
 
                 IListener listener = _listeners[resource.Id];
 
+                var shouldAdapterProcessResource = false;
+
                 if (listener.IsFixtureDeleted)
                 {
                     _logger.DebugFormat("{0} was deleted and republished. Listener wil be removed", resource);
@@ -145,6 +147,13 @@ namespace SS.Integration.Adapter
                     _logger.DebugFormat("{0} is marked as ignored. Listener wil be removed", resource);
                     RemoveStreamListener(resource.Id);
                 }
+                else if (listener.IsDisconnected && (resource.MatchStatus == MatchStatus.Prematch || resource.MatchStatus == MatchStatus.InRunning))
+                {
+                    _logger.WarnFormat("{0} was disconnected from stream {1}", resource, resource.MatchStatus);
+                    RemoveStreamListener(resource.Id);
+                    
+                    shouldAdapterProcessResource = true;
+                }
                 else
                 {
                     if (!RemoveStreamListenerIfFinishedProcessing(resource))
@@ -154,7 +163,7 @@ namespace SS.Integration.Adapter
                 }
 
                 MarkResourceAsProcessable(resource);
-                return false;
+                return shouldAdapterProcessResource;
             }
             else
             {

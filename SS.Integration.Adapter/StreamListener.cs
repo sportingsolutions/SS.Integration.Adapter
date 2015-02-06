@@ -133,6 +133,14 @@ namespace SS.Integration.Adapter
             private set;
         }
 
+        public bool IsDisconnected
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get;
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            private set;
+        }
+
         public bool IsInPlay
         {
             [MethodImpl(MethodImplOptions.Synchronized)]
@@ -361,7 +369,7 @@ namespace SS.Integration.Adapter
 
             SequenceOnStreamingAvailable = resource.Content.Sequence;
             
-            _logger.InfoFormat("In feed there is a sequence={0} currentlyProcessedSequence={1} {2}",SequenceOnStreamingAvailable,_currentSequence,resource);
+            _logger.InfoFormat("In feed there is a sequence={0} processedSequence={1} isDisconnected={2} isStreaming={3} {4}", SequenceOnStreamingAvailable, _currentSequence,IsDisconnected,IsStreaming, resource);
 
             StartStreaming();
         }
@@ -635,6 +643,7 @@ namespace SS.Integration.Adapter
                         }
 
                         RaiseEvent(OnFinishedStreamUpdateProcessing);
+                        if (stopStreaming)
 
                             Stop();
 
@@ -716,6 +725,7 @@ namespace SS.Integration.Adapter
                 IsStreaming = false;
                 IsStopping = false;
                 RaiseEvent(OnDisconnected);
+                IsDisconnected = true;
             }
         }
 
@@ -938,7 +948,7 @@ namespace SS.Integration.Adapter
 
                 if (state != null)
                     fixture.MatchStatus = state.MatchStatus.ToString();
-                
+
                 try
                 {
                     //unsuspends markets suspended by adapter
@@ -965,7 +975,7 @@ namespace SS.Integration.Adapter
 
             Stopwatch timer = new Stopwatch();
             timer.Start();
-            
+
             try
             {
 
@@ -1135,10 +1145,10 @@ namespace SS.Integration.Adapter
                 //can't proceed if fixture errored
                 if (IsErrored)
                 {
-                    _logger.WarnFormat("Fixture {0} couldn't retrieve or process the match over snapshot. It will retry shortly.",fixtureDelta);
+                    _logger.WarnFormat("Fixture {0} couldn't retrieve or process the match over snapshot. It will retry shortly.", fixtureDelta);
                     return true;
                 }
-                
+
 
                 if (_settings.StopStreamingDelayMinutes != 0 && _settings.ShouldDelayStopStreaming(Sport))
                 {

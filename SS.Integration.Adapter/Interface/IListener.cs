@@ -27,6 +27,7 @@ namespace SS.Integration.Adapter.Interface
 
         bool IsStreaming { get; }
 
+        bool IsDisconnected { get; }
         bool IsErrored { get; }
 
         bool IsInPlay { get; }
