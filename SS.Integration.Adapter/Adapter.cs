@@ -441,10 +441,10 @@ namespace SS.Integration.Adapter
                     _logger.DebugFormat("{0} is marked as ignored. Listener wil be removed", resource);
                     RemoveAndStopListener(resource.Id);
                 }
-                else if (!listener.IsStreaming && resource.MatchStatus == MatchStatus.Prematch ||
+                else if (listener.IsDisconnected && resource.MatchStatus == MatchStatus.Prematch ||
                          resource.MatchStatus == MatchStatus.InRunning)
                 {
-                    _logger.WarnFormat("{0} is not streaming but the match status is {1}",resource,resource.MatchStatus);
+                    _logger.WarnFormat("{0} was disconnected from stream {1}",resource,resource.MatchStatus);
                     RemoveAndStopListener(resource.Id);
                     AddResourceToCreationQueue(resource);
                 }
@@ -476,6 +476,12 @@ namespace SS.Integration.Adapter
 
         private void AddResourceToCreationQueue(IResourceFacade resource)
         {
+            if (_resourceCreationQueue.Any(r => r.Id == resource.Id))
+            {
+                _logger.WarnFormat("Attempted to add a second resource with the same id to creation queue {0}",resource);
+                return;
+            }
+
             _logger.DebugFormat("Adding {0} to the creation queue ", resource);
             _resourceCreationQueue.Add(resource);
             _logger.DebugFormat("Added {0} to the creation queue", resource);
@@ -489,7 +495,7 @@ namespace SS.Integration.Adapter
                 {
                     try
                     {
-                        _logger.DebugFormat("Task={0} is processing {1} from the queue", Task.CurrentId, resource);
+                        _logger.DebugFormat("Task={0} is processing {1}  OR ", Task.CurrentId, resource);
 
                         if (_listeners.ContainsKey(resource.Id))
                             continue;

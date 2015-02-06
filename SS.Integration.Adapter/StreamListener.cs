@@ -97,7 +97,7 @@ namespace SS.Integration.Adapter
             IsStopping = false;
 
             var fixtureState = _eventState.GetFixtureState(resource.Id);
-            
+
             IsFixtureEnded = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.MatchOver : _resource.IsMatchOver;
             IsFixtureSetup = (_resource.MatchStatus == MatchStatus.Setup || _resource.MatchStatus == MatchStatus.Ready);
             IsFixtureDeleted = false;
@@ -117,12 +117,20 @@ namespace SS.Integration.Adapter
             private set;
         }
 
+        public bool IsDisconnected
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get;
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            private set;
+        }
+
         public bool IsInPlay
         {
             [MethodImpl(MethodImplOptions.Synchronized)]
             get;
             [MethodImpl(MethodImplOptions.Synchronized)]
-            private set; 
+            private set;
         }
 
         public string Sport { get; private set; }
@@ -342,10 +350,10 @@ namespace SS.Integration.Adapter
 
             IsFixtureSetup = (resource.MatchStatus == MatchStatus.Setup ||
                               resource.MatchStatus == MatchStatus.Ready);
-            
+
             SequenceOnStreamingAvailable = resource.Content.Sequence;
 
-            _logger.InfoFormat("In feed there is a sequence={0} currentlyProcessedSequence={1} {2}", SequenceOnStreamingAvailable, _currentSequence, resource);
+            _logger.InfoFormat("In feed there is a sequence={0} processedSequence={1} isDisconnected={2} isStreaming={3} {4}", SequenceOnStreamingAvailable, _currentSequence,IsDisconnected,IsStreaming, resource);
 
             StartStreaming();
         }
@@ -583,7 +591,7 @@ namespace SS.Integration.Adapter
                             stopStreaming = ProcessMatchOver(fixtureDelta);
                         }
 
-                        if(stopStreaming)
+                        if (stopStreaming)
                             Stop();
 
                         return;
@@ -653,7 +661,8 @@ namespace SS.Integration.Adapter
                 IsConnecting = false;
 
                 IsStreaming = false;
-                IsStopping = false;   
+                IsStopping = false;
+                IsDisconnected = true;
             }
         }
 
@@ -852,7 +861,7 @@ namespace SS.Integration.Adapter
 
                 if (state != null)
                     fixture.MatchStatus = state.MatchStatus.ToString();
-                
+
                 try
                 {
                     //unsuspends markets suspended by adapter
@@ -873,13 +882,13 @@ namespace SS.Integration.Adapter
             var logString = isFullSnapshot ? "snapshot" : "stream update";
 
             if (snapshot == null || (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id)))
-                throw new ArgumentException(string.Format("StreamListener received empty {0} for {1}", logString,_resource));
+                throw new ArgumentException(string.Format("StreamListener received empty {0} for {1}", logString, _resource));
 
-            _logger.InfoFormat("Processing {0} for {1}",logString, snapshot);
+            _logger.InfoFormat("Processing {0} for {1}", logString, snapshot);
 
             Stopwatch timer = new Stopwatch();
             timer.Start();
-            
+
             try
             {
                 bool is_inplay = string.Equals(snapshot.MatchStatus, ((int)MatchStatus.InRunning).ToString(), StringComparison.OrdinalIgnoreCase);
@@ -912,7 +921,7 @@ namespace SS.Integration.Adapter
 
                 foreach (var innerException in ex.InnerExceptions)
                 {
-                    _logger.Error(string.Format("There has been an aggregate error while trying to process {0} {1}",logString, snapshot), innerException);
+                    _logger.Error(string.Format("There has been an aggregate error while trying to process {0} {1}", logString, snapshot), innerException);
                 }
 
                 _Stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
@@ -928,7 +937,7 @@ namespace SS.Integration.Adapter
 
                 _Stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
 
-                _logger.Error(string.Format("An error occured while trying to process {0} {1}",logString, snapshot), e);
+                _logger.Error(string.Format("An error occured while trying to process {0} {1}", logString, snapshot), e);
 
                 if (setErrorState)
                     SetErrorState();
@@ -1016,10 +1025,10 @@ namespace SS.Integration.Adapter
                 //can't proceed if fixture errored
                 if (IsErrored)
                 {
-                    _logger.WarnFormat("Fixture {0} couldn't retrieve or process the match over snapshot. It will retry shortly.",fixtureDelta);
+                    _logger.WarnFormat("Fixture {0} couldn't retrieve or process the match over snapshot. It will retry shortly.", fixtureDelta);
                     return true;
                 }
-                
+
 
                 if (_settings.StopStreamingDelayMinutes != 0 && _settings.ShouldDelayStopStreaming(Sport))
                 {
@@ -1058,7 +1067,7 @@ namespace SS.Integration.Adapter
         /// Dispose the current stream listener
         /// </summary>
         public void Dispose()
-        {   
+        {
             try
             {
                 _logger.InfoFormat("Disposing listener for {0}", _resource);
