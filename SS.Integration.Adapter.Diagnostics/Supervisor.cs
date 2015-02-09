@@ -81,8 +81,12 @@ namespace SS.Integration.Adapter.Diagnostics
             {
                 var tempFixtures = _fixtures.Values;
 
+
+                if(tempFixtures == null)
+                    return;
+                
                 //have to remove exception because it might not be serializable
-                tempFixtures.ForEach(x => x.LastError.Exception = null);
+                tempFixtures.Where(x=> x.LastError != null).ForEach(x => x.LastError.Exception = null);
                 _objectStore.SetObject(null,tempFixtures.ToDictionary(f => f.Id));
             }
             catch (Exception ex)
