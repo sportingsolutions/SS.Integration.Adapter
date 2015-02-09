@@ -441,8 +441,8 @@ namespace SS.Integration.Adapter
                     _logger.DebugFormat("{0} is marked as ignored. Listener wil be removed", resource);
                     RemoveAndStopListener(resource.Id);
                 }
-                else if (listener.IsDisconnected && resource.MatchStatus == MatchStatus.Prematch ||
-                         resource.MatchStatus == MatchStatus.InRunning)
+                else if (listener.IsDisconnected && (resource.MatchStatus == MatchStatus.Prematch ||
+                         resource.MatchStatus == MatchStatus.InRunning))
                 {
                     _logger.WarnFormat("{0} was disconnected from stream {1}",resource,resource.MatchStatus);
                     RemoveAndStopListener(resource.Id);
