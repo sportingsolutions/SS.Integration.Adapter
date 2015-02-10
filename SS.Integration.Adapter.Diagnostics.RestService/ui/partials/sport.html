@@ -73,7 +73,7 @@
         </tr>
         <tr data-ng-repeat="fixture in filtered = ( getFixturesForTab()) |  orderBy:['-IsInErrorState', 'StartTime']" data-ng-class="{danger: fixture.IsInErrorState}"  data-ng-click="openFixtureDetails(fixture.Id)" class="clickable">
             <td>{{fixture.Id}}</td>
-            <td>{{fixture.StartTime | date:'dd MMM yyyy hh:mm'  }}</td>
+            <td>{{fixture.StartTime | date:'dd MMM yyyy HH:mm'  }}</td>
             <td>{{fixture.Description}}</td>
             <td>{{fixture.Competition}} ({{fixture.CompetitionId}})</td>
             <td>{{fixture.State | fixtureStatus}}</td>
