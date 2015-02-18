@@ -114,6 +114,7 @@ namespace SS.Integration.Adapter.Configuration
 
         public int EchoDelay { get; private set; }
 
+        [Obsolete]
         public bool SuspendAllMarketsOnShutdown { get; private set; }
 
         public string EventStateFilePath { get; private set; }
