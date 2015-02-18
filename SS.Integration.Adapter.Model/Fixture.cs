@@ -87,7 +87,7 @@ namespace SS.Integration.Adapter.Model
 
         [DataMember]
         public List<Participant> Participants { get; private set; }
-
+        
         [IgnoreDataMember]
         public bool? IsPreMatchOnly
         {
@@ -165,6 +165,12 @@ namespace SS.Integration.Adapter.Model
                 return int.Parse(this.MatchStatus) == (int)Enums.MatchStatus.MatchOver;
             }
         }
+
+        /// <summary>
+        /// Timestamp indicates when update was send to a queue
+        /// </summary>
+        [DataMember]
+        public DateTime? TimeStamp { get; set; }
 
         public override string ToString()
         {
