@@ -117,6 +117,7 @@ namespace SS.Integration.Adapter.Configuration
 
         public int EchoDelay { get; private set; }
 
+        [Obsolete]
         public string EventStateFilePath { get; private set; }
         
         public bool DeltaRuleEnabled { get; private set; }

@@ -33,7 +33,7 @@ namespace SS.Integration.Adapter
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerManager));
         private const int LISTENER_DISPOSING_SAFE_GUARD = 1;
 
-        private readonly ConcurrentDictionary<string, IListener> _listeners = new ConcurrentDictionary<string, IListener>();
+        protected readonly ConcurrentDictionary<string, IListener> _listeners = new ConcurrentDictionary<string, IListener>();
         private readonly ConcurrentDictionary<string, int> _listenerDisposingQueue = new ConcurrentDictionary<string, int>();
         private readonly HashSet<string> _currentlyProcessedFixtures = new HashSet<string>();
         private readonly static object _sync = new object();
@@ -59,7 +59,7 @@ namespace SS.Integration.Adapter
         }
 
        
-        public void UpdateCurrentlyAvailableFixtures(string sport, Dictionary<string, IResourceFacade> currentfixturesLookup)
+        public virtual void UpdateCurrentlyAvailableFixtures(string sport, Dictionary<string, IResourceFacade> currentfixturesLookup)
         {
             var allFixturesForSport = _listeners.Where(x => string.Equals(x.Value.Sport, sport, StringComparison.Ordinal));
 
@@ -106,7 +106,7 @@ namespace SS.Integration.Adapter
             SaveEventState();
         }
 
-        public virtual bool RemoveStreamListener(string fixtureId)
+        public bool RemoveStreamListener(string fixtureId)
         {
             _logger.InfoFormat("Removing listener for fixtureId={0}", fixtureId);
 

@@ -366,6 +366,25 @@ namespace SS.Integration.Adapter.Diagnostics
 
         }
 
+        public override void UpdateCurrentlyAvailableFixtures(string sport, Dictionary<string, IResourceFacade> currentfixturesLookup)
+        {
+            base.UpdateCurrentlyAvailableFixtures(sport, currentfixturesLookup);
+
+            //this ensures Supervisor removes all disposed stream listeners if even other mechanisms failed
+            UpdateListenersList();
+        }
+
+        private void UpdateListenersList()
+        {
+            var activeListeners = GetListenersBySport().SelectMany(l => l).ToDictionary(l => l.FixtureId);
+            
+            //filter fixtures for which stream listener does not exist 
+            foreach (var fixtureOverview in _fixtures.Values.Where(f=> !activeListeners.ContainsKey(f.Id)))
+            {
+                CleanUpFixtureData(fixtureOverview.Id);
+            }
+        }
+
         private void UpdateStateFromStreamListener(StreamListener listener)
         {
             //Nothing to update
@@ -464,27 +483,34 @@ namespace SS.Integration.Adapter.Diagnostics
 
             StateProviderProxy.StateProvider.RemovePluginState(fixtureId);
         }
-
+        
         public void ForceListenerStop(string fixtureId)
         {
             StopStreaming(fixtureId);
             RemoveStreamListener(fixtureId);
         }
-
-        public override bool RemoveStreamListener(string fixtureId)
+        
+        private bool RemoveStreamListener(string fixtureId)
         {
+            _logger.DebugFormat("Removing stream listener {0}", fixtureId);
+
             var result = base.RemoveStreamListener(fixtureId);
-
-            var fixtureState = EventState.GetFixtureState(fixtureId);
-            if (fixtureState != null && fixtureState.MatchStatus == MatchStatus.MatchOver)
-            {
-                FixtureOverview tempObj = null;
-                _fixtures.TryRemove(fixtureId, out tempObj);
-
-                SaveState();
-            }
+            CleanUpFixtureData(fixtureId);
 
             return result;
+        }
+
+        private void CleanUpFixtureData(string fixtureId)
+        {
+            var fixtureState = EventState.GetFixtureState(fixtureId);
+
+            FixtureOverview tempObj = null;
+            _fixtures.TryRemove(fixtureId, out tempObj);
+
+            if (fixtureState != null && fixtureState.MatchStatus == MatchStatus.MatchOver)
+            {
+                SaveState();
+            }
         }
 
         #region IDisposable
