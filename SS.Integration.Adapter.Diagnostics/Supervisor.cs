@@ -379,7 +379,7 @@ namespace SS.Integration.Adapter.Diagnostics
             var activeListeners = GetListenersBySport().SelectMany(l => l).ToDictionary(l => l.FixtureId);
             
             //filter fixtures for which stream listener does not exist 
-            foreach (var fixtureOverview in _fixtures.Values.Where(f=> !activeListeners.ContainsKey(f.Id)))
+            foreach (var fixtureOverview in _fixtures.Values.Where(f=> f != null && f.Id != null && !activeListeners.ContainsKey(f.Id)))
             {
                 CleanUpFixtureData(fixtureOverview.Id);
             }
