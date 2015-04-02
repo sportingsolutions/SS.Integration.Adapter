@@ -28,6 +28,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
     internal class MarketStateCollection : IUpdatableMarketStateCollection
     {
         private readonly Dictionary<string, IUpdatableMarketState> _States;
+        private List<IUpdatableMarketState> _processed;
 
         private MarketStateCollection()
         {
@@ -130,6 +131,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 Markets.Where(marketId => !marketsLookUp.ContainsKey(marketId)).ForEach(marketId => this[marketId].IsDeleted = true);
             }
 
+            _processed = new List<IUpdatableMarketState>();
+
             foreach (var market in fixture.Markets)
             {
                 IUpdatableMarketState mkt_state = null;
@@ -143,7 +146,20 @@ namespace SS.Integration.Adapter.MarketRules.Model
                     mkt_state = new MarketState(market, fullSnapshot);
                     this[market.Id] = mkt_state;
                 }
+
+                _processed.Add(mkt_state);
             }
+        }
+
+        public void CommitChanges()
+        {
+           if(_processed != null)
+           {
+               foreach(var mkt in _processed)
+                   mkt.CommitChanges();
+
+               _processed = null;
+           }
         }
 
         public void OnMarketsForcedSuspension(IEnumerable<IMarketState> markets)

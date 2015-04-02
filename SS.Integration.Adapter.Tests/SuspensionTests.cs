@@ -87,6 +87,7 @@ namespace SS.Integration.Adapter.Tests
             fixture.Markets.Add(mkt6);
             state.Update(fixture, true);
             
+            state.CommitChanges();
             
             // STEP 2: test the suspension strategies
             suspensionManager.SuspendAllMarketsStrategy(state);
@@ -144,7 +145,7 @@ namespace SS.Integration.Adapter.Tests
             fixture.Markets.Add(mkt7);
 
             state.Update(fixture, true);
-            
+            state.CommitChanges();
             
             // STEP 4: test the suspension strategies again
             suspensionManager.SuspendAllMarketsStrategy(state);

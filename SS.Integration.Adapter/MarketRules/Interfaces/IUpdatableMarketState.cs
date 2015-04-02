@@ -20,10 +20,10 @@ namespace SS.Integration.Adapter.MarketRules.Interfaces
     internal interface IUpdatableMarketState : IMarketState
     {
         /// <summary>
-        /// Allows to update the market's state.
+        ///     Allows to update the market's state.
         /// 
-        /// All the containted ISelectionState object
-        /// are updated accordingly.
+        ///     All the containted ISelectionState object
+        ///     are updated accordingly.
         /// 
         /// </summary>
         /// <param name="market"></param>
@@ -31,10 +31,15 @@ namespace SS.Integration.Adapter.MarketRules.Interfaces
         void Update(Market market, bool fullSnapshot);
 
         /// <summary>
-        /// Returns a deep-copy of this object.
+        ///     Returns a deep-copy of this object.
         /// </summary>
         /// <returns></returns>
         IUpdatableMarketState Clone();
 
+        /// <summary>
+        ///     Allows to perform specific action
+        ///     after the current state got accepted
+        /// </summary>
+        void CommitChanges();
     }
 }

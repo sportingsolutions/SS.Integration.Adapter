@@ -56,6 +56,7 @@ namespace SS.Integration.Adapter.MarketRules
                 return;
 
             _logger.DebugFormat("Committing changes made to the market state");
+            _currentTransaction.CommitChanges();
             _stateProvider.SetObject(_fixtureId, _currentTransaction);
             _currentTransaction = null;
         }

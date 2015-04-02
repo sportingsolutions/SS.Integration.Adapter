@@ -266,6 +266,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public void Update(Market market, bool fullSnapshot)
         {
+
             MergeSelectionStates(market, fullSnapshot);
 
             if (fullSnapshot)
@@ -277,10 +278,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 if (_tags.ContainsKey("traded_in_play"))
                     IsTradedInPlay = string.Equals(_tags["traded_in_play"], "true", StringComparison.InvariantCultureIgnoreCase);
             }
-
-            if (!HasBeenActive && IsActive)
-                HasBeenActive = true;
-
+            
             // always set to false at each update
             IsForcedSuspended = false;
 
@@ -319,6 +317,12 @@ namespace SS.Integration.Adapter.MarketRules.Model
         public void SetForcedSuspensionState(bool isSuspended = true)
         {
             IsForcedSuspended = isSuspended;
+        }
+
+        public void CommitChanges()
+        {
+            if(!HasBeenActive && IsActive)
+                HasBeenActive = true;
         }
 
         #endregion
