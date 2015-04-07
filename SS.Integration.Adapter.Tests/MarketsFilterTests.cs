@@ -1048,7 +1048,7 @@ namespace SS.Integration.Adapter.Tests
             };
 
 
-            Fixture fixture = new Fixture { Id = "ABC", MatchStatus = "40" };
+            Fixture fixture = new Fixture { Id = "ABCD", MatchStatus = "40" };
             fixture.Tags["Sport"] = "Football";
 
             Market testMkt = new Market { Id = "1" };
@@ -1109,6 +1109,121 @@ namespace SS.Integration.Adapter.Tests
             fixture.Markets.FirstOrDefault(x => x.Id == "2").Should().BeNull(); // because the market has been active
             fixture.Markets.FirstOrDefault(x => x.Id == "3").Should().BeNull(); // because the market has NOT been processed
             fixture.Markets.FirstOrDefault(x => x.Id == "4").Should().BeNull(); // because the market has NOT been processed
+        }
+
+
+        /// <summary>
+        /// 
+        ///     In this test I want to make sure
+        ///     that the IMarketState.Index is correctly set
+        ///     as the index value in which the market appears
+        ///     in the feed.
+        /// 
+        /// </summary>
+        [Test]
+        [Category("MarketRule")]
+        public void MarketIndexTest()
+        {
+            var settings = new Mock<ISettings>();
+            var plugin = new Mock<IAdapterPlugin>();
+            var stateprovider = new StateManager(settings.Object, plugin.Object);
+            var rules = new List<IMarketRule>();
+
+            Fixture fixture = new Fixture { Id = "ABC", MatchStatus = "10"};
+            fixture.Tags["Sport"] = "Football";
+
+            fixture.Markets.Add(new Market { Id = "1" });
+            fixture.Markets.Add(new Market { Id = "2" });
+            fixture.Markets.Add(new Market { Id = "3" });
+            fixture.Markets.Add(new Market { Id = "4" });
+            fixture.Markets.Add(new Market { Id = "5" });
+            fixture.Markets.Add(new Market { Id = "6" });
+
+            MarketRulesManager manager = new MarketRulesManager(fixture.Id, stateprovider, rules);
+
+            manager.ApplyRules(fixture);
+
+            for(int i = 0; i < fixture.Markets.Count; i++)
+                manager.CurrentState["" + (i + 1)].Index.Should().Be(i);
+
+
+            manager.CommitChanges();
+
+            for (int i = 0; i < fixture.Markets.Count; i++)
+                manager.CurrentState["" + (i + 1)].Index.Should().Be(i);
+
+        }
+
+        /// <summary>
+        /// 
+        ///     In this test I want to make sure 
+        ///     that the IMarketState.Index is correctly
+        ///     set even if a market re-definition is applied.
+        /// 
+        ///     When a market re-definition is applied, 
+        ///     we can have:
+        /// 
+        ///     1) new markets
+        ///     2) old markets get removed
+        /// 
+        ///     For new markets, the desired behaviour is
+        ///     LastIndex + IndexOf(market)
+        /// 
+        /// </summary>
+        [Test]
+        [Category("MarketRule")]
+        public void MarketIndexOnMarketRedefinitionTest()
+        {
+            var settings = new Mock<ISettings>();
+            var plugin = new Mock<IAdapterPlugin>();
+            var stateprovider = new StateManager(settings.Object, plugin.Object);
+            var rules = new List<IMarketRule>();
+
+            Fixture fixture = new Fixture { Id = "ABC", MatchStatus = "10" };
+            fixture.Tags["Sport"] = "Football";
+
+            fixture.Markets.Add(new Market { Id = "1" });
+            fixture.Markets.Add(new Market { Id = "2" });
+            fixture.Markets.Add(new Market { Id = "3" });
+            fixture.Markets.Add(new Market { Id = "4" });
+            fixture.Markets.Add(new Market { Id = "5" });
+            fixture.Markets.Add(new Market { Id = "6" });
+
+            MarketRulesManager manager = new MarketRulesManager(fixture.Id, stateprovider, rules);
+
+            manager.ApplyRules(fixture);
+
+            for (int i = 0; i < fixture.Markets.Count; i++)
+                manager.CurrentState["" + (i + 1)].Index.Should().Be(i);
+
+
+            manager.CommitChanges();
+
+            fixture.Markets.Clear();
+            fixture.Markets.Add(new Market { Id = "1" });
+            fixture.Markets.Add(new Market { Id = "2" });
+            fixture.Markets.Add(new Market { Id = "3" });
+
+            // new ones
+            fixture.Markets.Add(new Market { Id = "7" });
+            fixture.Markets.Add(new Market { Id = "8" });
+            fixture.Markets.Add(new Market { Id = "9" });
+
+            manager.ApplyRules(fixture);
+
+            for (int i = 0; i < manager.CurrentState.MarketCount; i++)
+            {
+                manager.CurrentState["" + (i + 1)].Index.Should().Be(i);
+                manager.CurrentState["" + (i + 1)].IsDeleted.Should().Be(i >= 3 && i <=5);
+            }
+
+            manager.CommitChanges();
+
+            for (int i = 0; i < manager.CurrentState.MarketCount; i++)
+            {
+                manager.CurrentState["" + (i + 1)].Index.Should().Be(i);
+                manager.CurrentState["" + (i + 1)].IsDeleted.Should().Be(i >= 3 && i <= 5);
+            }
         }
     }
 }

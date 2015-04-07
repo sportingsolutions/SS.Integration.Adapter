@@ -114,6 +114,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public bool IsDeleted { get; set; }
 
+        public int Index { get; set; }
+
         #region Tags
 
         public IEnumerable<string> TagKeys
@@ -305,6 +307,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 IsRollingMarket = this.IsRollingMarket,
                 IsDeleted = this.IsDeleted,
                 Line = this.Line,
+                Index = this.Index,
                 IsForcedSuspended = this.IsForcedSuspended
             };
 
@@ -391,6 +394,5 @@ namespace SS.Integration.Adapter.MarketRules.Model
         {
             return string.Format("Market marketId={0} marketName={1}", Id, Name);
         }
-
     }
 }

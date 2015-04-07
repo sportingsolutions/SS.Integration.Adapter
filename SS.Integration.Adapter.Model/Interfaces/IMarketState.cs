@@ -150,6 +150,19 @@ namespace SS.Integration.Adapter.Model.Interfaces
 
         bool IsDeleted { get; set; }
 
+        /// <summary>
+        /// 
+        ///     Returns the index of the market as it appears on the feed.
+        /// 
+        ///     If a a new market definition is applied (hence, new markets might appear
+        ///     and existing markets might disappear), all the new markets will have
+        ///     LastIndex + IndexOf(market). In other words, if before the market
+        ///     definition changed, we had 10 markets, all the new markets will
+        ///     have Index = 10 + IndexOf(market)
+        /// 
+        /// </summary>
+        int Index { get; }
+
         #region Selections 
 
         /// <summary>

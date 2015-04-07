@@ -144,6 +144,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 else
                 {
                     mkt_state = new MarketState(market, fullSnapshot);
+                    ((MarketState)mkt_state).Index = _States.Count;
                     this[market.Id] = mkt_state;
                 }
 
