@@ -104,6 +104,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public bool HasBeenActive { get; set; }
 
+        public bool HasBeenProcessed { get; set; }
+
         public bool IsForcedSuspended { get; private set; }
 
         public bool IsRollingMarket { get; private set; }
@@ -298,6 +300,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
             {
                 Id = this.Id,
                 HasBeenActive = this.HasBeenActive,
+                HasBeenProcessed = this.HasBeenProcessed,
                 IsTradedInPlay = this.IsTradedInPlay,
                 IsRollingMarket = this.IsRollingMarket,
                 IsDeleted = this.IsDeleted,
@@ -323,6 +326,11 @@ namespace SS.Integration.Adapter.MarketRules.Model
         {
             if(!HasBeenActive && IsActive)
                 HasBeenActive = true;
+        }
+
+        public void ApplyPostRulesProcessing()
+        {
+            HasBeenProcessed = true;
         }
 
         #endregion
@@ -383,5 +391,6 @@ namespace SS.Integration.Adapter.MarketRules.Model
         {
             return string.Format("Market marketId={0} marketName={1}", Id, Name);
         }
+
     }
 }

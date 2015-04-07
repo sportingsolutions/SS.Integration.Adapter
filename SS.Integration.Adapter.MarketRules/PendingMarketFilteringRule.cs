@@ -15,7 +15,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using log4net;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
@@ -138,8 +137,8 @@ namespace SS.Integration.Adapter.MarketRules
                                     }
                                 }
                             });
-                            var mri = new MarketRuleEditIntent(editMarketAction,
-                                MarketRuleEditIntent.OperationType.CHANGE_DATA);
+
+                            var mri = new MarketRuleEditIntent(editMarketAction, MarketRuleEditIntent.OperationType.CHANGE_DATA);
                             _Logger.DebugFormat("market rule={0} => {1} of {2} is created", Name, mkt, fixture);
                             result.EditMarket(mkt, mri);
                         }

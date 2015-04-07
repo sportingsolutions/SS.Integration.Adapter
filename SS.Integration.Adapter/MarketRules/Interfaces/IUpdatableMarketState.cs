@@ -41,5 +41,14 @@ namespace SS.Integration.Adapter.MarketRules.Interfaces
         ///     after the current state got accepted
         /// </summary>
         void CommitChanges();
+
+        /// <summary>
+        ///     Allows to perform specific action
+        ///     after the market rules are applied but
+        ///     before the snapshot/update is passed
+        ///     to the plugin and before the 
+        ///     changes are accepted/refused.
+        /// </summary>
+        void ApplyPostRulesProcessing();
     }
 }

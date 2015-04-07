@@ -96,6 +96,9 @@ namespace SS.Integration.Adapter.MarketRules
 
 
             MergeIntents(fixture, tmp);
+
+            _currentTransaction.ApplyPostRulesProcessing(fixture);
+
             _logger.InfoFormat("Market state update for {0}", fixture);
         }
 
@@ -140,47 +143,49 @@ namespace SS.Integration.Adapter.MarketRules
         }
 
         /// <summary>
-        /// Intents:
         /// 
-        /// E = Editable , !E = NotEditable
-        /// R = Removable, !R = NotRemovable
+        ///     Intents:
+        /// 
+        ///     E = Editable , !E = NotEditable
+        ///     R = Removable, !R = NotRemovable
         ///        
-        /// This table shows how conflicts are solved 
-        /// on a specific market
+        ///     This table shows how conflicts are solved 
+        ///     on a specific market
         ///
-        /// (Rule 1, Rule 2) => Result
-        /// (E, R)  => E
-        /// (E, !R) => E
-        /// (E, E1) => See below
-        /// (E, !E) => !E    
+        ///     (Rule 1, Rule 2) => Result
+        ///     (E, R)  => E
+        ///     (E, !R) => E
+        ///     (E, E1) => See below
+        ///     (E, !E) => !E    
         /// 
-        /// (R, !R) => !R
-        /// (R, R)  => R
-        /// (R, !E) => R
+        ///     (R, !R) => !R
+        ///     (R, R)  => R
+        ///     (R, !E) => R
         /// 
-        /// (!R, !R) => !R
-        /// (!R, !E) => !E + !R
+        ///     (!R, !R) => !R
+        ///     (!R, !E) => !E + !R
         /// 
-        /// (!E, !E) => !E
+        ///     (!E, !E) => !E
         /// 
-        /// When there are more than one rule that want to edit a specific market, the 
-        /// MarketRuleEditIntent.OperationType is considered.
+        ///     When there are more than one rule that want to edit a specific market, the 
+        ///     MarketRuleEditIntent.OperationType is considered.
         /// 
-        /// OperationType can be: CHANGE_SELECTIONS (CS), ADD_SELECTIONS (AS), REMOVE_SELECTIONS (RS), CHANGE_DATA (CD)
+        ///     OperationType can be: CHANGE_SELECTIONS (CS), ADD_SELECTIONS (AS), REMOVE_SELECTIONS (RS), CHANGE_DATA (CD)
         /// 
-        /// (CS, AS) => CS + AS (changing operation will be perfomed on the existing selections. Newly added selections will not be edited)
-        /// (CS, RS) => CS
-        /// (CS, CS) => CS + CS (this might cause unexpected results)
-        /// (CS, CD) => CS + CD
+        ///     (CS, AS) => CS + AS (changing operation will be perfomed on the existing selections. Newly added selections will not be edited)
+        ///     (CS, RS) => CS
+        ///     (CS, CS) => CS + CS (this might cause unexpected results)
+        ///     (CS, CD) => CS + CD
         /// 
-        /// (AS, RS) => RS + AS (existing selection will be removed and only after that the new one are added)
-        /// (AS, CD) => AS + CD
-        /// (AS, AS) => AS + AS
+        ///     (AS, RS) => RS + AS (existing selection will be removed and only after that the new one are added)
+        ///     (AS, CD) => AS + CD
+        ///     (AS, AS) => AS + AS
         /// 
-        /// (CD, CD) => CD + CD (this might cause unexpected results)
-        /// (CD, RS) => CD + RS
+        ///     (CD, CD) => CD + CD (this might cause unexpected results)
+        ///     (CD, RS) => CD + RS
         /// 
-        /// (RS, RS) => RS + RS
+        ///     (RS, RS) => RS + RS
+        /// 
         /// </summary>
         /// <param name="fixture"></param>
         /// <param name="intents"></param>
@@ -203,7 +208,7 @@ namespace SS.Integration.Adapter.MarketRules
                 var intent = intents[rule];
 
                 /* "toremove" lists all the markets that a rule wants to remove.
-                 * Those that would actually be removed are only those
+                 * Those that will be removed are only those
                  * whose flag is set to true. Those that have the flag
                  * set to false are markets that some rule wanted to 
                  * remove but some other rule marked them as not

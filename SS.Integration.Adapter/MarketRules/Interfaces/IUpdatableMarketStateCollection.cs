@@ -39,6 +39,16 @@ namespace SS.Integration.Adapter.MarketRules.Interfaces
         void CommitChanges();
 
         /// <summary>
+        ///     Allows to perform specific action
+        ///     after the market rules are applied but
+        ///     before the snapshot/update is passed
+        ///     to the plugin and before the 
+        ///     changes are accepted/refused.
+        /// </summary>
+        /// <param name="fixture"></param>
+        void ApplyPostRulesProcessing(Fixture fixture);
+
+        /// <summary>
         ///     Allows to force the the suspension state on the given market.
         ///     When a market is forced on a suspended state, the 
         ///     IMarketState.IsForcedSuspended property will return true
