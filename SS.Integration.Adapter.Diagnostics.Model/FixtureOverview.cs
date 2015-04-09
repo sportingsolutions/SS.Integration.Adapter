@@ -15,6 +15,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.Remoting.Contexts;
 using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Model.Enums;
 
@@ -46,11 +48,14 @@ namespace SS.Integration.Adapter.Diagnostics.Model
 
         protected FixtureOverviewDelta Delta
         {
+            [MethodImpl(MethodImplOptions.Synchronized)]
             get
             {
                 //returns the value of the assignment 
-                return (_delta = _delta ?? new FixtureOverviewDelta() {Id = this.Id});
+                return (_delta = _delta ?? new FixtureOverviewDelta() { Id = this.Id });
             }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
             set
             {
                 _delta = value;
@@ -66,7 +71,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             set { _listenerOverview = value; }
         }
 
-  
+
 
         public ErrorOverview LastError
         {
@@ -74,10 +79,10 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             set
             {
                 UpdateError(value);
-                _lastError = value; 
+                _lastError = value;
             }
         }
-        
+
         private void UpdateError(ErrorOverview value)
         {
             _errors.Add(value);
@@ -91,7 +96,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
 
         private void TrimOldItems<T>(IList<T> auditList)
         {
-            if(auditList.Count >= MAX_AUDIT_SIZE)   
+            if (auditList.Count >= MAX_AUDIT_SIZE)
                 auditList.RemoveAt(0);
         }
 
@@ -114,6 +119,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             }
         }
 
+
         private void FeedUpdated(FeedUpdateOverview newFeedUpdate)
         {
             _feedUpdates.Add(newFeedUpdate);
@@ -134,7 +140,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
 
         public string Sport
         {
-            get; 
+            get;
             set;
         }
 
@@ -150,14 +156,14 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             set { _competitionName = value; }
         }
 
-        
+
 
         public DateTime TimeStamp
         {
             get { return _timeStamp; }
             set { _timeStamp = value; }
         }
-    
+
         public IEnumerable<ErrorOverview> GetErrorsAudit(int limit = 0)
         {
             if (limit == 0)
@@ -176,7 +182,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
 
         private void OnErrorChanged(IListenerOverview listenerOverview)
         {
-            if(!listenerOverview.IsErrored.HasValue)
+            if (!listenerOverview.IsErrored.HasValue)
                 return;
 
             var isErrored = listenerOverview.IsErrored.Value;
@@ -190,16 +196,21 @@ namespace SS.Integration.Adapter.Diagnostics.Model
                 Delta.LastError = LastError;
             }
         }
-        
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
         public IFixtureOverviewDelta GetDelta()
         {
+            //it's called before the object is fully set up
+            if (string.IsNullOrEmpty(this.Id))
+                return null;
+
             var listererOverviewDelta = (ListenerOverview as ListenerOverview).GetDelta();
             if (_delta == null && listererOverviewDelta != null)
             {
                 Delta.ListenerOverview = listererOverviewDelta;
             }
 
-            var responseDelta = _delta;
+            var responseDelta = Delta;
 
             if (responseDelta != null)
             {
