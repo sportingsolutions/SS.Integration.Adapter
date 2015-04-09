@@ -190,8 +190,7 @@ namespace SS.Integration.Adapter.WindowsService
 
             _adapter.Stop();
             _adapterWorkerThread.Wait();
-            _adapterWorkerThread.ContinueWith(task => _logger.InfoFormat("Adapter successfully stopped"));
-
+            _adapterWorkerThread.ContinueWith(task => { _logger.InfoFormat("Adapter successfully stopped"); Environment.Exit(0); });
             if (_supervisor != null)
                 _supervisor.Dispose();
         }
