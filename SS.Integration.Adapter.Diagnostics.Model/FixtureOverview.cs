@@ -39,6 +39,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         private List<FeedUpdateOverview> _feedUpdates = new List<FeedUpdateOverview>(MAX_AUDIT_SIZE);
         private DateTime? _startTime;
         private IListenerOverview _listenerOverview;
+        private string _id;
 
         public FixtureOverview()
         {
@@ -63,7 +64,22 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             }
         }
 
-        public string Id { get; set; }
+        public string Id
+        {
+            get { return _id; }
+            set
+            {
+                _id = value;
+                //In case delta was created before the Id was set
+                ValidateDelta();
+            }
+        }
+
+        private void ValidateDelta()
+        {
+            if (_delta != null && _delta.Id == null)
+                _delta.Id = _id;
+        }
 
         public IListenerOverview ListenerOverview
         {
@@ -200,10 +216,6 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         [MethodImpl(MethodImplOptions.Synchronized)]
         public IFixtureOverviewDelta GetDelta()
         {
-            //it's called before the object is fully set up
-            if (string.IsNullOrEmpty(this.Id))
-                return null;
-
             var listererOverviewDelta = (ListenerOverview as ListenerOverview).GetDelta();
             if (_delta == null && listererOverviewDelta != null)
             {
@@ -219,6 +231,10 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             }
             _delta = null;
 
+            //it's called before the object is fully set up
+            if (responseDelta != null && responseDelta.Id == null)
+                return null;
+            
             return responseDelta;
         }
     }
