@@ -79,15 +79,17 @@ namespace SS.Integration.Adapter.Diagnostics
         {
             try
             {
-                var tempFixtures = _fixtures.Values;
+                lock (this)
+                {
+                    var tempFixtures = _fixtures.Values;
+                    
+                    if (tempFixtures == null)
+                        return;
 
-
-                if(tempFixtures == null)
-                    return;
-                
-                //have to remove exception because it might not be serializable
-                tempFixtures.Where(x=> x.LastError != null).ForEach(x => x.LastError.Exception = null);
-                _objectStore.SetObject(null,tempFixtures.ToDictionary(f => f.Id));
+                    //have to remove exception because it might not be serializable
+                    tempFixtures.Where(x => x.LastError != null).ForEach(x => x.LastError.Exception = null);
+                    _objectStore.SetObject(null, tempFixtures.ToDictionary(f => f.Id));
+                }
             }
             catch (Exception ex)
             {
