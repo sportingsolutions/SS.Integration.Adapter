@@ -145,12 +145,13 @@ namespace SS.Integration.Adapter.ProcessState
             }
         }
 
-        public void AddFixture(string sport, string fixtureId, int sequence)
+        public void AddFixture(string sport, string fixtureId, int sequence, int epoch)
         {
-            _logger.DebugFormat("Updating state for Fixture fixtureId={0} sequence={1} sport={2}", fixtureId, sequence, sport);
+            _logger.DebugFormat("Updating state for Fixture fixtureId={0} sequence={1} sport={2} epoch={3}", fixtureId, sequence, sport, epoch);
             var fixtureState = GetFixtureState(fixtureId) ?? new FixtureState { Id = fixtureId, Sport = sport } ;
 
             fixtureState.Sequence = sequence;
+            fixtureState.Epoch = epoch;
             Events.AddOrUpdate(fixtureId, fixtureState, (key, oldValue) => fixtureState);
         }
 
@@ -160,13 +161,14 @@ namespace SS.Integration.Adapter.ProcessState
             Events.TryRemove(fixtureId, out abc);
         }
 
-        public void UpdateFixtureState(string sport, string fixtureId, int sequence, MatchStatus matchStatus)
+        public void UpdateFixtureState(string sport, string fixtureId, int sequence, MatchStatus matchStatus, int epoch)
         {
             _logger.DebugFormat("Updating state for Fixture fixtureId={0} sequence={1}", fixtureId, sequence);
             var fixtureState = GetFixtureState(fixtureId) ?? new FixtureState {Id = fixtureId, Sport = sport};
 
             fixtureState.Sequence = sequence;
             fixtureState.MatchStatus = matchStatus;
+            fixtureState.Epoch = epoch;
 
             Events.AddOrUpdate(fixtureId, fixtureState, (idX, fs) => fixtureState);
         }

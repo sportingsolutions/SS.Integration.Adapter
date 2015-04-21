@@ -20,8 +20,10 @@ namespace SS.Integration.Adapter.Model
     [Serializable]
     public class FixtureState
     {
+        private int _epoch = -1;
         public string Id { get; set; }
         public int Sequence { get; set; }
+        public int Epoch { get { return _epoch; } set { _epoch = value; } }
         public MatchStatus MatchStatus { get; set; }
         public string Sport { get; set; }
     }

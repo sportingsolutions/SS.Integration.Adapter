@@ -140,7 +140,7 @@ namespace SS.Integration.Adapter.Tests
             connector.Verify(c => c.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Once());
             connector.Verify(c => c.Suspend(It.IsAny<string>()), Times.Never());
             resource.Verify(r => r.StopStreaming(), Times.Never());
-            eventState.Verify(es => es.UpdateFixtureState("Football", It.IsAny<string>(), 2, resource.Object.MatchStatus), Times.Once());
+            eventState.Verify(es => es.UpdateFixtureState("Football", It.IsAny<string>(), 2, resource.Object.MatchStatus, 1), Times.Once());
         }
 
         [Test]
@@ -199,7 +199,7 @@ namespace SS.Integration.Adapter.Tests
             connector.Verify(c => c.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never());
             resource.Verify(r => r.StopStreaming(), Times.Never());
             resource.Verify(r => r.GetSnapshot(), Times.Once());
-            eventState.Verify(es => es.UpdateFixtureState(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<MatchStatus>()), Times.Once());
+            eventState.Verify(es => es.UpdateFixtureState(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<MatchStatus>(), 1), Times.Once());
         }
 
         [Test]

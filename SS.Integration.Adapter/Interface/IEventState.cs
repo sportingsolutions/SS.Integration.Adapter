@@ -29,9 +29,9 @@ namespace SS.Integration.Adapter.Interface
 
         FixtureState GetFixtureState(string fixtureId);
 
-        void AddFixture(string sport, string fixtureId, int sequence);
+        void AddFixture(string sport, string fixtureId, int sequence, int epoch);
 
         void RemoveFixture(string sport, string fixtureId);
-        void UpdateFixtureState(string sport, string fixtureId, int sequence, MatchStatus matchStatus);
+        void UpdateFixtureState(string sport, string fixtureId, int sequence, MatchStatus matchStatus, int epoch);
     }
 }
