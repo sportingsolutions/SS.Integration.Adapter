@@ -25,6 +25,11 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         public IListenerOverview ListenerOverview { get; internal set; }
         public ErrorOverview LastError { get; internal set; }
         public FeedUpdateOverview FeedUpdate { get; internal set; }
+
+        public bool HasChanged
+        {
+            get { return ListenerOverview != null || LastError != null || FeedUpdate != null; }
+        }
     }
 }
 

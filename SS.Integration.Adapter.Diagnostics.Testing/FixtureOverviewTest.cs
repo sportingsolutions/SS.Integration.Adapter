@@ -25,10 +25,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
         [Test]
         public void GetDeltaTest()
         {
-            var fixtureOverview = new FixtureOverview
-            {
-                Id = "TestId",
-            };
+            var fixtureOverview = new FixtureOverview("TestId");
 
             fixtureOverview.ListenerOverview.IsStreaming = false;
 
@@ -47,10 +44,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
         [Test]
         public void GetDeltaHasNotChangedTest()
         {
-            var fixtureOverview = new FixtureOverview
-            {
-                Id = "TestId"
-            };
+            var fixtureOverview = new FixtureOverview("TestId");
 
             fixtureOverview.ListenerOverview.IsStreaming = true;
 
@@ -65,10 +59,7 @@ namespace SS.Integration.Adapter.Diagnostics.Testing
         [Test]
         public void GetErrorTest()
         {
-            var fixtureOverview = new FixtureOverview
-            {
-                Id = "TestId",
-            };
+            var fixtureOverview = new FixtureOverview("TestId");
 
             fixtureOverview.LastError = new ErrorOverview
             {

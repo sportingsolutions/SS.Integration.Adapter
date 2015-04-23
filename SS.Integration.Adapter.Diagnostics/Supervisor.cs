@@ -419,7 +419,7 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public IFixtureOverview GetFixtureOverview(string fixtureId)
         {
-            return _fixtures.ContainsKey(fixtureId) ? _fixtures[fixtureId] : _fixtures[fixtureId] = new FixtureOverview();
+            return _fixtures.ContainsKey(fixtureId) ? _fixtures[fixtureId] : _fixtures[fixtureId] = new FixtureOverview(fixtureId);
         }
 
         private StreamListener GetStreamListenerObject(string fixtureId)

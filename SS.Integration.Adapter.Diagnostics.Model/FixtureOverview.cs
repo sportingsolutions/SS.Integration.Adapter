@@ -41,10 +41,19 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         private IListenerOverview _listenerOverview;
         private string _id;
 
+        /// <summary>
+        /// DO NOT USE DIRECTLY IT's FOR SERIALISER ONLY
+        /// </summary>
         public FixtureOverview()
         {
             _errors = new List<ErrorOverview>(10);
             _listenerOverview = new ListenerOverview();
+        }
+
+        public FixtureOverview(string fixtureId) : this()
+        {
+            _id = fixtureId;
+            
         }
 
         protected FixtureOverviewDelta Delta
@@ -70,17 +79,10 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             set
             {
                 _id = value;
-                //In case delta was created before the Id was set
-                ValidateDelta();
             }
         }
 
-        private void ValidateDelta()
-        {
-            if (_delta != null && _delta.Id == null)
-                _delta.Id = _id;
-        }
-
+        
         public IListenerOverview ListenerOverview
         {
             get { return _listenerOverview; }
@@ -171,9 +173,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             get { return _competitionName; }
             set { _competitionName = value; }
         }
-
-
-
+        
         public DateTime TimeStamp
         {
             get { return _timeStamp; }
@@ -228,13 +228,16 @@ namespace SS.Integration.Adapter.Diagnostics.Model
             {
                 if (responseDelta.ListenerOverview != null)
                     OnErrorChanged(responseDelta.ListenerOverview);
-            }
-            _delta = null;
 
-            //it's called before the object is fully set up
-            if (responseDelta != null && responseDelta.Id == null)
-                return null;
+                //the object might exist with just Id populated but if no properties changed it should not be issued
+                if (!responseDelta.HasChanged)
+                    responseDelta = null;
+            }
             
+            _delta = null;
+            
+
+
             return responseDelta;
         }
     }
