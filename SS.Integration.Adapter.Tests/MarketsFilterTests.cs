@@ -499,7 +499,7 @@ namespace SS.Integration.Adapter.Tests
 
             var rule = new PendingMarketFilteringRule();
             rule.AddSportToRule("TestFootball");
-            rule.ExcludeMarketType("do_not_touch");
+            rule.ExcludeMarketType("TestFootball.do_not_touch");
 
             List<IMarketRule> rules = new List<IMarketRule> { 
                 rule,
@@ -536,7 +536,7 @@ namespace SS.Integration.Adapter.Tests
 
             var rule = new PendingMarketFilteringRule();
             rule.AddSportToRule("TestFootball");
-            rule.ExcludeMarketType("do_not_touch");
+            rule.ExcludeMarketType("TestFootball.do_not_touch");
 
             List<IMarketRule> rules = new List<IMarketRule> { 
                 rule,
