@@ -22,6 +22,32 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.MarketRules
 {
+    /// <summary>
+    /// 
+    ///     This rule is executed only if the match is over.
+    /// 
+    ///     Any call to this rule while the match is not over, will
+    ///     result in an empty set of intents.
+    /// 
+    ///     Its purpose is to void any market that:
+    /// 
+    ///     1) Has been active at least one 
+    ///     2) Has been seen/processed by the plugin 
+    ///        (or in other words, during the market life cycle,
+    ///        at least once it appeared on a snapshot/update passed
+    ///        down to the plugin)
+    ///     3) Has not been settled or voided by the platform.
+    /// 
+    ///     The main use of this rule is during market re-definition.
+    /// 
+    ///     If a market definition changes when the fixture is already published,
+    ///     some of the markets could disapper from the snapshots/updates,
+    ///     cause not included in the new definition any more.
+    /// 
+    ///     At the end of the match, this rule will take care of
+    ///     voiding these markets.
+    /// 
+    /// </summary>
     public class VoidUnSettledMarket : IMarketRule
     {
         private const string NAME = "VoidUnSettled_Markets";

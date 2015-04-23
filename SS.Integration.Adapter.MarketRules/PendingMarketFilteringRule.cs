@@ -21,6 +21,20 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.MarketRules
 {
+    /// <summary>
+    /// 
+    ///     This rule removes from a snapshot/update all
+    ///     the markets that are not (and never were) active.
+    /// 
+    ///     Once a market becomes active for the first time,
+    ///     if the update is not a snapshot, the rules will
+    ///     add all the missing information to the market/selections
+    ///     (i.e. tags) 
+    /// 
+    ///     It is possible to configure the rule by sport and
+    ///     allow specific markets to be excluded from this rule.
+    /// 
+    /// </summary>
     public class PendingMarketFilteringRule : IMarketRule
     {
 
@@ -42,13 +56,24 @@ namespace SS.Integration.Adapter.MarketRules
         }
 
         /// <summary>
-        /// Allows to specify a market type that will be 
-        /// excluded from the checks performed on this market rule
+        ///     Allows to specify a market type that will be 
+        ///     excluded from the checks performed on this market rule.
+        /// 
+        ///     The argument must formatted as: "sport"."type"
+        /// 
+        ///     For example, to exclude from Football the match_winner
+        ///     market, we should use:
+        /// 
+        ///     ExcludeMarketType("Football.match_winner");
+        /// 
         /// </summary>
         /// <param name="type"></param>
         public void ExcludeMarketType(string type)
         {
-            _excludedMarketTypes.Add(type);
+            if(string.IsNullOrEmpty(type))
+                return;
+
+            _excludedMarketTypes.Add(type.ToLower());
         }
 
         public void ExcludeMarketType(IEnumerable<string> marketTypes)
@@ -57,21 +82,35 @@ namespace SS.Integration.Adapter.MarketRules
                 ExcludeMarketType(type);
         }
 
+        public void RemoveExcludedMarketType(string type)
+        {
+            if(string.IsNullOrEmpty(type))
+                return;
+
+            _excludedMarketTypes.Remove(type.ToLower());
+        }
+
         /// <summary>
-        /// Add a sport for the rule to applied to
+        ///     Add a sport for the rule to applied to
         /// </summary>
         /// <param name="sport">e.g. Football, Handball etc.</param>
         public void AddSportToRule(string sport)
         {
+            if(string.IsNullOrEmpty(sport))
+                return;
+
             _includedSports.Add(sport);
         }
 
         /// <summary>
-        /// Stop the rule being applied to this sport
+        ///     Stop the rule being applied to this sport
         /// </summary>
         /// <param name="sport">e.g. Football, Handball etc.</param>
         public void RemoveSportFromRule(string sport)
         {
+            if(string.IsNullOrEmpty(sport))
+                return;
+
             _includedSports.Remove(sport);
         }
 
@@ -85,7 +124,9 @@ namespace SS.Integration.Adapter.MarketRules
 
                 foreach (var mkt in fixture.Markets)
                 {
-                    if (_excludedMarketTypes.Contains(mkt.Type))
+                    string type = string.Format("{0}.{1}", newState.Sport, mkt.Type).ToLower();
+
+                    if (_excludedMarketTypes.Contains(type))
                     {
                         _Logger.DebugFormat("market rule={0} => {1} of {2} is excluded from rule due its type={3}",
                             Name, mkt, fixture, mkt.Type);

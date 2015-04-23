@@ -17,32 +17,32 @@ namespace SS.Integration.Adapter.Model.Interfaces
     public interface IMarketRule
     {
         /// <summary>
-        /// The rule's name
+        ///     The rule's name
         /// </summary>
         string Name { get; }
 
         /// <summary>
-        /// Applies a rule. 
+        ///     Applies a rule. 
         /// 
-        /// A rule is not allowed to 
-        /// edit directly the fixture object or any of its details
-        /// (markets, selections).
+        ///     A rule is not allowed to 
+        ///     edit directly the fixture object or any of its details
+        ///     (markets, selections).
         /// 
-        /// A rule can only specify an intent of action.
-        /// A rule manager will collect together all the rules' intents
-        /// and resolve theirs conflicts if any. When the the 
-        /// rule manager has a set of no confliting intents
-        /// it executes them.
+        ///     A rule can only specify an intent of action.
+        ///     A rule manager will collect together all the rules' intents
+        ///     and resolve theirs conflicts if any. When the the 
+        ///     rule manager has a set of no confliting intents
+        ///     it executes them.
         /// 
-        /// IMarketRuleResultIntent must be returned containing
-        /// all the rule's intents.
+        ///     IMarketRuleResultIntent must be returned containing
+        ///     all the rule's intents.
         /// 
-        /// IMarketStateCollection "OldState" and "NewState" are
-        /// the markets' states respectively before and after the update
-        /// arrived (NewState contains the changes from the update).
+        ///     IMarketStateCollection "OldState" and "NewState" are
+        ///     the markets' states respectively before and after the update
+        ///     arrived (NewState contains the changes from the update).
         /// 
-        /// Note tha OldState can be null if it is the first time
-        /// a fixture is seen by the adapter.
+        ///     Note tha OldState can be null if it is the first time
+        ///     a fixture is seen by the adapter.
         /// 
         /// </summary>
         /// <param name="fixture"></param>

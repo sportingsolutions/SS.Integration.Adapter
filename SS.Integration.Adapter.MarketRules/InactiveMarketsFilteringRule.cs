@@ -20,6 +20,14 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.MarketRules
 {
+    /// <summary>
+    ///    
+    ///      This rules removes markets from snapshots/updates if
+    /// 
+    ///     1) the market is INACTIVE
+    ///     2) the market was INACTIVE in the previous update/snapshot
+    ///    
+    /// </summary>
     public class InactiveMarketsFilteringRule : IMarketRule
     {
         private const string NAME = "Inactive_Markets";
@@ -37,10 +45,12 @@ namespace SS.Integration.Adapter.MarketRules
         public string Name { get { return NAME; } }
 
         /// <summary>
-        /// Remove markets from snapshot/update when: 
-        /// current market state is inactive AND the previous state was inactive too (with no change in status or name)
         /// 
-        /// NB: If there is a change in market's name or status then will not be removed
+        ///     Remove markets from snapshot/update when: 
+        ///     current market state is inactive AND the previous state was inactive too (with no change in status or name)
+        /// 
+        ///     NB: If there is a change in market's name or status then will not be removed
+        /// 
         /// </summary>
         public IMarketRuleResultIntent Apply(Fixture fixture, IMarketStateCollection oldState, IMarketStateCollection newState)
         {
