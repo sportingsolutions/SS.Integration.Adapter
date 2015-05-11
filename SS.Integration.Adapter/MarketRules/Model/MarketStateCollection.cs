@@ -28,6 +28,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
     internal class MarketStateCollection : IUpdatableMarketStateCollection
     {
         private readonly Dictionary<string, IUpdatableMarketState> _States;
+        private Dictionary<string, IUpdatableMarketState> _processed;
 
         private MarketStateCollection()
         {
@@ -130,6 +131,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 Markets.Where(marketId => !marketsLookUp.ContainsKey(marketId)).ForEach(marketId => this[marketId].IsDeleted = true);
             }
 
+            _processed = new Dictionary<string, IUpdatableMarketState>();
+
             foreach (var market in fixture.Markets)
             {
                 IUpdatableMarketState mkt_state = null;
@@ -141,9 +144,23 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 else
                 {
                     mkt_state = new MarketState(market, fullSnapshot);
+                    ((MarketState)mkt_state).Index = _States.Count;
                     this[market.Id] = mkt_state;
                 }
+
+                _processed.Add(market.Id, mkt_state);
             }
+        }
+
+        public void CommitChanges()
+        {
+           if(_processed != null)
+           {
+               foreach(var mkt in _processed.Values)
+                   mkt.CommitChanges();
+
+               _processed = null;
+           }
         }
 
         public void OnMarketsForcedSuspension(IEnumerable<IMarketState> markets)
@@ -156,7 +173,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
             SetForcedSuspensionOnState(markets,false);
         }
 
-        private void SetForcedSuspensionOnState(IEnumerable<IMarketState> markets,bool isForceSuspended)
+        private void SetForcedSuspensionOnState(IEnumerable<IMarketState> markets, bool isForceSuspended)
         {
             if (markets == null)
                 return;
@@ -164,6 +181,18 @@ namespace SS.Integration.Adapter.MarketRules.Model
             foreach (var mkt in markets)
             {
                 _States[mkt.Id].SetForcedSuspensionState(isForceSuspended);
+            }
+        }
+
+        public void ApplyPostRulesProcessing(Fixture fixture)
+        {
+            foreach(var mkt in fixture.Markets)
+            {
+                IUpdatableMarketState tmp = null;
+                if(_processed.TryGetValue(mkt.Id, out tmp))
+                {
+                    tmp.ApplyPostRulesProcessing();
+                }
             }
         }
 

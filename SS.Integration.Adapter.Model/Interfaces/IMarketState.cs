@@ -35,111 +35,171 @@ namespace SS.Integration.Adapter.Model.Interfaces
     {
 
         /// <summary>
-        /// Market's Id
+        /// 
+        ///     Market's Id
+        /// 
         /// </summary>
         string Id { get; }
 
         /// <summary>
-        /// Market's name
+        /// 
+        ///     Market's name
+        /// 
         /// </summary>
         string Name { get; }
 
         /// <summary>
-        /// Returns true if the market is in a "Suspended" state.
         /// 
-        /// This property only makes sense if IsActive is true as 
-        /// a "Suspended" state doesn't have any meaning when the market
-        /// is not active.
+        ///     Returns true if the market is in a "Suspended" state.
+        /// 
+        ///     This property only makes sense if IsActive is true as 
+        ///     a "Suspended" state doesn't have any meaning when the market
+        ///     is not active.
+        /// 
         /// </summary>
         bool IsSuspended { get; }
 
         /// <summary>
-        /// Returns true if the market is active.
+        /// 
+        ///     Returns true if the market is active.
+        /// 
         /// </summary>
         bool IsActive { get; }
 
         /// <summary>
-        /// Is the market resulted?
-        /// This value returns the resulted state of
-        /// a market as it comes from the Connect platform.
         /// 
-        /// It is not related in any way to the resulted
-        /// stated of any down-stream sytems.
+        ///     Is the market resulted?
+        ///     This value returns the resulted state of
+        ///     a market as it comes from the Connect platform.
+        /// 
+        ///     It is not related in any way to the resulted
+        ///     stated of any down-stream sytems.
+        /// 
         /// </summary>
         bool IsResulted { get; }
 
         /// <summary>
-        /// Determines if all the selecions within
-        /// this market have been voided.
+        /// 
+        ///     Determines if all the selecions within
+        ///     this market have been voided.
+        /// 
         /// </summary>
         bool IsVoided { get; }
 
         /// <summary>
-        /// Is the market in a pending state?
         /// 
-        /// A pending state means that the market
-        /// is in a transition state between two valid states
-        /// (i.e Active and Resulted, ...).
+        ///     Is the market in a pending state?
         /// 
-        /// Usually, when the market is an pending state, 
-        /// no decision about it should be taken
+        ///     A pending state means that the market
+        ///     is in a transition state between two valid states
+        ///     (i.e Active and Resulted, ...).
+        /// 
+        ///     Usually, when the market is an pending state, 
+        ///     no decision about it should be taken
+        /// 
         /// </summary>
         bool IsPending { get; }
 
         /// <summary>
-        /// True if the market has been active at least once 
-        /// during the fixture's lifetime
+        /// 
+        ///     True if the market has been active at least once 
+        ///     during the fixture's lifetime
+        /// 
         /// </summary>
         bool HasBeenActive { get; }
 
+
         /// <summary>
-        /// True if the market has been forcely
-        /// suspended by the adapter.
         /// 
-        /// This is different from IsSuspended
-        /// which only looks at the tradability
-        /// of the market
+        ///     Returns true if the market has been seen
+        ///     by the plugin at least once. 
+        /// 
+        ///     Due the market rules it is possibile that 
+        ///     a market that exists in the feed is never 
+        ///     processed by the plugin.
+        /// 
+        ///     This property is set to true if the market
+        ///     has been passed to the plugin at least once.
+        ///     Please note that it DOES NOT mean that the
+        ///     market has been created into the downstream
+        ///     system.
+        ///     
+        /// </summary>
+        bool HasBeenProcessed { get; }
+
+        /// <summary>
+        /// 
+        ///     True if the market has been forcely
+        ///     suspended by the adapter.
+        /// 
+        ///     This is different from IsSuspended
+        ///     which only looks at the tradability
+        ///     of the market
+        /// 
         /// </summary>
         bool IsForcedSuspended { get; }
 
         /// <summary>
-        /// Returns the line of the market.
-        /// Only valid if the market is an
-        /// handicap/rolling market
+        /// 
+        ///     Returns the line of the market.
+        ///     Only valid if the market is an
+        ///     handicap/rolling market
+        /// 
         /// </summary>
         double? Line { get; }
 
         bool IsDeleted { get; set; }
 
+        /// <summary>
+        /// 
+        ///     Returns the index of the market as it appears on the feed.
+        /// 
+        ///     If a a new market definition is applied (hence, new markets might appear
+        ///     and existing markets might disappear), all the new markets will have
+        ///     LastIndex + IndexOf(market). In other words, if before the market
+        ///     definition changed, we had 10 markets, all the new markets will
+        ///     have Index = 10 + IndexOf(market)
+        /// 
+        /// </summary>
+        int Index { get; }
+
         #region Selections 
 
         /// <summary>
-        /// Lists all the ISelectionState objects
+        /// 
+        ///     Lists all the ISelectionState objects
+        /// 
         /// </summary>
         IEnumerable<ISelectionState> Selections { get; }
 
         /// <summary>
-        /// Returns the ISelectionState object associated
-        /// to the given selection's id.
         /// 
-        /// It returns null if the selection's id is
-        /// null or empty of if the selection does not
-        /// exist
+        ///     Returns the ISelectionState object associated
+        ///     to the given selection's id.
+        /// 
+        ///     It returns null if the selection's id is
+        ///     null or empty of if the selection does not
+        ///     exist
+        /// 
         /// </summary>
         /// <param name="selectionId"></param>
         /// <returns></returns>
         ISelectionState this[string selectionId] { get; }
 
         /// <summary>
-        /// True if an ISelectionState object for
-        /// the given selection's id is present
+        /// 
+        ///     True if an ISelectionState object for
+        ///     the given selection's id is present
+        /// 
         /// </summary>
         /// <param name="selectionId"></param>
         /// <returns></returns>
         bool HasSelection(string selectionId);
 
         /// <summary>
-        /// Returns the number of selection in this market
+        /// 
+        ///     Returns the number of selection in this market
+        /// 
         /// </summary>
         int SelectionsCount { get; }
 
@@ -148,49 +208,61 @@ namespace SS.Integration.Adapter.Model.Interfaces
         #region Tags
 
         /// <summary>
-        /// Lists all the tags that a market has had
-        /// during its lifetime
+        /// 
+        ///     Lists all the tags that a market has had
+        ///     during its lifetime
+        /// 
         /// </summary>
         IEnumerable<string> TagKeys { get; }
 
         /// <summary>
-        /// Get the value associated to the
-        /// given tag key. 
         /// 
-        /// It returns null if the tag key
-        /// does not exist
+        ///     Get the value associated to the
+        ///     given tag key. 
+        /// 
+        ///     It returns null if the tag key
+        ///     does not exist
+        /// 
         /// </summary>
         /// <param name="TagKey"></param>
         /// <returns></returns>
         string GetTagValue(string TagKey);
 
         /// <summary>
-        /// True if the given tag key exists
+        /// 
+        ///     True if the given tag key exists
+        /// 
         /// </summary>
         /// <param name="TagKey"></param>
         /// <returns></returns>
         bool HasTag(string TagKey);
 
         /// <summary>
-        /// Returns the number of tag associated
-        /// to this market state.
+        /// 
+        ///     Returns the number of tag associated
+        ///     to this market state.
+        /// 
         /// </summary>
         int TagsCount { get; }
 
         #endregion
 
         /// <summary>
-        /// Determines if the given market state
-        /// is equal to the current object
+        /// 
+        ///     Determines if the given market state
+        ///     is equal to the current object
+        /// 
         /// </summary>
         /// <param name="newMarket"></param>
         /// <returns></returns>
         bool IsEqualTo(IMarketState newMarket);
 
         /// <summary>
-        /// Determines if the given Market object
-        /// is equivalent to the current IMarketState
-        /// object.
+        /// 
+        ///     Determines if the given Market object
+        ///     is equivalent to the current IMarketState
+        ///     object.
+        /// 
         /// </summary>
         /// <param name="market"></param>
         /// <param name="checkTags">If true, tags are checked too</param>
@@ -200,7 +272,9 @@ namespace SS.Integration.Adapter.Model.Interfaces
         bool IsEquivalentTo(Market market, bool checkTags, bool checkSelections);
 
         /// <summary>
-        /// Allows to set force suspension state on a market.
+        /// 
+        ///     Allows to set force suspension state on a market.
+        /// 
         /// </summary>
         void SetForcedSuspensionState(bool isSuspended = true);
     }

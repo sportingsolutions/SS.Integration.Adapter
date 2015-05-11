@@ -22,6 +22,32 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.MarketRules
 {
+    /// <summary>
+    /// 
+    ///     This rule is executed only if the match is over.
+    /// 
+    ///     Any call to this rule while the match is not over, will
+    ///     result in an empty set of intents.
+    /// 
+    ///     Its purpose is to void any market that:
+    /// 
+    ///     1) Has been active at least one 
+    ///     2) Has been seen/processed by the plugin 
+    ///        (or in other words, during the market life cycle,
+    ///        at least once it appeared on a snapshot/update passed
+    ///        down to the plugin)
+    ///     3) Has not been settled or voided by the platform.
+    /// 
+    ///     The main use of this rule is during market re-definition.
+    /// 
+    ///     If a market definition changes when the fixture is already published,
+    ///     some of the markets could disapper from the snapshots/updates,
+    ///     cause not included in the new definition any more.
+    /// 
+    ///     At the end of the match, this rule will take care of
+    ///     voiding these markets.
+    /// 
+    /// </summary>
     public class VoidUnSettledMarket : IMarketRule
     {
         private const string NAME = "VoidUnSettled_Markets";
@@ -67,12 +93,18 @@ namespace SS.Integration.Adapter.MarketRules
                     continue;
                 }
 
+                if (!mkt_state.HasBeenProcessed)
+                {
+                    _logger.WarnFormat("market rule={0} => marketId={1} of {2} was never passed to the plugin.", Name, mkt_state.Id, fixture);
+                    continue;
+                }
+
                 var market = fixture.Markets.FirstOrDefault(m => m.Id == mkt_state.Id);
                 if (market == null)
                 {
                     _logger.DebugFormat("market rule={0} => marketId={1} of {2} is marked to be voided", Name, mkt_state.Id, fixture);
 
-                    result.AddMarket(CreateSettledMarket(mkt_state),new MarketRuleAddIntent(MarketRuleAddIntent.OperationType.SETTLE_SELECTIONS));
+                    result.AddMarket(CreateSettledMarket(mkt_state), new MarketRuleAddIntent(MarketRuleAddIntent.OperationType.SETTLE_SELECTIONS));
                 }
                 else
                 {

@@ -93,7 +93,7 @@ namespace SS.Integration.Adapter
 
             _currentSequence = resource.Content.Sequence;
             _lastSequenceProcessedInSnapshot = -1;
-            _currentEpoch = -1;
+            
             _hasRecoveredFromError = true;
             _isFirstSnapshotProcessed = false;
             _isProcessingFirstSnapshot = false;
@@ -118,7 +118,7 @@ namespace SS.Integration.Adapter
             IsFixtureSetup = (_resource.MatchStatus == MatchStatus.Setup || _resource.MatchStatus == MatchStatus.Ready);
             IsFixtureDeleted = false;
             IsInPlay = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.InRunning : _resource.MatchStatus == MatchStatus.InRunning;
-
+            _currentEpoch = fixtureState != null ? fixtureState.Epoch : -1;
             _Stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
 
             SetupListener();
@@ -828,6 +828,9 @@ namespace SS.Integration.Adapter
                 if (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id))
                     throw new Exception(string.Format("Received a snapshot that resulted in an empty snapshot object {0}", _resource));
 
+                if(snapshot.Sequence < _currentSequence)
+                    throw new Exception(string.Format("Received snapshot {0} with sequence lower than currentSequence={1}",snapshot,_currentSequence));
+
                 _Stats.IncrementValue(AdapterCoreKeys.SNAPSHOT_COUNTER);
 
                 return snapshot;
@@ -1080,7 +1083,7 @@ namespace SS.Integration.Adapter
 
             var status = (MatchStatus)Enum.Parse(typeof(MatchStatus), snapshot.MatchStatus);
 
-            _eventState.UpdateFixtureState(_resource.Sport, _resource.Id, snapshot.Sequence, status);
+            _eventState.UpdateFixtureState(_resource.Sport, _resource.Id, snapshot.Sequence, status, snapshot.Epoch);
 
             if (isSnapshot)
             {
@@ -1112,7 +1115,7 @@ namespace SS.Integration.Adapter
 
             //reset event state
             _marketsRuleManager.OnFixtureUnPublished();
-            _eventState.UpdateFixtureState(_resource.Sport, fixtureDelta.Id, -1, status);
+            _eventState.UpdateFixtureState(_resource.Sport, fixtureDelta.Id, -1, status, _currentEpoch);
 
             RaiseEvent(OnFlagsChanged);
         }

@@ -87,6 +87,7 @@ namespace SS.Integration.Adapter.Tests
             fixture.Markets.Add(mkt6);
             state.Update(fixture, true);
             
+            state.CommitChanges();
             
             // STEP 2: test the suspension strategies
             suspensionManager.SuspendAllMarketsStrategy(state);
@@ -144,7 +145,7 @@ namespace SS.Integration.Adapter.Tests
             fixture.Markets.Add(mkt7);
 
             state.Update(fixture, true);
-            
+            state.CommitChanges();
             
             // STEP 4: test the suspension strategies again
             suspensionManager.SuspendAllMarketsStrategy(state);
@@ -302,6 +303,10 @@ namespace SS.Integration.Adapter.Tests
             listener.Start();
 
             listener.IsStreaming.Should().BeTrue();
+
+            //Update snapshot sequence
+            fixture.Sequence = 2;
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 5: send the update
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));

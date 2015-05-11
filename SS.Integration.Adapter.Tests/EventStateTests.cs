@@ -47,7 +47,7 @@ namespace SS.Integration.Adapter.Tests
 
             var eventState = EventState.Create(storeProvider.Object, new Settings());
 
-            eventState.AddFixture("football", "1", 1);
+            eventState.AddFixture("football", "1", 1, 1);
 
             var currentSeq = eventState.GetCurrentSequence("football", "1");
             currentSeq.Should().Be(1);
@@ -65,14 +65,14 @@ namespace SS.Integration.Adapter.Tests
 
             var eventState = EventState.Create(storeProvider.Object, new Settings());
 
-            eventState.AddFixture("football", "1", 1);
-            eventState.AddFixture("football", "1", 2);
-            eventState.AddFixture("football", "1", 3);
+            eventState.AddFixture("football", "1", 1, 1);
+            eventState.AddFixture("football", "1", 2, 1);
+            eventState.AddFixture("football", "1", 3, 1);
 
             var currentSeq = eventState.GetCurrentSequence("football", "1");
             currentSeq.Should().Be(3);
 
-            eventState.AddFixture("football", "1", 4);
+            eventState.AddFixture("football", "1", 4, 1);
 
             currentSeq = eventState.GetCurrentSequence("football", "1");
             currentSeq.Should().Be(4);
@@ -86,9 +86,9 @@ namespace SS.Integration.Adapter.Tests
 
             var eventState = EventState.Create(storeProvider.Object, new Settings());
 
-            eventState.AddFixture("basketball", "1", 1);
-            eventState.AddFixture("football", "2", 2);
-            eventState.AddFixture("football", "4", 3);
+            eventState.AddFixture("basketball", "1", 1, 1);
+            eventState.AddFixture("football", "2", 2, 1);
+            eventState.AddFixture("football", "4", 3, 1);
 
             var activeOne = new Mock<IResourceFacade>();
             activeOne.Setup(f => f.Id).Returns("1");
@@ -122,9 +122,9 @@ namespace SS.Integration.Adapter.Tests
 
             var eventState = EventState.Create(storeProvider.Object, new Settings());
 
-            eventState.AddFixture("football", "1", 1);
-            eventState.AddFixture("tennis", "2", 2);
-            eventState.AddFixture("rugby", "3", 3);
+            eventState.AddFixture("football", "1", 1, 1);
+            eventState.AddFixture("tennis", "2", 2, 1);
+            eventState.AddFixture("rugby", "3", 3, 1);
 
             var currentSeq = eventState.GetCurrentSequence("football", "1");
             currentSeq.Should().Be(1);

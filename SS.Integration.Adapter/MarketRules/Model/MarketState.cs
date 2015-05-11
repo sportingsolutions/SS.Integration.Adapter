@@ -104,6 +104,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public bool HasBeenActive { get; set; }
 
+        public bool HasBeenProcessed { get; set; }
+
         public bool IsForcedSuspended { get; private set; }
 
         public bool IsRollingMarket { get; private set; }
@@ -111,6 +113,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
         public double? Line { get; set; }
 
         public bool IsDeleted { get; set; }
+
+        public int Index { get; set; }
 
         #region Tags
 
@@ -266,6 +270,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public void Update(Market market, bool fullSnapshot)
         {
+
             MergeSelectionStates(market, fullSnapshot);
 
             if (fullSnapshot)
@@ -277,10 +282,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 if (_tags.ContainsKey("traded_in_play"))
                     IsTradedInPlay = string.Equals(_tags["traded_in_play"], "true", StringComparison.InvariantCultureIgnoreCase);
             }
-
-            if (!HasBeenActive && IsActive)
-                HasBeenActive = true;
-
+            
             // always set to false at each update
             IsForcedSuspended = false;
 
@@ -300,10 +302,12 @@ namespace SS.Integration.Adapter.MarketRules.Model
             {
                 Id = this.Id,
                 HasBeenActive = this.HasBeenActive,
+                HasBeenProcessed = this.HasBeenProcessed,
                 IsTradedInPlay = this.IsTradedInPlay,
                 IsRollingMarket = this.IsRollingMarket,
                 IsDeleted = this.IsDeleted,
                 Line = this.Line,
+                Index = this.Index,
                 IsForcedSuspended = this.IsForcedSuspended
             };
 
@@ -319,6 +323,17 @@ namespace SS.Integration.Adapter.MarketRules.Model
         public void SetForcedSuspensionState(bool isSuspended = true)
         {
             IsForcedSuspended = isSuspended;
+        }
+
+        public void CommitChanges()
+        {
+            if(!HasBeenActive && IsActive)
+                HasBeenActive = true;
+        }
+
+        public void ApplyPostRulesProcessing()
+        {
+            HasBeenProcessed = true;
         }
 
         #endregion

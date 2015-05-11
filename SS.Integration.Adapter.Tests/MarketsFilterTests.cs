@@ -499,7 +499,7 @@ namespace SS.Integration.Adapter.Tests
 
             var rule = new PendingMarketFilteringRule();
             rule.AddSportToRule("TestFootball");
-            rule.ExcludeMarketType("do_not_touch");
+            rule.ExcludeMarketType("TestFootball.do_not_touch");
 
             List<IMarketRule> rules = new List<IMarketRule> { 
                 rule,
@@ -536,7 +536,7 @@ namespace SS.Integration.Adapter.Tests
 
             var rule = new PendingMarketFilteringRule();
             rule.AddSportToRule("TestFootball");
-            rule.ExcludeMarketType("do_not_touch");
+            rule.ExcludeMarketType("TestFootball.do_not_touch");
 
             List<IMarketRule> rules = new List<IMarketRule> { 
                 rule,
@@ -695,10 +695,10 @@ namespace SS.Integration.Adapter.Tests
 
 
         /// <summary>
-        /// I want to test that DeltaRule correctly
-        /// filters out markets in a fixture
-        /// when they don't differ from the state
-        /// stored in the MarketRuleManager
+        ///     I want to test that DeltaRule correctly
+        ///     filters out markets in a fixture
+        ///     when they don't differ from the state
+        ///     stored in the MarketRuleManager
         /// </summary>
         [Test]
         [Category("MarketRule")]
@@ -931,6 +931,299 @@ namespace SS.Integration.Adapter.Tests
             // STEP 7: the market should not have been filtered out
             fixture.Markets.Count().Should().Be(1);
             fixture.Markets[0].Selections.Count().Should().Be(2);
+        }
+
+        /// <summary>
+        ///     In this test I want to make sure
+        ///     that ApplyPostRulesProcessing() 
+        ///     is called on the market state after 
+        ///     all the market rules are applied.
+        /// </summary>
+        [Test]
+        [Category("MarketRule")]
+        public void PostRuleProcessingTest()
+        {
+
+            // This test sets up a dummy market rule that removes
+            // all the markets whose Id start with "REMOVE".
+            // The test, after calling ApplyRules() on the MarketRuleManager
+            // checks if the property "HasBeenProcessed" is set to true
+            // for all the markets whose Id don't start with REMOVE.
+            //
+            // The HasBeenProcessed property is set to true only
+            // when a market has been passed at least once to the
+            // plugin, or in other words, the outcome of the 
+            // MarketRuleManager hasn't remove it from the Fixture object.
+            // This property is set on IUpdatableMarketState.ApplyPostRulesProcessing()
+
+            Mock<IMarketRule> aRule = new Mock<IMarketRule>();
+            aRule.Setup(x => x.Apply(It.IsAny<Fixture>(), It.IsAny<IMarketStateCollection>(), It.IsAny<IMarketStateCollection>()))
+                .Returns((Fixture f, IMarketStateCollection nS, IMarketStateCollection oS) => 
+                { 
+                    MarketRuleResultIntent intent = new MarketRuleResultIntent();
+                    foreach(var mkt in f.Markets)
+                    {
+                        if(mkt.Id.StartsWith("REMOVE"))
+                            intent.MarkAsRemovable(mkt);
+                    }
+
+                    return intent;
+                }
+            );
+
+            var settings = new Mock<ISettings>();
+            var plugin = new Mock<IAdapterPlugin>();
+            var stateprovider = new StateManager(settings.Object, plugin.Object);
+
+            List<IMarketRule> rules = new List<IMarketRule> { aRule.Object };
+
+            Fixture fixture = new Fixture { Id = "ABC", MatchStatus = "30"};
+
+            Market testMkt = new Market { Id = "1"};
+            fixture.Markets.Add(testMkt);
+
+            testMkt = new Market { Id = "REMOVE-1" };
+            fixture.Markets.Add(testMkt);
+
+            testMkt = new Market { Id = "2" };
+            fixture.Markets.Add(testMkt);
+
+            testMkt = new Market { Id = "REMOVE-2" };
+            fixture.Markets.Add(testMkt);
+
+            MarketRulesManager manager = new MarketRulesManager(fixture.Id, stateprovider, rules);
+
+            manager.ApplyRules(fixture);
+
+            manager.CurrentState["1"].Should().NotBeNull();
+            manager.CurrentState["1"].HasBeenProcessed.Should().BeTrue();
+
+            manager.CurrentState["2"].Should().NotBeNull();
+            manager.CurrentState["2"].HasBeenProcessed.Should().BeTrue();
+
+            manager.CurrentState["REMOVE-1"].Should().NotBeNull();
+            manager.CurrentState["REMOVE-1"].HasBeenProcessed.Should().BeFalse();
+
+            manager.CurrentState["REMOVE-2"].Should().NotBeNull();
+            manager.CurrentState["REMOVE-2"].HasBeenProcessed.Should().BeFalse();
+
+            manager.CommitChanges();
+
+
+            manager.CurrentState["1"].Should().NotBeNull();
+            manager.CurrentState["1"].HasBeenProcessed.Should().BeTrue();
+
+            manager.CurrentState["2"].Should().NotBeNull();
+            manager.CurrentState["2"].HasBeenProcessed.Should().BeTrue();
+
+            manager.CurrentState["REMOVE-1"].Should().NotBeNull();
+            manager.CurrentState["REMOVE-1"].HasBeenProcessed.Should().BeFalse();
+
+            manager.CurrentState["REMOVE-2"].Should().NotBeNull();
+            manager.CurrentState["REMOVE-2"].HasBeenProcessed.Should().BeFalse();
+        }
+
+
+        /// <summary>
+        ///     This test is very similar to PostRuleProcessingTest().
+        ///
+        ///     The difference is that in here we use real market rules.
+        /// 
+        /// </summary>
+        [Test]
+        [Category("MarketRule")]
+        public void PostRuleProcessingWithDefaultRulesTest()
+        {
+            var settings = new Mock<ISettings>();
+            var plugin = new Mock<IAdapterPlugin>();
+            var stateprovider = new StateManager(settings.Object, plugin.Object);
+
+            var pendingRule = new PendingMarketFilteringRule();
+            pendingRule.AddSportToRule("Football");
+
+            List<IMarketRule> rules = new List<IMarketRule>
+            {
+                VoidUnSettledMarket.Instance,
+                pendingRule
+            };
+
+
+            Fixture fixture = new Fixture { Id = "ABCD", MatchStatus = "40" };
+            fixture.Tags["Sport"] = "Football";
+
+            Market testMkt = new Market { Id = "1" };
+            testMkt.Selections.Add(new Selection { Id= "1-1", Status = SelectionStatus.Pending, Tradable = false});
+            fixture.Markets.Add(testMkt);
+
+            testMkt = new Market { Id = "2" };
+            testMkt.Selections.Add(new Selection { Id = "2-1", Status = SelectionStatus.Pending, Tradable = false });
+            fixture.Markets.Add(testMkt);
+
+            testMkt = new Market { Id = "3" };
+            testMkt.Selections.Add(new Selection { Id = "3-1", Status = SelectionStatus.Pending, Tradable = false });
+            fixture.Markets.Add(testMkt);
+
+            testMkt = new Market { Id = "4" };
+            testMkt.Selections.Add(new Selection { Id = "4-1", Status = SelectionStatus.Pending, Tradable = false });
+            fixture.Markets.Add(testMkt);
+
+            MarketRulesManager manager = new MarketRulesManager(fixture.Id, stateprovider, rules);
+
+            manager.ApplyRules(fixture);
+
+            // all the markets should have been removed by the pendinRule
+            fixture.Markets.Count().Should().Be(0);
+
+            manager.CommitChanges();
+
+            fixture.Markets.Clear();
+
+            // STEP 2: enable markets "1" and "2"
+            testMkt = new Market { Id = "1" };
+            testMkt.Selections.Add(new Selection { Id = "1-1", Status = SelectionStatus.Active, Tradable = true });
+            fixture.Markets.Add(testMkt);
+
+            testMkt = new Market { Id = "2" };
+            testMkt.Selections.Add(new Selection { Id = "2-1", Status = SelectionStatus.Active, Tradable = true });
+            fixture.Markets.Add(testMkt);
+
+            manager.ApplyRules(fixture);
+
+            fixture.Markets.Count().Should().Be(2);
+
+            manager.CommitChanges();
+
+            // STEP 3: set fixture match status to "MatchOver" so the VoidUnSettledMarket can kick in
+
+            fixture.Markets.Clear();
+            fixture.MatchStatus = "50";
+            testMkt = new Market { Id = "1" };
+            testMkt.Selections.Add(new Selection { Id = "1-1", Status = SelectionStatus.Active, Tradable = true });
+
+            // as the fixture is matchover, the VoidUnSettledMarket should add the un-settled markets
+            // BUT, it should only add the markets that have been processed or NOT been active
+            manager.ApplyRules(fixture);
+
+            fixture.Markets.Count().Should().Be(0);
+            fixture.Markets.FirstOrDefault(x => x.Id == "1").Should().BeNull(); // because the market has been active
+            fixture.Markets.FirstOrDefault(x => x.Id == "2").Should().BeNull(); // because the market has been active
+            fixture.Markets.FirstOrDefault(x => x.Id == "3").Should().BeNull(); // because the market has NOT been processed
+            fixture.Markets.FirstOrDefault(x => x.Id == "4").Should().BeNull(); // because the market has NOT been processed
+        }
+
+
+        /// <summary>
+        /// 
+        ///     In this test I want to make sure
+        ///     that the IMarketState.Index is correctly set
+        ///     as the index value in which the market appears
+        ///     in the feed.
+        /// 
+        /// </summary>
+        [Test]
+        [Category("MarketRule")]
+        public void MarketIndexTest()
+        {
+            var settings = new Mock<ISettings>();
+            var plugin = new Mock<IAdapterPlugin>();
+            var stateprovider = new StateManager(settings.Object, plugin.Object);
+            var rules = new List<IMarketRule>();
+
+            Fixture fixture = new Fixture { Id = "ABC", MatchStatus = "10"};
+            fixture.Tags["Sport"] = "Football";
+
+            fixture.Markets.Add(new Market { Id = "1" });
+            fixture.Markets.Add(new Market { Id = "2" });
+            fixture.Markets.Add(new Market { Id = "3" });
+            fixture.Markets.Add(new Market { Id = "4" });
+            fixture.Markets.Add(new Market { Id = "5" });
+            fixture.Markets.Add(new Market { Id = "6" });
+
+            MarketRulesManager manager = new MarketRulesManager(fixture.Id, stateprovider, rules);
+
+            manager.ApplyRules(fixture);
+
+            for(int i = 0; i < fixture.Markets.Count; i++)
+                manager.CurrentState["" + (i + 1)].Index.Should().Be(i);
+
+
+            manager.CommitChanges();
+
+            for (int i = 0; i < fixture.Markets.Count; i++)
+                manager.CurrentState["" + (i + 1)].Index.Should().Be(i);
+
+        }
+
+        /// <summary>
+        /// 
+        ///     In this test I want to make sure 
+        ///     that the IMarketState.Index is correctly
+        ///     set even if a market re-definition is applied.
+        /// 
+        ///     When a market re-definition is applied, 
+        ///     we can have:
+        /// 
+        ///     1) new markets
+        ///     2) old markets get removed
+        /// 
+        ///     For new markets, the desired behaviour is
+        ///     LastIndex + IndexOf(market)
+        /// 
+        /// </summary>
+        [Test]
+        [Category("MarketRule")]
+        public void MarketIndexOnMarketRedefinitionTest()
+        {
+            var settings = new Mock<ISettings>();
+            var plugin = new Mock<IAdapterPlugin>();
+            var stateprovider = new StateManager(settings.Object, plugin.Object);
+            var rules = new List<IMarketRule>();
+
+            Fixture fixture = new Fixture { Id = "ABC", MatchStatus = "10" };
+            fixture.Tags["Sport"] = "Football";
+
+            fixture.Markets.Add(new Market { Id = "1" });
+            fixture.Markets.Add(new Market { Id = "2" });
+            fixture.Markets.Add(new Market { Id = "3" });
+            fixture.Markets.Add(new Market { Id = "4" });
+            fixture.Markets.Add(new Market { Id = "5" });
+            fixture.Markets.Add(new Market { Id = "6" });
+
+            MarketRulesManager manager = new MarketRulesManager(fixture.Id, stateprovider, rules);
+
+            manager.ApplyRules(fixture);
+
+            for (int i = 0; i < fixture.Markets.Count; i++)
+                manager.CurrentState["" + (i + 1)].Index.Should().Be(i);
+
+
+            manager.CommitChanges();
+
+            fixture.Markets.Clear();
+            fixture.Markets.Add(new Market { Id = "1" });
+            fixture.Markets.Add(new Market { Id = "2" });
+            fixture.Markets.Add(new Market { Id = "3" });
+
+            // new ones
+            fixture.Markets.Add(new Market { Id = "7" });
+            fixture.Markets.Add(new Market { Id = "8" });
+            fixture.Markets.Add(new Market { Id = "9" });
+
+            manager.ApplyRules(fixture);
+
+            for (int i = 0; i < manager.CurrentState.MarketCount; i++)
+            {
+                manager.CurrentState["" + (i + 1)].Index.Should().Be(i);
+                manager.CurrentState["" + (i + 1)].IsDeleted.Should().Be(i >= 3 && i <=5);
+            }
+
+            manager.CommitChanges();
+
+            for (int i = 0; i < manager.CurrentState.MarketCount; i++)
+            {
+                manager.CurrentState["" + (i + 1)].Index.Should().Be(i);
+                manager.CurrentState["" + (i + 1)].IsDeleted.Should().Be(i >= 3 && i <= 5);
+            }
         }
     }
 }

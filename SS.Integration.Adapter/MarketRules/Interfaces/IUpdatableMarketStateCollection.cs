@@ -21,11 +21,11 @@ namespace SS.Integration.Adapter.MarketRules.Interfaces
     public interface IUpdatableMarketStateCollection : IMarketStateCollection
     {
         /// <summary>
-        /// Allows to update the markets' states with
-        /// new information present within the Fixture object.
+        ///     Allows to update the markets' states with
+        ///     new information present within the Fixture object.
         /// 
-        /// All the contained IMarketState objects are
-        /// updated with the correct information.
+        ///     All the contained IMarketState objects are
+        ///     updated with the correct information.
         /// 
         /// </summary>
         /// <param name="fixture"></param>
@@ -33,16 +33,32 @@ namespace SS.Integration.Adapter.MarketRules.Interfaces
         void Update(Fixture fixture, bool fullSnapshot);
 
         /// <summary>
-        /// Allows to force the the suspension state on the given market.
-        /// When a market is forced on a suspended state, the 
-        /// IMarketState.IsForcedSuspended property will return true
+        ///     Give the possibilities to perform specific actions
+        ///     for when the current state gets accepted.
+        /// </summary>
+        void CommitChanges();
+
+        /// <summary>
+        ///     Allows to perform specific action
+        ///     after the market rules are applied but
+        ///     before the snapshot/update is passed
+        ///     to the plugin and before the 
+        ///     changes are accepted/refused.
+        /// </summary>
+        /// <param name="fixture"></param>
+        void ApplyPostRulesProcessing(Fixture fixture);
+
+        /// <summary>
+        ///     Allows to force the the suspension state on the given market.
+        ///     When a market is forced on a suspended state, the 
+        ///     IMarketState.IsForcedSuspended property will return true
         /// </summary>
         /// <param name="markets"></param>
         void OnMarketsForcedSuspension(IEnumerable<IMarketState> markets);
 
         /// <summary>
-        /// Allows to unsuspend previously suspended market.
-        /// IMarketState.IsForcedSuspended property will return false
+        ///     Allows to unsuspend previously suspended market.
+        ///     IMarketState.IsForcedSuspended property will return false
         /// </summary>
         /// <param name="markets"></param>
         void OnMarketsForcedUnsuspension(IEnumerable<IMarketState> markets);

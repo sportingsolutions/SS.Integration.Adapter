@@ -22,7 +22,7 @@ using log4net;
 
 namespace SS.Integration.Adapter.UdapiClient
 {
-    public class UdapiResourceFacade : IResourceFacade, IStreamStatistics
+    public class UdapiResourceFacade : IResourceFacade
     {
         private readonly ILog _logger = LogManager.GetLogger(typeof(UdapiResourceFacade));
         
@@ -229,30 +229,5 @@ namespace SS.Integration.Adapter.UdapiClient
                     _udapiResource.StreamEvent -= value;
             }
         }
-
-
-        #region IStreamStatistics Implementation
-
-        public double EchoRoundTripInMilliseconds
-        {
-            get { return ((IStreamStatistics) _udapiResource).EchoRoundTripInMilliseconds; }
-        }
-
-        public bool IsStreamActive
-        {
-            get { return ((IStreamStatistics) _udapiResource).IsStreamActive; ; }
-        }
-
-        public DateTime LastMessageReceived
-        {
-            get { return ((IStreamStatistics) _udapiResource).LastMessageReceived; }
-        }
-
-        public DateTime LastStreamDisconnect
-        {
-            get { return ((IStreamStatistics) _udapiResource).LastStreamDisconnect; }
-        }
-
-        #endregion
     }
 }
