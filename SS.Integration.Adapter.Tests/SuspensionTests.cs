@@ -304,6 +304,10 @@ namespace SS.Integration.Adapter.Tests
 
             listener.IsStreaming.Should().BeTrue();
 
+            //Update snapshot sequence
+            fixture.Sequence = 2;
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
             // STEP 5: send the update
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
 

@@ -557,7 +557,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
             resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
-
+            
             // STEP 2: start the listener
             StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
 
@@ -566,9 +566,13 @@ namespace SS.Integration.Adapter.Tests
             // just to be sure that we are streaming
             listener.IsStreaming.Should().BeTrue();
 
+            //Update snapshot sequence
+            fixture.Sequence = 2;
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
             // send the update that contains the match status change
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
-
+            
             listener.ResourceOnStreamDisconnected(this, EventArgs.Empty);
 
             // STEP 3: Check the resoults
@@ -814,6 +818,10 @@ namespace SS.Integration.Adapter.Tests
             listener.Start();
 
             listener.IsStreaming.Should().BeTrue();
+
+            //Snapshot need to have sequence at least equal to the current sequence otherwise it will error on sequence validation
+            fixture.Sequence = 2;
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 4: send the update containing a the epoch change
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
@@ -1169,10 +1177,13 @@ namespace SS.Integration.Adapter.Tests
 
             listener.IsStreaming.Should().BeTrue();
 
+            //Update snapshot sequence
+            fixture.Sequence = 2;
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
             // STEP 4: send the update containing a wrong sequence number
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
-
-
+            
             // STEP 5: check that ProcessSnapshot is called only twice (first snapshot and when the fixture is ended, we get another one)!
             connector.Verify(x => x.Suspend(It.Is<string>(y => y == "ABC")));
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
@@ -1654,6 +1665,11 @@ namespace SS.Integration.Adapter.Tests
 
             listener.IsStreaming.Should().BeTrue();
 
+
+            //Update snapshot sequence
+            fixture.Sequence = 2;
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
             // STEP 3: let create at lea
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
 
@@ -1732,6 +1748,10 @@ namespace SS.Integration.Adapter.Tests
 
             // STEP 3: send a delete command and check the result
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+            //Update snapshot sequence
+            fixture.Sequence = 2;
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             disposed.Should().BeFalse();
             matchover.Should().BeFalse();

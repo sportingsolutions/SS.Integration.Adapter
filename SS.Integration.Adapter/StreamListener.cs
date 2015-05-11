@@ -763,6 +763,9 @@ namespace SS.Integration.Adapter
                 if (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id))
                     throw new Exception(string.Format("Received a snapshot that resulted in an empty snapshot object {0}", _resource));
 
+                if(snapshot.Sequence < _currentSequence)
+                    throw new Exception(string.Format("Received snapshot {0} with sequence lower than currentSequence={1}",snapshot,_currentSequence));
+
                 _Stats.IncrementValue(AdapterCoreKeys.SNAPSHOT_COUNTER);
 
                 return snapshot;
