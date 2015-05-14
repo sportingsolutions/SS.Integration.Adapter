@@ -64,7 +64,8 @@ namespace SS.Integration.Adapter.Plugin.Model
                 if (isHome.Value)
                 {
                     // if it's 2.5 making it interger would make the score 2 which is insufficient
-                    line = IsLineFractional(handicapLine) ? (int)++handicapLine : (int)handicapLine;
+                    // for over /under with integer line we need +1 over the line for 'over' to win
+                    line = IsLineFractional(handicapLine) || _isOverUnder ? (int)++handicapLine : (int)handicapLine;
                     result = line > 0 ? new Score{ Home = line, Away = 0 } : new Score {Home = Math.Abs(line) + 1, Away = 0};
                 }
                 // away wins

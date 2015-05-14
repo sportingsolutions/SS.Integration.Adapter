@@ -1853,6 +1853,7 @@ namespace SS.Integration.Adapter.Tests
             StreamMessage message = new StreamMessage { Content = update };
 
             // with returning an empty string we force the stream listener to raise an exception
+            fixture.Sequence = 2;
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
