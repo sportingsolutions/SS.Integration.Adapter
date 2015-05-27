@@ -55,7 +55,7 @@ namespace SS.Integration.Adapter.MarketRules
             if (_currentTransaction == null)
                 return;
 
-            _logger.DebugFormat("Committing changes made to the market state");
+            _logger.DebugFormat("Committing changes made to the market state for fixtureId={0}",_fixtureId);
             _currentTransaction.CommitChanges();
             _stateProvider.SetObject(_fixtureId, _currentTransaction);
             _currentTransaction = null;
