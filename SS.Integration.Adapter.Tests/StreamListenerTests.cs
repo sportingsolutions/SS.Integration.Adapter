@@ -1873,7 +1873,6 @@ namespace SS.Integration.Adapter.Tests
             listener.ShouldRaise("OnFinishedStreamUpdateProcessing");
 
             //as a result of match status change it will get a second snapshot which is String.Empty
-            //this should generate an exception
             listener.ShouldRaise("OnError")
                 .WithArgs<StreamListenerEventArgs>(e => e.Exception != null);
 
