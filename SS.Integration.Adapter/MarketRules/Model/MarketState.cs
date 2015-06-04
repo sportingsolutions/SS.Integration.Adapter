@@ -372,6 +372,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 }
             }
 
+            this.Line = rollingHandicap.Line;
         }
 
         private void MergeSelectionStates(Market market, bool fullSnapshot)
