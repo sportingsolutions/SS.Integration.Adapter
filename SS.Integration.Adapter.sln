@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter", "SS.Integration.Adapter\SS.Integration.Adapter.csproj", "{1AD0B149-3A7B-4725-ABDE-9455D953F036}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7C471272-0AE9-4E16-B292-07747CDC330D} = {7C471272-0AE9-4E16-B292-07747CDC330D}
