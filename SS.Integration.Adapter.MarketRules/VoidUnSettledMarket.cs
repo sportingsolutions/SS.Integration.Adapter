@@ -88,14 +88,14 @@ namespace SS.Integration.Adapter.MarketRules
             {
                 if (mkt_state.HasBeenActive)
                 {
-                    _logger.WarnFormat("market rule={0} => marketId={1} of {2} was priced during the fixture lifetime but has NOT been settled on match over.", 
+                    _logger.DebugFormat("market rule={0} => marketId={1} of {2} was priced during the fixture lifetime but has NOT been settled on match over.", 
                         Name, mkt_state.Id, fixture);
                     continue;
                 }
 
                 if (!mkt_state.HasBeenProcessed)
                 {
-                    _logger.WarnFormat("market rule={0} => marketId={1} of {2} was never passed to the plugin.", Name, mkt_state.Id, fixture);
+                    _logger.DebugFormat("market rule={0} => marketId={1} of {2} was never passed to the plugin.", Name, mkt_state.Id, fixture);
                     continue;
                 }
 
@@ -108,7 +108,7 @@ namespace SS.Integration.Adapter.MarketRules
                 }
                 else
                 {
-                    _logger.WarnFormat("market rule={0} => marketId={1} of {2} that was in the snapshot but wasn't resulted is marked to be voided", 
+                    _logger.DebugFormat("market rule={0} => marketId={1} of {2} that was in the snapshot but wasn't resulted is marked to be voided", 
                         Name, market.Id, fixture);
 
                     Action<Market> action = x => x.Selections.ForEach(s => s.Status = SelectionStatus.Void);

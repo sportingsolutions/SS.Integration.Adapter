@@ -45,7 +45,7 @@ namespace SS.Integration.Adapter.MarketRules
 
             _stateProvider = stateProvider;
 
-            _logger.DebugFormat("Market rule manager initialised successfully for fixtureId={0}", fixtureId);
+            _logger.InfoFormat("Initialised market rule manager for fixtureId={0}", fixtureId);
         }
 
         #region IMarketRulesManager
@@ -72,6 +72,9 @@ namespace SS.Integration.Adapter.MarketRules
                     " You cannot pass in fixtureId=" + fixture.Id);
             }
 
+
+            _logger.DebugFormat("Applying market rules on fixtureId={0}", fixture.Id);
+
             var oldstate = _stateProvider.GetObject(fixture.Id);
             BeginTransaction(oldstate, fixture);
 
@@ -88,9 +91,7 @@ namespace SS.Integration.Adapter.MarketRules
             // comes from a full snapshot, it can have a lot of markets...
             Parallel.ForEach(tmp.Keys.ToList(), options, rule =>
                 {                    
-                    _logger.DebugFormat("Filtering markets on {1} with rule={0}", rule.Name, fixture);
                     tmp[rule] = rule.Apply(fixture, oldstate, _currentTransaction);
-                    _logger.DebugFormat("Filtering markets on {1} with rule={0} completed", rule.Name, fixture);
                 }
             );
 
@@ -99,7 +100,7 @@ namespace SS.Integration.Adapter.MarketRules
 
             _currentTransaction.ApplyPostRulesProcessing(fixture);
 
-            _logger.InfoFormat("Market state update for {0}", fixture);
+            _logger.DebugFormat("Finished applying market rules on fixtureId={0}", fixture.Id);
         }
 
         public IMarketStateCollection CurrentState
@@ -109,7 +110,7 @@ namespace SS.Integration.Adapter.MarketRules
 
         public void RollbackChanges()
         {
-            _logger.DebugFormat("Rolling back changes made to the market state");
+            _logger.DebugFormat("Rolling back changes for fixtureId={0}", _fixtureId);
             _currentTransaction = null;
         }
 
@@ -134,7 +135,7 @@ namespace SS.Integration.Adapter.MarketRules
 
             bool fullSnapshot = fixture.Tags != null && fixture.Tags.Any();
 
-            _logger.DebugFormat("Creating new market state transaction for {0} - tags will {1}be updated", fixture, (fullSnapshot ? "" : "not "));
+            _logger.DebugFormat("Start transaction for fixtureId={0} - tags will {1}be updated", fixture.Id, (fullSnapshot ? "" : "not "));
 
             var clone = new MarketStateCollection(fixture.Id, oldState);
             clone.Update(fixture, fullSnapshot);
@@ -192,6 +193,7 @@ namespace SS.Integration.Adapter.MarketRules
         private void MergeIntents(Fixture fixture, Dictionary<IMarketRule, IMarketRuleResultIntent> intents)
         {
             Dictionary<Market, bool> toRemove = new Dictionary<Market, bool>();
+            Dictionary<Market, string> dueRule = new Dictionary<Market, string>();
 
             //this creates empty dictionary the object there is only to generate the type
             var toAdd = Anonymous.CreateDictionaryWithAnonymousObject(String.Empty,
@@ -200,6 +202,7 @@ namespace SS.Integration.Adapter.MarketRules
                     Market = new Market(),
                     Intent = new MarketRuleAddIntent(MarketRuleAddIntent.OperationType.ADD_SELECTIONS)
                 });
+
             
             Dictionary<Market, Dictionary<MarketRuleEditIntent, string>> toedit = new Dictionary<Market, Dictionary<MarketRuleEditIntent, string>>();
 
@@ -221,8 +224,11 @@ namespace SS.Integration.Adapter.MarketRules
                 {
                     // if it already contains the market, don't do 
                     // anything as the flag could be "false"
-                    if (!toRemove.ContainsKey(mkt)) 
+                    if (!toRemove.ContainsKey(mkt))
+                    {
                         toRemove.Add(mkt, true);
+                        dueRule[mkt] = rule.Name;
+                    }
                 }
 
                 foreach (var mkt in intent.UnRemovableMarkets)
@@ -270,7 +276,8 @@ namespace SS.Integration.Adapter.MarketRules
                             continue;                    
                     }
 
-                    toAdd[mkt.Id] = new {Market = mkt, Intent = intent.GetAddAction(mkt)};
+                    toAdd[mkt.Id] = new { Market = mkt, Intent = intent.GetAddAction(mkt)};
+                    dueRule[mkt] = rule.Name;
                 }
             }
 
@@ -279,7 +286,7 @@ namespace SS.Integration.Adapter.MarketRules
             {
                 var market = addItem.Value.Market;
 
-                _logger.DebugFormat("Adding market {0} to {1} as requested by market rules", market, fixture);
+                _logger.DebugFormat("Adding {0} to fixtureId={1} due rule={2}", market, fixture.Id, dueRule[market]);
                 
                 // as we might have changed import details of the market, we need to update the market state
                 var marketState = _currentTransaction[market.Id];
@@ -300,7 +307,7 @@ namespace SS.Integration.Adapter.MarketRules
                 // wasn't marked as editable or not editable
                 if (toRemove[mkt] && !toedit.ContainsKey(mkt))
                 {
-                    _logger.DebugFormat("{0} of {1} will be removed from snapshot due market rules", mkt, fixture);
+                    _logger.DebugFormat("Removing {0} of fixtureId={1} due rule={2}", mkt, fixture.Id, dueRule[mkt]);
                     fixture.Markets.Remove(mkt);
                 }
             }
@@ -336,7 +343,7 @@ namespace SS.Integration.Adapter.MarketRules
                                 if (op == MarketRuleEditIntent.OperationType.REMOVE_SELECTIONS && selection_changed)
                                     continue;
                                 
-                                _logger.DebugFormat("Performing edit (op={0}) action={1} on {2} of {3} as requested by market rules",
+                                _logger.DebugFormat("Performing edit (op={0}) action={1} on {2} of {3} due market rules",
                                     op, edit_intent.Value, mkt, fixture);
 
                                 edit_intent.Key.Action(mkt);
@@ -348,11 +355,11 @@ namespace SS.Integration.Adapter.MarketRules
                         // as we might have changed import details of the market, we need to update the market state
                         ((IUpdatableMarketState)_currentTransaction[mkt.Id]).Update(mkt, false);
 
-                        _logger.DebugFormat("Updating market state for {0} of {1}", mkt, fixture);
+                        _logger.DebugFormat("Updated market state for {0} of {1}", mkt, fixture);
                     }
                     catch (Exception e)
                     {
-                        _logger.Error(string.Format("An error occured while executing an edit action as requested by market rules on {0} of {1}", mkt, fixture), e);
+                        _logger.Error(string.Format("Error apply edit intents on {0} of {1}", mkt, fixture), e);
 
                         throw;
                     }

@@ -123,7 +123,7 @@ namespace SS.Integration.Adapter.WindowsService
 
         internal void InitialiseAdapter()
         {
-            _logger.Info("Requesting GTPService Adapter Start");
+            _logger.Info("Requesting Adapter Start");
 
             if (PlatformConnector == null)
             {
@@ -158,7 +158,7 @@ namespace SS.Integration.Adapter.WindowsService
 
         protected override void OnStop()
         {
-            _logger.Info("Requesting GTPService Adapter Stop");
+            _logger.Info("Requesting Adapter Stop");
 
             _adapter.Stop();
             _adapterWorkerThread.Wait();

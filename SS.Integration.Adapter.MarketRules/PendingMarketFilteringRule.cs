@@ -120,8 +120,7 @@ namespace SS.Integration.Adapter.MarketRules
 
             if (_includedSports.Contains(newState.Sport))
             {
-                _Logger.DebugFormat("Applying market rule={0} for {1} sport={2}", Name, fixture, newState.Sport);
-
+                
                 foreach (var mkt in fixture.Markets)
                 {
                     string type = string.Format("{0}.{1}", newState.Sport, mkt.Type).ToLower();
@@ -191,10 +190,6 @@ namespace SS.Integration.Adapter.MarketRules
                         }
                     }
                 }                
-            }
-            else
-            {
-                _Logger.DebugFormat("Disabled rule={0} for {1} sport={2}", Name, fixture,newState.Sport);
             }
 
             return result;

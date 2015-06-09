@@ -50,7 +50,6 @@ namespace SS.Integration.Adapter.MarketRules
 
         public IMarketRuleResultIntent Apply(Fixture fixture, IMarketStateCollection oldState, IMarketStateCollection newState)
         {
-            _logger.DebugFormat("Applying market rule={0} on {1} - severity={2}", Name, fixture, Severity);
             MarketRuleResultIntent intent = new MarketRuleResultIntent();
 
             // only apply delta rule on a full snapshot

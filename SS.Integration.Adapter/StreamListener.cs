@@ -67,7 +67,7 @@ namespace SS.Integration.Adapter
                 throw new Exception("Resource does not contain any content");
 
 
-            _logger.DebugFormat("Instantiating Listener for {0} with sequence={1}", resource, resource.Content.Sequence);
+            _logger.DebugFormat("Instantiating listener for {0} with sequence={1}", resource, resource.Content.Sequence);
 
             _resource = resource;
             _platformConnector = platformConnector;
@@ -316,7 +316,7 @@ namespace SS.Integration.Adapter
             if (_resource == null)
                 return;
 
-            _logger.InfoFormat("Stopping Listener for {0} sport={1}", FixtureId, _resource.Sport);
+            _logger.InfoFormat("Stopping listener for {0} sport={1}", FixtureId, _resource.Sport);
 
             if (IsStreaming)
             {
@@ -353,14 +353,9 @@ namespace SS.Integration.Adapter
 
             SequenceOnStreamingAvailable = resource.Content.Sequence;
 
-            _logger.InfoFormat("In feed there is a sequence={0} processedSequence={1} isDisconnected={2} isStreaming={3} {4}", SequenceOnStreamingAvailable, _currentSequence,IsDisconnected,IsStreaming, resource);
+            _logger.DebugFormat("Listener state for {4} has sequence={0} processedSequence={1} isDisconnected={2} isStreaming={3}", SequenceOnStreamingAvailable, _currentSequence, IsDisconnected, IsStreaming, resource);
 
             StartStreaming();
-        }
-
-        private void Unsuspend()
-        {
-            _stateManager.StateProvider.SuspensionManager.Unsuspend(FixtureId);
         }
 
         /// <summary>
@@ -386,22 +381,19 @@ namespace SS.Integration.Adapter
         {
             if (IsDisposing || IsStopping)
             {
-                _logger.InfoFormat("Start streaming requested by adapter for fixture {0} but it won't be executed because the stream listener is shutting down. ", _resource);
+                _logger.WarnFormat("Start streaming requested by adapter for {0} but it won't be executed because the listener is shutting down", _resource);
                 return;
             }
 
             // Only start streaming if fixture is not Setup/Ready
             if (!IsFixtureSetup)
             {
-                _logger.DebugFormat("{0} sport={1} attempts to start streaming", _resource, _resource.Sport);
                 ConnectToStreamServer();
             }
             else
             {
 
-                _logger.InfoFormat(
-                    "{0} is in Setup stage so the listener will not connect to streaming server whilst it's in this stage",
-                    _resource);
+                _logger.DebugFormat("{0} is in Setup stage - listener won't start streaming", _resource);
 
                 // even if we are in setup, we still want to process a snapshot
                 // in order to insert the fixture
@@ -419,7 +411,7 @@ namespace SS.Integration.Adapter
             {
                 if (IsFixtureEnded)
                 {
-                    _logger.DebugFormat("Listener will not start for {0} as the resource is marked as ended", _resource);
+                    _logger.WarnFormat("Listener will not start for {0} as the resource is marked as ended", _resource);
                     return;
                 }
 
@@ -459,7 +451,7 @@ namespace SS.Integration.Adapter
                 IsStreaming = false;
                 IsErrored = true;
 
-                _logger.Error(string.Format("An error has occured when trying to connect to stream server for {0}. Stream listener is market as errored.", _resource), ex);
+                _logger.Error(string.Format("Error connecting to stream server for {0}", _resource), ex);
             }
         }
 
@@ -494,11 +486,11 @@ namespace SS.Integration.Adapter
 
                     // make sure markets are suspended
                     SuspendFixture(SuspensionReason.FIXTURE_ERRORED);
-                    _logger.ErrorFormat("Streaming for {0} is still in an error state even after trying to recover with a full snapshot", _resource);
+                    _logger.WarnFormat("Listener for {0} is still in an error state even after trying to recover with a full snapshot", _resource);
                     return;
                 }
 
-                _logger.DebugFormat("Streaming for {0} entered the error state - going to acquire a new snapshot", _resource);
+                _logger.InfoFormat("Listner for {0} entered the error state - going to acquire a new snapshot", _resource);
 
                 _hasRecoveredFromError = true;
                 IsErrored = true;
@@ -507,7 +499,7 @@ namespace SS.Integration.Adapter
             }
             catch (Exception ex)
             {
-                _logger.ErrorFormat("Error while trying to recover from previous error. {0}", ex);
+                _logger.ErrorFormat("Error recovering from previous error on {0}", ex);
             }
         }
 
@@ -527,7 +519,7 @@ namespace SS.Integration.Adapter
 
                 if (IsDisposing)
                 {
-                    _logger.InfoFormat("Listener for {0} is disposing - skipping current update", _resource);
+                    _logger.WarnFormat("Listener for {0} is disposing - skipping current update", _resource);
                     return;
                 }
 
@@ -537,7 +529,7 @@ namespace SS.Integration.Adapter
                 // snapshot.
                 if (IsErrored)
                 {
-                    _logger.DebugFormat("Streaming was in an error state for {0} - skipping update and grabbing a new snapshot", _resource);
+                    _logger.DebugFormat("Listener for {0} was in an error state - skipping update and grabbing a new snapshot", _resource);
                     IsErrored = false;
                     RetrieveAndProcessSnapshot();
                     return;
@@ -547,13 +539,13 @@ namespace SS.Integration.Adapter
 
                 if (!IsSequenceValid(fixtureDelta))
                 {
-                    _logger.DebugFormat("Stream update {0} will not be processed because sequence was not valid", fixtureDelta);
+                    _logger.WarnFormat("Update for {0} will not be processed because sequence is not valid", fixtureDelta);
 
                     // if snapshot was already processed with higher sequence no need to process this sequence
                     // THIS should never happen!!
                     if (fixtureDelta.Sequence <= _lastSequenceProcessedInSnapshot)
                     {
-                        _logger.WarnFormat("Stream update {0} will be ignored because snapshot with higher sequence={1} was already processed",
+                        _logger.WarnFormat("Update for {0} will be ignored because snapshot with higher sequence={1} was already processed",
                             fixtureDelta, _lastSequenceProcessedInSnapshot);
                         return;
                     }
@@ -604,22 +596,25 @@ namespace SS.Integration.Adapter
                     return;
                 }
 
-                _logger.InfoFormat("{0} streaming Update was processed successfully", fixtureDelta);
+                _logger.InfoFormat("Update fo {0} processed successfully", fixtureDelta);
             }
             catch (AggregateException ex)
             {
-                foreach (var innerException in ex.InnerExceptions)
+                int total = ex.InnerExceptions.Count;
+                int count = 0;
+                foreach (var e in ex.InnerExceptions)
                 {
-                    _logger.Error(string.Format("Error processing update that arrived for {0}", _resource), innerException);
+                    _logger.Error(string.Format("Error processing update for {0} ({1}/{2})", ++count, total, _resource), e);
                 }
 
                 SetErrorState();
             }
             catch (Exception ex)
             {
-                _logger.Error(string.Format("Error processing update that arrived for {0}", _resource), ex);
+                _logger.Error(string.Format("Error processing update {0}", _resource), ex);
                 SetErrorState();
             }
+
         }
 
         internal void ResourceOnStreamDisconnected(object sender, EventArgs eventArgs)
@@ -635,7 +630,7 @@ namespace SS.Integration.Adapter
                 if (!this.IsFixtureEnded && !IsFixtureDeleted)
                 {
 
-                    _logger.WarnFormat("Listener for {0} disconnected from the streaming server, will try reconnect soon", _resource);
+                    _logger.WarnFormat("{0} disconnected from the streaming server, listener will try reconnect soon", _resource);
 
                     // do not send a suspend request if we are disposing the StreamListener
                     // (otherwise we send it twice)...note that this should not occure
@@ -646,13 +641,13 @@ namespace SS.Integration.Adapter
                 }
                 else
                 {
-                    _logger.InfoFormat("Listener disconnected for {0} - fixture is over/deleted", _resource);
+                    _logger.InfoFormat("{0} disconnected cause is over/deleted", _resource);
                 }
 
             }
             catch (Exception ex)
             {
-                _logger.ErrorFormat("Error while processing OnStreamDisconnected event: {0}", ex);
+                _logger.Error(string.Format("Error while processing disconnected event: {0}", _resource), ex);
             }
             finally
             {
@@ -677,13 +672,13 @@ namespace SS.Integration.Adapter
                 // directly
                 _isFirstSnapshotProcessed = true;
 
-                _logger.InfoFormat("Listener for {0} is now connected to the streaming server", _resource);
+                _logger.InfoFormat("{0} connected to the streaming server", _resource);
 
                 RetrieveAndProcessSnapshotIfNeeded();
             }
             catch (Exception ex)
             {
-                _logger.ErrorFormat("Listener errored when executing OnStreamConnected: {0}", ex);
+                _logger.Error(string.Format("Error processing connected event for {0}", _resource), ex);
             }
         }
 
@@ -750,7 +745,7 @@ namespace SS.Integration.Adapter
 
         private Fixture RetrieveSnapshot(bool setErrorState = true)
         {
-            _logger.DebugFormat("Getting Snapshot for {0}", _resource);
+            _logger.DebugFormat("Getting snapshot for {0}", _resource);
 
             try
             {
@@ -772,7 +767,7 @@ namespace SS.Integration.Adapter
             }
             catch (Exception e)
             {
-                _logger.Error(string.Format("An error occured while trying to acquire snapshot for {0}", _resource), e);
+                _logger.Error(string.Format("Error acquiring snapshot for {0}", _resource), e);
 
                 if (setErrorState)
                     SetErrorState();
@@ -790,17 +785,8 @@ namespace SS.Integration.Adapter
 
             lock (this)
             {
-                if (_isFirstSnapshotProcessed)
-                {
-                    _logger.DebugFormat("Requested to process first snapshot for {0} but it has already been processed - skipping it", _resource);
+                if (_isFirstSnapshotProcessed || _isProcessingFirstSnapshot)
                     return;
-                }
-
-                if (_isProcessingFirstSnapshot)
-                {
-                    _logger.DebugFormat("Requested to process first snapshot for {0} but it is being processed by another thread", _resource);
-                    return;
-                }
 
                 _isProcessingFirstSnapshot = true;
             }
@@ -819,7 +805,7 @@ namespace SS.Integration.Adapter
             {
                 // No need to raise up the exception
                 // we will try again later
-                _logger.Error(string.Format("Exception occured when trying to process the first snapshot for {0}", _resource), ex);
+                _logger.Error(string.Format("Error processing first snapshot for {0}", _resource), ex);
                 SetErrorState();
             }
             finally
@@ -873,7 +859,7 @@ namespace SS.Integration.Adapter
                 }
                 catch (Exception e)
                 {
-                    _logger.Error(string.Format("An error occcured while trying to unsuspend {0}", _resource), e);
+                    _logger.Error(string.Format("Error unsuspending {0}", _resource), e);
                     SetErrorState();
                 }
             }
@@ -885,7 +871,7 @@ namespace SS.Integration.Adapter
             var logString = isFullSnapshot ? "snapshot" : "stream update";
 
             if (snapshot == null || (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id)))
-                throw new ArgumentException(string.Format("StreamListener received empty {0} for {1}", logString, _resource));
+                throw new ArgumentException(string.Format("Received empty {0} for {1}", logString, _resource));
 
             _logger.InfoFormat("Processing {0} for {1}", logString, snapshot);
 
@@ -896,8 +882,6 @@ namespace SS.Integration.Adapter
             {
                 bool is_inplay = string.Equals(snapshot.MatchStatus, ((int)MatchStatus.InRunning).ToString(), StringComparison.OrdinalIgnoreCase);
                 IsInPlay = is_inplay;
-
-                _logger.DebugFormat("Applying market rules for {0}", snapshot);
 
                 _marketsRuleManager.ApplyRules(snapshot);
 
@@ -910,10 +894,9 @@ namespace SS.Integration.Adapter
 
                 IsErrored = false;
             }
-            catch (FixtureIgnoredException ie)
+            catch (FixtureIgnoredException)
             {
-                _logger.InfoFormat("{0} received a FixtureIgnoredException", _resource);
-                _logger.Error("FixtureIgnoredException", ie);
+                _logger.WarnFormat("{0} received a FixtureIgnoredException", _resource);
                 IsIgnored = true;
 
                 _Stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
@@ -922,9 +905,11 @@ namespace SS.Integration.Adapter
             {
                 _marketsRuleManager.RollbackChanges();
 
-                foreach (var innerException in ex.InnerExceptions)
+                int total = ex.InnerExceptions.Count;
+                int count = 0; 
+                foreach (var e in ex.InnerExceptions)
                 {
-                    _logger.Error(string.Format("There has been an aggregate error while trying to process {0} {1}", logString, snapshot), innerException);
+                    _logger.Error(string.Format("Error processing {0} for {1} ({2}/{3})", logString, snapshot, ++count, total), e);
                 }
 
                 _Stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
@@ -940,7 +925,7 @@ namespace SS.Integration.Adapter
 
                 _Stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
 
-                _logger.Error(string.Format("An error occured while trying to process {0} {1}", logString, snapshot), e);
+                _logger.Error(string.Format("Error processing {0} {1}", logString, snapshot), e);
 
                 if (setErrorState)
                     SetErrorState();
@@ -955,11 +940,12 @@ namespace SS.Integration.Adapter
                 else
                     _Stats.AddValue(AdapterCoreKeys.UPDATE_PROCESSING_TIME, timer.ElapsedMilliseconds.ToString());
             }
+
+            _logger.InfoFormat("Finished processing {0} for {1}", logString, snapshot);
         }
 
         private void UpdateState(Fixture snapshot, bool isSnapshot = false)
-        {
-            _logger.DebugFormat("Updating state for {0} with isSnapshot={1}", snapshot, isSnapshot);
+        {            
 
             _marketsRuleManager.CommitChanges();
 
