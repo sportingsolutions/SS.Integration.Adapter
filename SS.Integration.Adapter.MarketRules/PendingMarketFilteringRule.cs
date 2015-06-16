@@ -99,7 +99,7 @@ namespace SS.Integration.Adapter.MarketRules
             if(string.IsNullOrEmpty(sport))
                 return;
 
-            _includedSports.Add(sport);
+            _includedSports.Add(sport.ToLower());
         }
 
         /// <summary>
@@ -111,14 +111,14 @@ namespace SS.Integration.Adapter.MarketRules
             if(string.IsNullOrEmpty(sport))
                 return;
 
-            _includedSports.Remove(sport);
+            _includedSports.Remove(sport.ToLower());
         }
 
         public IMarketRuleResultIntent Apply(Fixture fixture, IMarketStateCollection oldState, IMarketStateCollection newState)
         {
             var result = new MarketRuleResultIntent();
 
-            if (_includedSports.Contains(newState.Sport))
+            if (_includedSports.Contains(newState.Sport.ToLower()))
             {
                 
                 foreach (var mkt in fixture.Markets)
