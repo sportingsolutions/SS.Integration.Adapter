@@ -192,7 +192,7 @@ Please note that this will not be the case for fixtures in 'Setup', that's due t
 
 When fixture is disconnected it may show similar details to this:
 
-![FixtureDisconnected](/img/PrematchDisconnected.jpg)
+![FixtureDisconnected](/img/PrematchDisconnected.JPG)
 
 Unless this persists for over 5mins please allow Adapter to recover. If the issue persists over 5 minutes and fixture is in prematch/in-play you should investigate a potential network issue which prevents Adapter from reconnecting. 
 
@@ -212,7 +212,7 @@ The actions sholud only be invoked if you are trying to correct an issue with th
 #### Errors
 
 Fixtures which are affected by errors are showed with a light-red background in the fixtures list:
-![FixtureListWithErrors(/img/FixtureViewWithErrors.jpg)
+![FixtureListWithErrors](/img/FixtureViewWithErrors.jpg)
 
 The errors indicate that it was not possible to process the last update successfully, this can be any error raised by plugin or internal Adapter error. 
 
