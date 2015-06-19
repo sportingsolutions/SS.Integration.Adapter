@@ -156,4 +156,75 @@ The adapter solution comes with these packages:
 - SS.Integration.Adapter.Tests - Adapter's test package 
 
 
+Supervisor UI
+----------------------
+Important: The UI has been only tested with Chrome and may not be compatible with other browsers. 
+
+Supervisor UI is a management UI for Adapter streaming component. It allows you to view the sports and fixtures Adapter is processing (streaming/actively checking). It does not give you access to fixtures which are ignored by Adapter like already processed Match Over fixtures. 
+
+In order to enable supervisor you need to update the setting 'useSupervisor' = true in the Adapter config file. 
+Once supervisor is enabled you will have access to it's management UI at local address http://localhost:9000/ui
+
+#### Main Supervisor UI
+![Main UI](/img/MainUI-SportsView.jpg)
+
+The UI gives you access to all sports (where at least one fixture is available), please note that the count in the Total refers to fixtures which are in Setup/Prematch/In-play but excludes Over. For e.g. if you publish 10 fixtures in Setup and 10 in match over state the Total will show 10/0. The second number reflects the in-play fixtures. If the error count is above 0 it shows how many fixtures are affected with errors. 
+
+### Fixtures list:
+![FixturesView](/img/FixturesView.jpg)
+
+In fixtures list you can preview all available fixtures with the basic data about them. 
+You can also narrow done the list by using the filters on the top of the list:
+
+![Filters](/img/FilterView.jpg)
+
+You can either type fixture id/name or use status buttons to display only 'Prematch' or only in-play. 
+
+### Fixture details view:
+
+This is the most detailed view which allows you to see the individual fixture status. It showes udpates processed as well as allows you to force Adapter to execute several actions(more on actions in actions section below). UI is dynamic and there's usually no need to manually refresh it. The details showed on UI may appear with a delay and that's not indicative on the Adapter performance. 
+
+The overall view should look like this:
+![FixtureDetailsView](/img/FixtureView.jpg)
+
+At the top you can see a summary showing that fixture is currently 'Connected' to the stream, together with the details on the currently processed sequence and epoch.
+Please note that this will not be the case for fixtures in 'Setup', that's due to performance optimisation. Once the fixture reaches prematch it should connect automatically. 
+
+When fixture is disconnected is it may show a similar details to this:
+
+![FixtureDisconnected](/img/PrematchDisconnected.jpg)
+
+Unless this persists for over 5mins please allow Adapter to recover. If the issue persists over 5 minutes and fixture is in prematch/in-play you should investigate a potential network issue which prevents Adapter from reconnecting. 
+
+Stream updates panel
+
+At the lower part of the screen you can see list of sequences processed and their result. Please note that most important is the top sequence which reflects the current state. If there was an error in sequence 5 but now you can see that sequence 12 is successfully processed it means Adapter has already recovered. 
+
+##### Actions
+
+Actions panel is located on the righthand side of the Fixture details view.  There are 3 actions available:
+ - Restart - Stops the fixture and allows Adapter to start it again (it has very similar effect to the Delete/Republish that    you can do on the Connect Fixture Factory)
+ - Snapshot - takes snapshot and sends to plugin. Please note this forces a full snapshot without any rules or filters                     applied
+ - Clear State - deletes all state Adapter's state, please note that after this is done you're likely to receive a lot                     more updates as Adapter is no longer aware of what was previously processed.
+
+The actions sholud only be invoked if you are trying to correct an issue with the fixture, there's no need to force any actions on the Adapter during the normal operation. 
+
+##### Errors
+
+Fixtures which are affected by errors are showed with a light-red background in the fixtures list:
+![FixtureListWithErrors(/img/FixtureViewWithErrors.jpg)
+
+The errors indicate that it was not possible to process the last update successfully, this can be any error raised by plugin or internal Adapter error. 
+
+![Error](/img/Error.jpg)
+
+Errors also show on the fixture details view:
+![FixturePrematchErrored](/img/FixtureViewWithErrors.jpg)
+
+Adapter's normal procedure when any error occurs is try again with a snapshot. However, if a fixture remains in an error state for a long period of time (over 5mins) you should check Adapter/plugin logs and investigate the cause. 
+
+
+
+
+
 
