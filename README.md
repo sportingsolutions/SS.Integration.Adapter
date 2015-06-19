@@ -182,15 +182,15 @@ You can either type fixture id/name or use status buttons to display only 'Prema
 
 ### Fixture details view:
 
-This is the most detailed view which allows you to see the individual fixture status. It showes udpates processed as well as allows you to force Adapter to execute several actions(more on actions in actions section below). UI is dynamic and there's usually no need to manually refresh it. The details showed on UI may appear with a delay and that's not indicative on the Adapter performance. 
+This is the most detailed view which allows you to see the individual fixture status. It shows updates processed as well as allowing you to force the Adapter to execute several actions(more on actions below). The UI is dynamic and there's usually no need to manually refresh it. The details showed on the UI may appear with a delay and that's not indicative on the Adapter performance. 
 
 The overall view should look like this:
 ![FixtureDetailsView](/img/FixtureView.jpg)
 
-At the top you can see a summary showing that fixture is currently 'Connected' to the stream, together with the details on the currently processed sequence and epoch.
+At the top you can see a summary showing that the fixture is currently 'Connected' to the stream, together with the details of the currently processed sequence and epoch.
 Please note that this will not be the case for fixtures in 'Setup', that's due to performance optimisation. Once the fixture reaches prematch it should connect automatically. 
 
-When fixture is disconnected is it may show a similar details to this:
+When fixture is disconnected it may show similar details to this:
 
 ![FixtureDisconnected](/img/PrematchDisconnected.jpg)
 
@@ -198,7 +198,7 @@ Unless this persists for over 5mins please allow Adapter to recover. If the issu
 
 Stream updates panel
 
-At the lower part of the screen you can see list of sequences processed and their result. Please note that most important is the top sequence which reflects the current state. If there was an error in sequence 5 but now you can see that sequence 12 is successfully processed it means Adapter has already recovered. 
+At the lower part of the screen you can see the list of sequences processed and their result. Please note that the most important row is the top which reflects the current state. If there was an error in sequence 5 but now you can see that sequence 12 is successfully processed it means Adapter has already recovered. 
 
 ##### Actions
 
