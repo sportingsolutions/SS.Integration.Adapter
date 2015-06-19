@@ -209,7 +209,7 @@ Actions panel is located on the righthand side of the Fixture details view.  The
 
 The actions sholud only be invoked if you are trying to correct an issue with the fixture, there's no need to force any actions on the Adapter during the normal operation. 
 
-##### Errors
+#### Errors
 
 Fixtures which are affected by errors are showed with a light-red background in the fixtures list:
 ![FixtureListWithErrors(/img/FixtureViewWithErrors.jpg)
