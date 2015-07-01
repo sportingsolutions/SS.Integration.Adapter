@@ -49,6 +49,7 @@ namespace SS.Integration.Adapter.Plugin.Model
 
         public double PriceLimit { get; set; }
         public bool IsPrimaryMarket { get; set; }
+        public bool IsVoidDisabled { get; set; }
     } 
 
 }
