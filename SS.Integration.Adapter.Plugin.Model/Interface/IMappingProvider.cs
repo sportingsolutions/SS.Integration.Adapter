@@ -12,6 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using SS.Integration.Adapter.Model;
 
 namespace SS.Integration.Adapter.Plugin.Model.Interface
@@ -26,6 +27,8 @@ namespace SS.Integration.Adapter.Plugin.Model.Interface
         void AddMappingsForNewMarkets(Fixture snapshot, Mapping mapping);
         void RefreshMappings(Fixture snapshot, string[] marketIds, Mapping mapping);
         bool IsHandicapLineShiftedUp(Fixture fixture);
+
+        [Obsolete]
         string HandicapLineIndicatorMarketId { get; }
     }
 }
