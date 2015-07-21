@@ -17,7 +17,6 @@ using SS.Integration.Adapter.Model;
 
 namespace SS.Integration.Adapter.Plugin.Model.Interface
 {
-    //TODO: Move this interface to adapter and it's data model to adaptor
     public interface IMappingProvider
     {
         MarketMapping GetMarketMapping(string marketId);

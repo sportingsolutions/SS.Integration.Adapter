@@ -80,6 +80,10 @@ namespace SS.Integration.Adapter.Tests
                     data = FixtureSamples.horseracing;
                     sport = "HorseRacing";
                     break;
+                case "football-inplay-snapshot-1":
+                    data = FixtureSamples.football_inplay_snapshot_1;
+                    sport = "Football";
+                    break;
                 default:
                     throw new Exception("Unknown fixture");
 

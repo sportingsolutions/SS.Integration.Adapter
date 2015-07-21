@@ -92,6 +92,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="Data\football-inplay-snapshot-1" />
     <None Include="Data\horseracing" />
     <None Include="Data\rugbydata-snapshot-2" />
     <None Include="Data\rugbydata-update-3" />
