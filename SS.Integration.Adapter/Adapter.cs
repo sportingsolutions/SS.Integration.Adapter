@@ -47,9 +47,9 @@ namespace SS.Integration.Adapter
         private readonly ConcurrentDictionary<string, IListener> _listeners;
         private readonly ConcurrentDictionary<string, int> _listenerDisposingQueue;
         private readonly List<string> _sports;
-        private readonly BlockingCollection<IResourceFacade> _resourceCreationQueue;
+        private BlockingCollection<IResourceFacade> _resourceCreationQueue;
         private readonly HashSet<string> _currentlyProcessedFixtures;
-        private readonly CancellationTokenSource _creationQueueCancellationToken;
+        private CancellationTokenSource _creationQueueCancellationToken;
         private readonly Task[] _creationTasks;
         private readonly IStatsHandle _stats;
         private Timer _trigger;
@@ -69,18 +69,15 @@ namespace SS.Integration.Adapter
             if (settings.StatsEnabled)
                 StatsManager.Configure();
 
-            platformConnector.Initialise();
+            //platformConnector.Initialise();
             statemanager.AddRules(platformConnector.MarketRules);
-
-
+            
             ThreadPool.SetMinThreads(500, 500);
 
-            _resourceCreationQueue = new BlockingCollection<IResourceFacade>(new ConcurrentQueue<IResourceFacade>());
             _listenerDisposingQueue = new ConcurrentDictionary<string, int>();
             _currentlyProcessedFixtures = new HashSet<string>();
             _listeners = new ConcurrentDictionary<string, IListener>();
             _sports = new List<string>();
-            _creationQueueCancellationToken = new CancellationTokenSource();
             
             _creationTasks = new Task[settings.FixtureCreationConcurrency];
 
@@ -112,6 +109,11 @@ namespace SS.Integration.Adapter
                 _logger.Debug("Starting adapter...");
 
                 LogVersions();
+
+                PlatformConnector.Initialise();
+                
+                _resourceCreationQueue = new BlockingCollection<IResourceFacade>(new ConcurrentQueue<IResourceFacade>());
+                _creationQueueCancellationToken = new CancellationTokenSource();
 
                 for (var i = 0; i < Settings.FixtureCreationConcurrency; i++)
                 {
