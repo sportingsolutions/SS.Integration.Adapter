@@ -36,9 +36,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\packages\Newtonsoft.Json.5.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL" />
     <Reference Include="RabbitMQ.Client">
       <HintPath>..\packages\RabbitMQ.Client.3.3.5\lib\net30\RabbitMQ.Client.dll</HintPath>
@@ -109,10 +106,6 @@
     <ProjectReference Include="..\SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj">
       <Project>{29461692-6DE2-47FA-ACC4-ECAAE9462AE3}</Project>
       <Name>SS.Integration.Adapter.Model</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SS.Integration.Adapter.Plugin.Model\SS.Integration.Adapter.Plugin.Model.csproj">
-      <Project>{b622855c-9331-4792-9fbf-339f737db982}</Project>
-      <Name>SS.Integration.Adapter.Plugin.Model</Name>
     </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Common\SS.Integration.Common.csproj">
       <Project>{756c25c1-9ff6-4299-8825-eeea5565ac58}</Project>
