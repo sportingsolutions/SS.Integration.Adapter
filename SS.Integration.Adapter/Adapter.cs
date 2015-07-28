@@ -461,6 +461,7 @@ namespace SS.Integration.Adapter
                     _logger.WarnFormat("{0} was disconnected from stream but has status={1}", resource, resource.MatchStatus);
                     RemoveAndStopListener(resource.Id);
                     AddResourceToCreationQueue(resource);
+                    return;
                 }
                 else
                 {
