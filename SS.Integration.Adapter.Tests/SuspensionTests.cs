@@ -431,12 +431,14 @@ namespace SS.Integration.Adapter.Tests
 
             listener.Dispose();
 
-            // STEP 5: check the result, note tha MKT-2 is not in-play
-            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
-                y => y.Id == "ABC" &&
-                     y.Markets.Count == 1 &&
-                     y.Markets.FirstOrDefault(z => z.Id == "MKT-1") != null),
-                It.IsAny<bool>()), Times.Once);
+            connector.Verify(x=> x.Suspend(It.IsAny<string>()),Times.Once);
+
+            //// STEP 5: check the result, note tha MKT-2 is not in-play
+            //connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
+            //    y => y.Id == "ABC" &&
+            //         y.Markets.Count == 1 &&
+            //         y.Markets.FirstOrDefault(z => z.Id == "MKT-1") != null),
+            //    It.IsAny<bool>()), Times.Once);
 
         }
 
@@ -494,12 +496,10 @@ namespace SS.Integration.Adapter.Tests
 
             listener.Dispose();
 
-            // STEP 5: check the result, note tha MKT-2 is not in-play
-            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
-                y => y.Id == "ABC" &&
-                     y.Markets.Count == 1 &&
-                     y.Markets.FirstOrDefault(z => z.Id == "MKT-1") != null),
-                It.IsAny<bool>()), Times.Once);
+            
+            //Should suspend at the fixture level only
+            connector.Verify(x=> x.Suspend(It.Is<string>(fId => fId == "ABC")),Times.Once);
+            
 
             //recreate listener
             //must have state setup otherwise it will process snapshot not unsuspend
@@ -514,12 +514,8 @@ namespace SS.Integration.Adapter.Tests
             listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
             listener.Start();
 
-            // Unsuspend should be called on reconnect causing markets to unsuspend:
-            connector.Verify(x => x.ProcessStreamUpdate(It.Is<Fixture>(
-                y => y.Id == "ABC" &&
-                     y.Markets.Count == 1 &&
-                     y.Markets.FirstOrDefault(z => z.Id == "MKT-1").IsSuspended == false),
-                It.IsAny<bool>()), Times.Once);
+            // Unsuspend should be called on reconnect 
+            connector.Verify(x => x.UnSuspend(It.IsAny<Fixture>()),Times.Once);
 
         }
     }
