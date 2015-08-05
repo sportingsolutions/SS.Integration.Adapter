@@ -35,6 +35,7 @@ namespace SS.Integration.Adapter.WindowsService
         private static Task _adapterWorkerThread;
         private Adapter _adapter;
         private ISupervisor _supervisor;
+        private int fatalExceptionsCounter = 0;
 
         [Import]
         public IAdapterPlugin PlatformConnector { get; set; }
@@ -45,28 +46,19 @@ namespace SS.Integration.Adapter.WindowsService
         public AdapterService()
         {
             InitializeComponent();
-
+            
             TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
 
             Compose();
         }
 
-        private void TaskSchedulerOnUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs unobservedTaskExceptionEventArgs)
+        private int GetMaxFailures()
         {
-            unobservedTaskExceptionEventArgs.SetObserved();
-            if (unobservedTaskExceptionEventArgs.Exception is AggregateException)
-            {
-                foreach (var exception in unobservedTaskExceptionEventArgs.Exception.Flatten().InnerExceptions)
-                {
-                    _logger.Fatal("Adapter received unobserved exception from TaskScheduler: ", exception);
-                }
+            int maxFailures = 0;
+            int.TryParse(ConfigurationManager.AppSettings["maxUnhandledExceptions"], out maxFailures);
 
-            }
-            else
-            {
-                _logger.Fatal("Adapter received unobserved exception from TaskScheduler: ", unobservedTaskExceptionEventArgs.Exception);
-            }
+            return maxFailures;
         }
 
         private void Compose()
@@ -124,7 +116,7 @@ namespace SS.Integration.Adapter.WindowsService
 
         internal void InitialiseAdapter()
         {
-            _logger.Info("Requesting GTPService Adapter Start");
+            _logger.Info("Requesting Adapter Start");
 
             if (PlatformConnector == null)
             {
@@ -186,7 +178,7 @@ namespace SS.Integration.Adapter.WindowsService
 
         protected override void OnStop()
         {
-            _logger.Info("Requesting GTPService Adapter Stop");
+            _logger.Info("Requesting Adapter Stop");
 
             _adapter.Stop();
             _adapterWorkerThread.Wait();
@@ -197,10 +189,50 @@ namespace SS.Integration.Adapter.WindowsService
 
         private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            _logger.Fatal("Unhandled Exception, stopping service", (Exception)e.ExceptionObject);
+            _logger.FatalFormat("Adapter termination in progress={1} caused by UNHANDLED Exception {0}", (Exception)e.ExceptionObject, e.IsTerminating);
+            
+            if(e.IsTerminating)
+                OnStop();
+            else
+                RestartAdapter();
+        }
 
+        private void RestartAdapter()
+        {
+            fatalExceptionsCounter++;
             _adapter.Stop();
-            _adapter.Start();
+            int maxFailures = GetMaxFailures();
+            
+            //0 means no limit
+            maxFailures = maxFailures > 0 ? maxFailures : int.MaxValue;
+
+            if (maxFailures > fatalExceptionsCounter)
+            {
+                _adapter.Start();
+            }
+            else
+            {
+                _logger.WarnFormat("Adapter registered {0} FATAL/Unhandled exceptions and will stop the service now",GetMaxFailures());
+            }
+        }
+
+        private void TaskSchedulerOnUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs unobservedTaskExceptionEventArgs)
+        {
+            unobservedTaskExceptionEventArgs.SetObserved();
+            if (unobservedTaskExceptionEventArgs.Exception is AggregateException)
+            {
+                foreach (var exception in unobservedTaskExceptionEventArgs.Exception.Flatten().InnerExceptions)
+                {
+                    _logger.Fatal("Adapter received unobserved exception from TaskScheduler: ", exception);
+                }
+
+            }
+            else
+            {
+                _logger.Fatal("Adapter received unobserved exception from TaskScheduler: ", unobservedTaskExceptionEventArgs.Exception);
+            }
+
+            RestartAdapter();
         }
     }
 }

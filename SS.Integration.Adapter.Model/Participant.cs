@@ -23,6 +23,7 @@ namespace SS.Integration.Adapter.Model
         public Participant()
         {
             Tags = new Dictionary<string, object>();
+            SubParticpants = new List<Participant>();
         }
 
         public int Id { get; set; }
@@ -30,5 +31,6 @@ namespace SS.Integration.Adapter.Model
         public string Name { get; set; }
 
         public Dictionary<string, object> Tags { get; private set; }
+        public List<Participant> SubParticpants { get; private set; } 
     }
 }

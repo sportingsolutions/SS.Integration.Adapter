@@ -47,21 +47,26 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Moq.4.2.1409.1722\lib\net40\Moq.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Newtonsoft.Json.6.0.5\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\packages\Newtonsoft.Json.5.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="nunit.framework, Version=2.6.3.13283, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\NUnit.2.6.3\lib\nunit.framework.dll</HintPath>
     </Reference>
-    <Reference Include="RabbitMQ.Client, Version=3.3.2.0, Culture=neutral, PublicKeyToken=89e7d7c5feba84ce, processorArchitecture=MSIL">
+    <Reference Include="RabbitMQ.Client, Version=3.3.5.0, Culture=neutral, PublicKeyToken=89e7d7c5feba84ce, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\RabbitMQ.Client.3.3.2\lib\net30\RabbitMQ.Client.dll</HintPath>
+      <HintPath>..\packages\RabbitMQ.Client.3.3.5\lib\net30\RabbitMQ.Client.dll</HintPath>
     </Reference>
-    <Reference Include="SportingSolutions.Udapi.Sdk, Version=1.1.138.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="RestSharp, Version=104.3.3.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\SportingSolutions.Udapi.Sdk.1.1.138.0\lib\net40\SportingSolutions.Udapi.Sdk.dll</HintPath>
+      <HintPath>..\packages\RestSharp.104.3.3\lib\net4\RestSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="SportingSolutions.Udapi.Sdk, Version=1.1.148.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\SportingSolutions.Udapi.Sdk.1.1.148.0\lib\net40\SportingSolutions.Udapi.Sdk.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -93,6 +98,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="Data\football-inplay-snapshot-1" />
     <None Include="Data\horseracing" />
     <None Include="Data\rugbydata-snapshot-2" />
     <None Include="Data\rugbydata-update-3" />
@@ -110,10 +116,6 @@
     <ProjectReference Include="..\SS.Integration.Adapter.Model\SS.Integration.Adapter.Model.csproj">
       <Project>{29461692-6de2-47fa-acc4-ecaae9462ae3}</Project>
       <Name>SS.Integration.Adapter.Model</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SS.Integration.Adapter.Plugin.Model\SS.Integration.Adapter.Plugin.Model.csproj">
-      <Project>{b622855c-9331-4792-9fbf-339f737db982}</Project>
-      <Name>SS.Integration.Adapter.Plugin.Model</Name>
     </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Adapter\SS.Integration.Adapter.csproj">
       <Project>{1ad0b149-3a7b-4725-abde-9455d953f036}</Project>

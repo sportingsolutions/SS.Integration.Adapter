@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using NUnit.Framework;
@@ -395,6 +396,20 @@ namespace SS.Integration.Adapter.Tests
 
             created.Should().Be(1);
             
+        }
+
+        //This is just a model test for SubParticipants
+        [Test]
+        public void SubParticipantsTest()
+        {
+            var fixture = TestHelper.GetFixtureFromResource("football-inplay-snapshot-1");
+            fixture.Participants.Should().NotBeNull();
+            fixture.Participants.Should().NotBeEmpty();
+            fixture.Participants.First().SubParticpants.Should().BeEmpty();
+
+            fixture.Participants.Last().Name.Should().Be("River Plate");
+            fixture.Participants.Last().SubParticpants.Count().Should().BeGreaterOrEqualTo(1);
+
         }
 
         private IEnumerable<string> Sports(ListOfSports howMany)

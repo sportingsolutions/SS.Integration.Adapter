@@ -72,16 +72,16 @@ namespace SS.Integration.Common.Stats.Consumer
             switch (_loggingLevel)
             {
                 case "INFO":
-                    _logger.Info(string.Concat(key, ": ", value));
+                    _logger.Info(string.Concat(key, "=", value));
                     break;
                 case "DEBUG":
-                    _logger.Debug(string.Concat(key, ": ", value));
+                    _logger.Debug(string.Concat(key, "=", value));
                     break;
                 case "WARN":
-                    _logger.Warn(string.Concat(key, ": ", value));
+                    _logger.Warn(string.Concat(key, "=", value));
                     break;
                 case "ERROR":
-                    _logger.Error(string.Concat(key, ": ", value));
+                    _logger.Error(string.Concat(key, "=", value));
                     break;
             }
         }

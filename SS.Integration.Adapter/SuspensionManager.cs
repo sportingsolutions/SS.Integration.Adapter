@@ -50,7 +50,7 @@ namespace SS.Integration.Adapter
 
             BuildDefaultStrategies();
 
-            _disposing = SuspendInPlayMarketsStrategy;
+            _disposing = SuspendFixtureStrategy;
             _error = SuspendFixtureStrategy;
             _disconnected = SuspendFixtureStrategy;
             _default = SuspendFixtureStrategy;

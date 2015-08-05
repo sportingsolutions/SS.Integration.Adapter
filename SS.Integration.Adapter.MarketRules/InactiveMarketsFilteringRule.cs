@@ -63,7 +63,7 @@ namespace SS.Integration.Adapter.MarketRules
             foreach (var market in inactiveMarkets.ToList())
             {
                 result.MarkAsRemovable(market);
-                _Logger.InfoFormat("market rule={0} => {1} of {2} is marked as removable", Name, market, fixture);
+                _Logger.DebugFormat("market rule={0} => {1} of fixtureId={2} is marked as removable", Name, market, fixture.Id);
             }
 
             return result;

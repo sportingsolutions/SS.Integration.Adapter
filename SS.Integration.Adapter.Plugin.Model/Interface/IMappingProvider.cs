@@ -12,11 +12,11 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using SS.Integration.Adapter.Model;
 
 namespace SS.Integration.Adapter.Plugin.Model.Interface
 {
-    //TODO: Move this interface to adapter and it's data model to adaptor
     public interface IMappingProvider
     {
         MarketMapping GetMarketMapping(string marketId);
@@ -26,6 +26,8 @@ namespace SS.Integration.Adapter.Plugin.Model.Interface
         void AddMappingsForNewMarkets(Fixture snapshot, Mapping mapping);
         void RefreshMappings(Fixture snapshot, string[] marketIds, Mapping mapping);
         bool IsHandicapLineShiftedUp(Fixture fixture);
+
+        [Obsolete]
         string HandicapLineIndicatorMarketId { get; }
     }
 }
