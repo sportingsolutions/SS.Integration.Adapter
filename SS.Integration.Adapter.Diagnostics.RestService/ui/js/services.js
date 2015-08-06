@@ -19,15 +19,19 @@
 
 (function () {
 
+    //get current url from the request
+    var url = "http://" + window.location.hostname;
+    var port = window.location.port;
+
     /** @type {ssln.supervisor.config} */
     var myConfig = {
-        url: 'http://localhost',
-        port: '9000',
+        url: url,
+        port: port,
         uiUrlBase: '/ui/',
 
         pushNotification: {
-            url: 'http://localhost',
-            port: '9000',
+            url: url,
+            port: port,
             path: '/streaming',
             hub: 'SupervisorStreamingHub',
             enabled: true,

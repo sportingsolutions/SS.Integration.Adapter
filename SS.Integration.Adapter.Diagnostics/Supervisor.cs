@@ -70,7 +70,6 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public void Initialise()
         {
-            // TODO REST service should be configurable
             Service = new Service(Proxy);
             Service.Start();
         }
@@ -116,7 +115,7 @@ namespace SS.Integration.Adapter.Diagnostics
                 streamListenerObject.OnSuspend += StreamListenerSuspended;
                 streamListenerObject.OnStop += StreamListenerStop;
             }
-
+            
             return streamListener;
         }
 
@@ -131,6 +130,8 @@ namespace SS.Integration.Adapter.Diagnostics
         {
             var streamListener = listener as StreamListener;
             if (streamListener == null) return;
+
+            _logger.DebugFormat("Removing stream listener for {0}", listener.FixtureId);
 
             streamListener.OnConnected -= StreamListenerConnected;
             streamListener.OnError -= StreamListenerErrored;
@@ -155,6 +156,8 @@ namespace SS.Integration.Adapter.Diagnostics
             var fixtureOverview = GetFixtureOverview(listener.FixtureId) as FixtureOverview;
 
             PublishDelta(fixtureOverview);
+
+            _logger.DebugFormat("Created new StreamListener for {0}", resource);
         }
 
         public override void StopStreaming(string fixtureId)
