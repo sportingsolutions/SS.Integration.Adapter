@@ -12,6 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System.Configuration;
 using SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
 
 namespace SS.Integration.Adapter.Diagnostics.RestService
@@ -26,7 +27,8 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
 
         public ServiceConfiguration()
         {
-            Url = DEFAULT_URL;
+            var configuredUrl = ConfigurationManager.AppSettings["SupervisorUrl"];
+            Url = string.IsNullOrEmpty(configuredUrl) ? DEFAULT_URL : configuredUrl;
             UsePushNotifications = DEFAULT_USE_PUSH;
             PushNotificationsPath = DEFAULT_PUSH_PATH;
             UIPath = DEFAULT_UI_PATH;
