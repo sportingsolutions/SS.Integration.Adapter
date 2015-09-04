@@ -23,9 +23,10 @@ using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using log4net;
 using Newtonsoft.Json;
+using SS.Integration.Adapter.Model.Interfaces;
 
 
-namespace SS.Integration.Adapter.ProcessState
+namespace SS.Integration.Adapter.Model
 {
     public class EventState : IEventState
     {
@@ -155,7 +156,7 @@ namespace SS.Integration.Adapter.ProcessState
             Events.AddOrUpdate(fixtureId, fixtureState, (key, oldValue) => fixtureState);
         }
 
-        public void RemoveFixture(string sport, string fixtureId)
+        public void RemoveFixture(string fixtureId)
         {
             FixtureState abc;
             Events.TryRemove(fixtureId, out abc);

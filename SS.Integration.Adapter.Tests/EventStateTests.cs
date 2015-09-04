@@ -19,7 +19,8 @@ using Moq;
 using NUnit.Framework;
 using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Interface;
-using SS.Integration.Adapter.ProcessState;
+using SS.Integration.Adapter.Model.Interfaces;
+using SS.Integration.Adapter.Model;
 
 namespace SS.Integration.Adapter.Tests
 {
@@ -51,7 +52,7 @@ namespace SS.Integration.Adapter.Tests
             var currentSeq = eventState.GetCurrentSequence("football", "1");
             currentSeq.Should().Be(1);
 
-            eventState.RemoveFixture("football", "1");
+            eventState.RemoveFixture("1");
             currentSeq = eventState.GetCurrentSequence("football", "1");
             currentSeq.Should().Be(-1);
         }

@@ -33,15 +33,20 @@ namespace SS.Integration.Adapter.Tests
     {
 
         public string _fixtureId = "y9s1fVzAoko805mzTnnTRU_CQy8";
+        public Mock<ISettings> _settings;
+        private Mock<IAdapterPlugin> _plugin;
 
         [SetUp]
         public void SetupSuspensionManager()
         {
-            var plugin = new Mock<IAdapterPlugin>();
+            _plugin = new Mock<IAdapterPlugin>();
 
-            var state = new StateManager(new Mock<ISettings>().Object, plugin.Object);
+            var state = new StateManager(new Mock<ISettings>().Object, _plugin.Object);
             state.ClearState(_fixtureId);
             state.ClearState(TestHelper.GetFixtureFromResource("rugbydata_snapshot_2").Id);
+
+            _settings = new Mock<ISettings>();
+            _settings.Setup(x => x.ProcessingLockTimeOutInSecs).Returns(10);
         }
 
         [Category("Adapter")]
@@ -49,15 +54,14 @@ namespace SS.Integration.Adapter.Tests
         public void ShouldStartAndStopListening()
         {
             var fixtureSnapshot = new Fixture { Id = "TestId", MatchStatus = "30", Sequence = 1 };
-            
+            var plugin = new Mock<IAdapterPlugin>();
+
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var settings = new Mock<ISettings>();
-            var marketFilterObjectStore = new StateManager(settings.Object, connector.Object);
-
-            //marketFilterObjectStore.Setup(x => x.GetObject(It.IsAny<string>())).Returns(new MarketStateCollection());
-
+            
+            var marketFilterObjectStore = new StateManager(_settings.Object,plugin.Object);
+            
             resource.Setup(r => r.Sport).Returns("Football");
             resource.Setup(r => r.Content).Returns(new Summary());
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
@@ -66,16 +70,22 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Id).Returns("TestId");
             eventState.Setup(e => e.GetCurrentSequence(It.IsAny<string>(), It.IsAny<string>())).Returns(-1);
 
-
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
-
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore,_settings.Object);
+            
+            listener.MonitorEvents();
+            
             listener.Start();
 
             listener.Stop();
 
+            listener.ShouldRaise("OnConnected");
+            listener.ShouldNotRaise("OnError");
+            listener.ShouldRaise("OnStop");
+            listener.ShouldNotRaise("OnDisconnected","The disconnection is triggered by the user");
+
             connector.Verify(c => c.ProcessSnapshot(It.IsAny<Fixture>(), false), Times.Once());
         }
-
+        
         [Category("Adapter")]
         [Test]
         public void ShouldNotProcessDeltaAsSequenceIsSmaller()
@@ -84,10 +94,9 @@ namespace SS.Integration.Adapter.Tests
 
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
-            var settings = new Mock<ISettings>();
             var eventState = new Mock<IEventState>();
             //var marketFilterObjectStore = new Mock<IObjectProvider<IUpdatableMarketStateCollection>>();
-            var marketFilterObjectStore = new StateManager(settings.Object, connector.Object);
+            var marketFilterObjectStore = new StateManager(_settings.Object,_plugin.Object);
 
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
             resource.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);
@@ -98,7 +107,7 @@ namespace SS.Integration.Adapter.Tests
             //marketFilterObjectStore.Setup(x => x.GetObject(It.IsAny<string>())).Returns(new MarketStateCollection());
 
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore,_settings.Object);
 
             listener.Start();
             listener.Stop();
@@ -115,8 +124,8 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var settings = new Mock<ISettings>();
-            var marketFilterObjectStore = new StateManager(settings.Object, connector.Object);
+
+            var marketFilterObjectStore = new StateManager(_settings.Object,_plugin.Object);
             int matchStatusDelta = 40;
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(matchStatus: matchStatusDelta);
             
@@ -129,7 +138,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixtureSnapshot));
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, _settings.Object);
 
             listener.Start();
 
@@ -150,8 +159,7 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var settings = new Mock<ISettings>();
-            var marketFilterObjectStore = new StateManager(settings.Object, connector.Object);
+            var marketFilterObjectStore = new StateManager(_settings.Object,_plugin.Object);
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage();
 
@@ -160,7 +168,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.GetSnapshot()).Returns(() => TestHelper.GetSnapshotJson(1, 20, 0, 30));
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, _settings.Object);
 
             listener.Start();
 
@@ -177,8 +185,8 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var settings = new Mock<ISettings>();
-            var marketFilterObjectStore = new StateManager(settings.Object, connector.Object);
+
+            var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage();
 
@@ -188,7 +196,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, _settings.Object);
 
             listener.Start();
             listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
@@ -209,8 +217,8 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var settings = new Mock<ISettings>();
-            var marketFilterObjectStore = new StateManager(settings.Object, connector.Object);
+
+            var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage();   // Start Time has changed
 
@@ -218,7 +226,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, _settings.Object);
 
             listener.Start();
             listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
@@ -234,8 +242,8 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var settings = new Mock<ISettings>();
-            var marketFilterObjectStore = new StateManager(settings.Object, connector.Object);
+
+            var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
 
             resource.Setup(r => r.GetSnapshot()).Returns(TestHelper.GetSnapshotJson(3, 2, 40));
             resource.Setup(r => r.Sport).Returns("Football");
@@ -246,7 +254,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Content).Returns(new Summary());
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, _settings.Object);
 
             listener.Start();
             listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
@@ -262,8 +270,8 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var settings = new Mock<ISettings>();
-            var marketFilterObjectStore = new StateManager(settings.Object, connector.Object);
+
+            var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage();
 
@@ -271,7 +279,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Content).Returns(new Summary());
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, _settings.Object);
 
             listener.Start();
             listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
@@ -290,8 +298,8 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var settings = new Mock<ISettings>();
-            var marketFilterObjectStore = new StateManager(settings.Object, connector.Object);
+
+            var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage();   // Fixture Deleted
 
@@ -299,7 +307,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Content).Returns(new Summary());
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore,_settings.Object);
 
             listener.Start();
             listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
@@ -317,8 +325,8 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var settings = new Mock<ISettings>();
-            var marketFilterObjectStore = new StateManager(settings.Object, connector.Object);
+
+            var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
 
             var fixtureDeltaJson = TestHelper.GetRawStreamMessage(3, 2, matchStatus: 50, epochChangeReason: 10); // deleted
 
@@ -326,14 +334,11 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Content).Returns(new Summary());
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, _settings.Object);
 
             listener.Start();
             listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
-
-            //should be irrelevant
-            //listener.IsFixtureEnded.Should().BeTrue();
-
+            
             listener.IsFixtureSetup.Should().BeFalse();
 
             connector.Verify(c => c.ProcessStreamUpdate(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Never());
@@ -347,8 +352,8 @@ namespace SS.Integration.Adapter.Tests
             var resource = new Mock<IResourceFacade>();
             var connector = new Mock<IAdapterPlugin>();
             var eventState = new Mock<IEventState>();
-            var settings = new Mock<ISettings>();
-            var marketFilterObjectStore = new StateManager(settings.Object, connector.Object);
+            
+            var marketFilterObjectStore = new StateManager(_settings.Object,_plugin.Object);
 
             var snapshot = TestHelper.GetSnapshotJson();
             resource.Setup(r => r.GetSnapshot()).Returns(snapshot);
@@ -357,7 +362,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
 
-            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, settings.Object);
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, _settings.Object);
 
             listener.ResourceOnStreamConnected(this, EventArgs.Empty);
             listener.ResourceOnStreamDisconnected(this, EventArgs.Empty);
@@ -383,15 +388,15 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object, connector.Object);
+            
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             resource.Setup(x => x.Content).Returns(new Summary());
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Setup);
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -402,7 +407,7 @@ namespace SS.Integration.Adapter.Tests
 
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Ready);
 
-            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.IsStreaming.Should().BeFalse();
         }
@@ -420,8 +425,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object, connector.Object);
+            
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             resource.Setup(x => x.Content).Returns(new Summary());
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
@@ -429,7 +434,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -452,8 +457,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object, connector.Object);
+            
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             resource.Setup(x => x.Content).Returns(new Summary());
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Setup);
@@ -461,7 +466,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -492,11 +497,9 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
-
-            var provider = new StateManager(settings.Object, connector.Object);            
-
+            
+            var provider = new StateManager(_settings.Object, connector.Object);            
+            
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
 
             resource.Setup(r => r.Id).Returns("ABC");
@@ -506,7 +509,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider,_settings.Object);
 
             listener.Start();
 
@@ -536,9 +539,9 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
-            var provider = new StateManager(settings.Object, connector.Object);
+            
+            _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
             Fixture update = new Fixture
@@ -559,7 +562,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
             
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider,_settings.Object);
 
             listener.Start();
 
@@ -600,8 +603,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object, connector.Object);
+            
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
 
             resource.Setup(x => x.Content).Returns(new Summary());
@@ -612,7 +615,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamDisconnected += null, EventArgs.Empty);
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -652,8 +655,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object, connector.Object);
+            
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             resource.Setup(x => x.Content).Returns(new Summary());
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
@@ -661,7 +664,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(r => r.Id).Returns("TestFixtureId");
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
 
             // STEP 3: raise 100 calls at random (short) delayes to listener.Start()
@@ -696,8 +699,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object, connector.Object);
+            
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             FixtureState fixture_state = new FixtureState
             {
@@ -714,7 +717,7 @@ namespace SS.Integration.Adapter.Tests
             state.Setup(x => x.GetFixtureState("ABC")).Returns(fixture_state);
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -740,8 +743,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object, connector.Object);
+            
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             // Please note Sequence = 3
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 3, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
@@ -763,7 +766,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.Id).Returns("ABC");
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -789,9 +792,9 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
-            var provider = new StateManager(settings.Object, connector.Object);
+            
+            _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            var provider = new StateManager(_settings.Object, connector.Object);
             
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
 
@@ -813,7 +816,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -851,8 +854,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            var provider = new StateManager(settings.Object, connector.Object);
+            
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             // Please note Sequence = 1
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
@@ -874,7 +877,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider,_settings.Object);
 
             listener.Start();
 
@@ -903,8 +906,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object, connector.Object);
+            
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
 
@@ -924,7 +927,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -954,8 +957,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            var provider = new StateManager(settings.Object, connector.Object);
+            
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             // Please note Sequence = 1
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.Prematch).ToString() };
@@ -980,7 +983,7 @@ namespace SS.Integration.Adapter.Tests
                 .Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -1009,8 +1012,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object, connector.Object);
+            
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             var firstSnapshot = TestHelper.GetFixtureFromResource("rugbydata_snapshot_2");
             var secondSnapshot = TestHelper.GetFixtureFromResource("rugbydata_snapshot_withRemovedMarkets_5");
@@ -1035,7 +1038,7 @@ namespace SS.Integration.Adapter.Tests
                 .Returns(FixtureJsonHelper.ToJson(secondSnapshot));
             
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -1077,8 +1080,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object, connector.Object);
+            
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             var firstSnapshot = TestHelper.GetFixtureFromResource("rugbydata_snapshot_2");
             var secondSnapshot = TestHelper.GetFixtureFromResource("rugbydata_snapshot_withRemovedMarkets_5");
@@ -1106,7 +1109,7 @@ namespace SS.Integration.Adapter.Tests
                 .Returns(FixtureJsonHelper.ToJson(secondSnapshot));
             
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
             
             listener.Start();
 
@@ -1147,9 +1150,9 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
-            var provider = new StateManager(settings.Object, connector.Object);
+            
+            _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
 
@@ -1171,7 +1174,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -1205,11 +1208,10 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
-
-            var provider = new StateManager(settings.Object, connector.Object);
-
+            
+            var provider = new StateManager(_settings.Object, connector.Object);
+            _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            
             resource.Setup(x => x.Id).Returns("ABC");
             resource.Setup(x => x.Content).Returns(new Summary());
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
@@ -1220,7 +1222,7 @@ namespace SS.Integration.Adapter.Tests
 
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -1263,7 +1265,7 @@ namespace SS.Integration.Adapter.Tests
             resource.SetupSequence(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture)).Returns(null);
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider,_settings.Object);
 
             listener.Start();
 
@@ -1298,9 +1300,9 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
-            var provider = new StateManager(settings.Object, connector.Object);
+            
+            _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABCD", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
             Fixture update = new Fixture
@@ -1324,7 +1326,7 @@ namespace SS.Integration.Adapter.Tests
 
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -1361,8 +1363,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object, connector.Object);
+            
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.Setup).ToString() };
 
@@ -1375,7 +1377,7 @@ namespace SS.Integration.Adapter.Tests
             // with returning an empty string we force the stream listener to raise an exception
             resource.Setup(x => x.GetSnapshot()).Returns(string.Empty);
 
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -1410,7 +1412,7 @@ namespace SS.Integration.Adapter.Tests
             );
 
 
-            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start().Should().BeTrue();
             listener.IsErrored.Should().BeFalse();
@@ -1426,7 +1428,7 @@ namespace SS.Integration.Adapter.Tests
             connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()))
                 .Throws(new Exception("While processing the first snapshot, the plugin raised an exception"));
 
-            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             // an exception is raised while we process the first snapshot
             listener.Start().Should().BeFalse();
@@ -1462,8 +1464,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object, connector.Object);
+            
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             Fixture fixture = new Fixture {Id = "ABC", Sequence = 1, MatchStatus = ((int) MatchStatus.Setup).ToString()};
 
@@ -1477,7 +1479,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
             connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>())).Throws<Exception>();
 
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start().Should().BeFalse();
 
@@ -1505,8 +1507,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            IStateManager provider = new StateManager(settings.Object, connector.Object);
+            
+            IStateManager provider = new StateManager(_settings.Object, connector.Object);
 
             Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.Prematch).ToString() };
 
@@ -1520,7 +1522,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
             connector.Setup(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>())).Throws<Exception>();
 
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start().Should().BeFalse();
 
@@ -1550,9 +1552,9 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            settings.Setup(x => x.DeltaRuleEnabled).Returns(true);
-            var provider = new StateManager(settings.Object, connector.Object);
+            
+            _settings.Setup(x => x.DeltaRuleEnabled).Returns(true);
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             //var suspended = false;
             //Action<IMarketStateCollection> suspension_strategy = x => {suspended = true;};
@@ -1584,7 +1586,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -1624,9 +1626,10 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            settings.Setup(x => x.DeltaRuleEnabled).Returns(true);
-            var provider = new StateManager(settings.Object, connector.Object);
+            
+            _settings.Setup(x => x.DeltaRuleEnabled).Returns(true);
+            var provider = new StateManager(_settings.Object, connector.Object);
+            
             provider.SuspensionManager.RegisterAction(provider.SuspensionManager.SuspendAllMarketsStrategy, SuspensionReason.SUSPENSION);
 
             //var suspended = false;
@@ -1659,7 +1662,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider,_settings.Object);
 
             listener.Start();
 
@@ -1694,10 +1697,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-
-
-            var provider = new StateManager(settings.Object, connector.Object);
+            
+            var provider = new StateManager(_settings.Object, connector.Object);
 
             bool disposed = false;
             bool matchover = false;
@@ -1736,7 +1737,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
             // STEP 2: start the listener
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider,_settings.Object);
 
             listener.Start();
 
@@ -1774,7 +1775,7 @@ namespace SS.Integration.Adapter.Tests
             matchover = false;
             deleted = false;
 
-            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
 
             listener.Start();
 
@@ -1814,64 +1815,85 @@ namespace SS.Integration.Adapter.Tests
             disposed.Should().BeFalse();
             matchover.Should().BeFalse();
         }
-    
-    
-        /// <summary>
-        /// I want to test whether a fixture correctly gets
-        /// a deleayed stop streaming request after it received
-        /// a MatchOver message
-        /// </summary>
+
         [Test]
-        [Category("StreamListener")]
-        public void DelayedStopStreamingTest()
+        public void StreamListenerEvents()
         {
+            // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
             Mock<IEventState> state = new Mock<IEventState>();
-            Mock<ISettings> settings = new Mock<ISettings>();
-            settings.Setup(x => x.StopStreamingDelayMinutes).Returns(0.5);
-            settings.Setup(x => x.ShouldDelayStopStreaming(It.IsAny<string>())).Returns(true);
 
-            var provider = new StateManager(settings.Object, connector.Object);
-            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.InRunning).ToString() };
+            _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
 
-            resource.Setup(x => x.Sport).Returns("Football");
+            var provider = new StateManager(_settings.Object, connector.Object);
+
+            var suspensionManager = new SuspensionManager(provider, connector.Object);
+
+            var fixtureSnapshot = new Fixture { Id = "ABC", Epoch = 0, MatchStatus = "30", Sequence = 1 };
+            var settledSnapshot = new Fixture { Id = "ABC", Epoch = 3, MatchStatus = "50", Sequence = 5 };
+
             resource.Setup(x => x.Id).Returns("ABC");
             resource.Setup(x => x.Content).Returns(new Summary());
             resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
-            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += (e, o) => { }, EventArgs.Empty);
 
-            Fixture update = new Fixture
+            //sequence of 3 snapshots middle one should raise an exception
+            resource.SetupSequence(r => r.GetSnapshot())
+                .Returns(FixtureJsonHelper.ToJson(fixtureSnapshot))
+                .Returns(String.Empty)
+                .Returns(FixtureJsonHelper.ToJson(settledSnapshot));
+
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
+
+            listener.MonitorEvents();
+
+            listener.Start();
+
+            listener.ShouldRaise("OnConnected");
+            listener.ShouldRaise("OnBeginSnapshotProcessing");
+            listener.ShouldRaise("OnFinishedSnapshotProcessing");
+
+            //stream event
+            var update = new Fixture
             {
-                Id = "ABCD",
+                Id = "ABC",
                 Sequence = 2,
                 MatchStatus = ((int)MatchStatus.MatchOver).ToString(),
                 Epoch = 2,
                 LastEpochChangeReason = new[] { (int)EpochChangeReason.MatchStatus }
             };
 
-            StreamMessage message = new StreamMessage { Content = update };
-
-            // with returning an empty string we force the stream listener to raise an exception
-            fixture.Sequence = 2;
-            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
-
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
-
-            listener.Start().Should().BeTrue();
-            listener.IsStreaming.Should().BeTrue();
-            listener.IsFixtureEnded.Should().BeFalse();
-
+            var message = new StreamMessage { Content = update };
             listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+            listener.ShouldRaise("OnBeginStreamUpdateProcessing");
+            listener.ShouldRaise("OnFinishedStreamUpdateProcessing");
 
-            listener.IsFixtureDeleted.Should().BeFalse();
-            listener.IsStreaming.Should().BeTrue();
+            //as a result of match status change it will get a second snapshot which is String.Empty
+            listener.ShouldRaise("OnError")
+                .WithArgs<StreamListenerEventArgs>(e => e.Exception != null);
 
-            Task.Delay(TimeSpan.FromMinutes(1)).Wait();
+            listener.ShouldRaise("OnSuspend");
 
-            listener.IsFixtureEnded.Should().BeTrue();
-            listener.IsStreaming.Should().BeFalse();
+            //when recovered the IsErrored should clear
+            listener.IsErrored.Should().BeFalse();
+            listener.ShouldRaise("OnFlagsChanged")
+                .WithArgs<StreamListenerEventArgs>(e => ((StreamListener)e.Listener).IsErrored == false);
 
+            //simulate stream disconnection 
+            listener.ResourceOnStreamDisconnected(null, null);
+
+            listener.ShouldRaise("OnDisconnected");
+
+            listener.Stop();
+
+            listener.ShouldRaise("OnStop");
+
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(3), "The StreamListener was supposed to acquire 3 snasphots");
+            connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
         }
     }
 }

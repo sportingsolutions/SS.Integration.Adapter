@@ -27,14 +27,16 @@ namespace SS.Integration.Adapter.Configuration
         private const int DEFAULT_MAX_RETRY_ATTEMPT_VALUE = 3;
         private const int DEFAULT_ECHO_INTERVAL_VALUE = 10000;
         private const int DEFAULT_ECHO_DELAY_VALUE = 3000;
-        private const bool DEFAULT_SUSPEND_ALL_MARKETS_ON_SHUTDOWN_VALUE = true;
         private const string DEFAULT_EVENT_STATE_FILE_PATH_VALUE = @"C:\eventState.json";
         private const string DEFAULT_MARKET_STATE_MANAGER_DIRECTORY = @"MarketsState";
         private const int DEFAULT_CACHE_EXPIRY_MINUTES_VALUE = 15;
         private const bool DEFAULT_ENABLE_DELTA_RULE = false;
         private const bool DEFAULT_USE_STATS = false;
+        private const bool DEFAULT_USE_SUPERVISOR = false;
+        private const int DEFAULT_PROCESSING_LOCK_TIMEOUT = 720;
         private const string DEFAULT_STOP_STREAMING_DELAYED_SPORTS = "";
         private const double DEFAULT_STOP_STREAMING_DELAY_MINUTES = 0;
+        private const string DEFAULT_SUPERVISOR_STATE_PATH = @"SupervisorState";
 
         public Settings()
         {
@@ -64,9 +66,6 @@ namespace SS.Integration.Adapter.Configuration
             value = ConfigurationManager.AppSettings["echoDelay"];
             EchoDelay = string.IsNullOrEmpty(value) ? DEFAULT_ECHO_DELAY_VALUE : Convert.ToInt32(value);
 
-            value = ConfigurationManager.AppSettings["suspendAllOnShutdown"];
-            SuspendAllMarketsOnShutdown = string.IsNullOrEmpty(value) ? DEFAULT_SUSPEND_ALL_MARKETS_ON_SHUTDOWN_VALUE : string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
-
             value = ConfigurationManager.AppSettings["eventStateFilePath"];
             EventStateFilePath = string.IsNullOrEmpty(value) ? DEFAULT_EVENT_STATE_FILE_PATH_VALUE : Convert.ToString(value);
 
@@ -82,12 +81,16 @@ namespace SS.Integration.Adapter.Configuration
             value = ConfigurationManager.AppSettings["statsEnabled"];
             StatsEnabled = string.IsNullOrEmpty(value) ? DEFAULT_USE_STATS : Convert.ToBoolean(value);
 
-            value = ConfigurationManager.AppSettings["stateProviderPath"];
-            StateProviderPath = string.IsNullOrEmpty(value) ? null : value;
+            value = ConfigurationManager.AppSettings["useSupervisor"];
+            UseSupervisor = string.IsNullOrEmpty(value) ? DEFAULT_USE_SUPERVISOR : Convert.ToBoolean(value);
 
+            value = ConfigurationManager.AppSettings["processingLockTimeOutInSecs"];
+            ProcessingLockTimeOutInSecs = string.IsNullOrEmpty(value) ? DEFAULT_PROCESSING_LOCK_TIMEOUT : Convert.ToInt32(value);
             value = ConfigurationManager.AppSettings["stopStreamingDelayMinutes"];
             StopStreamingDelayMinutes = string.IsNullOrEmpty(value) ? DEFAULT_STOP_STREAMING_DELAY_MINUTES : Convert.ToInt32(value);
 
+            value = ConfigurationManager.AppSettings["supervisorStatePath"];
+            SupervisorStatePath = string.IsNullOrEmpty(value) ? DEFAULT_SUPERVISOR_STATE_PATH : value;
             value = ConfigurationManager.AppSettings["stopStreamingDelayedSports"];
             StopStreamingDelayedSports = string.IsNullOrEmpty(value) ? DEFAULT_STOP_STREAMING_DELAYED_SPORTS : value;
         }
@@ -115,22 +118,23 @@ namespace SS.Integration.Adapter.Configuration
         public int EchoDelay { get; private set; }
 
         [Obsolete]
-        public bool SuspendAllMarketsOnShutdown { get; private set; }
-
         public string EventStateFilePath { get; private set; }
-
-        public int FixtureCreationConcurrency { get; private set; }
-
+        
         public bool DeltaRuleEnabled { get; private set; }
-
+        
+        public int FixtureCreationConcurrency { get; private set; }
+        
         public bool StatsEnabled { get; private set; }
 
         public string StateProviderPath { get; private set; }
-
+        
+        public int ProcessingLockTimeOutInSecs { get; private set; }
         public double StopStreamingDelayMinutes { get; private set; }
 
+        public string SupervisorStatePath { get; private set; }
         public string StopStreamingDelayedSports { get; private set; }
 
+        public bool UseSupervisor { get; private set; }
         public bool ShouldDelayStopStreaming(string sport)
         {
             return string.IsNullOrEmpty(StopStreamingDelayedSports) || StopStreamingDelayedSports.Contains(sport);

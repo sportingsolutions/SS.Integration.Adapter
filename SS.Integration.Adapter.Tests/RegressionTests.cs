@@ -57,6 +57,7 @@ namespace SS.Integration.Adapter.Tests
         {
             var settings = new Mock<ISettings>();
             var service = new Mock<IServiceFacade>();
+            
             var plugin = new Mock<IAdapterPlugin>();
             var feature = new Mock<IFeature>();
             var resource = new Mock<IResourceFacade>();
@@ -69,7 +70,10 @@ namespace SS.Integration.Adapter.Tests
             settings.Setup(x => x.FixtureCreationConcurrency).Returns(1);
             settings.Setup(x => x.FixtureCheckerFrequency).Returns(1000);
             settings.Setup(x => x.EventStateFilePath).Returns(".");
+            settings.Setup(x => x.ProcessingLockTimeOutInSecs).Returns(10);
 
+            var streamListenerManager = new StreamListenerManager(settings.Object);
+            streamListenerManager.StateManager = new Mock<IStateManager>().Object;
             feature.Setup(x => x.Name).Returns("Football");
 
             service.Setup(x => x.GetSports()).Returns(new List<IFeature> { feature.Object });
@@ -97,11 +101,12 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
             resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
 
-            Adapter adapter = new Adapter(settings.Object, service.Object, plugin.Object)
+            Adapter adapter = new Adapter(settings.Object, service.Object, plugin.Object,streamListenerManager)
             {
-                EventState = eventstate.Object,
                 StateManager = provider
             };
+
+            streamListenerManager.EventState = eventstate.Object;
 
             adapter.Start();
 
@@ -148,7 +153,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
 
-            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, settings.Object);
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider,settings.Object);
 
             listener.Start();
 

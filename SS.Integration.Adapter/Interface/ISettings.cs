@@ -76,13 +76,6 @@ namespace SS.Integration.Adapter.Interface
         int EchoDelay { get; }
 
         /// <summary>
-        /// Determines wheter the adapter generates
-        /// or not a suspension request for all the 
-        /// markets when is shutting down
-        /// </summary>
-        bool SuspendAllMarketsOnShutdown { get; }
-
-        /// <summary>
         /// Returns the path for
         /// the events' state storage file
         /// </summary>
@@ -118,6 +111,13 @@ namespace SS.Integration.Adapter.Interface
         bool StatsEnabled { get; }
 
         /// <summary>
+        /// True to instantiate the adapter's supervisor
+        /// </summary>
+        bool UseSupervisor { get; }
+
+        int ProcessingLockTimeOutInSecs { get; }
+
+        string SupervisorStatePath { get; }
         /// If != 0, the adapter will wait N
         /// minutes after a fixture receives
         /// a MatchOver message before

@@ -21,7 +21,7 @@ using SS.Integration.Adapter.MarketRules;
 using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Adapter.ProcessState;
+using SS.Integration.Adapter.Model.ProcessState;
 
 namespace SS.Integration.Adapter
 {
@@ -30,9 +30,9 @@ namespace SS.Integration.Adapter
         private const string PLUGIN_STORE_PREFIX = "plugin_";
         private static readonly ILog _logger = LogManager.GetLogger(typeof(StateManager));
 
-        private readonly IObjectProvider<IUpdatableMarketStateCollection> _PersistanceLayer;
-        private readonly IObjectProvider<IPluginFixtureState> _PluginPersistanceLayer;
-        private readonly ConcurrentDictionary<string, MarketRulesManager> _RulesManagers;
+        private readonly IObjectProvider<IUpdatableMarketStateCollection> _persistanceLayer;
+        private readonly IObjectProvider<IPluginFixtureState> _pluginPersistanceLayer;
+        private readonly ConcurrentDictionary<string, MarketRulesManager> _rulesManagers;
         private readonly HashSet<IMarketRule> _Rules;
 
 
@@ -41,18 +41,19 @@ namespace SS.Integration.Adapter
             if (settings == null)
                 throw new ArgumentNullException("settings", "ISettings cannot be null");
 
-            _PersistanceLayer = new CachedObjectStoreWithPersistance<IUpdatableMarketStateCollection>(
+            _persistanceLayer = new CachedObjectStoreWithPersistance<IUpdatableMarketStateCollection>(
                 new BinaryStoreProvider<IUpdatableMarketStateCollection>(settings.MarketFiltersDirectory, "FilteredMarkets-{0}.bin"),
                 "MarketFilters", settings.CacheExpiryInMins * 60);
 
-            _PluginPersistanceLayer = new CachedObjectStoreWithPersistance<IPluginFixtureState>(
+            _pluginPersistanceLayer = new CachedObjectStoreWithPersistance<IPluginFixtureState>(
                 new BinaryStoreProvider<IPluginFixtureState>(settings.MarketFiltersDirectory, "PluginStore-{0}.bin"),
                 "MarketFilters", settings.CacheExpiryInMins * 60);
-
+            
+            _rulesManagers = new ConcurrentDictionary<string, MarketRulesManager>();
+            
             Plugin = plugin;
             SuspensionManager = new SuspensionManager(this, plugin);
 
-            _RulesManagers = new ConcurrentDictionary<string, MarketRulesManager>();
             _Rules = new HashSet<IMarketRule>
             {
                 VoidUnSettledMarket.Instance,
@@ -118,17 +119,17 @@ namespace SS.Integration.Adapter
 
         public IUpdatableMarketStateCollection GetObject(string fixtureId)
         {
-            return _PersistanceLayer.GetObject(fixtureId);
+            return _persistanceLayer.GetObject(fixtureId);
         }
 
         public void SetObject(string fixtureId, IUpdatableMarketStateCollection state)
         {
-            _PersistanceLayer.SetObject(fixtureId, state);
+            _persistanceLayer.SetObject(fixtureId, state);
         }
 
         public void Remove(string fixtureId)
         {
-            _PersistanceLayer.Remove(fixtureId);
+            _persistanceLayer.Remove(fixtureId);
         }
 
         #endregion
@@ -140,7 +141,7 @@ namespace SS.Integration.Adapter
             if (string.IsNullOrEmpty(fixtureId))
                 throw new ArgumentNullException("fixtureId", "fixtureId cannot be null");
 
-            return _RulesManagers.ContainsKey(fixtureId) ? _RulesManagers[fixtureId].CurrentState : null;
+            return _rulesManagers.ContainsKey(fixtureId) ? _rulesManagers[fixtureId].CurrentState : null;
         }
 
         public T GetPluginFixtureState<T>(string fixtureId) where T : IPluginFixtureState
@@ -154,7 +155,7 @@ namespace SS.Integration.Adapter
 
         public IPluginFixtureState GetPluginFixtureState(string fixtureId)
         {
-            return _PluginPersistanceLayer.GetObject(PLUGIN_STORE_PREFIX + fixtureId);
+            return _pluginPersistanceLayer.GetObject(PLUGIN_STORE_PREFIX + fixtureId);
         }
 
         public void AddOrUpdatePluginFixtureState(IPluginFixtureState state)
@@ -165,7 +166,15 @@ namespace SS.Integration.Adapter
             if (string.IsNullOrEmpty(state.FixtureId))
                 throw new Exception("FixtureId cannot be null");
 
-            _PluginPersistanceLayer.SetObject(PLUGIN_STORE_PREFIX + state.FixtureId, state);
+            _pluginPersistanceLayer.SetObject(PLUGIN_STORE_PREFIX + state.FixtureId, state);
+        }
+
+        public void RemovePluginState(string fixtureId)
+        {
+            if (string.IsNullOrEmpty(fixtureId))
+                throw new Exception("FixtureId cannot be null");
+
+            _pluginPersistanceLayer.Remove(PLUGIN_STORE_PREFIX + fixtureId);
         }
 
         public ISuspensionManager SuspensionManager { get; private set; }
@@ -179,11 +188,11 @@ namespace SS.Integration.Adapter
             if (string.IsNullOrEmpty(fixtureId))
                 throw new ArgumentNullException("fixtureId", "fixtureId cannot be null or empty");
 
-            if (_RulesManagers.ContainsKey(fixtureId))
-                return _RulesManagers[fixtureId];
+            if (_rulesManagers.ContainsKey(fixtureId))
+                return _rulesManagers[fixtureId];
 
             var rule_manager = new MarketRulesManager(fixtureId, this, _Rules);
-            _RulesManagers[fixtureId] = rule_manager;
+            _rulesManagers[fixtureId] = rule_manager;
 
             return rule_manager;
         }
@@ -195,13 +204,13 @@ namespace SS.Integration.Adapter
 
             _logger.DebugFormat("Clearing data state for fixtureId={0}", fixtureId);
 
-            if (_RulesManagers.ContainsKey(fixtureId))
+            if (_rulesManagers.ContainsKey(fixtureId))
             {
                 MarketRulesManager dummy;
-                _RulesManagers.TryRemove(fixtureId, out dummy);
+                _rulesManagers.TryRemove(fixtureId, out dummy);
             }
 
-            _PersistanceLayer.Remove(fixtureId);
+            _persistanceLayer.Remove(fixtureId);
         }
 
         public IStateProvider StateProvider { get { return this; } }

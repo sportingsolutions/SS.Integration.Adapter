@@ -21,6 +21,7 @@ using System.Reflection;
 using System.ServiceProcess;
 using System.Threading.Tasks;
 using Ninject.Modules;
+using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Interface;
 using log4net;
 using Ninject;
@@ -32,8 +33,8 @@ namespace SS.Integration.Adapter.WindowsService
     {
         private readonly ILog _logger = LogManager.GetLogger(typeof(AdapterService).ToString());
         private static Task _adapterWorkerThread;
-        private StandardKernel _iocContainer;
         private Adapter _adapter;
+        private ISupervisor _supervisor;
         private int fatalExceptionsCounter = 0;
 
         [Import]
@@ -46,7 +47,7 @@ namespace SS.Integration.Adapter.WindowsService
         {
             InitializeComponent();
             
-            TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;    
+            TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
 
             Compose();
@@ -69,7 +70,7 @@ namespace SS.Integration.Adapter.WindowsService
             {
                 string codebase = AppDomain.CurrentDomain.BaseDirectory;
 
-                var pluginAssembly = ConfigurationManager.AppSettings["PluginAssembly"];
+                var pluginAssembly = ConfigurationManager.AppSettings["pluginAssembly"];
                 var catalog = new SafeDirectoryCatalog(codebase, pluginAssembly);
                 container = new CompositionContainer(catalog);
                 container.ComposeParts(this);
@@ -123,7 +124,7 @@ namespace SS.Integration.Adapter.WindowsService
                 return;
             }
 
-            List<NinjectModule> modules = new List<NinjectModule> {new BootStrapper()};
+            List<INinjectModule> modules = new List<INinjectModule> { new BootStrapper() };
 
             if (PluginBootstrapper != null)
             {
@@ -131,16 +132,43 @@ namespace SS.Integration.Adapter.WindowsService
                 modules.AddRange(PluginBootstrapper.BootstrapModules);
             }
 
-            _iocContainer = new StandardKernel(modules.ToArray());
-            _iocContainer.Settings.InjectNonPublic = true;
+            StandardKernel iocContainer = new StandardKernel(modules.ToArray());
 
-            _iocContainer.Inject(PlatformConnector);
+
+            var settings = iocContainer.Get<ISettings>();
+            var service = iocContainer.Get<IServiceFacade>();
+            var streamListenerManager = iocContainer.Get<IStreamListenerManager>();
             
+            iocContainer.Settings.InjectNonPublic = true;
+            
+            //needed for Plugin properties since plugin is not instantiated by Ninject
+            iocContainer.Inject(PlatformConnector);
 
-            var settings = _iocContainer.Get<ISettings>();
-            var service = _iocContainer.Get<IServiceFacade>();
+            _adapter = new Adapter(settings, service, PlatformConnector, streamListenerManager);
 
-            _adapter = new Adapter(settings, service, PlatformConnector);
+            if (settings.UseSupervisor)
+            {
+                // SS.Integration.Diagnostics.RestService uses Owin.HttpListeners.
+                // that assembly must be referenced in the startup project even if not
+                // directly used, so do not remove it from the list of references
+                _supervisor = iocContainer.Get<ISupervisor>();
+                if (_supervisor == null)
+                {
+                    _logger.Error("Cannot instantiate Supervisor as not suitable module was found");
+                }
+                else
+                {
+                    _logger.Info("Initializing adapter's supervisor");
+                    try
+                    {
+                        _supervisor.Initialise();
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Error("An error occured during the initialization of the adapter's supervisor. The supervisor will not be available", e);
+                    }
+                }
+            }
 
 
             _adapter.Start();
@@ -155,6 +183,8 @@ namespace SS.Integration.Adapter.WindowsService
             _adapter.Stop();
             _adapterWorkerThread.Wait();
             _adapterWorkerThread.ContinueWith(task => { _logger.InfoFormat("Adapter successfully stopped"); Environment.Exit(0); });
+            if (_supervisor != null)
+                _supervisor.Dispose();
         }
 
         private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)

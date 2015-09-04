@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+﻿//Copyright 2014 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -13,12 +13,12 @@
 //limitations under the License.
 
 
-namespace SS.Integration.Adapter.Interface
+namespace SS.Integration.Adapter.Diagnostics.RestService.PushNotifications
 {
-    public interface IStoreProvider
+    public class SupervisorStreamingConstants
     {
-        string Read(string pathFileName);
-
-        void Write(string pathFileName, string content);
+        public static readonly string SPORT_GROUP_PREFIX = "SportGroup-";
+        public static readonly string FIXTURE_GROUP_PREFIX = "FixtureGroup-";
+        public static readonly string ADAPTER_GROUP = "AdapterGroup";
     }
 }

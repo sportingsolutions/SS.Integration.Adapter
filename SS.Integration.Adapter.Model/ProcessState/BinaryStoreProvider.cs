@@ -17,7 +17,7 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using SS.Integration.Adapter.Model.Interfaces;
 
-namespace SS.Integration.Adapter.ProcessState
+namespace SS.Integration.Adapter.Model.ProcessState
 {
     public class BinaryStoreProvider<T> : FileStoreProvider, IObjectProvider<T>
     {

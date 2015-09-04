@@ -41,13 +41,10 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Caching" />
     <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AdapterVersionInfo.cs" />
     <Compile Include="CachedObjectStore.cs" />
     <Compile Include="CachedObjectStoreWithPersistance.cs" />
     <Compile Include="Enums\EpochChangeReasonEnum.cs" />
@@ -57,6 +54,7 @@
     <Compile Include="Fixture.cs" />
     <Compile Include="FixtureState.cs" />
     <Compile Include="GameState\FootballGameState.cs" />
+    <Compile Include="Interfaces\IAdapterVersion.cs" />
     <Compile Include="Interfaces\IPluginFixtureState.cs" />
     <Compile Include="Interfaces\ISelectionResultState.cs" />
     <Compile Include="Interfaces\IStateProvider.cs" />
@@ -66,6 +64,7 @@
     <Compile Include="Interfaces\IMarketState.cs" />
     <Compile Include="Interfaces\IMarketStateCollection.cs" />
     <Compile Include="Interfaces\ISelectionState.cs" />
+    <Compile Include="Interfaces\IStoreProvider.cs" />
     <Compile Include="Interfaces\ISuspensionManager.cs" />
     <Compile Include="MarketRuleAddIntent.cs" />
     <Compile Include="MarketRuleEditIntent.cs" />
@@ -75,6 +74,8 @@
     <Compile Include="Interfaces\IAdapterPlugin.cs" />
     <Compile Include="Market.cs" />
     <Compile Include="Participant.cs" />
+    <Compile Include="ProcessState\BinaryStoreProvider.cs" />
+    <Compile Include="ProcessState\FileStoreProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RollingMarket.cs" />
     <Compile Include="RollingMarketScore.cs" />

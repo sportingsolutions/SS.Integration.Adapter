@@ -1,0 +1,145 @@
+﻿<div class="well">
+    <h3>Fixture: {{fixture.Description}} ({{fixture.Id}}) @ {{fixture.StartTime | date:"dd MMM yyyy '-' HH:mm" }}</h3>
+    <div class="panel" data-ng-class="{'panel-danger':fixture.IsInErrorState, 'panel-success': !fixture.IsInErrorState}">
+        <div class="panel-heading">
+            <div class="container-fluid">
+                <div class="col-md-8">
+                    <dl class="dl-horizontal">
+                        <dt>Streaming state</dt>
+                        <dd>
+                            <span class="label label-success" data-ng-if="fixture.IsStreaming">Connected</span>
+                            <span class="label label-danger" data-ng-if="!fixture.IsStreaming">Not connected</span>
+                        </dd>
+                        <dt>Current Sequence</dt>
+                        <dd>{{fixture.LastSequence}}</dd>
+                        <dt>Current Epoch</dt>
+                        <dd>{{fixture.LastEpoch}}</dd>
+                    </dl>
+                </div>
+                <div class="col-md-4">
+                    <h4 class="right">
+                        <strong data-ng-if="fixture.IsInErrorState">In an error state!</strong>
+                        <strong data-ng-if="!fixture.IsInErrorState">Processing as normal</strong>
+                    </h4>
+                </div>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <span class="text-center text-uppercase "><strong>Fixture data</strong></span>
+                        </div>
+                        <div class="panel-body">
+                            <dl class="dl-horizontal">
+                                <dt>Description</dt>
+                                <dd><i>{{fixture.Description}}</i></dd>
+                                <dt>Start Time</dt>
+                                <dd><i>{{fixture.StartTime | date:"dd MMM yyyy 'at' HH:mm" }}</i></dd>
+                                <dt>Competition</dt>
+                                <dd><i>{{fixture.Competition}}</i></dd>
+                                <dt>Competition Id</dt>
+                                <dd><i>{{fixture.CompetitionId}}</i></dd>
+                                <dt>State</dt>
+                                <dd><ins>{{fixture.State | fixtureStatus}}</ins></dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="panel panel-info right">
+                        <div class="panel-heading">
+                            <span class="text-center text-uppercase"><strong>Actions</strong></span>
+                        </div>
+                        <div class="panel-body">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-danger"  data-ng-click="restartListener();">Restart</button>
+                                <button type="button" class="btn btn-primary" data-ng-click="takeSnapshot();">Take snapshot</button>
+                                <button type="button" class="btn btn-warning" data-ng-click="clearState();">Clear state</button>
+                                <!-- 
+                                    --- feature not yet supported ---
+
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-warning dropdown-toggle" data-toggle="dropdown">
+                                            Clear state
+                                            <span class="caret"></span>
+                                        </button>
+                                        <ul class="dropdown-menu" role="menu">
+                                            <li><a href="#">Clear All</a></li>
+                                            <li><a href="#">Clear Adapter cache</a></li>
+                                            <li><a href="#">Clear Adapter state and cache</a></li>
+                                            <li><a href="#">Clear Plugin state and cache</a></li>
+                                        </ul>
+                                    </div>
+                                    -->
+                            </div>
+                            <br/>
+                            <strong data-ng-if="commandInProgress === 1" class="label label-warning">Sending command...</strong>
+                            <strong data-ng-if="commandResult === 0" class="label label-success">OK! Command correctly sent</strong>
+                            <strong data-ng-if="commandResult === 1" class="label label-danger">OPSSS! The command could not be sent</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="panel" data-ng-class="{'panel-success': !fixture.IsInErrorState, 'panel-danger': fixture.IsInErrorState}">
+                        <div class="panel-heading">
+                            <p class="text-uppercase">
+                                <span class="label label-danger" data-ng-if="fixture.IsInErrorState">{{fixture.LastException}}</span>
+                                <span class="label label-success" data-ng-if="!fixture.IsInErrorState">Everything is ok</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <table class="table table-condensed">
+                        <tr>
+                            <th class="col-md-1">Seq</th>
+                            <th class="col-md-2">Received at</th>
+                            <th class="col-md-1">Epoch</th>
+                            <th class="col-md-1">Status</th>
+                            <th class="col-md-7"></th>
+                        </tr>
+                        <tr data-ng-repeat-start="update in fixture.GroupedProcessingEntries | orderBy:'-sequence'" data-ng-class="{danger: update.Exception}">
+                            <td class="col-md-1"><strong>{{update.sequence}}</strong></td>
+                            <td class="col-md-2"><i>{{update.items[0].Timestamp | date:'dd MMM yyyy HH:mm:ss'}}</i></td>
+                            <td class="col-md-1">{{update.items[0].Epoch}}</td>
+                            <td class="col-md-1">
+                                <span class="label label-success" data-ng-if="update.items[0].State == 0">{{update.items[0] | updateDescription}}</span>
+                                <span class="label label-info"    data-ng-if="update.items[0].State == 1">{{update.items[0] | updateDescription}}</span>
+                                <span class="label label-warning" data-ng-if="update.items[0].State == 2">{{update.items[0] | updateDescription}}</span>
+                            </td>
+                            <td class="col-md-7">
+                                <span class="right glyphicon glyphicon-th-list clickable" data-ng-show="update.items.length > 1" data-ng-click="setDetailVisible(update.sequence, !isDetailVisibile(update.sequence))"></span>
+                            </td>
+                        </tr>
+                        <tr data-ng-repeat-end="" data-ng-show="isDetailVisibile(update.sequence)">
+                            <td colspan="5">
+                                <p><ins>Processing attempts for sequence={{update.sequence}}</ins></p>
+                                <table class="table">
+                                    <tr data-ng-repeat="received in update.items | orderBy:'-Timestamp'" data-ng-class="{danger: received.Exception}">
+                                        <td class="col-md-1"></td>
+                                        <td class="col-md-2"><i>{{received.Timestamp | date:'dd MMM yyyy HH:mm:ss'}}</i></td>
+                                        <td class="col-md-1">{{received.Epoch}}</td>
+                                        <td class="col-md-1">
+                                            <span class="label label-success" data-ng-if="received.State == 0">{{received | updateDescription}}</span>
+                                            <span class="label label-info"    data-ng-if="received.State == 1">{{received | updateDescription}}</span>
+                                            <span class="label label-warning" data-ng-if="received.State == 2">{{received | updateDescription}}</span>
+                                        </td>
+                                        <td class="col-md-7">
+                                            <span data-ng-show="received.Exception">{{received.Exception}}</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

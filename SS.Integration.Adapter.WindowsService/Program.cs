@@ -41,6 +41,7 @@ namespace SS.Integration.Adapter.WindowsService
                     new AdapterService() 
                 };
 
+
             if (Environment.UserInteractive)
             {
                 var type = typeof(ServiceBase);

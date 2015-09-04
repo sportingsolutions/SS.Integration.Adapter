@@ -20,7 +20,7 @@ namespace SS.Integration.Adapter.Model.Interfaces
         ///     The rule's name
         /// </summary>
         string Name { get; }
-
+        
         /// <summary>
         ///     Applies a rule. 
         /// 
