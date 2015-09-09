@@ -53,7 +53,7 @@ namespace SS.Integration.Adapter.Diagnostics
 
             _sportOverviews = new ConcurrentDictionary<string, SportOverview>();
             SetupSports();
-            Proxy = new SupervisorProxy(this);
+            
         }
 
         public ISupervisorProxy Proxy { get; set; }
@@ -70,6 +70,7 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public void Initialise()
         {
+            Proxy = new SupervisorProxy(this);
             Service = new Service(Proxy);
             Service.Start();
         }
