@@ -33,6 +33,9 @@
 
 	<Target Name="PrepareArtifact" DependsOnTargets="CleanFolder">
 		<ItemGroup>
+			<SupervisorUI
+				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\ui\**\*;"
+			/>	
 			<Library
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.dll;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.exe;
@@ -53,6 +56,7 @@
 
 		<Message Text="Preparing artifact for $(Configuration) started " />
 		<Copy SourceFiles="@(Library)"       DestinationFolder="$(BuildDir)" />
+		<Copy SourceFiles="@(SupervisorUI)"  DestinationFolder="$(BuildDir)\ui\%(RecursiveDir)" />
 		<Copy SourceFiles="@(DefaultPlugin)" DestinationFolder="$(BuildDir)" />
 		<Copy SourceFiles="@(ConfFile)"      DestinationFolder="$(BuildDir)" />
 		<Copy SourceFiles="@(Licence)"       DestinationFolder="$(BuildDir)" />
@@ -63,6 +67,7 @@
 		<ItemGroup>
 			<Library
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*;
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\ui\**;	
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Statsd\bin\$(Configuration)\StatsdClient*.dll;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Statsd\bin\$(Configuration)\SS.Integration.Adapter.Statsd*"
 				Exclude="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.pdb;
@@ -70,6 +75,9 @@
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.vshost*;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.xml*;"
 			/>
+			<SupervisorUI
+				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\ui\**\*;"
+			/>	
 			<DefaultPlugin
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\SS.Integration.Adapter.Plugin.Logger.dll;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\log4net.config" 
@@ -79,6 +87,7 @@
 
 		<Message Text="Preparing ZIP file for $(Configuration) env: $(Environment) build: $(BUILD_NUMBER)$(BUILD_RELEASE)$(BUILD_COUNTER) " />
 		<Copy SourceFiles="@(Library)"       DestinationFolder="$(BuildDir)" />
+		<Copy SourceFiles="@(SupervisorUI)"  DestinationFolder="$(BuildDir)\ui\%(RecursiveDir)" />
 		<Copy SourceFiles="@(DefaultPlugin)" DestinationFolder="$(BuildDir)" />
 		<Copy SourceFiles="@(Licence)"       DestinationFolder="$(BuildDir)" />
 		<Copy SourceFiles="@(ConfFile)"      DestinationFolder="$(BuildDir)" />
