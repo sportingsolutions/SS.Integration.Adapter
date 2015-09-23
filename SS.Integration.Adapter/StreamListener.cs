@@ -712,11 +712,10 @@ namespace SS.Integration.Adapter
                 // for when a disconnect event is raised due a failed attempt to connect 
                 // (in other words, when we didn't receive a connect event)
                 IsConnecting = false;
-
                 IsStreaming = false;
-                IsStopping = false;
                 RaiseEvent(OnDisconnected);
                 IsDisconnected = true;
+                IsStopping = false;
             }
         }
 
