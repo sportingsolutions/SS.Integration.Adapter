@@ -48,12 +48,31 @@ namespace SS.Integration.Adapter.Diagnostics
             : base(settings)
         {
             _objectStore = supervisorStore;
-            var storedObject = _objectStore.GetObject(null);
-            _fixtures = storedObject != null ? new ConcurrentDictionary<string, FixtureOverview>(storedObject) : new ConcurrentDictionary<string, FixtureOverview>();
+            LoadState();
 
             _sportOverviews = new ConcurrentDictionary<string, SportOverview>();
             SetupSports();
             
+        }
+
+        private void LoadState()
+        {
+            Dictionary<string, FixtureOverview> storedObject = null;
+
+            try
+            {
+                storedObject = _objectStore.GetObject(null);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error while loading Supervisor state: {0}",ex);
+            }
+            finally
+            {
+                _fixtures = storedObject != null
+                    ? new ConcurrentDictionary<string, FixtureOverview>(storedObject)
+                    : new ConcurrentDictionary<string, FixtureOverview>();
+            }
         }
 
         public ISupervisorProxy Proxy { get; set; }
