@@ -12,6 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SS.Integration.Adapter.Model.Interfaces;
@@ -41,8 +42,10 @@ namespace SS.Integration.Adapter.Interface
         bool RemoveStreamListener(string fixtureId);
 
         IEnumerable<IGrouping<string, IListener>> GetListenersBySport();
-        bool WillProcessResource(IResourceFacade resource);
+        bool ShouldProcessResource(IResourceFacade resource);
         bool CanBeProcessed(string fixtureId);
+
+        Action<string> ProcessResourceHook { set; }
     }
 }
 

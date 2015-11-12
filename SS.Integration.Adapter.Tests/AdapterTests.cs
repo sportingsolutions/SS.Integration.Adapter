@@ -166,6 +166,11 @@ namespace SS.Integration.Adapter.Tests
 
             settings.Setup(s => s.FixtureCreationConcurrency).Returns(2);
 
+            var fixtureManager = new FixtureManager(5,streamListenerManager.Object,service.Object.GetResources);
+            fixtureManager.ProcessSport("Football");
+            fixtureManager.ProcessSport("Rugby");
+
+            //this checks service IsConnected 
             var adapter = new Adapter(
                 settings.Object,
                 service.Object,
@@ -175,8 +180,10 @@ namespace SS.Integration.Adapter.Tests
 
             adapter.Start();
             
-            adapter.ProcessSport("Football");
-            adapter.ProcessSport("Rugby");
+            //adapter.ProcessSport("Football");
+            //adapter.ProcessSport("Rugby");
+
+
 
             Thread.Yield();
 
@@ -337,6 +344,7 @@ namespace SS.Integration.Adapter.Tests
             settings.Setup(x => x.FixtureCheckerFrequency).Returns(1200000); 
 
             var service = new Mock<IServiceFacade>();
+            service.Setup(x => x.IsConnected).Returns(true);
             var streamListenerManager = new StreamListenerManager(settings.Object);
             streamListenerManager.StateManager = _state.Object;
             var connector = new Mock<IAdapterPlugin>();
@@ -355,9 +363,9 @@ namespace SS.Integration.Adapter.Tests
             fixtureTwo.Setup(f => f.GetSnapshot()).Returns(string.Empty);
             fixtureTwo.Setup(f => f.Content).Returns(new Summary { Id = "2", Date = "23/05/2012", StartTime = "10:30", MatchStatus = (int)MatchStatus.Setup });
 
-            service.Setup(x => x.GetResources("Football")).Returns(() => new List<IResourceFacade> { fixtureOne.Object, fixtureTwo.Object });
-            service.Setup(x => x.IsConnected).Returns(false);
-
+            service.Setup(x => x.GetResources("Football"))
+                .Returns(() => new List<IResourceFacade> {fixtureOne.Object, fixtureTwo.Object});
+                
             Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object,streamListenerManager);
             adapter.StateManager.ClearState("1");
             adapter.StateManager.ClearState("2");

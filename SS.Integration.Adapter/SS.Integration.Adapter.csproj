@@ -95,6 +95,7 @@
     <Compile Include="MarketRules\Model\SelectionResultState.cs" />
     <Compile Include="ProcessState\EventState.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="FixtureManager.cs" />
     <Compile Include="StateManager.cs" />
     <Compile Include="StreamListenerEventArgs.cs" />
     <Compile Include="StreamListenerManager.cs" />

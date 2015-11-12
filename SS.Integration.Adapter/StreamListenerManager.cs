@@ -52,6 +52,8 @@ namespace SS.Integration.Adapter
 
         public IStateManager StateManager { get; set; }
 
+        public Action<string> ProcessResourceHook { get; set; }
+
         protected IListener GetStreamListener(string fixtureId)
         {
             if (!HasStreamListener(fixtureId)) return null;
@@ -127,7 +129,7 @@ namespace SS.Integration.Adapter
             return _listeners.Values.GroupBy(x => x.Sport);
         }
 
-        public bool WillProcessResource(IResourceFacade resource)
+        public bool ShouldProcessResource(IResourceFacade resource)
         {
             if (HasStreamListener(resource.Id))
             {
@@ -147,6 +149,7 @@ namespace SS.Integration.Adapter
                     _logger.DebugFormat("{0} is marked as ignored. Listener wil be removed", resource);
                     RemoveStreamListener(resource.Id);
                 }
+                //Disconnected from the stream - this fixture should be reconnected ASAP
                 else if (listener.IsDisconnected && (resource.MatchStatus == MatchStatus.Prematch || resource.MatchStatus == MatchStatus.InRunning))
                 {
                     _logger.WarnFormat("{0} was disconnected from stream {1}", resource, resource.MatchStatus);
@@ -193,7 +196,7 @@ namespace SS.Integration.Adapter
                 {
                     _logger.WarnFormat("Couldn't start stream listener for {0}", resource);
                     listener.Dispose();
-
+                    
                     DisposedStreamListener(listener);
                     return;
                 }
@@ -201,6 +204,8 @@ namespace SS.Integration.Adapter
                 _listeners.TryAdd(resource.Id, listener);
 
                 OnStreamCreated(resource.Id);
+
+                (listener as StreamListener).OnDisconnected += OnStreamDisconnected;
 
                 _logger.InfoFormat("Listener created for {0}", resource);
             }
@@ -213,9 +218,21 @@ namespace SS.Integration.Adapter
             }
         }
 
+        private void OnStreamDisconnected(object sender, StreamListenerEventArgs e)
+        {
+            var listener = e.Listener;
+            var shouldFastTrackReconnect = !listener.IsFixtureDeleted && listener.IsDisconnected && (e.MatchStatus == MatchStatus.Prematch || e.MatchStatus == MatchStatus.InRunning);
+
+            if (shouldFastTrackReconnect && ProcessResourceHook != null)
+            {
+                _logger.InfoFormat("Fixture will be reset to creation queue {0}",listener.FixtureId);
+                ProcessResourceHook(listener.FixtureId);
+            }
+        }
+
         protected virtual void DisposedStreamListener(IListener listener)
         {
-            // in case there's additional clean up needed   
+            // in case there's additional clean up needed    
         }
 
         protected virtual IListener CreateStreamListenerObject(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IStateManager stateManager)
@@ -275,6 +292,8 @@ namespace SS.Integration.Adapter
 
             return true;
         }
+
+        
 
         public void RemoveFixtureEventState(string fixtureId)
         {

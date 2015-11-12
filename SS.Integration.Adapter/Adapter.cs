@@ -41,11 +41,11 @@ namespace SS.Integration.Adapter
         private readonly ILog _logger = LogManager.GetLogger(typeof(Adapter).ToString());
         
         private readonly List<string> _sports;
-        private readonly BlockingCollection<IResourceFacade> _resourceCreationQueue;
-        private readonly CancellationTokenSource _creationQueueCancellationToken;
-        private readonly Task[] _creationTasks;
+        
         private readonly IStatsHandle _stats;
         private Timer _trigger;
+
+        private FixtureManager _fixtureManager;
 
         public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector, IStreamListenerManager listenersManager)
         {
@@ -72,13 +72,9 @@ namespace SS.Integration.Adapter
 
 
             ThreadPool.SetMinThreads(500, 500);
-
-            _resourceCreationQueue = new BlockingCollection<IResourceFacade>(new ConcurrentQueue<IResourceFacade>());
+            
             _sports = new List<string>();
-            _creationQueueCancellationToken = new CancellationTokenSource();
-
-            _creationTasks = new Task[settings.FixtureCreationConcurrency];
-
+            
             _stats = StatsManager.Instance["adapter.core"].GetHandle();
 
             PopuplateAdapterVersionInfo();
@@ -86,7 +82,7 @@ namespace SS.Integration.Adapter
         
         internal IStateManager StateManager { get; set; }
 
-        internal IAdapterPlugin PlatformConnector { get; private set; }
+        internal static IAdapterPlugin PlatformConnector { get; private set; }
 
         internal ISettings Settings { get; private set; }
 
@@ -104,24 +100,21 @@ namespace SS.Integration.Adapter
             try
             {
                 LogVersions();
-
-                for (var i = 0; i < Settings.FixtureCreationConcurrency; i++)
-                {
-                    _creationTasks[i] = Task.Factory.StartNew(CreateFixture, _creationQueueCancellationToken.Token);
-                }
-
+                
                 _logger.Info("Adapter is connecting to the UDAPI service...");
 
                 UDAPIService.Connect();
                 if (!UDAPIService.IsConnected)
                     return;
-
+                
                 _logger.Debug("Adapter connected to the UDAPI - initialising...");
 
                 foreach (var sport in UDAPIService.GetSports())
                 {
                     _sports.Add(sport.Name);
                 }
+
+                _fixtureManager = new FixtureManager(Settings.FixtureCreationConcurrency, _listenersManager, UDAPIService.GetResources);
 
                 _trigger = new Timer(timerAutoEvent => TimerEvent(), null, 0, Settings.FixtureCheckerFrequency);
 
@@ -155,14 +148,7 @@ namespace SS.Integration.Adapter
                     wait_handler.WaitOne();
                     wait_handler.Dispose();
                     _trigger = null;
-
-                    _creationQueueCancellationToken.Cancel(false);
-                    Task.WaitAll(_creationTasks);
-
-                    _listenersManager.StopAll();
-
-                    _resourceCreationQueue.Dispose();
-                    _creationQueueCancellationToken.Dispose();
+                    _fixtureManager.Dispose();
                 }
 
                 if (PlatformConnector != null)
@@ -187,11 +173,7 @@ namespace SS.Integration.Adapter
             try
             {
                 _logger.DebugFormat("Adapter is querying API for fixtures");
-
-                var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
-
-                Parallel.ForEach(_sports, parallelOptions, ProcessSport);
-                
+                _fixtureManager.ProcessSports(_sports);
                 GetStatistics();
 
             }
@@ -248,7 +230,7 @@ namespace SS.Integration.Adapter
 
         private void GetStatistics()
         {
-            var queueSize = _resourceCreationQueue.Count;
+            var queueSize = _fixtureManager.QueueSize;
             var currentlyConnected = _listenersManager.ListenersCount;
 
             try
@@ -268,127 +250,6 @@ namespace SS.Integration.Adapter
             catch { }
 
             _logger.DebugFormat("Currently adapter is streaming fixtureCount={0} and creation queue has queueSize={1} elements", currentlyConnected, queueSize);
-
-        }
-
-        internal void ProcessSport(string sport)
-        {
-            _logger.InfoFormat("Getting the list of available fixtures for sport={0} from GTP", sport);
-
-            var resources = UDAPIService.GetResources(sport);
-
-            if (resources == null)
-            {
-                _logger.WarnFormat("Cannot find sport={0} in UDAPI....", sport);
-                return;
-            }
-
-            if (resources.Count == 0)
-            {
-                _logger.DebugFormat("There are currently no fixtures for sport={0} in UDAPI", sport);
-            }
-            else
-            {
-
-                var processingFactor = resources.Count / 10;
-
-                _logger.DebugFormat("Received count={0} fixtures to process in sport={1}", resources.Count, sport);
-
-                var po = new ParallelOptions { MaxDegreeOfParallelism = processingFactor == 0 ? 1 : processingFactor };
-
-                if (resources.Count > 1)
-                {
-                    resources.Sort((x, y) =>
-                    {
-                        if (x.Content.MatchStatus > y.Content.MatchStatus)
-                            return -1;
-
-                        return x.Content.MatchStatus < y.Content.MatchStatus ? 1 : DateTime.Parse(x.Content.StartTime).CompareTo(DateTime.Parse(y.Content.StartTime));
-                         
-                    });
-                }
-
-                Parallel.ForEach(resources,
-                    po,
-                    resource =>
-                    {
-                        try
-                        {
-                            ProcessResource(sport, resource);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.Error(string.Format("An error occured while processing {0} for sport={1}", resource, sport), ex);
-                        }
-                    });
-            }
-
-            RemoveDeletedFixtures(sport, resources);
-            
-            _logger.InfoFormat("Finished processing fixtures for sport={0}", sport);
-        }
-
-        private void RemoveDeletedFixtures(string sport, IEnumerable<IResourceFacade> resources)
-        {
-            var currentfixturesLookup = resources.ToDictionary(r => r.Id);
-
-            _listenersManager.UpdateCurrentlyAvailableFixtures(sport, currentfixturesLookup);
-        }
-
-        private void ProcessResource(string sport, IResourceFacade resource)
-        {
-            _logger.DebugFormat("Attempt to process {0} for sport={1}", resource, sport);
-            
-            // make sure that the resource is not already being processed by some other thread
-            if(!_listenersManager.CanBeProcessed(resource.Id))
-                return;
-
-            _logger.InfoFormat("Processing {0}", resource);
-
-            if (_listenersManager.WillProcessResource(resource))
-            {
-                _logger.DebugFormat("Adding {0} to the creation queue ", resource);
-                _resourceCreationQueue.Add(resource);
-                _logger.DebugFormat("Added {0} to the creation queue", resource);
-            }
-
-        }
-
-        private void CreateFixture()
-        {
-            try
-            {
-                foreach (var resource in _resourceCreationQueue.GetConsumingEnumerable(_creationQueueCancellationToken.Token))
-                {
-                    try
-                    {
-                        _logger.DebugFormat("Task={0} is processing {1} from the queue", Task.CurrentId, resource);
-
-                        if (_listenersManager.HasStreamListener(resource.Id))
-                            continue;
-
-                        _listenersManager.CreateStreamListener(resource, PlatformConnector);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Error(string.Format("There has been a problem creating a listener for {0}", resource), ex);
-                    }
-
-                    if (_creationQueueCancellationToken.IsCancellationRequested)
-                    {
-                        _logger.DebugFormat("Fixture creation task={0} will terminate as requested", Task.CurrentId);
-                        break;
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.DebugFormat("Fixture creation task={0} exited as requested", Task.CurrentId);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(string.Format("An error occured on fixture creation task={0}", Task.CurrentId), ex);
-            }
 
         }
         
