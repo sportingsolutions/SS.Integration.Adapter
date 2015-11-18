@@ -136,6 +136,19 @@ namespace SS.Integration.Adapter.Interface
         string StopStreamingDelayedSports { get; }
 
         /// <summary>
+        /// Allows skipping suspension on Prematch fixtures when disconnection occurs
+        /// Prematch is less sensitive to price changes and some cusotmers prefer to keep the prices open 
+        /// while Adapter is recovering
+        /// </summary>
+        bool DisablePrematchSuspensionOnDisconnection { get; }
+
+        /// <summary>
+        /// This is safety buffer for prematch fixtures when suspension on disconnection is disabled 
+        /// The suspension will be applied if the fixture has only set amount of time left before start time 
+        /// </summary>
+        int PreMatchSuspensionBeforeStartTimeInMins { get; }
+
+        /// <summary>
         /// Indicates if the adapter should introduce
         /// a delay before stop streaming for fixtures
         /// that belong to a given sport

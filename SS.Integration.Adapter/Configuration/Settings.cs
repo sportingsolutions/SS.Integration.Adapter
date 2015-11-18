@@ -37,7 +37,8 @@ namespace SS.Integration.Adapter.Configuration
         private const string DEFAULT_STOP_STREAMING_DELAYED_SPORTS = "";
         private const double DEFAULT_STOP_STREAMING_DELAY_MINUTES = 0;
         private const string DEFAULT_SUPERVISOR_STATE_PATH = @"SupervisorState";
-
+        private const int DEFAULT_PREMATCH_SUSPENSION_BEFORE_STARTTIME_IN_MINS = 15;
+        
         public Settings()
         {
             User = ConfigurationManager.AppSettings["user"];
@@ -93,6 +94,14 @@ namespace SS.Integration.Adapter.Configuration
             SupervisorStatePath = string.IsNullOrEmpty(value) ? DEFAULT_SUPERVISOR_STATE_PATH : value;
             value = ConfigurationManager.AppSettings["stopStreamingDelayedSports"];
             StopStreamingDelayedSports = string.IsNullOrEmpty(value) ? DEFAULT_STOP_STREAMING_DELAYED_SPORTS : value;
+
+            value = ConfigurationManager.AppSettings["preMatchSuspensionBeforeStartTimeInMins"];
+            PreMatchSuspensionBeforeStartTimeInMins = string.IsNullOrEmpty(value)
+                ? DEFAULT_PREMATCH_SUSPENSION_BEFORE_STARTTIME_IN_MINS
+                : int.Parse(value);
+
+            value = ConfigurationManager.AppSettings["disablePrematchSuspensionOnDisconnection"];
+            DisablePrematchSuspensionOnDisconnection = string.IsNullOrEmpty(value) ? false : Convert.ToBoolean(value);
         }
 
         public string MarketFiltersDirectory { get; private set; }
@@ -133,6 +142,8 @@ namespace SS.Integration.Adapter.Configuration
 
         public string SupervisorStatePath { get; private set; }
         public string StopStreamingDelayedSports { get; private set; }
+        public bool DisablePrematchSuspensionOnDisconnection { get; private set; }
+        public int PreMatchSuspensionBeforeStartTimeInMins { get; private set; }
 
         public bool UseSupervisor { get; private set; }
         public bool ShouldDelayStopStreaming(string sport)

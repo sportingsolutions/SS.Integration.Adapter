@@ -221,7 +221,7 @@ namespace SS.Integration.Adapter
         private void OnStreamDisconnected(object sender, StreamListenerEventArgs e)
         {
             var listener = e.Listener;
-            var shouldFastTrackReconnect = !listener.IsFixtureDeleted && listener.IsDisconnected && (e.MatchStatus == MatchStatus.Prematch || e.MatchStatus == MatchStatus.InRunning);
+            var shouldFastTrackReconnect = !listener.IsFixtureDeleted && listener.IsDisconnected && e.MatchStatus == MatchStatus.InRunning;
 
             if (shouldFastTrackReconnect && ProcessResourceHook != null)
             {
@@ -232,7 +232,7 @@ namespace SS.Integration.Adapter
 
         protected virtual void DisposedStreamListener(IListener listener)
         {
-            // in case there's additional clean up needed    
+            (listener as StreamListener).OnDisconnected -= OnStreamDisconnected;
         }
 
         protected virtual IListener CreateStreamListenerObject(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IStateManager stateManager)

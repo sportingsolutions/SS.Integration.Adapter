@@ -60,6 +60,8 @@ namespace SS.Integration.Adapter
         private bool _performingDelayedStop;
         private readonly int _lockTimeout;
 
+        private DateTime? _fixtureStartTime = null;
+
         //The events are for diagnostic purposes only
         
         public event EventHandler<StreamListenerEventArgs> OnConnected;
@@ -76,7 +78,7 @@ namespace SS.Integration.Adapter
         public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IStateManager stateManager,ISettings settings)
         {
             if (resource == null)
-                throw new ArgumentException("Resource information cannot be null", "resource");
+                throw new ArgumentException("Resource information cannot be null");
 
             if (resource.Content == null)
                 throw new Exception("Resource does not contain any content");
@@ -119,6 +121,7 @@ namespace SS.Integration.Adapter
             IsFixtureDeleted = false;
             IsInPlay = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.InRunning : _resource.MatchStatus == MatchStatus.InRunning;
             _currentEpoch = fixtureState != null ? fixtureState.Epoch : -1;
+            
             _Stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
 
             SetupListener();
@@ -598,6 +601,8 @@ namespace SS.Integration.Adapter
                     return;
                 }
 
+                
+
                 bool hasEpochChanged;
                 var epochValid = IsEpochValid(fixtureDelta, out hasEpochChanged);
 
@@ -608,6 +613,8 @@ namespace SS.Integration.Adapter
                 }
                 else
                 {
+
+                    _fixtureStartTime = fixtureDelta.StartTime;
 
                     if (fixtureDelta.IsMatchStatusChanged && !string.IsNullOrEmpty(fixtureDelta.MatchStatus))
                     {
@@ -693,7 +700,7 @@ namespace SS.Integration.Adapter
                     // (otherwise we send it twice)...note that this should not occure
                     // as the event is removed before calling StopStreaming() 
                     // however, there might be other cases where the disconnect event is raised...
-                    if (!IsDisposing)
+                    if (!IsDisposing && ShouldSuspendOnDisconnection())
                         SuspendFixture(SuspensionReason.DISCONNECT_EVENT);
                 }
                 else
@@ -717,6 +724,17 @@ namespace SS.Integration.Adapter
                 IsDisconnected = true;
                 IsStopping = false;
             }
+        }
+
+        private bool ShouldSuspendOnDisconnection()
+        {
+            var state = _eventState.GetFixtureState(this.FixtureId);
+            if (state == null || !_fixtureStartTime.HasValue)
+                return true;
+
+            var spanBetweenNowAndStartTime = _fixtureStartTime.Value - DateTime.UtcNow;
+            var doNotSuspend = _settings.DisablePrematchSuspensionOnDisconnection && spanBetweenNowAndStartTime.TotalMinutes > _settings.PreMatchSuspensionBeforeStartTimeInMins;
+            return !doNotSuspend;
         }
 
         internal void ResourceOnStreamConnected(object sender, EventArgs eventArgs)
@@ -822,6 +840,7 @@ namespace SS.Integration.Adapter
                     throw new Exception(string.Format("Received snapshot {0} with sequence lower than currentSequence={1}",snapshot,_currentSequence));
 
                 _Stats.IncrementValue(AdapterCoreKeys.SNAPSHOT_COUNTER);
+                _fixtureStartTime = snapshot.StartTime;
 
                 return snapshot;
             }
@@ -1230,7 +1249,7 @@ namespace SS.Integration.Adapter
                 Stop();
 
                 // this is for not sending twice the suspension command
-                if (!IsFixtureDeleted && !IsFixtureEnded)
+                if (!IsFixtureDeleted && !IsFixtureEnded && ShouldSuspendOnDisconnection())
                     SuspendFixture(SuspensionReason.FIXTURE_DISPOSING);
 
                 // free the resource instantiated by the SDK

@@ -46,6 +46,7 @@ namespace SS.Integration.Adapter.Tests
             state.ClearState(TestHelper.GetFixtureFromResource("rugbydata_snapshot_2").Id);
 
             _settings = new Mock<ISettings>();
+            _settings.Reset();
             _settings.Setup(x => x.ProcessingLockTimeOutInSecs).Returns(10);
         }
 
@@ -587,6 +588,147 @@ namespace SS.Integration.Adapter.Tests
 
             connector.Verify(x => x.Suspend(It.Is<string>(y => y == "ABC")));
             
+        }
+
+        /// <summary>
+        /// I want to test that in the case that the streamlistener
+        /// receives an a disconnect event on prematch fixture 
+        /// ithe stream listener does not generate a suspend request
+        /// </summary>
+        [Test]
+        [Category("StreamListener")]
+        public void PrematchSuspensionDisabledOnDisconnectionTest()
+        {
+
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+
+            _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+            _settings.Setup(x => x.DisablePrematchSuspensionOnDisconnection).Returns(true);
+
+            //suspension should occur if time we are within 15mins 
+            _settings.Setup(x => x.PreMatchSuspensionBeforeStartTimeInMins).Returns(15);
+            state.Setup(x => x.GetFixtureState(It.Is<string>(id => id == "ABC")))
+                .Returns(new FixtureState() {Id = "ABC", MatchStatus = MatchStatus.Prematch});
+
+            var startTime = DateTime.UtcNow.AddMinutes(30);
+
+            var provider = new StateManager(_settings.Object, connector.Object);
+
+            Fixture fixture = new Fixture { Id = "ABC", Sequence = 1, MatchStatus = ((int)MatchStatus.Prematch).ToString(), Epoch = 1, StartTime = startTime};
+            Fixture update = new Fixture
+            {
+                Id = "ABC",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.Prematch).ToString(),
+                Epoch = 1,
+                LastEpochChangeReason = new[] { (int)EpochChangeReason.MatchStatus },
+                StartTime = startTime
+                
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+
+            resource.Setup(r => r.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Prematch);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
+
+            listener.Start();
+
+            // just to be sure that we are streaming
+            listener.IsStreaming.Should().BeTrue();
+
+            //Update snapshot sequence
+            //fixture.Sequence = 2;
+            //resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // send the update that contains the match status change
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+            listener.ResourceOnStreamDisconnected(this, EventArgs.Empty);
+
+            // STEP 3: Check the disconnection
+            listener.IsStreaming.Should().BeFalse();
+            
+            // suspend is called when the stream listener processes snapshots
+            // so we need to make sure that is only called once
+            connector.Verify(x => x.Suspend(It.Is<string>(y => y == "ABC")),Times.Never);
+        }
+
+        /// <summary>
+        /// I want to test that in the case that the streamlistener
+        /// receives an a disconnect event on prematch fixture 
+        /// ithe stream listener does not generate a suspend request
+        /// </summary>
+        [Test]
+        [Category("StreamListener")]
+        public void PrematchSuspensionShouldSuspendAsNormalWhenEnabledTest()
+        {
+
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+
+            _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
+
+            //default
+            _settings.Setup(x => x.DisablePrematchSuspensionOnDisconnection).Returns(false);
+
+            //suspension should occur if time we are within 15mins 
+            _settings.Setup(x => x.PreMatchSuspensionBeforeStartTimeInMins).Returns(15);
+            state.Setup(x => x.GetFixtureState(It.Is<string>(id => id == "TestAbc")))
+                .Returns(new FixtureState() { Id = "TestAbc", MatchStatus = MatchStatus.Prematch });
+
+            var startTime = DateTime.UtcNow.AddMinutes(27);
+
+            var provider = new StateManager(_settings.Object, connector.Object);
+
+            Fixture fixture = new Fixture { Id = "TestAbc", Sequence = 1, MatchStatus = ((int)MatchStatus.Prematch).ToString(), Epoch = 1, StartTime = startTime };
+            Fixture update = new Fixture
+            {
+                Id = "TestAbc",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.Prematch).ToString(),
+                Epoch = 1,
+                LastEpochChangeReason = new[] { (int)EpochChangeReason.MatchStatus },
+                StartTime = startTime
+
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+
+            resource.Setup(r => r.Id).Returns("TestAbc");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Prematch);
+            resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
+
+            listener.Start();
+
+            // just to be sure that we are streaming
+            listener.IsStreaming.Should().BeTrue();
+            
+            listener.ResourceOnStreamEvent(this, new StreamEventArgs(JsonConvert.SerializeObject(message)));
+
+            listener.ResourceOnStreamDisconnected(this, EventArgs.Empty);
+
+            // STEP 3: Check the disconnection
+            listener.IsStreaming.Should().BeFalse();
+
+            // suspend is called when the stream listener processes snapshots
+            // so we need to make sure that is only called once
+            connector.Verify(x => x.Suspend(It.Is<string>(y => y == "TestAbc")), Times.Once);
         }
 
         /// <summary>
