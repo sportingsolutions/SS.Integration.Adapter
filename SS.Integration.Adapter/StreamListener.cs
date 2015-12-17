@@ -590,8 +590,7 @@ namespace SS.Integration.Adapter
                     // THIS should never happen!!
                     if (fixtureDelta.Sequence <= _lastSequenceProcessedInSnapshot)
                     {
-                        _logger.WarnFormat("Update for {0} will be ignored because snapshot with higher sequence={1} was already processed",
-                            "Stream update {0} will be ignored because snapshot with higher sequence={1} was already processed",
+                        _logger.WarnFormat("Stream update {0} will be ignored because snapshot with higher sequence={1} was already processed",
                             fixtureDelta, _lastSequenceProcessedInSnapshot);
 
                         return;
