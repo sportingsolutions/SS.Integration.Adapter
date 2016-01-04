@@ -172,6 +172,12 @@ namespace SS.Integration.Adapter.Model
         [DataMember]
         public DateTime? TimeStamp { get; set; }
 
+        /// <summary>
+        /// Indicates market rules have been applied  
+        /// </summary>
+        [IgnoreDataMember]
+        public bool IsModified { get; set; }
+
         public override string ToString()
         {
             var format = "Fixture with fixtureId={0} sequence={1}";

@@ -412,7 +412,6 @@ namespace SS.Integration.Adapter
             }
             else
             {
-
                 _logger.DebugFormat("{0} is in Setup stage - listener won't start streaming", _resource);
 
                 // even if we are in setup, we still want to process a snapshot
@@ -921,7 +920,9 @@ namespace SS.Integration.Adapter
             if (snapshot != null)
             {
                 RaiseEvent(OnBeginSnapshotProcessing, null, snapshot);
-                ProcessSnapshot(snapshot, true, hasEpochChanged, !IsErrored, skipMarketRules);
+
+                var shouldSkipProcessingMarketRules = skipMarketRules || (_settings.SkipRulesOnError && IsErrored);
+                ProcessSnapshot(snapshot, true, hasEpochChanged, !IsErrored, shouldSkipProcessingMarketRules);
                 RaiseEvent(OnFinishedSnapshotProcessing);
             }
         }
@@ -980,7 +981,6 @@ namespace SS.Integration.Adapter
 
             try
             {
-
                 if (isFullSnapshot && !VerifySequenceOnSnapshot(snapshot)) return;
                 if (IsDisposing || IsStopping)
                 {
@@ -994,6 +994,7 @@ namespace SS.Integration.Adapter
                 if (!skipMarketRules)
                 {
                     _marketsRuleManager.ApplyRules(snapshot);
+                    snapshot.IsModified = true;
                 }
 
                 if (isFullSnapshot)

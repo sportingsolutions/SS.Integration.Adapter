@@ -102,6 +102,9 @@ namespace SS.Integration.Adapter.Configuration
 
             value = ConfigurationManager.AppSettings["disablePrematchSuspensionOnDisconnection"];
             DisablePrematchSuspensionOnDisconnection = string.IsNullOrEmpty(value) ? false : Convert.ToBoolean(value);
+
+            value = ConfigurationManager.AppSettings["skipRulesOnError"];
+            SkipRulesOnError = string.IsNullOrEmpty(value) ? false : Convert.ToBoolean(value);
         }
 
         public string MarketFiltersDirectory { get; private set; }
@@ -144,6 +147,7 @@ namespace SS.Integration.Adapter.Configuration
         public string StopStreamingDelayedSports { get; private set; }
         public bool DisablePrematchSuspensionOnDisconnection { get; private set; }
         public int PreMatchSuspensionBeforeStartTimeInMins { get; private set; }
+        public bool SkipRulesOnError { get; private set; }
 
         public bool UseSupervisor { get; private set; }
         public bool ShouldDelayStopStreaming(string sport)

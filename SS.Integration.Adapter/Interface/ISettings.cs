@@ -149,6 +149,11 @@ namespace SS.Integration.Adapter.Interface
         int PreMatchSuspensionBeforeStartTimeInMins { get; }
 
         /// <summary>
+        /// Skips processing any rules (Delta rule/Void rule/...) when resending snapshot after the error occured in plugin
+        /// </summary>
+        bool SkipRulesOnError { get;  }
+
+        /// <summary>
         /// Indicates if the adapter should introduce
         /// a delay before stop streaming for fixtures
         /// that belong to a given sport
