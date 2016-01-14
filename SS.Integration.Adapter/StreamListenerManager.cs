@@ -188,20 +188,34 @@ namespace SS.Integration.Adapter
         {
             try
             {
-                _logger.DebugFormat("Attempting to create a Listener for sport={0} and {1}", resource.Sport, resource);
-                
+                _logger.InfoFormat("Attempting to create a Listener for sport={0} and {1}", resource.Sport, resource);
+
+                if (_listeners.ContainsKey(resource.Id))
+                {
+                    _logger.InfoFormat("Stream listener already exists for {0}, skipping creation",resource);
+                    return;
+                }
+
                 var listener = CreateStreamListenerObject(resource, platformConnector, EventState, StateManager);
 
-                if (!listener.Start())
+                var isStarted = listener.Start();
+
+                if (!isStarted)
                 {
                     _logger.WarnFormat("Couldn't start stream listener for {0}", resource);
                     listener.Dispose();
-                    
                     DisposedStreamListener(listener);
                     return;
                 }
 
-                _listeners.TryAdd(resource.Id, listener);
+                var added = _listeners.TryAdd(resource.Id, listener);
+                if (!added)
+                {
+                    _logger.WarnFormat("Failed to add stream listener - most likely it has been already added {0} - this will be disposed now",resource);
+                    listener.Dispose();
+                    DisposedStreamListener(listener);
+                    return;
+                }
 
                 OnStreamCreated(resource.Id);
 
