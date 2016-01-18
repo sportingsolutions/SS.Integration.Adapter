@@ -994,7 +994,12 @@ namespace SS.Integration.Adapter
                 if (!skipMarketRules)
                 {
                     _marketsRuleManager.ApplyRules(snapshot);
+                    
                     snapshot.IsModified = true;
+                }
+                else
+                {
+                    _marketsRuleManager.ApplyRules(snapshot,isRemovalDisabled : true);   
                 }
 
                 if (isFullSnapshot)

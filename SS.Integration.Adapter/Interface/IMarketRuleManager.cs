@@ -41,5 +41,6 @@ namespace SS.Integration.Adapter.Interface
         IMarketStateCollection CurrentState { get; }
 
         void OnFixtureUnPublished();
+        void ApplyRules(Fixture snapshot, bool isRemovalDisabled);
     }
 }

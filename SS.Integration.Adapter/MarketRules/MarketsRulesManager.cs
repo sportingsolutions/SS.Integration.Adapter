@@ -63,44 +63,7 @@ namespace SS.Integration.Adapter.MarketRules
 
         public void ApplyRules(Fixture fixture)
         {
-            if (fixture == null)
-                throw new ArgumentNullException("fixture");
-
-            if (fixture.Id != _fixtureId)
-            {
-                throw new ArgumentException("MarketsRulesManager has been created for fixtureId=" + _fixtureId +
-                    " You cannot pass in fixtureId=" + fixture.Id);
-            }
-
-
-            _logger.DebugFormat("Applying market rules on fixtureId={0}", fixture.Id);
-
-            var oldstate = _stateProvider.GetObject(fixture.Id);
-            BeginTransaction(oldstate, fixture);
-
-            ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
-
-            // we create a temp dictionary so we can apply the rules in parallel 
-            // without accessing (writing to) any shared variables
-            Dictionary<IMarketRule, IMarketRuleResultIntent> tmp = new Dictionary<IMarketRule, IMarketRuleResultIntent>();
-            foreach (var rule in _rules)
-                tmp[rule] = null;
-
-
-            // a rule usually goes through the entire list of markets...if the fixture
-            // comes from a full snapshot, it can have a lot of markets...
-            Parallel.ForEach(tmp.Keys.ToList(), options, rule =>
-                {                    
-                    tmp[rule] = rule.Apply(fixture, oldstate, _currentTransaction);
-                }
-            );
-
-
-            MergeIntents(fixture, tmp);
-
-            _currentTransaction.ApplyPostRulesProcessing(fixture);
-
-            _logger.DebugFormat("Finished applying market rules on fixtureId={0}", fixture.Id);
+            ApplyRules(fixture,false);
         }
 
         public IMarketStateCollection CurrentState
@@ -122,6 +85,47 @@ namespace SS.Integration.Adapter.MarketRules
             // on deletion, we might have changed something on the current state 
             // we then need to save these changes
             _stateProvider.SetObject(_fixtureId, CurrentState as IUpdatableMarketStateCollection);
+        }
+
+        public void ApplyRules(Fixture fixture, bool isRemovalDisabled)
+        {
+            if (fixture == null)
+                throw new ArgumentNullException("fixture");
+
+            if (fixture.Id != _fixtureId)
+            {
+                throw new ArgumentException("MarketsRulesManager has been created for fixtureId=" + _fixtureId +
+                    " You cannot pass in fixtureId=" + fixture.Id);
+            }
+            
+            _logger.DebugFormat("Applying market rules on fixtureId={0}", fixture.Id);
+
+            var oldstate = _stateProvider.GetObject(fixture.Id);
+            BeginTransaction(oldstate, fixture);
+
+            ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
+
+            // we create a temp dictionary so we can apply the rules in parallel 
+            // without accessing (writing to) any shared variables
+            Dictionary<IMarketRule, IMarketRuleResultIntent> tmp = new Dictionary<IMarketRule, IMarketRuleResultIntent>();
+            foreach (var rule in _rules)
+                tmp[rule] = null;
+
+
+            // a rule usually goes through the entire list of markets...if the fixture
+            // comes from a full snapshot, it can have a lot of markets...
+            Parallel.ForEach(tmp.Keys.ToList(), options, rule =>
+            {
+                tmp[rule] = rule.Apply(fixture, oldstate, _currentTransaction);
+            }
+            );
+
+
+            MergeIntents(fixture, tmp);
+
+            _currentTransaction.ApplyPostRulesProcessing(fixture);
+
+            _logger.DebugFormat("Finished applying market rules on fixtureId={0}", fixture.Id);
         }
 
         #endregion
@@ -190,7 +194,7 @@ namespace SS.Integration.Adapter.MarketRules
         /// </summary>
         /// <param name="fixture"></param>
         /// <param name="intents"></param>
-        private void MergeIntents(Fixture fixture, Dictionary<IMarketRule, IMarketRuleResultIntent> intents)
+        private void MergeIntents(Fixture fixture, Dictionary<IMarketRule, IMarketRuleResultIntent> intents,bool isRemovalDisabled = false)
         {
             Dictionary<Market, bool> toRemove = new Dictionary<Market, bool>();
             Dictionary<Market, string> dueRule = new Dictionary<Market, string>();
@@ -220,14 +224,17 @@ namespace SS.Integration.Adapter.MarketRules
                  * otherwise.
                  */
 
-                foreach (var mkt in intent.RemovableMarkets)
+                if (!isRemovalDisabled)
                 {
-                    // if it already contains the market, don't do 
-                    // anything as the flag could be "false"
-                    if (!toRemove.ContainsKey(mkt))
+                    foreach (var mkt in intent.RemovableMarkets)
                     {
-                        toRemove.Add(mkt, true);
-                        dueRule[mkt] = rule.Name;
+                        // if it already contains the market, don't do 
+                        // anything as the flag could be "false"
+                        if (!toRemove.ContainsKey(mkt))
+                        {
+                            toRemove.Add(mkt, true);
+                            dueRule[mkt] = rule.Name;
+                        }
                     }
                 }
 
@@ -299,7 +306,9 @@ namespace SS.Integration.Adapter.MarketRules
             // EDIT
             MergeEditIntents(fixture, toedit);
 
-            
+            if(isRemovalDisabled)
+                return;
+
             // REMOVE
             foreach (var mkt in toRemove.Keys)
             {
