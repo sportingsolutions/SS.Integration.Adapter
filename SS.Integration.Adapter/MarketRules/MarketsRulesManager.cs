@@ -121,7 +121,7 @@ namespace SS.Integration.Adapter.MarketRules
             );
 
 
-            MergeIntents(fixture, tmp);
+            MergeIntents(fixture, tmp,isRemovalDisabled);
 
             _currentTransaction.ApplyPostRulesProcessing(fixture);
 
