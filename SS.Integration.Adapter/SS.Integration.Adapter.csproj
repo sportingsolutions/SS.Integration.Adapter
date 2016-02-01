@@ -65,8 +65,8 @@
       <HintPath>..\packages\RestSharp.104.5.0\lib\net4\RestSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SportingSolutions.Udapi.Sdk">
-      <HintPath>..\packages\SportingSolutions.Udapi.Sdk.1.1.151.0\lib\net40\SportingSolutions.Udapi.Sdk.dll</HintPath>
+    <Reference Include="SportingSolutions.Udapi.Sdk, Version=1.1.152.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SportingSolutions.Udapi.Sdk.1.1.152.0\lib\net40\SportingSolutions.Udapi.Sdk.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />

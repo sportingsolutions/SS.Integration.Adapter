@@ -239,7 +239,7 @@ namespace SS.Integration.Adapter
 
             if (shouldFastTrackReconnect && ProcessResourceHook != null)
             {
-                _logger.InfoFormat("Fixture will be reset to creation queue {0}",listener.FixtureId);
+                _logger.InfoFormat("Fixture will be reset to creation queue fixtureId={0}",listener.FixtureId);
                 ProcessResourceHook(listener.FixtureId);
             }
         }
