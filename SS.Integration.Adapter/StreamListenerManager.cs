@@ -354,8 +354,10 @@ namespace SS.Integration.Adapter
                 {
                     _logger.Error("Error during listener disposing", e);
                 }
-
-                _listeners.Clear();
+                finally
+                {
+                    _listeners.Clear();
+                }
             }
 
             SaveEventState();

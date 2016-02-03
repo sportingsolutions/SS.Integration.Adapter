@@ -320,7 +320,7 @@ namespace SS.Integration.Adapter
         public bool Start()
         {
             if (_resource == null)
-                throw new ObjectDisposedException("StreamListener");
+                throw new ObjectDisposedException("StreamListener for fixtureId={0} has been disposed and can't be started",FixtureId);
 
             StartStreaming();
 
@@ -337,18 +337,20 @@ namespace SS.Integration.Adapter
 
             _logger.InfoFormat("Stopping listener for {0} sport={1}", FixtureId, _resource.Sport);
 
+            _resource.StreamConnected -= ResourceOnStreamConnected;
+            _resource.StreamDisconnected -= ResourceOnStreamDisconnected;
+            _resource.StreamEvent -= ResourceOnStreamEvent;
+
             if (IsStreaming)
             {
-                _resource.StreamConnected -= ResourceOnStreamConnected;
-                _resource.StreamDisconnected -= ResourceOnStreamDisconnected;
-                _resource.StreamEvent -= ResourceOnStreamEvent;
-
                 IsStreaming = false;
                 IsConnecting = false;
 
                 _resource.StopStreaming();
                 RaiseEvent(OnStop);
             }
+
+            IsDisconnected = true;
         }
 
         /// <summary>
@@ -552,8 +554,13 @@ namespace SS.Integration.Adapter
             {
                 var deltaMessage = streamEventArgs.Update.FromJson<StreamMessage>();
                 var fixtureDelta = deltaMessage.GetContent<Fixture>();
-
+                
                 _logger.InfoFormat("{0} stream update arrived", fixtureDelta);
+                if (IsDisposing)
+                {
+                    _logger.WarnFormat("Listener for {0} is disposing - skipping current update", _resource);
+                    return;
+                }
 
                 if (!AquireLock())
                 {
@@ -598,8 +605,6 @@ namespace SS.Integration.Adapter
                     SuspendAndReprocessSnapshot();
                     return;
                 }
-
-                
 
                 bool hasEpochChanged;
                 var epochValid = IsEpochValid(fixtureDelta, out hasEpochChanged);
@@ -1265,7 +1270,7 @@ namespace SS.Integration.Adapter
             {
                 IsConnecting = false;
                 IsStreaming = false;
-                //IsDisposing = false;
+                IsDisconnected = true;
                 _logger.Info("Listener disposed");
             }
         }
