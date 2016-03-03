@@ -125,6 +125,7 @@ namespace SS.Integration.Adapter
             _Stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
 
             SetupListener();
+            _fixtureStartTime = DateTime.Parse(resource.Content.StartTime);
             _logger.DebugFormat("Listener instantiated for {0}", resource);
 
         }
@@ -616,8 +617,7 @@ namespace SS.Integration.Adapter
                 }
                 else
                 {
-
-                    _fixtureStartTime = fixtureDelta.StartTime;
+                    _fixtureStartTime = fixtureDelta.StartTime.HasValue ? fixtureDelta.StartTime : _fixtureStartTime;
 
                     if (fixtureDelta.IsMatchStatusChanged && !string.IsNullOrEmpty(fixtureDelta.MatchStatus))
                     {
