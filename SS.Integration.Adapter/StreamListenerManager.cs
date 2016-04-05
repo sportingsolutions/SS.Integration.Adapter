@@ -79,7 +79,7 @@ namespace SS.Integration.Adapter
                     if (_listenerDisposingQueue[fixture.Key] >= LISTENER_DISPOSING_SAFE_GUARD)
                     {
 
-                        _logger.DebugFormat("Fixture with fixtureId={0} was deleted from Connect fixture factory", fixture.Key);
+                        _logger.InfoFormat("Fixture with fixtureId={0} was deleted from Connect fixture factory", fixture.Key);
                         RemoveStreamListener(fixture.Key);
                         EventState.RemoveFixture(fixture.Key);
                     }
@@ -91,7 +91,7 @@ namespace SS.Integration.Adapter
                 else
                 {
                     _listenerDisposingQueue.TryAdd(fixture.Key, 1);
-                    _logger.DebugFormat("Fixture with fixtureId={0} has been added to the disposing queue", fixture.Key);
+                    _logger.InfoFormat("Fixture with fixtureId={0} has been added to the disposing queue", fixture.Key);
                 }
             }
 
@@ -101,7 +101,7 @@ namespace SS.Integration.Adapter
                 {
                     int dummy;
                     _listenerDisposingQueue.TryRemove(fixture.Key, out dummy);
-                    _logger.DebugFormat("Fixture with fixtureId={0} was marked as deleted, but it appered on Connect again", fixture.Key);
+                    _logger.InfoFormat("Fixture with fixtureId={0} was marked as deleted, but it appered on Connect again", fixture.Key);
                 }
             }
 
