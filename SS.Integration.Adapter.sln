@@ -1,7 +1,7 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
-VisualStudioVersion = 12.0.30501.0
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter", "SS.Integration.Adapter\SS.Integration.Adapter.csproj", "{1AD0B149-3A7B-4725-ABDE-9455D953F036}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -59,6 +59,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Diag
 	ProjectSection(ProjectDependencies) = postProject
 		{B11DBC1F-95E5-44D3-8896-78482D84FB07} = {B11DBC1F-95E5-44D3-8896-78482D84FB07}
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS.Integration.Adapter.Plugin.S3Comparison", "SS.Integration.Adapter.Plugin.S3Comparison\SS.Integration.Adapter.Plugin.S3Comparison.csproj", "{123A95EC-0E2C-4274-A28A-C1B993FEC69A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -200,15 +202,27 @@ Global
 		{F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{F12CC40D-B6BB-4142-BAB0-AF3A6E5A4EEE}.Release|x86.ActiveCfg = Release|Any CPU
+		{123A95EC-0E2C-4274-A28A-C1B993FEC69A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{123A95EC-0E2C-4274-A28A-C1B993FEC69A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{123A95EC-0E2C-4274-A28A-C1B993FEC69A}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{123A95EC-0E2C-4274-A28A-C1B993FEC69A}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{123A95EC-0E2C-4274-A28A-C1B993FEC69A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{123A95EC-0E2C-4274-A28A-C1B993FEC69A}.Debug|x86.Build.0 = Debug|Any CPU
+		{123A95EC-0E2C-4274-A28A-C1B993FEC69A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{123A95EC-0E2C-4274-A28A-C1B993FEC69A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{123A95EC-0E2C-4274-A28A-C1B993FEC69A}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{123A95EC-0E2C-4274-A28A-C1B993FEC69A}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{123A95EC-0E2C-4274-A28A-C1B993FEC69A}.Release|x86.ActiveCfg = Release|Any CPU
+		{123A95EC-0E2C-4274-A28A-C1B993FEC69A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{D46E4B4A-A3C0-4128-91E5-A5DEB238C5B2} = {E06B2C39-5847-41D4-BBC1-076BA8D98E3B}
-		{FFDE838C-859F-4BCE-B791-53B8697175D1} = {E06B2C39-5847-41D4-BBC1-076BA8D98E3B}
-		{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF} = {E06B2C39-5847-41D4-BBC1-076BA8D98E3B}		
 		{BF7E4403-53DA-43C9-868A-C7510584D207} = {D1AB5C9B-B4E4-4A78-B681-6F66D9958691}
 		{FFDE838C-859F-4BCE-B791-53B8697175D1} = {E06B2C39-5847-41D4-BBC1-076BA8D98E3B}
+		{0D7409EE-2D4A-4EB0-B8EB-CBFEA13895AF} = {E06B2C39-5847-41D4-BBC1-076BA8D98E3B}
+		{123A95EC-0E2C-4274-A28A-C1B993FEC69A} = {D1AB5C9B-B4E4-4A78-B681-6F66D9958691}
 	EndGlobalSection
 EndGlobal

@@ -131,6 +131,10 @@
       <Project>{29461692-6DE2-47FA-ACC4-ECAAE9462AE3}</Project>
       <Name>SS.Integration.Adapter.Model</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Adapter.Plugin.S3Comparison\SS.Integration.Adapter.Plugin.S3Comparison.csproj">
+      <Project>{123a95ec-0e2c-4274-a28a-c1b993fec69a}</Project>
+      <Name>SS.Integration.Adapter.Plugin.S3Comparison</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Adapter\SS.Integration.Adapter.csproj">
       <Project>{1ad0b149-3a7b-4725-abde-9455d953f036}</Project>
       <Name>SS.Integration.Adapter</Name>
