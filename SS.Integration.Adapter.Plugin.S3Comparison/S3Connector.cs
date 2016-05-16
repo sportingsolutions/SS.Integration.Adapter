@@ -42,32 +42,32 @@ namespace SS.Integration.Adapter.Plugin.S3Comparison
 
         public void ProcessSnapshot(Fixture fixture, bool hasEpochChanged = false)
         {
-            WriteToS3(fixture, true);
+            WriteToS3(fixture, "snapshot");
         }
 
         public void ProcessStreamUpdate(Fixture fixture, bool hasEpochChanged = false)
         {
-            WriteToS3(fixture);
+            WriteToS3(fixture, "delta");
         }
 
         public void ProcessMatchStatus(Fixture fixture)
         {
-
+            WriteToS3(fixture, "matchstatus");
         }
 
         public void ProcessFixtureDeletion(Fixture fixture)
         {
-
+            WriteToS3(fixture, "delete");
         }
 
         public void UnSuspend(Fixture fixture)
         {
-
+            WriteToS3(fixture, "unsuspend");
         }
 
         public void Suspend(string fixtureId)
         {
-
+            WriteToS3(new Fixture(), "matchstatus");
         }
 
         public void Dispose()
@@ -77,7 +77,7 @@ namespace SS.Integration.Adapter.Plugin.S3Comparison
 
         public IEnumerable<IMarketRule> MarketRules => new List<IMarketRule>();
 
-        private static void WriteToS3(Fixture fixture, bool isSnapshot = false)
+        private static void WriteToS3(Fixture fixture, string type)
         {
             using (var client = new AmazonS3Client(
                 new BasicAWSCredentials(AwsAccessKey, AwsSecretKey),
@@ -86,11 +86,10 @@ namespace SS.Integration.Adapter.Plugin.S3Comparison
                 var now = DateTime.UtcNow;
                 var date = now.ToString("yyyyMMdd");
                 var time = now.ToString("HHmmss");
-                var objectType = isSnapshot ? "snapshot" : "delta";
                 
                 var fixtureNormalized = fixture.FixtureName.Replace(" ", string.Empty);
 
-                var key = $"adapter-comparisons/{ServiceEnv}/{date}/{fixtureNormalized}/{ServiceMode}/{fixture.Sequence}-{objectType}-{time}.json";
+                var key = $"adapter-comparisons/{ServiceEnv}/{date}/{fixtureNormalized}/{ServiceMode}/{time}-{fixture.Sequence}-{type}.json";
 
                 var request = new PutObjectRequest
                 {

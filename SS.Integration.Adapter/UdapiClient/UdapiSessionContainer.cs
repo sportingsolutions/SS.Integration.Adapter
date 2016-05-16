@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using System;
+using System.Configuration;
 using SportingSolutions.Udapi.Sdk;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using log4net;
@@ -35,6 +36,7 @@ namespace SS.Integration.Adapter.UdapiClient
         }
 
 
+
         /// <summary>
         /// Returns a UDAPI session or throws
         /// an exception if it cannot connect
@@ -54,7 +56,7 @@ namespace SS.Integration.Adapter.UdapiClient
                         if (_theSession == null)
                         {
                             _logger.Info("Connecting to UDAPI....");
-                            _theSession = SessionFactory.CreateSession(_url, _credentials);
+                            _theSession = SessionFactory.CreateSession(_url, _credentials, ConfigurationManager.AppSettings["Comparison.ServiceMode"] == "new");
                             _logger.Info("Successfully connected to UDAPI.");
                         }
                     }
