@@ -376,10 +376,35 @@ namespace SS.Integration.Adapter
                               resource.MatchStatus == MatchStatus.Ready);
 
             SequenceOnStreamingAvailable = resource.Content.Sequence;
-            
-            _logger.DebugFormat("Listener state for {4} has sequence={0} processedSequence={1} isDisconnected={2} isStreaming={3}", SequenceOnStreamingAvailable, _currentSequence, IsDisconnected, IsStreaming, resource);
 
-            StartStreaming();
+            if (!IsFixtureSetup)
+            {
+                _logger.DebugFormat(
+                    "Listener state for {4} has sequence={0} processedSequence={1} isDisconnected={2} isStreaming={3}",
+                    SequenceOnStreamingAvailable, _currentSequence, IsDisconnected, IsStreaming, resource);
+            }
+
+            if (ValidateStream())
+            {
+                StartStreaming();
+            }
+            else
+            {
+                _logger.WarnFormat("Stream safety threshold reached for {0}. The streaming will be restarted.",resource);
+                Stop();
+            }
+        }
+
+        private bool ValidateStream()
+        {
+            //no point running validation before Prematch as Adpater should not be connected
+            if (!IsStreaming || IsFixtureSetup || _resource.IsMatchOver)
+                return true;
+
+            var difference = SequenceOnStreamingAvailable - _currentSequence;
+
+            //when difference is greater than threshold it's not valid
+            return !(difference > _settings.StreamSafetyThreshold);
         }
 
         /// <summary>

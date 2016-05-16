@@ -14,6 +14,9 @@
 
 using System;
 using System.Configuration;
+using System.Text;
+using log4net;
+using log4net.Repository.Hierarchy;
 using SS.Integration.Adapter.Interface;
 
 namespace SS.Integration.Adapter.Configuration
@@ -38,7 +41,8 @@ namespace SS.Integration.Adapter.Configuration
         private const double DEFAULT_STOP_STREAMING_DELAY_MINUTES = 0;
         private const string DEFAULT_SUPERVISOR_STATE_PATH = @"SupervisorState";
         private const int DEFAULT_PREMATCH_SUSPENSION_BEFORE_STARTTIME_IN_MINS = 15;
-        
+        private const int DEFAULT_STREAM_THRESHOLD = int.MaxValue;
+
         public Settings()
         {
             User = ConfigurationManager.AppSettings["user"];
@@ -105,6 +109,25 @@ namespace SS.Integration.Adapter.Configuration
 
             value = ConfigurationManager.AppSettings["skipRulesOnError"];
             SkipRulesOnError = string.IsNullOrEmpty(value) ? false : Convert.ToBoolean(value);
+
+            value = ConfigurationManager.AppSettings["streamSafetyThreshold"];
+            StreamSafetyThreshold = string.IsNullOrEmpty(value) ? DEFAULT_STREAM_THRESHOLD : Convert.ToInt32(value);
+
+            LogAll();
+        }
+
+        private void LogAll()
+        {
+            var properties = this.GetType().GetProperties();
+            var logString = new StringBuilder();
+            foreach (var propertyInfo in properties)
+            {
+                logString.AppendLine($"Setting {propertyInfo.Name}={propertyInfo.GetValue(this)}");
+            }
+
+            //it's not defined at the class level because it's only used once during lifetime of the class
+            var logger = LogManager.GetLogger(typeof(Settings));
+            logger.Info(logString.ToString());
         }
 
         public string MarketFiltersDirectory { get; private set; }
@@ -148,6 +171,7 @@ namespace SS.Integration.Adapter.Configuration
         public bool DisablePrematchSuspensionOnDisconnection { get; private set; }
         public int PreMatchSuspensionBeforeStartTimeInMins { get; private set; }
         public bool SkipRulesOnError { get; private set; }
+        public int StreamSafetyThreshold { get; private set; }
 
         public bool UseSupervisor { get; private set; }
         public bool ShouldDelayStopStreaming(string sport)

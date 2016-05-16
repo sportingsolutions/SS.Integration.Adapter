@@ -71,6 +71,7 @@ namespace SS.Integration.Adapter.Tests
             settings.Setup(x => x.FixtureCheckerFrequency).Returns(1000);
             settings.Setup(x => x.EventStateFilePath).Returns(".");
             settings.Setup(x => x.ProcessingLockTimeOutInSecs).Returns(10);
+            settings.Setup(x => x.StreamSafetyThreshold).Returns(int.MaxValue);
 
             var streamListenerManager = new StreamListenerManager(settings.Object);
             streamListenerManager.StateManager = new Mock<IStateManager>().Object;

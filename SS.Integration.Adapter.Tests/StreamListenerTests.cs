@@ -155,6 +155,44 @@ namespace SS.Integration.Adapter.Tests
 
         [Test]
         [Category("Adapter")]
+        public void ShouldStopStreamingWhenThresholdIsReached()
+        {
+            var resource = new Mock<IResourceFacade>();
+            var connector = new Mock<IAdapterPlugin>();
+            var eventState = new Mock<IEventState>();
+
+            //Stream threshold above which stream would be automatically disconnected
+            _settings.Setup(x => x.StreamSafetyThreshold).Returns(100);
+
+            var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
+            int matchStatusDelta = 40;
+            var fixtureDeltaJson = TestHelper.GetRawStreamMessage(matchStatus: matchStatusDelta);
+
+            var fixtureSnapshot = new Fixture { Id = "y9s1fVzAoko805mzTnnTRU_CQy8", Epoch = 1, MatchStatus = "30", Sequence = 1 };
+
+            resource.Setup(r => r.MatchStatus).Returns((MatchStatus)matchStatusDelta);
+            resource.Setup(r => r.Sport).Returns("Football");
+            resource.Setup(r => r.Content).Returns(new Summary());
+            resource.Setup(r => r.Id).Returns("y9s1fVzAoko805mzTnnTRU_CQy8");
+            resource.Setup(r => r.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixtureSnapshot));
+            resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
+
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, _settings.Object);
+
+            listener.Start();
+
+            listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
+            listener.IsFixtureEnded.Should().BeFalse();
+            listener.IsFixtureSetup.Should().BeFalse();
+
+            resource.Setup(x => x.Content).Returns(new Summary() {Sequence = 999});
+            listener.UpdateResourceState(resource.Object);
+            
+            resource.Verify(r => r.StopStreaming(), Times.Once);
+        }
+
+        [Test]
+        [Category("Adapter")]
         public void ShouldNotProcessStreamUpdateIfSnapshotWasProcessed()
         {
             var resource = new Mock<IResourceFacade>();
