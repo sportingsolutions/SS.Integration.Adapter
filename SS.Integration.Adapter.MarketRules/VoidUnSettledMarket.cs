@@ -80,7 +80,7 @@ namespace SS.Integration.Adapter.MarketRules
             foreach (var mkt in newState.Markets)
             {
                 IMarketState mkt_state = newState[mkt];
-                if (!mkt_state.IsResulted && (!markets.ContainsKey(mkt_state.Id) || !markets[mkt_state.Id].IsResulted))
+                if (!mkt_state.IsResulted && (!markets.ContainsKey(mkt_state.Id) || !markets[mkt_state.Id].IsResulted) && !markets[mkt_state.Id].Name.Contains("Asian"))
                     marketsNotPresentInTheSnapshot.Add(mkt_state);
             }
             

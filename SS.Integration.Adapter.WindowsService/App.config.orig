@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+
+	<appSettings>
+<<<<<<< HEAD
+    <add key="user" value="{username}" />
+    <add key="password" value="{password}" />
+    <add key="url" value="{url}" />
+=======
+    <add key="user" value="integration@opap" />
+    <add key="password" value="opapintegration" />
+    <add key="url" value="http://apicui.sportingsolutions.com/" />
+>>>>>>> cf9e961... WIP on master: dfadc08 Hack to allow asian handicap to be settled whilst it being held as pending on match over
+    <add key="newFixtureCheckerFrequency" value="60000" />
+    <add key="startingRetryDelay" value="100" />
+    <add key="maxRetryDelay" value="7000" />
+    <add key="maxRetryAttempts" value="100" />
+    <add key="echoInterval" value="10000" />
+    <add key="echoDelay" value="3000" />
+    <add key="fixtureCreationConcurrency" value="20" />
+    <add key="suspendAllOnShutdown" value="true" />
+    <add key="eventStateFilePath" value="eventState.json" />
+    <add key="marketFiltersDirectory" value="FixturesStateFiles\MarketFilterState" />
+    <add key="cacheExpiryInMins" value="15" />
+    <add key="statsEnabled" value="false" />
+    <add key="deltaRuleEnabled" value="false" />
+    <add key="stopStreamingDelayedSports" value="" />
+    <add key="stopStreamingDelayMinutes" value="0" />
+    <add key="maxUnhandledExceptions" value="10" />
+    <add key="useSupervisor" value="true" />
+    <add key="supervisorUrl" value="http://localhost:9000" />
+    <add key="skipRulesOnError" value="false" />
+    <add key="streamSafetyThreshold" value="10" />
+	</appSettings>
+
+	<startup>
+		<supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.5" />
+	</startup>
+	<system.net>
+		<connectionManagement>
+			<!-- The RFC2616 spec recomends that a client should NOT maintain more than 2 connections C:\Git\Unified_Data_API_Client_DotNet\SportingSolutions.Udapi.Sdk.StreamingExample.Console\Udapi\
+           with any server/proxy to improve response times and avoid congestion. This means highly concurrent, 
+           latent web requests require excessive timeout values to avoid timeouts as a result of request queueing
+           so the max connections value has been increased -->
+			<add address="*" maxconnection="1000" />
+		</connectionManagement>
+	</system.net>
+	<runtime>
+		<assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+			<dependentAssembly>
+				<assemblyIdentity name="RabbitMQ.Client" publicKeyToken="89e7d7c5feba84ce" culture="neutral" />
+
+        <bindingRedirect oldVersion="0.0.0.0-3.3.5.0" newVersion="3.3.5.0" />
+			</dependentAssembly>
+			<dependentAssembly>
+				<assemblyIdentity name="Newtonsoft.Json" publicKeyToken="30ad4fe6b2a6aeed" culture="neutral" />
+				<bindingRedirect oldVersion="0.0.0.0-6.0.0.0" newVersion="6.0.0.0" />
+			</dependentAssembly>
+			<dependentAssembly>
+				<assemblyIdentity name="Microsoft.Owin" publicKeyToken="31bf3856ad364e35" culture="neutral" />
+				<bindingRedirect oldVersion="0.0.0.0-3.0.0.0" newVersion="3.0.0.0" />
+			</dependentAssembly>
+			<dependentAssembly>
+				<assemblyIdentity name="Microsoft.AspNet.SignalR.Core" publicKeyToken="31bf3856ad364e35" culture="neutral" />
+				<bindingRedirect oldVersion="0.0.0.0-2.1.2.0" newVersion="2.1.2.0" />
+			</dependentAssembly>
+		</assemblyBinding>
+	</runtime>
+</configuration>
