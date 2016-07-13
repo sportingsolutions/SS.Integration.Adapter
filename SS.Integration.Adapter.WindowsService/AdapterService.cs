@@ -36,6 +36,7 @@ namespace SS.Integration.Adapter.WindowsService
         private Adapter _adapter;
         private ISupervisor _supervisor;
         private int fatalExceptionsCounter = 0;
+        private bool _skipRestartOnFatalException;
 
         [Import]
         public IAdapterPlugin PlatformConnector { get; set; }
@@ -57,6 +58,7 @@ namespace SS.Integration.Adapter.WindowsService
         {
             int maxFailures = 0;
             int.TryParse(ConfigurationManager.AppSettings["maxUnhandledExceptions"], out maxFailures);
+            _skipRestartOnFatalException = !bool.Parse(ConfigurationManager.AppSettings["skipRestartOnFatalException"]) ;
 
             return maxFailures;
         }
@@ -199,6 +201,9 @@ namespace SS.Integration.Adapter.WindowsService
 
         private void RestartAdapter()
         {
+            if(_skipRestartOnFatalException)
+                return;
+
             fatalExceptionsCounter++;
             _adapter.Stop();
             int maxFailures = GetMaxFailures();
