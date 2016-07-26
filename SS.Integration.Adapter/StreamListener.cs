@@ -988,6 +988,7 @@ namespace SS.Integration.Adapter
                 {
                     //unsuspends markets suspended by adapter
                     _stateManager.StateProvider.SuspensionManager.Unsuspend(fixture.Id);
+                    _platformConnector.UnSuspend(fixture);
                 }
                 catch (Exception e)
                 {
@@ -995,8 +996,6 @@ namespace SS.Integration.Adapter
                     SetErrorState();
                 }
             }
-
-            _platformConnector.UnSuspend(fixture);
         }
 
         private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool setErrorState = true, bool skipMarketRules = false)
