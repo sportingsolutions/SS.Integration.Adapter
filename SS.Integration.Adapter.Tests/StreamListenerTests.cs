@@ -23,6 +23,7 @@ using NUnit.Framework;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model.Enums;
 using SportingSolutions.Udapi.Sdk.Events;
+using SportingSolutions.Udapi.Sdk.Extensions;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 
@@ -258,9 +259,21 @@ namespace SS.Integration.Adapter.Tests
             var eventState = new Mock<IEventState>();
 
             var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
+            
+            Fixture update = new Fixture
+            {
+                Id = "TestFixtureId",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.Prematch).ToString(),
+                Epoch = 2,
+                LastEpochChangeReason = new[] { (int)EpochChangeReason.StartTime }, //, (int)EpochChangeReason.MatchStatus },
+                StartTime = DateTime.Now
 
-            var fixtureDeltaJson = TestHelper.GetRawStreamMessage();   // Start Time has changed
+            };
 
+            StreamMessage message = new StreamMessage { Content = update };
+
+            resource.SetupSequence(r => r.GetSnapshot()).Returns(TestHelper.GetSnapshotJson(1,1,1,30)).Returns(TestHelper.GetSnapshotJson(2, 2, 0, 30));
             resource.Setup(r => r.Content).Returns(new Summary());
             resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
             resource.Setup(r => r.Id).Returns("TestFixtureId");
@@ -268,11 +281,51 @@ namespace SS.Integration.Adapter.Tests
             var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, _settings.Object);
 
             listener.Start();
-            listener.ResourceOnStreamEvent(null, new StreamEventArgs(fixtureDeltaJson));
+            listener.ResourceOnStreamEvent(null, new StreamEventArgs(message.ToJson()));
 
             listener.IsFixtureEnded.Should().BeFalse();
             listener.IsFixtureSetup.Should().BeFalse();
 
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(1));
+        }
+
+        [Test]
+        [Category("Adapter")]
+        public void ShouldEpochBeInvalidAsStartTimeAndMatchStatusHasChanged()
+        {
+            var resource = new Mock<IResourceFacade>();
+            var connector = new Mock<IAdapterPlugin>();
+            var eventState = new Mock<IEventState>();
+
+            var marketFilterObjectStore = new StateManager(_settings.Object, _plugin.Object);
+            
+            Fixture update = new Fixture
+            {
+                Id = "TestFixtureId",
+                Sequence = 2,
+                MatchStatus = ((int)MatchStatus.Prematch).ToString(),
+                Epoch = 2,
+                LastEpochChangeReason = new[] { (int)EpochChangeReason.StartTime , (int)EpochChangeReason.MatchStatus },
+                StartTime = DateTime.Now
+
+            };
+
+            StreamMessage message = new StreamMessage { Content = update };
+
+            resource.SetupSequence(r => r.GetSnapshot()).Returns(TestHelper.GetSnapshotJson(1, 1, 1, 30)).Returns(TestHelper.GetSnapshotJson(2, 2, 0, 30));
+            resource.Setup(r => r.Content).Returns(new Summary());
+            resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(r => r.Id).Returns("TestFixtureId");
+
+            var listener = new StreamListener(resource.Object, connector.Object, eventState.Object, marketFilterObjectStore, _settings.Object);
+
+            listener.Start();
+            listener.ResourceOnStreamEvent(null, new StreamEventArgs(message.ToJson()));
+
+            listener.IsFixtureEnded.Should().BeFalse();
+            listener.IsFixtureSetup.Should().BeFalse();
+
+            resource.Verify(x => x.GetSnapshot(), Times.Exactly(2));
         }
 
         [Test]

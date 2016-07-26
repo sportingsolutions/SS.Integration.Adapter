@@ -829,9 +829,10 @@ namespace SS.Integration.Adapter
 
             _currentEpoch = fixtureDelta.Epoch;
 
-            if (fixtureDelta.IsStartTimeChanged)
+            //the epoch change reason can contain multiple reasons
+            if (fixtureDelta.IsStartTimeChanged && fixtureDelta.LastEpochChangeReason.Length == 1)
             {
-                _logger.DebugFormat("{0} has had its start time changed", fixtureDelta);
+                _logger.InfoFormat("{0} has had its start time changed", fixtureDelta);
                 return true;
             }
 
