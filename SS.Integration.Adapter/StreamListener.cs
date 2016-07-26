@@ -973,6 +973,7 @@ namespace SS.Integration.Adapter
             int resource_sequence = SequenceOnStreamingAvailable;
 
             _logger.DebugFormat("{0} has stored sequence={1} and current_sequence={2}", _resource, sequence_number, resource_sequence);
+            Fixture fixture = new Fixture { Sequence = sequence_number, Id = _resource.Id };
 
             if (sequence_number == -1 || resource_sequence != sequence_number)
             {
@@ -980,8 +981,6 @@ namespace SS.Integration.Adapter
             }
             else
             {
-                Fixture fixture = new Fixture { Sequence = sequence_number, Id = _resource.Id };
-
                 if (state != null)
                     fixture.MatchStatus = state.MatchStatus.ToString();
 
@@ -989,7 +988,6 @@ namespace SS.Integration.Adapter
                 {
                     //unsuspends markets suspended by adapter
                     _stateManager.StateProvider.SuspensionManager.Unsuspend(fixture.Id);
-                    _platformConnector.UnSuspend(fixture);
                 }
                 catch (Exception e)
                 {
@@ -998,6 +996,7 @@ namespace SS.Integration.Adapter
                 }
             }
 
+            _platformConnector.UnSuspend(fixture);
         }
 
         private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool setErrorState = true, bool skipMarketRules = false)
