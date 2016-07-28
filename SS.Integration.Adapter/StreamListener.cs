@@ -100,6 +100,13 @@ namespace SS.Integration.Adapter
 
             IsFixtureEnded = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.MatchOver : _resource.IsMatchOver;
             IsFixtureSetup = (_resource.MatchStatus == MatchStatus.Setup || _resource.MatchStatus == MatchStatus.Ready);
+
+            //In Grey hound racing the streaming should start on status Ready 
+            if(string.Equals(Sport,"greyhoundracing", StringComparison.InvariantCultureIgnoreCase))
+            {
+                IsFixtureSetup = _resource.MatchStatus == MatchStatus.Setup;
+            }
+
             IsFixtureDeleted = false;
             IsInPlay = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.InRunning : _resource.MatchStatus == MatchStatus.InRunning;
             _currentEpoch = fixtureState != null ? fixtureState.Epoch : -1;
@@ -347,9 +354,13 @@ namespace SS.Integration.Adapter
             if (_resource == null)
                 return;
 
-
-            IsFixtureSetup = (resource.MatchStatus == MatchStatus.Setup ||
-                              resource.MatchStatus == MatchStatus.Ready);
+            IsFixtureSetup = resource.MatchStatus == MatchStatus.Setup || resource.MatchStatus == MatchStatus.Ready;
+            
+            //In Grey hound racing the streaming should start on status Ready 
+            if (string.Equals(Sport, "greyhoundracing", StringComparison.InvariantCultureIgnoreCase))
+            {
+                IsFixtureSetup = _resource.MatchStatus == MatchStatus.Setup;
+            }
 
             SequenceOnStreamingAvailable = resource.Content.Sequence;
 
