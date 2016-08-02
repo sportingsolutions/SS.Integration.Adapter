@@ -14,6 +14,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -689,8 +690,10 @@ namespace SS.Integration.Adapter
                     }
 
 
-                    _logger.InfoFormat("Stream update {0} will not be processed because epoch was not valid",
-                        fixtureDelta);
+                    _logger.InfoFormat("Stream update {0} has epoch change with reason {1}, the snapshot will be processed instead.", 
+                        fixtureDelta,
+                        //aggregates LastEpochChange reasons into string like "BaseVariables,Starttime"
+                        fixtureDelta.LastEpochChangeReason.Select(x=> ((EpochChangeReason) x).ToString()).Aggregate((first,second) => $"{first}, {second}"));
 
                     SuspendAndReprocessSnapshot(hasEpochChanged);
                     return;
