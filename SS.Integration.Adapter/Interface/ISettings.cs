@@ -154,6 +154,12 @@ namespace SS.Integration.Adapter.Interface
         bool SkipRulesOnError { get;  }
 
         /// <summary>
+        /// Number of sequences that Adapter can fall behind before the Stop streaming is called
+        /// Setting this too very low value like 1 or 2 can cause StopStreaming being called during Plugin processing
+        /// </summary>
+        int StreamSafetyThreshold { get; }
+
+        /// <summary>
         /// Indicates if the adapter should introduce
         /// a delay before stop streaming for fixtures
         /// that belong to a given sport

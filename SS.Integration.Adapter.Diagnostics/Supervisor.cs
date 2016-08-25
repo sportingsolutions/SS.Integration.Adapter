@@ -442,7 +442,10 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public IFixtureOverview GetFixtureOverview(string fixtureId)
         {
-            return _fixtures.ContainsKey(fixtureId) ? _fixtures[fixtureId] : _fixtures[fixtureId] = new FixtureOverview(fixtureId);
+            FixtureOverview fixtureOverview = null;
+            return _fixtures.TryGetValue(fixtureId, out fixtureOverview)
+                ? fixtureOverview
+                : _fixtures[fixtureId] = new FixtureOverview(fixtureId);
         }
 
         private StreamListener GetStreamListenerObject(string fixtureId)

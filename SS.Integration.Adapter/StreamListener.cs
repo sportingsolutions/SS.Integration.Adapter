@@ -14,6 +14,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -118,6 +119,13 @@ namespace SS.Integration.Adapter
 
             IsFixtureEnded = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.MatchOver : _resource.IsMatchOver;
             IsFixtureSetup = (_resource.MatchStatus == MatchStatus.Setup || _resource.MatchStatus == MatchStatus.Ready);
+
+            //In Grey hound racing the streaming should start on status Ready 
+            if(string.Equals(Sport,"greyhoundracing", StringComparison.InvariantCultureIgnoreCase))
+            {
+                IsFixtureSetup = _resource.MatchStatus == MatchStatus.Setup;
+            }
+
             IsFixtureDeleted = false;
             IsInPlay = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.InRunning : _resource.MatchStatus == MatchStatus.InRunning;
             _currentEpoch = fixtureState != null ? fixtureState.Epoch : -1;
@@ -372,14 +380,44 @@ namespace SS.Integration.Adapter
             if (_resource == null)
                 return;
 
-            IsFixtureSetup = (resource.MatchStatus == MatchStatus.Setup ||
-                              resource.MatchStatus == MatchStatus.Ready);
+            IsFixtureSetup = resource.MatchStatus == MatchStatus.Setup || resource.MatchStatus == MatchStatus.Ready;
+            
+            //In Grey hound racing the streaming should start on status Ready 
+            if (string.Equals(Sport, "greyhoundracing", StringComparison.InvariantCultureIgnoreCase))
+            {
+                IsFixtureSetup = _resource.MatchStatus == MatchStatus.Setup;
+            }
 
             SequenceOnStreamingAvailable = resource.Content.Sequence;
-            
-            _logger.DebugFormat("Listener state for {4} has sequence={0} processedSequence={1} isDisconnected={2} isStreaming={3}", SequenceOnStreamingAvailable, _currentSequence, IsDisconnected, IsStreaming, resource);
 
-            StartStreaming();
+            if (!IsFixtureSetup)
+            {
+                _logger.DebugFormat(
+                    "Listener state for {4} has sequence={0} processedSequence={1} isDisconnected={2} isStreaming={3}",
+                    SequenceOnStreamingAvailable, _currentSequence, IsDisconnected, IsStreaming, resource);
+            }
+
+            if (ValidateStream())
+            {
+                StartStreaming();
+            }
+            else
+            {
+                _logger.WarnFormat("Stream safety threshold reached for {0}. The streaming will be restarted.",resource);
+                Stop();
+            }
+        }
+
+        private bool ValidateStream()
+        {
+            //no point running validation before Prematch as Adpater should not be connected
+            if (!IsStreaming || IsFixtureSetup || _resource.IsMatchOver)
+                return true;
+
+            var difference = SequenceOnStreamingAvailable - _currentSequence;
+
+            //when difference is greater than threshold it's not valid
+            return !(difference > _settings.StreamSafetyThreshold);
         }
 
         /// <summary>
@@ -652,8 +690,10 @@ namespace SS.Integration.Adapter
                     }
 
 
-                    _logger.InfoFormat("Stream update {0} will not be processed because epoch was not valid",
-                        fixtureDelta);
+                    _logger.InfoFormat("Stream update {0} has epoch change with reason {1}, the snapshot will be processed instead.", 
+                        fixtureDelta,
+                        //aggregates LastEpochChange reasons into string like "BaseVariables,Starttime"
+                        fixtureDelta.LastEpochChangeReason.Select(x=> ((EpochChangeReason) x).ToString()).Aggregate((first,second) => $"{first}, {second}"));
 
                     SuspendAndReprocessSnapshot(hasEpochChanged);
                     return;
@@ -804,9 +844,10 @@ namespace SS.Integration.Adapter
 
             _currentEpoch = fixtureDelta.Epoch;
 
-            if (fixtureDelta.IsStartTimeChanged)
+            //the epoch change reason can contain multiple reasons
+            if (fixtureDelta.IsStartTimeChanged && fixtureDelta.LastEpochChangeReason.Length == 1)
             {
-                _logger.DebugFormat("{0} has had its start time changed", fixtureDelta);
+                _logger.InfoFormat("{0} has had its start time changed", fixtureDelta);
                 return true;
             }
 
@@ -947,6 +988,7 @@ namespace SS.Integration.Adapter
             int resource_sequence = SequenceOnStreamingAvailable;
 
             _logger.DebugFormat("{0} has stored sequence={1} and current_sequence={2}", _resource, sequence_number, resource_sequence);
+            Fixture fixture = new Fixture { Sequence = sequence_number, Id = _resource.Id };
 
             if (sequence_number == -1 || resource_sequence != sequence_number)
             {
@@ -954,8 +996,6 @@ namespace SS.Integration.Adapter
             }
             else
             {
-                Fixture fixture = new Fixture { Sequence = sequence_number, Id = _resource.Id };
-
                 if (state != null)
                     fixture.MatchStatus = state.MatchStatus.ToString();
 
@@ -971,7 +1011,6 @@ namespace SS.Integration.Adapter
                     SetErrorState();
                 }
             }
-
         }
 
         private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool setErrorState = true, bool skipMarketRules = false)
