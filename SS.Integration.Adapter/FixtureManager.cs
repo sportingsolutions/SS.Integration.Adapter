@@ -19,7 +19,7 @@ namespace SS.Integration.Adapter
         private readonly BlockingCollection<IResourceFacade> _resourceCreationQueue = new BlockingCollection<IResourceFacade>(new ConcurrentQueue<IResourceFacade>());
         private readonly CancellationTokenSource _creationQueueCancellationToken = new CancellationTokenSource();
         private readonly Task[] _creationTasks;
-        private readonly ILog _logger = LogManager.GetLogger(typeof(ResourceManager));
+        private readonly ILog _logger = LogManager.GetLogger(typeof(FixtureManager));
         private ConcurrentDictionary<string, IResourceFacade> _cachedResources = new ConcurrentDictionary<string, IResourceFacade>();
 
         internal IStreamListenerManager _streamManager { get; private set; }
@@ -79,8 +79,8 @@ namespace SS.Integration.Adapter
 
         private void ValidateCache(IResourceFacade resource)
         {
-            //this ensures that cached object is not already used in stream listener 
-            if (_cachedResources.ContainsKey(resource.Id) && _cachedResources[resource.Id] == resource)
+            //this ensures that cached object is not already used in stream listener - if we got a newer version is best to replace it
+            if (_cachedResources.ContainsKey(resource.Id))
             {
                 IResourceFacade ignore = null;
                 _cachedResources.TryRemove(resource.Id, out ignore);
@@ -207,7 +207,7 @@ namespace SS.Integration.Adapter
 
             _logger.InfoFormat("Processing {0}", resource);
 
-            if (_streamManager.ShouldProcessResource(resource))
+            if (_streamManager.ShouldProcessResource(resource) && _resourceCreationQueue.All(x => x.Id != resource.Id))
             {
                 _logger.DebugFormat("Adding {0} to the creation queue ", resource);
                 _resourceCreationQueue.Add(resource);
