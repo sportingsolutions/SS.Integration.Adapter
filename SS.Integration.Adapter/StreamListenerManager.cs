@@ -187,6 +187,7 @@ namespace SS.Integration.Adapter
 
         public virtual void CreateStreamListener(IResourceFacade resource, IAdapterPlugin platformConnector)
         {
+            bool removeFromAddingResources = false;
             try
             {
                 _logger.InfoFormat("Attempting to create a Listener for sport={0} and {1}", resource.Sport, resource);
@@ -203,6 +204,7 @@ namespace SS.Integration.Adapter
                     _logger.InfoFormat("Enother creation of listener processing right now for {0}, skipping creation", resource);
                     return;
                 }
+                removeFromAddingResources = true;
 
                 var listener = CreateStreamListenerObject(resource, platformConnector, EventState, StateManager);
 
@@ -233,8 +235,12 @@ namespace SS.Integration.Adapter
             }
             finally
             {
-                bool v; 
-                _addingResources.TryRemove(resource.Id, out v);
+                if (removeFromAddingResources)
+                {
+                    bool v;
+                    _addingResources.TryRemove(resource.Id, out v);
+                } 
+                
                 MarkResourceAsProcessable(resource);
 
                 SaveEventState();
