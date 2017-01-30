@@ -34,6 +34,7 @@ namespace SS.Integration.Adapter
         private const int LISTENER_DISPOSING_SAFE_GUARD = 1;
 
         protected readonly ConcurrentDictionary<string, IListener> _listeners = new ConcurrentDictionary<string, IListener>();
+        protected readonly ConcurrentDictionary<string, bool> _addingResources = new ConcurrentDictionary<string, bool>();
         private readonly ConcurrentDictionary<string, int> _listenerDisposingQueue = new ConcurrentDictionary<string, int>();
         private readonly HashSet<string> _currentlyProcessedFixtures = new HashSet<string>();
         private readonly static object _sync = new object();
@@ -196,6 +197,13 @@ namespace SS.Integration.Adapter
                     return;
                 }
 
+                var process = _addingResources.TryAdd(resource.Id, true);
+                if (!process)
+                {
+                    _logger.InfoFormat("Enother creation of listener processing right now for {0}, skipping creation", resource);
+                    return;
+                }
+
                 var listener = CreateStreamListenerObject(resource, platformConnector, EventState, StateManager);
 
                 var isStarted = listener.Start();
@@ -225,6 +233,8 @@ namespace SS.Integration.Adapter
             }
             finally
             {
+                bool v; 
+                _addingResources.TryRemove(resource.Id, out v);
                 MarkResourceAsProcessable(resource);
 
                 SaveEventState();
