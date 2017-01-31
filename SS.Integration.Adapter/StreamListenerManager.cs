@@ -34,7 +34,7 @@ namespace SS.Integration.Adapter
         private const int LISTENER_DISPOSING_SAFE_GUARD = 1;
 
         protected readonly ConcurrentDictionary<string, IListener> _listeners = new ConcurrentDictionary<string, IListener>();
-        protected readonly ConcurrentDictionary<string, bool> _addingResources = new ConcurrentDictionary<string, bool>();
+        protected readonly ConcurrentDictionary<string, bool> _createListener = new ConcurrentDictionary<string, bool>();
         private readonly ConcurrentDictionary<string, int> _listenerDisposingQueue = new ConcurrentDictionary<string, int>();
         private readonly HashSet<string> _currentlyProcessedFixtures = new HashSet<string>();
         private readonly static object _sync = new object();
@@ -198,7 +198,8 @@ namespace SS.Integration.Adapter
                     return;
                 }
 
-                var process = _addingResources.TryAdd(resource.Id, true);
+                // this is king of lock that prevent to create 2 listener for  the same resource.Id
+                var process = _createListener.TryAdd(resource.Id, true);
                 if (!process)
                 {
                     _logger.InfoFormat("Enother creation of listener processing right now for {0}, skipping creation", resource);
@@ -238,7 +239,7 @@ namespace SS.Integration.Adapter
                 if (removeFromAddingResources)
                 {
                     bool v;
-                    _addingResources.TryRemove(resource.Id, out v);
+                    _createListener.TryRemove(resource.Id, out v);
                 } 
                 
                 MarkResourceAsProcessable(resource);
