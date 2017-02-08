@@ -202,7 +202,7 @@ namespace SS.Integration.Adapter
                 var process = _createListener.TryAdd(resource.Id, true);
                 if (!process)
                 {
-                    _logger.InfoFormat("Enother creation of listener processing right now for {0}, skipping creation", resource);
+                    _logger.InfoFormat("Another creation of listener processing right now for {0}, skipping creation", resource);
                     return;
                 }
                 removeFromAddingResources = true;
