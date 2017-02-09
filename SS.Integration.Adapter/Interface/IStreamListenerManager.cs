@@ -43,7 +43,8 @@ namespace SS.Integration.Adapter.Interface
 
         IEnumerable<IGrouping<string, IListener>> GetListenersBySport();
         bool ShouldProcessResource(IResourceFacade resource);
-        bool CanBeProcessed(string fixtureId);
+        bool TryLockProcessing(string fixtureId);
+        void ReleaseProcessing(string fixtureId);
 
         Action<string> ProcessResourceHook { set; }
     }

@@ -200,18 +200,25 @@ namespace SS.Integration.Adapter
             _logger.DebugFormat("Attempt to process {0} for sport={1}", resource, sport);
             
             _cachedResources.AddOrUpdate(resource.Id, resource, (k, v) => v);
-            
+
             // make sure that the resource is not already being processed by some other thread
-            if (!_streamManager.CanBeProcessed(resource.Id))
+            if (!_streamManager.TryLockProcessing(resource.Id))
                 return;
 
-            _logger.InfoFormat("Processing {0}", resource);
-
-            if (_streamManager.ShouldProcessResource(resource) && _resourceCreationQueue.All(x => x.Id != resource.Id))
+            try
             {
-                _logger.DebugFormat("Adding {0} to the creation queue ", resource);
-                _resourceCreationQueue.Add(resource);
-                _logger.DebugFormat("Added {0} to the creation queue", resource);
+                _logger.InfoFormat("Processing {0}", resource);
+
+                if (_streamManager.ShouldProcessResource(resource) && _resourceCreationQueue.All(x => x.Id != resource.Id))
+                {
+                    _logger.DebugFormat("Adding {0} to the creation queue ", resource);
+                    _resourceCreationQueue.Add(resource);
+                    _logger.DebugFormat("Added {0} to the creation queue", resource);
+                }
+            }
+            finally
+            {
+                _streamManager.ReleaseProcessing(resource.Id);
             }
 
         }
