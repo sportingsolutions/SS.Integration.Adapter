@@ -334,7 +334,7 @@ namespace SS.Integration.Adapter
         {
             int v;
             var removed = _currentlyProcessedFixtures.TryRemove(fixtureId, out v);
-            if (removed)
+            if (!removed)
             {
                 _logger.Warn($"Fixture fixtureId={fixtureId} failed to ReleaseProcessing, possible stacked resource");
             }
