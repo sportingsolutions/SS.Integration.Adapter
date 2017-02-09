@@ -36,7 +36,7 @@ namespace SS.Integration.Adapter
         protected readonly ConcurrentDictionary<string, IListener> _listeners = new ConcurrentDictionary<string, IListener>();
         protected readonly ConcurrentDictionary<string, bool> _createListener = new ConcurrentDictionary<string, bool>();
         private readonly ConcurrentDictionary<string, int> _listenerDisposingQueue = new ConcurrentDictionary<string, int>();
-        protected readonly ConcurrentDictionary<string, bool> _currentlyProcessedFixtures = new ConcurrentDictionary<string, bool>();
+        protected readonly ConcurrentDictionary<string, int> _currentlyProcessedFixtures = new ConcurrentDictionary<string, int>();
         private readonly static object _sync = new object();
         protected readonly ISettings _settings;
 
@@ -305,16 +305,39 @@ namespace SS.Integration.Adapter
             // this prevents to take any decision
             // about the resource while it is
             // being processed by another thread
-            var isFree = _currentlyProcessedFixtures.TryAdd(fixtureId, true);
+            var isFree = _currentlyProcessedFixtures.TryAdd(fixtureId, 0);
             if (!isFree)
-                _logger.DebugFormat("Fixture fixtureId={0} is currently being processed by another task - ignoring it", fixtureId);
+            {
+                int c = 0;
+                var isReceived = _currentlyProcessedFixtures.TryGetValue(fixtureId, out c);
+                if (isReceived)
+                {
+                    c++;
+                    _currentlyProcessedFixtures.TryUpdate(fixtureId, c, c - 1);
+                }
+                _logger.DebugFormat("Fixture fixtureId={0} is currently being processed by another task - ignoring it. This is {1} attemp to process", fixtureId, c);
+                if (c > 20)
+                {
+                    _logger.Warn($"Fixture fixtureId={fixtureId} failed to process {c} times, possible stacked resource");
+                }
+
+                if (c > 99)
+                {
+                    _logger.Warn($"Fixture fixtureId={fixtureId} failed to process {c} times, attemp to release resource");
+                    ReleaseProcessing(fixtureId);
+                }
+            }
             return isFree;
         }
 
         public void ReleaseProcessing(string fixtureId)
         {
-            bool v;
-            _currentlyProcessedFixtures.TryRemove(fixtureId, out v);
+            int v;
+            var removed = _currentlyProcessedFixtures.TryRemove(fixtureId, out v);
+            if (removed)
+            {
+                _logger.Warn($"Fixture fixtureId={fixtureId} failed to ReleaseProcessing, possible stacked resource");
+            }
         }
 
         
