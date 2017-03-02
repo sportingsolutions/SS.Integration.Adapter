@@ -36,7 +36,7 @@ namespace SS.Integration.Adapter
         protected readonly ConcurrentDictionary<string, IListener> _listeners = new ConcurrentDictionary<string, IListener>();
         protected readonly ConcurrentDictionary<string, bool> _createListener = new ConcurrentDictionary<string, bool>();
         private readonly ConcurrentDictionary<string, int> _listenerDisposingQueue = new ConcurrentDictionary<string, int>();
-        private readonly HashSet<string> _currentlyProcessedFixtures = new HashSet<string>();
+        protected readonly ConcurrentDictionary<string, int> _currentlyProcessedFixtures = new ConcurrentDictionary<string, int>();
         private readonly static object _sync = new object();
         protected readonly ISettings _settings;
 
@@ -165,8 +165,6 @@ namespace SS.Integration.Adapter
                         _listeners[resource.Id].UpdateResourceState(resource);
                     }
                 }
-
-                MarkResourceAsProcessable(resource);
                 return shouldAdapterProcessResource;
             }
             else
@@ -176,10 +174,9 @@ namespace SS.Integration.Adapter
                 if (resource.IsMatchOver && (fixtureState == null || fixtureState.MatchStatus == resource.MatchStatus))
                 {
                     _logger.InfoFormat("{0} is over. Adapter will not process the resource", resource);
-                    MarkResourceAsProcessable(resource);
                     return false;
                 }
-
+                _logger.InfoFormat("Listener for {0} is not created yet. Adapter will not process the resource", resource);
                 //the resource will be processed
                 return true;
             }
@@ -242,8 +239,6 @@ namespace SS.Integration.Adapter
                     _createListener.TryRemove(resource.Id, out v);
                 } 
                 
-                MarkResourceAsProcessable(resource);
-
                 SaveEventState();
                 _logger.DebugFormat("Finished processing fixture {0}", resource);
             }
@@ -305,23 +300,44 @@ namespace SS.Integration.Adapter
             return false;
         }
 
-        public bool CanBeProcessed(string fixtureId)
+        public bool TryLockProcessing(string fixtureId)
         {
             // this prevents to take any decision
             // about the resource while it is
             // being processed by another thread
-            lock (_sync)
+            var isFree = _currentlyProcessedFixtures.TryAdd(fixtureId, 0);
+            if (!isFree)
             {
-                if (_currentlyProcessedFixtures.Contains(fixtureId))
+                int c = 0;
+                var isReceived = _currentlyProcessedFixtures.TryGetValue(fixtureId, out c);
+                if (isReceived)
                 {
-                    _logger.DebugFormat("Fixture fixtureId={0} is currently being processed by another task - ignoring it", fixtureId);
-                    return false;
+                    c++;
+                    _currentlyProcessedFixtures.TryUpdate(fixtureId, c, c - 1);
+                }
+                _logger.DebugFormat("Fixture fixtureId={0} is currently being processed by another task - ignoring it. This is {1} attemp to process", fixtureId, c);
+                if (c > 10)
+                {
+                    _logger.Warn($"Fixture fixtureId={fixtureId} failed to process {c} times, possible stacked resource");
                 }
 
-                _currentlyProcessedFixtures.Add(fixtureId);
+                if (c > 25)
+                {
+                    _logger.Warn($"Fixture fixtureId={fixtureId} failed to process {c} times, attemp to release resource");
+                    ReleaseProcessing(fixtureId);
+                }
             }
+            return isFree;
+        }
 
-            return true;
+        public void ReleaseProcessing(string fixtureId)
+        {
+            int v;
+            var removed = _currentlyProcessedFixtures.TryRemove(fixtureId, out v);
+            if (!removed)
+            {
+                _logger.Warn($"Fixture fixtureId={fixtureId} failed to ReleaseProcessing, possible stacked resource");
+            }
         }
 
         
@@ -402,15 +418,6 @@ namespace SS.Integration.Adapter
         {
             if (StreamRemoved != null)
                 StreamRemoved(this, fixtureId);
-        }
-
-        private void MarkResourceAsProcessable(IResourceFacade resource)
-        {
-            lock (_sync)
-            {
-                if (_currentlyProcessedFixtures.Contains(resource.Id))
-                    _currentlyProcessedFixtures.Remove(resource.Id);
-            }
         }
 
         private void SaveEventState()
