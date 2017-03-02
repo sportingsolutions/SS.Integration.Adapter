@@ -1,42 +1,42 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-	<PropertyGroup>
-		<!--Solution file-->
-		<SolutionFileName>$(MSBuildProjectDirectory)\SS.Integration.Adapter.sln</SolutionFileName>
-		<BuildDir Condition=" '$(BuildDir)' == ''">BuildOutput</BuildDir>
-		<!--Default Configuration-->
-		<Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-		<Platform Condition=" '$(Platform)' == '' ">Any CPU</Platform>
-		<ServiceEnvironment Condition=" '$(ServiceEnvironment)' == '' ">Integration</ServiceEnvironment>
-	</PropertyGroup>
+  <PropertyGroup>
+    <!--Solution file-->
+    <SolutionFileName>$(MSBuildProjectDirectory)\SS.Integration.Adapter.sln</SolutionFileName>
+    <BuildDir Condition=" '$(BuildDir)' == ''">BuildOutput</BuildDir>
+    <!--Default Configuration-->
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">Any CPU</Platform>
+    <ServiceEnvironment Condition=" '$(ServiceEnvironment)' == '' ">Integration</ServiceEnvironment>
+  </PropertyGroup>
 
-	<!--MSBuild-->
-	<Import Project="$(MSBuildExtensionsPath)\ExtensionPack\4.0\MSBuild.ExtensionPack.tasks"/>
-	<Import Project="$(MSBuildExtensionsPath)\MSBuildCommunityTasks\MSBuild.Community.Tasks.Targets"/>
+  <!--MSBuild-->
+  <Import Project="$(MSBuildExtensionsPath)\ExtensionPack\4.0\MSBuild.ExtensionPack.tasks"/>
+  <Import Project="$(MSBuildExtensionsPath)\MSBuildCommunityTasks\MSBuild.Community.Tasks.Targets"/>
 
-	<Target Name="Clean">
-		<Message Text="Clean $(Configuration) $(Platform) $(ServiceEnvironment)" />
-		<MSBuild Projects="$(SolutionFileName)" Targets="Clean" Properties="Configuration=$(Configuration);Platform=$(Platform)" />
-		<Exec Command="del *.msi" />
-		<Exec Command="del *.wixpdb" />
-		<Exec Command="del *.nupkg" />
-	</Target>
+  <Target Name="Clean">
+    <Message Text="Clean $(Configuration) $(Platform) $(ServiceEnvironment)" />
+    <MSBuild Projects="$(SolutionFileName)" Targets="Clean" Properties="Configuration=$(Configuration);Platform=$(Platform)" />
+    <Exec Command="del *.msi" />
+    <Exec Command="del *.wixpdb" />
+    <!--	<Exec Command="del *.nupkg" />-->
+  </Target>
 
-	<Target Name="Compile">
-		<Message Text="Compile $(Configuration) $(Platform) $(ServiceEnvironment)" />
-		<MSBuild Projects="$(SolutionFileName)" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(Platform);ServiceEnvironment=$(ServiceEnvironment)" />
-	</Target>
+  <Target Name="Compile">
+    <Message Text="Compile $(Configuration) $(Platform) $(ServiceEnvironment)" />
+    <MSBuild Projects="$(SolutionFileName)" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(Platform);ServiceEnvironment=$(ServiceEnvironment)" />
+  </Target>
 
-	<Target Name="CleanFolder">
-		<RemoveDir Directories="$(BuildDir)" />
-	</Target>
+  <Target Name="CleanFolder">
+    <RemoveDir Directories="$(BuildDir)" />
+  </Target>
 
-	<Target Name="PrepareArtifact" DependsOnTargets="CleanFolder">
-		<ItemGroup>
-			<SupervisorUI
+  <Target Name="PrepareArtifact" DependsOnTargets="CleanFolder">
+    <ItemGroup>
+      <SupervisorUI
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\ui\**\*;"
-			/>	
-			<Library
+			/>
+      <Library
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.dll;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.exe;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.exe.config;
@@ -47,25 +47,25 @@
 				Exclude="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.json;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.vshost.*"
 			/>
-			<DefaultPlugin
+      <DefaultPlugin
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\SS.Integration.Adapter.Plugin.Logger.dll;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\log4net.config"
 			/>
-			<Licence  Include="$(MSBuildProjectDirectory)\LICENCE.txt" />
-		</ItemGroup>
+      <Licence  Include="$(MSBuildProjectDirectory)\LICENCE.txt" />
+    </ItemGroup>
 
-		<Message Text="Preparing artifact for $(Configuration) started " />
-		<Copy SourceFiles="@(Library)"       DestinationFolder="$(BuildDir)" />
-		<Copy SourceFiles="@(SupervisorUI)"  DestinationFolder="$(BuildDir)\ui\%(RecursiveDir)" />
-		<Copy SourceFiles="@(DefaultPlugin)" DestinationFolder="$(BuildDir)" />
-		<Copy SourceFiles="@(ConfFile)"      DestinationFolder="$(BuildDir)" />
-		<Copy SourceFiles="@(Licence)"       DestinationFolder="$(BuildDir)" />
-		<Message Text="Preparing artifict for $(Configuration) completed" />
-	</Target>
+    <Message Text="Preparing artifact for $(Configuration) started " />
+    <Copy SourceFiles="@(Library)"       DestinationFolder="$(BuildDir)" />
+    <Copy SourceFiles="@(SupervisorUI)"  DestinationFolder="$(BuildDir)\ui\%(RecursiveDir)" />
+    <Copy SourceFiles="@(DefaultPlugin)" DestinationFolder="$(BuildDir)" />
+    <Copy SourceFiles="@(ConfFile)"      DestinationFolder="$(BuildDir)" />
+    <Copy SourceFiles="@(Licence)"       DestinationFolder="$(BuildDir)" />
+    <Message Text="Preparing artifict for $(Configuration) completed" />
+  </Target>
 
-	<Target Name="PrepareForZip" DependsOnTargets="CleanFolder">
-		<ItemGroup>
-			<Library
+  <Target Name="PrepareForZip" DependsOnTargets="CleanFolder">
+    <ItemGroup>
+      <Library
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\ui\**;	
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Statsd\bin\$(Configuration)\StatsdClient*.dll;
@@ -75,35 +75,35 @@
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.vshost*;
 						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\*.xml*;"
 			/>
-			<SupervisorUI
+      <SupervisorUI
 				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.WindowsService\bin\$(Configuration)\ui\**\*;"
-			/>	
-			<DefaultPlugin
-				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\SS.Integration.Adapter.Plugin.Logger.dll;
-						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\log4net.config" 
 			/>
-			<Licence  Include="$(MSBuildProjectDirectory)\LICENCE.txt" />
-		</ItemGroup>
+      <DefaultPlugin
+				Include="$(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\SS.Integration.Adapter.Plugin.Logger.dll;
+						 $(MSBuildProjectDirectory)\SS.Integration.Adapter.Plugin.Logger\bin\$(Configuration)\log4net.config"
+			/>
+      <Licence  Include="$(MSBuildProjectDirectory)\LICENCE.txt" />
+    </ItemGroup>
 
-		<Message Text="Preparing ZIP file for $(Configuration) env: $(Environment) build: $(BUILD_NUMBER)$(BUILD_RELEASE)$(BUILD_COUNTER) " />
-		<Copy SourceFiles="@(Library)"       DestinationFolder="$(BuildDir)" />
-		<Copy SourceFiles="@(SupervisorUI)"  DestinationFolder="$(BuildDir)\ui\%(RecursiveDir)" />
-		<Copy SourceFiles="@(DefaultPlugin)" DestinationFolder="$(BuildDir)" />
-		<Copy SourceFiles="@(Licence)"       DestinationFolder="$(BuildDir)" />
-		<Copy SourceFiles="@(ConfFile)"      DestinationFolder="$(BuildDir)" />
-		<Message Text="Preparing ZIP file for $(Configuration) env: $(Environment) build: $(BUILD_NUMBER)$(BUILD_RELEASE)$(BUILD_COUNTER) completed" />
-	</Target>
+    <Message Text="Preparing ZIP file for $(Configuration) env: $(Environment) build: $(BUILD_NUMBER)$(BUILD_RELEASE)$(BUILD_COUNTER) " />
+    <Copy SourceFiles="@(Library)"       DestinationFolder="$(BuildDir)" />
+    <Copy SourceFiles="@(SupervisorUI)"  DestinationFolder="$(BuildDir)\ui\%(RecursiveDir)" />
+    <Copy SourceFiles="@(DefaultPlugin)" DestinationFolder="$(BuildDir)" />
+    <Copy SourceFiles="@(Licence)"       DestinationFolder="$(BuildDir)" />
+    <Copy SourceFiles="@(ConfFile)"      DestinationFolder="$(BuildDir)" />
+    <Message Text="Preparing ZIP file for $(Configuration) env: $(Environment) build: $(BUILD_NUMBER)$(BUILD_RELEASE)$(BUILD_COUNTER) completed" />
+  </Target>
 
-	<Target Name="BuildZip" >
-		<Message Text="Building ZIP file" />
-		<ItemGroup>
-			<ZipFiles Include="$(BuildDir)\**\*.*" Exclude="*.zip" />
-		</ItemGroup>
-		<MSBuild.ExtensionPack.Compression.DNZip TaskAction="Create" CompressFiles="@(ZipFiles)" ZipFileName="$(BuildDir)\SS.Integration.Adapter-$(BUILD_NUMBER)$(BUILD_RELEASE)$(BUILD_COUNTER).zip" RemoveRoot="$(BuildDir)"/>
-		<Message Text="Building ZIP completed" />
-	</Target>
+  <Target Name="BuildZip" >
+    <Message Text="Building ZIP file" />
+    <ItemGroup>
+      <ZipFiles Include="$(BuildDir)\**\*.*" Exclude="*.zip" />
+    </ItemGroup>
+    <MSBuild.ExtensionPack.Compression.DNZip TaskAction="Create" CompressFiles="@(ZipFiles)" ZipFileName="$(BuildDir)\SS.Integration.Adapter-$(BUILD_NUMBER)$(BUILD_RELEASE)$(BUILD_COUNTER).zip" RemoveRoot="$(BuildDir)"/>
+    <Message Text="Building ZIP completed" />
+  </Target>
 
-	<Target Name="BuildArtifact" DependsOnTargets="PrepareArtifact;BuildZip" />
-	<Target Name="BuildCompile" DependsOnTargets="Clean;Compile;PrepareForZip;BuildZip" />
+  <Target Name="BuildArtifact" DependsOnTargets="PrepareArtifact;BuildZip" />
+  <Target Name="BuildCompile" DependsOnTargets="Clean;Compile;PrepareForZip;BuildZip" />
 
 </Project>

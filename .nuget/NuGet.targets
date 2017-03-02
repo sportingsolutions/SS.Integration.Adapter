@@ -13,13 +13,14 @@
         <RequireRestoreConsent Condition=" '$(RequireRestoreConsent)' != 'false' ">true</RequireRestoreConsent>
         
         <!-- Download NuGet.exe if it does not already exist -->
-        <DownloadNuGetExe Condition=" '$(DownloadNuGetExe)' == '' ">false</DownloadNuGetExe>
+        <DownloadNuGetExe Condition=" '$(DownloadNuGetExe)' == '' ">true</DownloadNuGetExe>
     </PropertyGroup>
     
     <ItemGroup Condition=" '$(PackageSources)' == '' ">
         <!-- Package sources used to restore packages. By default, registered sources under %APPDATA%\NuGet\NuGet.Config will be used -->
         <!-- The official NuGet package source (https://nuget.org/api/v2/) will be excluded if package sources are specified and it does not appear in the list -->
 	        <PackageSource Include="https://nuget.org/api/v2/" />
+          <PackageSource Include="http://10.10.14.85/Nuget/feed" />
     </ItemGroup>
 
     <PropertyGroup Condition=" '$(OS)' == 'Windows_NT'">
