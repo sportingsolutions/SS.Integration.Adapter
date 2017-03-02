@@ -316,12 +316,12 @@ namespace SS.Integration.Adapter
                     _currentlyProcessedFixtures.TryUpdate(fixtureId, c, c - 1);
                 }
                 _logger.DebugFormat("Fixture fixtureId={0} is currently being processed by another task - ignoring it. This is {1} attemp to process", fixtureId, c);
-                if (c > 20)
+                if (c > 10)
                 {
                     _logger.Warn($"Fixture fixtureId={fixtureId} failed to process {c} times, possible stacked resource");
                 }
 
-                if (c > 99)
+                if (c > 25)
                 {
                     _logger.Warn($"Fixture fixtureId={fixtureId} failed to process {c} times, attemp to release resource");
                     ReleaseProcessing(fixtureId);
