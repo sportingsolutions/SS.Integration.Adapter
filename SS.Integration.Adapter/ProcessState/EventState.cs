@@ -52,7 +52,7 @@ namespace SS.Integration.Adapter.Model
                 _logger.InfoFormat("Attempting to load file from filePath {0}", PathFileName);
 
                 var savedEventStates = storeProvider.Read(PathFileName);
-                if (savedEventStates == null)
+                if (string.IsNullOrWhiteSpace(savedEventStates))
                 {
                     savedEvents = new ConcurrentDictionary<string, FixtureState>();
                 }
