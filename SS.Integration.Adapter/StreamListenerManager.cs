@@ -176,8 +176,15 @@ namespace SS.Integration.Adapter
                     _logger.InfoFormat("{0} is over. Adapter will not process the resource", resource);
                     return false;
                 }
-                _logger.InfoFormat("Listener for {0} is not created yet. Adapter will not process the resource", resource);
-                //the resource will be processed
+
+                if (_createListener.ContainsKey(resource.Id))
+                {
+                    _logger.DebugFormat("Listener for {0} is not created yet. It is creating right now.", resource);
+                    return false;
+                }
+
+                _logger.DebugFormat("Listener for {0} is not created yet. Adapter will add resource to the creation queue", resource);
+                //the resource will added to the queue
                 return true;
             }
         }

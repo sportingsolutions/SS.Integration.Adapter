@@ -209,11 +209,18 @@ namespace SS.Integration.Adapter
             {
                 _logger.InfoFormat("Processing {0}", resource);
 
-                if (_streamManager.ShouldProcessResource(resource) && _resourceCreationQueue.All(x => x.Id != resource.Id))
+                if (_streamManager.ShouldProcessResource(resource))
                 {
-                    _logger.DebugFormat("Adding {0} to the creation queue ", resource);
-                    _resourceCreationQueue.Add(resource);
-                    _logger.DebugFormat("Added {0} to the creation queue", resource);
+                    if (_resourceCreationQueue.All(x => x.Id != resource.Id))
+                    {
+                        _logger.DebugFormat("Adding {0} to the creation queue ", resource);
+                        _resourceCreationQueue.Add(resource);
+                        _logger.DebugFormat("Added {0} to the creation queue", resource);
+                    }
+                    else
+                    {
+                        _logger.DebugFormat("{0} is already added to the creation queue ", resource);
+                    }
                 }
             }
             finally
