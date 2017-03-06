@@ -506,6 +506,7 @@ namespace SS.Integration.Adapter
 
                 _logger.DebugFormat("Starting streaming for {0} - resource has sequence={1}", _resource, sequence);
                 _resource.StartStreaming();
+                _logger.DebugFormat("Started streaming for {0} - resource has sequence={1}", _resource, sequence);
             }
             catch (Exception ex)
             {

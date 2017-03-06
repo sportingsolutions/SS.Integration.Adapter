@@ -244,10 +244,12 @@ namespace SS.Integration.Adapter
                 {
                     bool v;
                     _createListener.TryRemove(resource.Id, out v);
-                } 
-                
-                SaveEventState();
+                }
+                ReleaseProcessing(resource.Id);
                 _logger.DebugFormat("Finished processing fixture {0}", resource);
+                _logger.DebugFormat("Saving event state after processing fixture {0}", resource);
+                SaveEventState();
+                
             }
         }
 

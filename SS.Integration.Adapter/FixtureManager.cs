@@ -53,6 +53,7 @@ namespace SS.Integration.Adapter
 
                         ValidateCache(resource);
                         _streamManager.CreateStreamListener(resource, Adapter.PlatformConnector);
+                        _logger.DebugFormat("Task={0} is finished processing {1} from the queue", Task.CurrentId, resource);
                     }
                     catch (Exception ex)
                     {
@@ -205,6 +206,8 @@ namespace SS.Integration.Adapter
             if (!_streamManager.TryLockProcessing(resource.Id))
                 return;
 
+            bool addedToQueue = false;
+
             try
             {
                 _logger.InfoFormat("Processing {0}", resource);
@@ -215,6 +218,7 @@ namespace SS.Integration.Adapter
                     {
                         _logger.DebugFormat("Adding {0} to the creation queue ", resource);
                         _resourceCreationQueue.Add(resource);
+                        addedToQueue = true;
                         _logger.DebugFormat("Added {0} to the creation queue", resource);
                     }
                     else
@@ -225,7 +229,8 @@ namespace SS.Integration.Adapter
             }
             finally
             {
-                _streamManager.ReleaseProcessing(resource.Id);
+                if (!addedToQueue)
+                    _streamManager.ReleaseProcessing(resource.Id);
             }
 
         }
