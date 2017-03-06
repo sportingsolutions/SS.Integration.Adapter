@@ -191,7 +191,7 @@ namespace SS.Integration.Adapter
 
         public virtual void CreateStreamListener(IResourceFacade resource, IAdapterPlugin platformConnector)
         {
-            bool removeFromAddingResources = false;
+            bool creationWasLocked = false;
             try
             {
                 _logger.InfoFormat("Attempting to create a Listener for sport={0} and {1}", resource.Sport, resource);
@@ -203,13 +203,9 @@ namespace SS.Integration.Adapter
                 }
 
                 // this is king of lock that prevent to create 2 listener for  the same resource.Id
-                var process = _createListener.TryAdd(resource.Id, true);
-                if (!process)
-                {
-                    _logger.InfoFormat("Another creation of listener processing right now for {0}, skipping creation", resource);
+                if (LockCreatingListener(resource))
                     return;
-                }
-                removeFromAddingResources = true;
+                creationWasLocked = true;
 
                 var listener = CreateStreamListenerObject(resource, platformConnector, EventState, StateManager);
 
@@ -240,17 +236,31 @@ namespace SS.Integration.Adapter
             }
             finally
             {
-                if (removeFromAddingResources)
-                {
-                    bool v;
-                    _createListener.TryRemove(resource.Id, out v);
-                }
+                if (creationWasLocked)
+                    ReleaseCreatingListener(resource);
                 ReleaseProcessing(resource.Id);
                 _logger.DebugFormat("Finished processing fixture {0}", resource);
                 _logger.DebugFormat("Saving event state after processing fixture {0}", resource);
                 SaveEventState();
                 
             }
+        }
+
+        private void ReleaseCreatingListener(IResourceFacade resource)
+        {
+            bool v;
+            _createListener.TryRemove(resource.Id, out v);
+        }
+
+        private bool LockCreatingListener(IResourceFacade resource)
+        {
+            var process = _createListener.TryAdd(resource.Id, true);
+            if (!process)
+            {
+                _logger.InfoFormat("Another creation of listener processing right now for {0}, skipping creation", resource);
+                return true;
+            }
+            return false;
         }
 
         private void OnStreamDisconnected(object sender, StreamListenerEventArgs e)
