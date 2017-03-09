@@ -525,10 +525,12 @@ namespace SS.Integration.Adapter
         private void StartStreamingWithChecking(Action action, object obj)
         {
             var timeoutTimer = new Timer();
+            var warnCount = 0;
             timeoutTimer.Elapsed += (sender, e) =>
             {
+                warnCount++;
                 _logger.Warn(
-                    $"StartStreaming for {obj} did't respond for {_settings.StartStreamingTimeoutInSeconds} seconds. Possible network problem or port 5672 is locked");
+                    $"StartStreaming for {obj} did't respond for {warnCount*_settings.StartStreamingTimeoutInSeconds} seconds. Possible network problem or port 5672 is locked");
             };
             timeoutTimer.Interval = _settings.StartStreamingTimeoutInSeconds * 1000;
             timeoutTimer.Start();
