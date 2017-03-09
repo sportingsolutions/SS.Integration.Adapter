@@ -41,6 +41,7 @@ namespace SS.Integration.Adapter.Configuration
         private const double DEFAULT_STOP_STREAMING_DELAY_MINUTES = 0;
         private const string DEFAULT_SUPERVISOR_STATE_PATH = @"SupervisorState";
         private const int DEFAULT_PREMATCH_SUSPENSION_BEFORE_STARTTIME_IN_MINS = 15;
+        private const int DEFAULT_START_STREAMING_TIMEOUT = 60;
         private const int DEFAULT_STREAM_THRESHOLD = int.MaxValue;
 
         public Settings()
@@ -104,6 +105,11 @@ namespace SS.Integration.Adapter.Configuration
                 ? DEFAULT_PREMATCH_SUSPENSION_BEFORE_STARTTIME_IN_MINS
                 : int.Parse(value);
 
+            value = ConfigurationManager.AppSettings["startStreamingTimeoutInSeconds"];
+            StartStreamingTimeoutInSeconds = string.IsNullOrEmpty(value)
+                ? DEFAULT_START_STREAMING_TIMEOUT
+                : int.Parse(value);
+
             value = ConfigurationManager.AppSettings["disablePrematchSuspensionOnDisconnection"];
             DisablePrematchSuspensionOnDisconnection = string.IsNullOrEmpty(value) ? false : Convert.ToBoolean(value);
 
@@ -154,15 +160,15 @@ namespace SS.Integration.Adapter.Configuration
 
         [Obsolete]
         public string EventStateFilePath { get; private set; }
-        
+
         public bool DeltaRuleEnabled { get; private set; }
-        
+
         public int FixtureCreationConcurrency { get; private set; }
-        
+
         public bool StatsEnabled { get; private set; }
 
         public string StateProviderPath { get; private set; }
-        
+
         public int ProcessingLockTimeOutInSecs { get; private set; }
         public double StopStreamingDelayMinutes { get; private set; }
 
@@ -170,6 +176,7 @@ namespace SS.Integration.Adapter.Configuration
         public string StopStreamingDelayedSports { get; private set; }
         public bool DisablePrematchSuspensionOnDisconnection { get; private set; }
         public int PreMatchSuspensionBeforeStartTimeInMins { get; private set; }
+        public int StartStreamingTimeoutInSeconds { get; private set; }
         public bool SkipRulesOnError { get; private set; }
         public int StreamSafetyThreshold { get; private set; }
 

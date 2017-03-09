@@ -98,7 +98,7 @@ namespace SS.Integration.Adapter.Interface
         /// Returns the expiration time
         /// (in minutes) for the adapter's cache
         /// </summary>
-        int CacheExpiryInMins { get;  }
+        int CacheExpiryInMins { get; }
 
         /// <summary>
         /// True to enable DeltaRule
@@ -151,7 +151,7 @@ namespace SS.Integration.Adapter.Interface
         /// <summary>
         /// Skips processing any rules (Delta rule/Void rule/...) when resending snapshot after the error occured in plugin
         /// </summary>
-        bool SkipRulesOnError { get;  }
+        bool SkipRulesOnError { get; }
 
         /// <summary>
         /// Number of sequences that Adapter can fall behind before the Stop streaming is called
@@ -167,5 +167,12 @@ namespace SS.Integration.Adapter.Interface
         /// <param name="sport"></param>
         /// <returns></returns>
         bool ShouldDelayStopStreaming(string sport);
+
+        /// <summary>
+        /// This is litit for sttempt to start streaming
+        /// </summary>
+        int StartStreamingTimeoutInSeconds { get; }
+
+
     }
 }
