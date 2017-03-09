@@ -29,6 +29,8 @@ using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Common.Stats;
 using SS.Integration.Common.Stats.Interface;
 using SS.Integration.Common.Stats.Keys;
+using System.Timers;
+using Timer = System.Timers.Timer;
 
 
 namespace SS.Integration.Adapter
@@ -505,7 +507,7 @@ namespace SS.Integration.Adapter
                 // class must be revisited
 
                 _logger.DebugFormat("Starting streaming for {0} - resource has sequence={1}", _resource, sequence);
-                _resource.StartStreaming();
+                StartStreamingWithChecking(() => _resource.StartStreaming(), _resource);
                 _logger.DebugFormat("Started streaming for {0} - resource has sequence={1}", _resource, sequence);
             }
             catch (Exception ex)
@@ -517,6 +519,27 @@ namespace SS.Integration.Adapter
                 _logger.Error(string.Format("Error connecting to stream server for {0}", _resource), ex);
                 RaiseEvent(OnError);
             }
+        }
+
+
+        private void StartStreamingWithChecking(Action action, object obj)
+        {
+            var timeoutTimer = new Timer();
+            timeoutTimer.Elapsed += (sender, e) =>
+            {
+                _logger.Warn(
+                    $"StartStreaming for {obj} did't respond for {_settings.StartStreamingTimeoutInSeconds} seconds. Possible network problem or port 5672 is locked");
+            };
+            timeoutTimer.Interval = _settings.StartStreamingTimeoutInSeconds * 1000;
+            timeoutTimer.Start();
+
+            action();
+
+            timeoutTimer.Stop();
+
+            //var task = Task.Run(() => action());
+            //if (!task.Wait(TimeSpan.FromSeconds(_settings.StartStreamingTimeoutInSeconds)))
+            //    throw new Exception($"StartStreaming did't respond for {_settings.StartStreamingTimeoutInSeconds} secconds. Possible network problem or port 5672 is locked");
         }
 
         private void SetErrorState()
