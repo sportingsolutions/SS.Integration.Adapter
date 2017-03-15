@@ -24,7 +24,7 @@ using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
-using SS.Integration.Adapter.Model;
+
 
 namespace SS.Integration.Adapter
 {

@@ -61,10 +61,10 @@ namespace SS.Integration.Common.Converters
                         XmlElement elem = Process(xmlDoc, o, oType, pInfo.Name);
                         elemRoot.AppendChild(elem);
                     }
-                    catch (Exception e) { }
+                    catch   { }
                 }
             }
-            catch (Exception e) { }
+            catch  { }
         }
 
         private static XmlElement Process(XmlDocument xmlDoc, object o, Type oType, string name)
