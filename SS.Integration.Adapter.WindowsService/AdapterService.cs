@@ -37,7 +37,7 @@ namespace SS.Integration.Adapter.WindowsService
         private ISupervisor _supervisor;
         private int fatalExceptionsCounter = 0;
         private bool _skipRestartOnFatalException;
-
+        public static IAdapterPlugin PlatformConnectorInstance;
         [Import]
         public IAdapterPlugin PlatformConnector { get; set; }
 
@@ -76,6 +76,7 @@ namespace SS.Integration.Adapter.WindowsService
                 var catalog = new SafeDirectoryCatalog(codebase, pluginAssembly);
                 container = new CompositionContainer(catalog);
                 container.ComposeParts(this);
+                PlatformConnectorInstance = PlatformConnector;
             }
             catch (CompositionException ex)
             {

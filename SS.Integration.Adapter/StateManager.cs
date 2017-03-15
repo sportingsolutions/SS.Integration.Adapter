@@ -25,7 +25,7 @@ using SS.Integration.Adapter.Model.ProcessState;
 
 namespace SS.Integration.Adapter
 {
-    internal class StateManager : IStoredObjectProvider, IStateManager, IStateProvider
+    public class StateManager : IStoredObjectProvider, IStateManager, IStateProvider
     {
         private const string PLUGIN_STORE_PREFIX = "plugin_";
         private static readonly ILog _logger = LogManager.GetLogger(typeof(StateManager));

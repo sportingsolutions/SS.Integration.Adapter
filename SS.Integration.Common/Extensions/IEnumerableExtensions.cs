@@ -13,8 +13,9 @@
 //limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
-
+using System.Linq;
 namespace SS.Integration.Common.Extensions
 {
     public static class IEnumerableExtensions
@@ -28,5 +29,17 @@ namespace SS.Integration.Common.Extensions
                 execute(item);
             }
         }
+        public static bool IsNullOrEmpty(this IList list)
+        {
+            return list == null || list.Count == 0;
+        }
+        public static bool IsNullOrEmpty(this IDictionary d)
+        {
+            return d == null || d.Count == 0;
+        }
+         
+
     }
+
+
 }
