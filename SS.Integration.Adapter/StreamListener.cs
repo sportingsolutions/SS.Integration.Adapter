@@ -532,7 +532,10 @@ namespace SS.Integration.Adapter
                 _logger.Warn(
                     $"StartStreaming for {obj} did't respond for {warnCount*_settings.StartStreamingTimeoutInSeconds} seconds. Possible network problem or port 5672 is locked");
             };
-            timeoutTimer.Interval = _settings.StartStreamingTimeoutInSeconds * 1000;
+            var interval = _settings.StartStreamingTimeoutInSeconds;
+            if (interval <= 0)
+                interval = 1;
+            timeoutTimer.Interval = interval * 1000;
             timeoutTimer.Start();
 
             action();
