@@ -53,6 +53,10 @@ namespace SS.Integration.Adapter
         private readonly IMarketRulesManager _marketsRuleManager;
         private readonly ISettings _settings;
 
+        private bool _isProcessiongAtPluginSide = false;
+        private readonly Timer _pluginTimeoutTimer ;
+        private int _lastSequenceAtValidate;
+
         private int _currentSequence;
         private int _currentEpoch;
         private int _lastSequenceProcessedInSnapshot;
@@ -140,6 +144,8 @@ namespace SS.Integration.Adapter
                 _fixtureStartTime = DateTime.Parse(resource.Content.StartTime);
 
             _logger.DebugFormat("Listener instantiated for {0}", resource);
+
+            _pluginTimeoutTimer = new Timer() {Interval = 60000};
         }
 
 
@@ -405,18 +411,25 @@ namespace SS.Integration.Adapter
             }
             else
             {
-                _logger.WarnFormat("Stream safety threshold reached for {0}. The streaming will be restarted.",resource);
+                _logger.WarnFormat("Stream safety detected that stream is invalid for {0}. The streaming will be restarted.",resource);
                 Stop();
             }
         }
 
         private bool ValidateStream()
         {
+            var lastSequenceAtValidate = _lastSequenceAtValidate;
+            _lastSequenceAtValidate = _currentSequence;
             //no point running validation before Prematch as Adpater should not be connected
             if (!IsStreaming || IsFixtureSetup || _resource.IsMatchOver)
                 return true;
 
             var difference = SequenceOnStreamingAvailable - _currentSequence;
+
+            if (difference > 0 && !_isProcessiongAtPluginSide && _currentSequence == lastSequenceAtValidate)
+            {
+                return false;
+            }
 
             //when difference is greater than threshold it's not valid
             return !(difference > _settings.StreamSafetyThreshold);
@@ -1077,10 +1090,14 @@ namespace SS.Integration.Adapter
                     _marketsRuleManager.ApplyRules(snapshot,isRemovalDisabled : true);   
                 }
 
+                FixtureProcessingAtPluginStarted();
+
                 if (isFullSnapshot)
                     _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
                 else
                     _platformConnector.ProcessStreamUpdate(snapshot, hasEpochChanged);
+
+                FixtureProcessingAtPluginFinished();
 
                 UpdateState(snapshot, isFullSnapshot);
 
@@ -1138,6 +1155,25 @@ namespace SS.Integration.Adapter
             }
 
             _logger.InfoFormat("Finished processing {0} for {1}", logString, snapshot);
+        }
+
+        private void FixtureProcessingAtPluginFinished()
+        {
+            _isProcessiongAtPluginSide = true;
+            var warnCount = 0;
+            _pluginTimeoutTimer.Elapsed += (sender, e) =>
+            {
+                warnCount++;
+                _logger.Warn(
+                    $"Fixture processing for {_resource} is taking too long to complete. Currently it is processing for {warnCount} minutes. New updates will wait until this processing to complete.");
+            };
+            _pluginTimeoutTimer.Start();
+        }
+
+        private void FixtureProcessingAtPluginStarted()
+        {
+            _pluginTimeoutTimer.Stop();
+            _isProcessiongAtPluginSide = false;
         }
 
         private bool VerifySequenceOnSnapshot(Fixture snapshot)
