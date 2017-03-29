@@ -8,6 +8,14 @@ namespace SS.Integration.Common.Extensions
 {
     public static class StringExtensions
     {
+        public static string UpperCaseFirst(this string s)
+        {
+            if (String.IsNullOrEmpty(s))
+                return String.Empty;
+            if (s.Length > 1)
+                return char.ToUpper(s[0]) + s.Substring(1);
+            return s.ToUpper();
+        }
         public static string[] Split(this string str, string s)
         {
             return str.Split(new[] { s }, StringSplitOptions.None);
@@ -18,9 +26,13 @@ namespace SS.Integration.Common.Extensions
             return string.IsNullOrWhiteSpace(str);
         }
 
-        public static bool IsNullOrWhiteSpace(this string[] str)
+        public static bool IsAllNullOrWhiteSpace(this string[] str)
         {
             return str.All(x => x.IsNullOrWhiteSpace());
+        }
+        public static bool IsAnyNullOrWhiteSpace(this string[] str)
+        {
+            return str.Any(x => x.IsNullOrWhiteSpace());
         }
 
         public static string Simply(this string str)
