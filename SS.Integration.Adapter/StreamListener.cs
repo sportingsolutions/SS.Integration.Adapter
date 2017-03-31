@@ -1157,7 +1157,7 @@ namespace SS.Integration.Adapter
             _logger.InfoFormat("Finished processing {0} for {1}", logString, snapshot);
         }
 
-        private void FixtureProcessingAtPluginFinished()
+        private void FixtureProcessingAtPluginStarted()
         {
             _isProcessiongAtPluginSide = true;
             var warnCount = 0;
@@ -1170,7 +1170,7 @@ namespace SS.Integration.Adapter
             _pluginTimeoutTimer.Start();
         }
 
-        private void FixtureProcessingAtPluginStarted()
+        private void FixtureProcessingAtPluginFinished()
         {
             _pluginTimeoutTimer.Stop();
             _isProcessiongAtPluginSide = false;
