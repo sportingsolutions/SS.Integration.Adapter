@@ -337,7 +337,7 @@ namespace SS.Integration.Adapter
                 _logger.DebugFormat("Fixture fixtureId={0} is currently being processed by another task - ignoring it. This is {1} attemp to process", fixtureId, c);
                 if (c > 10)
                 {
-                    _logger.Warn($"Fixture fixtureId={fixtureId} failed to process {c} times, possible stacked resource");
+                    _logger.Warn($"Fixture fixtureId={fixtureId} failed to process {c} times, possible stuck resource");
                 }
 
                 if (c > 25)
@@ -355,7 +355,7 @@ namespace SS.Integration.Adapter
             var removed = _currentlyProcessedFixtures.TryRemove(fixtureId, out v);
             if (!removed)
             {
-                _logger.Warn($"Fixture fixtureId={fixtureId} failed to ReleaseProcessing, possible stacked resource");
+                _logger.Warn($"Fixture fixtureId={fixtureId} failed to ReleaseProcessing, possible stuck resource");
             }
         }
 
