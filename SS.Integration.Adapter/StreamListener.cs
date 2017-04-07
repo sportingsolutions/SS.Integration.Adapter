@@ -30,6 +30,7 @@ using SS.Integration.Common.Stats;
 using SS.Integration.Common.Stats.Interface;
 using SS.Integration.Common.Stats.Keys;
 using System.Timers;
+using SS.Integration.Common.Extensions;
 using Timer = System.Timers.Timer;
 
 
@@ -54,7 +55,7 @@ namespace SS.Integration.Adapter
         private readonly ISettings _settings;
 
         private bool _isProcessiongAtPluginSide = false;
-        private readonly Timer _pluginTimeoutTimer ;
+        private readonly Timer _pluginTimeoutTimer;
         private int _lastSequenceAtValidate;
 
         private int _currentSequence;
@@ -70,7 +71,7 @@ namespace SS.Integration.Adapter
         private DateTime? _fixtureStartTime = null;
 
         //The events are for diagnostic purposes only
-        
+
         public event EventHandler<StreamListenerEventArgs> OnConnected;
         public event EventHandler<StreamListenerEventArgs> OnDisconnected;
         public event EventHandler<StreamListenerEventArgs> OnError;
@@ -82,7 +83,7 @@ namespace SS.Integration.Adapter
         public event EventHandler<StreamListenerEventArgs> OnFinishedSnapshotProcessing;
         public event EventHandler<StreamListenerEventArgs> OnStop;
 
-        public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IStateManager stateManager,ISettings settings)
+        public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IStateManager stateManager, ISettings settings)
         {
             if (resource == null)
                 throw new ArgumentException("Resource information cannot be null");
@@ -102,7 +103,7 @@ namespace SS.Integration.Adapter
 
             _currentSequence = resource.Content.Sequence;
             _lastSequenceProcessedInSnapshot = -1;
-            
+
             _hasRecoveredFromError = true;
             _isFirstSnapshotProcessed = false;
             _isProcessingFirstSnapshot = false;
@@ -127,7 +128,7 @@ namespace SS.Integration.Adapter
             IsFixtureSetup = (_resource.MatchStatus == MatchStatus.Setup || _resource.MatchStatus == MatchStatus.Ready);
 
             //In Grey hound racing the streaming should start on status Ready 
-            if(string.Equals(Sport,"greyhoundracing", StringComparison.InvariantCultureIgnoreCase))
+            if (string.Equals(Sport, "greyhoundracing", StringComparison.InvariantCultureIgnoreCase))
             {
                 IsFixtureSetup = _resource.MatchStatus == MatchStatus.Setup;
             }
@@ -135,17 +136,17 @@ namespace SS.Integration.Adapter
             IsFixtureDeleted = false;
             IsInPlay = fixtureState != null ? fixtureState.MatchStatus == MatchStatus.InRunning : _resource.MatchStatus == MatchStatus.InRunning;
             _currentEpoch = fixtureState != null ? fixtureState.Epoch : -1;
-            
+
             _Stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
 
             SetupListener();
 
-            if(resource.Content != null && !string.IsNullOrEmpty(resource.Content.StartTime))
+            if (resource.Content != null && !string.IsNullOrEmpty(resource.Content.StartTime))
                 _fixtureStartTime = DateTime.Parse(resource.Content.StartTime);
 
             _logger.DebugFormat("Listener instantiated for {0}", resource);
 
-            _pluginTimeoutTimer = new Timer() {Interval = 60000};
+            _pluginTimeoutTimer = new Timer() { Interval = 60000 };
         }
 
 
@@ -339,7 +340,7 @@ namespace SS.Integration.Adapter
         public bool Start()
         {
             if (_resource == null)
-                throw new ObjectDisposedException("StreamListener for fixtureId={0} has been disposed and can't be started",FixtureId);
+                throw new ObjectDisposedException("StreamListener for fixtureId={0} has been disposed and can't be started", FixtureId);
 
             StartStreaming();
 
@@ -389,7 +390,7 @@ namespace SS.Integration.Adapter
                 return;
 
             IsFixtureSetup = resource.MatchStatus == MatchStatus.Setup || resource.MatchStatus == MatchStatus.Ready;
-            
+
             //In Grey hound racing the streaming should start on status Ready 
             if (string.Equals(Sport, "greyhoundracing", StringComparison.InvariantCultureIgnoreCase))
             {
@@ -411,7 +412,7 @@ namespace SS.Integration.Adapter
             }
             else
             {
-                _logger.WarnFormat("Stream safety detected that stream is invalid for {0}. The streaming will be restarted.",resource);
+                _logger.WarnFormat("Stream safety detected that stream is invalid for {0}. The streaming will be restarted.", resource);
                 Stop();
             }
         }
@@ -543,7 +544,7 @@ namespace SS.Integration.Adapter
             {
                 warnCount++;
                 _logger.Warn(
-                    $"StartStreaming for {obj} did't respond for {warnCount*_settings.StartStreamingTimeoutInSeconds} seconds. Possible network problem or port 5672 is locked");
+                    $"StartStreaming for {obj} did't respond for {warnCount * _settings.StartStreamingTimeoutInSeconds} seconds. Possible network problem or port 5672 is locked");
             };
             var interval = _settings.StartStreamingTimeoutInSeconds;
             if (interval <= 0)
@@ -637,7 +638,7 @@ namespace SS.Integration.Adapter
             {
                 var deltaMessage = streamEventArgs.Update.FromJson<StreamMessage>();
                 var fixtureDelta = deltaMessage.GetContent<Fixture>();
-                
+
                 _logger.InfoFormat("{0} stream update arrived", fixtureDelta);
                 if (IsDisposing)
                 {
@@ -704,7 +705,7 @@ namespace SS.Integration.Adapter
                     if (fixtureDelta.IsMatchStatusChanged && !string.IsNullOrEmpty(fixtureDelta.MatchStatus))
                     {
                         _logger.DebugFormat("{0} has changed matchStatus={1}", _resource,
-                            Enum.Parse(typeof (MatchStatus), fixtureDelta.MatchStatus));
+                            Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus));
                         _platformConnector.ProcessMatchStatus(fixtureDelta);
 
                         RaiseEvent(OnFinishedStreamUpdateProcessing);
@@ -732,10 +733,10 @@ namespace SS.Integration.Adapter
                     }
 
 
-                    _logger.InfoFormat("Stream update {0} has epoch change with reason {1}, the snapshot will be processed instead.", 
+                    _logger.InfoFormat("Stream update {0} has epoch change with reason {1}, the snapshot will be processed instead.",
                         fixtureDelta,
                         //aggregates LastEpochChange reasons into string like "BaseVariables,Starttime"
-                        fixtureDelta.LastEpochChangeReason.Select(x=> ((EpochChangeReason) x).ToString()).Aggregate((first,second) => $"{first}, {second}"));
+                        fixtureDelta.LastEpochChangeReason.Select(x => ((EpochChangeReason)x).ToString()).Aggregate((first, second) => $"{first}, {second}"));
 
                     SuspendAndReprocessSnapshot(hasEpochChanged);
                     return;
@@ -749,7 +750,7 @@ namespace SS.Integration.Adapter
                 int count = 0;
                 foreach (var innerEx in ex.InnerExceptions)
                 {
-                    _logger.ErrorFormat("Error processing update for {0} {1} ({2}/{3})",_resource, innerEx, ++count, total);
+                    _logger.ErrorFormat("Error processing update for {0} {1} ({2}/{3})", _resource, innerEx, ++count, total);
                 }
 
                 SetErrorState();
@@ -921,11 +922,13 @@ namespace SS.Integration.Adapter
                     throw new Exception(string.Format("Received empty snapshot for {0}", _resource));
 
                 var snapshot = FixtureJsonHelper.GetFromJson(snapshotJson);
-                if (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id))
-                    throw new Exception(string.Format("Received a snapshot that resulted in an empty snapshot object {0}", _resource));
+                if (snapshot==null||(snapshot != null && snapshot.Id.IsNullOrWhiteSpace()))
+                    throw new Exception($"Received a snapshot that resulted in an empty snapshot object {_resource}"
+                        + Environment.NewLine +
+                        $"Platform raw data=\"{snapshotJson}\"");
 
-                if(snapshot.Sequence < _currentSequence)
-                    throw new Exception(string.Format("Received snapshot {0} with sequence lower than currentSequence={1}",snapshot,_currentSequence));
+                if (snapshot.Sequence < _currentSequence)
+                    throw new Exception(string.Format("Received snapshot {0} with sequence lower than currentSequence={1}", snapshot, _currentSequence));
 
                 _Stats.IncrementValue(AdapterCoreKeys.SNAPSHOT_COUNTER);
                 _fixtureStartTime = snapshot.StartTime;
@@ -966,7 +969,7 @@ namespace SS.Integration.Adapter
             try
             {
                 RetrieveAndProcessSnapshot();
-                
+
                 //is errored will be set to false in ProcessSnapshot if it's processed succcessfully
                 tmp = !IsErrored;
             }
@@ -1078,16 +1081,16 @@ namespace SS.Integration.Adapter
 
                 bool is_inplay = string.Equals(snapshot.MatchStatus, ((int)MatchStatus.InRunning).ToString(), StringComparison.OrdinalIgnoreCase);
                 IsInPlay = is_inplay;
-               
+
                 if (!skipMarketRules)
                 {
                     _marketsRuleManager.ApplyRules(snapshot);
-                    
+
                     snapshot.IsModified = true;
                 }
                 else
                 {
-                    _marketsRuleManager.ApplyRules(snapshot,isRemovalDisabled : true);   
+                    _marketsRuleManager.ApplyRules(snapshot, isRemovalDisabled: true);
                 }
 
                 FixtureProcessingAtPluginStarted();
@@ -1116,7 +1119,7 @@ namespace SS.Integration.Adapter
                 _marketsRuleManager.RollbackChanges();
 
                 int total = ex.InnerExceptions.Count;
-                int count = 0; 
+                int count = 0;
                 foreach (var e in ex.InnerExceptions)
                 {
                     _logger.Error(string.Format("Error processing {0} for {1} ({2}/{3})", logString, snapshot, ++count, total), e);
@@ -1184,7 +1187,7 @@ namespace SS.Integration.Adapter
                     _currentSequence);
                 return false;
             }
-            
+
             return true;
         }
 
@@ -1194,7 +1197,7 @@ namespace SS.Integration.Adapter
         }
 
         private void UpdateState(Fixture snapshot, bool isSnapshot = false)
-        {            
+        {
 
             _marketsRuleManager.CommitChanges();
 
@@ -1227,7 +1230,7 @@ namespace SS.Integration.Adapter
                 _logger.Error(
                     string.Format("An exception occured while trying to process fixture deletion for {0}", _resource), e);
             }
-            
+
             var status = (MatchStatus)Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus);
 
             //reset event state
