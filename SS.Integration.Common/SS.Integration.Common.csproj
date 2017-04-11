@@ -85,6 +85,7 @@
     <Compile Include="Stats\StatsHandle.cs" />
     <Compile Include="Stats\StatsManager.cs" />
     <Compile Include="TimePerformanceCounter.cs" />
+    <Compile Include="Tools.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">
