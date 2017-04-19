@@ -94,7 +94,7 @@ namespace SS.Integration.Adapter.UdapiClient
             if (udapiFeature != null)
             {
                 var udapiResources = udapiFeature.GetResources();
-                resourceFacade.AddRange(udapiResources.Select(udapiResource => new UdapiResourceFacade(udapiResource, featureName, _reconnectStrategy,_settings.EchoDelay,_settings.EchoInterval)));
+                resourceFacade.AddRange(udapiResources.Select(udapiResource => new UdapiResourceFacade(udapiResource, featureName, _reconnectStrategy, _settings.EchoDelay, _settings.EchoInterval)));
             }
 
             return resourceFacade;
@@ -127,7 +127,7 @@ namespace SS.Integration.Adapter.UdapiClient
         {
             var counter = 0;
             Exception lastException = null;
-            
+
             var retryDelay = _settings.StartingRetryDelay; //ms
 
             while (counter < _settings.MaxRetryAttempts)
@@ -135,7 +135,7 @@ namespace SS.Integration.Adapter.UdapiClient
                 lock (this)
                 {
                     if (_isClosing)
-                    {                                                    
+                    {
                         _service = null;
                         IsConnected = false;
                         return;
@@ -160,26 +160,10 @@ namespace SS.Integration.Adapter.UdapiClient
 
                     return;
                 }
-                catch (NotAuthenticatedException wex)
-                {
-                    lastException = wex;
-                    counter++;
-                    if (counter == _settings.MaxRetryAttempts)
-                    {
-                        _logger.Error(
-                              String.Format("Failed to successfully execute Sporting Solutions method after all {0} attempts",
-                                            _settings.MaxRetryAttempts), wex);
-                    }
-                    else
-                    {
-                        _logger.WarnFormat("Failed to successfully execute Sporting Solutions method on attempt {0}. Stack Trace:{1}", counter, wex.StackTrace);
-                    }
-
-                    connectSession = true;
-                }
                 catch (Exception ex)
                 {
-                    counter++;
+                    lastException = ex;
+                       counter++;
                     if (counter == _settings.MaxRetryAttempts)
                     {
                         _logger.Error(
@@ -188,18 +172,21 @@ namespace SS.Integration.Adapter.UdapiClient
                     }
                     else
                     {
-                        _logger.WarnFormat("Failed to successfully execute Sporting Solutions method on attempt {0}. Stack Trace:{1}", counter, ex.StackTrace);
+                        _logger.Warn($"{ex.GetType().Name}: Failed to successfully execute Sporting Solutions method on attempt {counter}. Stack Trace:{ex.StackTrace}");
+                    }
+                    if (ex as NotAuthenticatedException!=null)
+                    {
+                        connectSession = true;
                     }
                 }
-
                 retryDelay = 2 * retryDelay;
                 if (retryDelay > _settings.MaxRetryDelay)
                 {
                     retryDelay = _settings.MaxRetryDelay;
                 }
-                
+
                 _logger.DebugFormat("Retrying Sporting Solutions API in {0} ms", retryDelay);
-                
+
                 Thread.Sleep(retryDelay);
             }
 
