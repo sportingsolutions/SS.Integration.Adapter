@@ -1090,14 +1090,13 @@ namespace SS.Integration.Adapter
                     _marketsRuleManager.ApplyRules(snapshot,isRemovalDisabled : true);   
                 }
 
-                FixtureProcessingAtPluginStarted();
+                FixtureProcessingAtPluginStarted(snapshot);
 
                 if (isFullSnapshot)
                     _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
                 else
                     _platformConnector.ProcessStreamUpdate(snapshot, hasEpochChanged);
-
-                FixtureProcessingAtPluginFinished();
+                
 
                 UpdateState(snapshot, isFullSnapshot);
 
@@ -1147,6 +1146,7 @@ namespace SS.Integration.Adapter
             }
             finally
             {
+                FixtureProcessingAtPluginFinished();
                 timer.Stop();
                 if (isFullSnapshot)
                     _Stats.AddValue(AdapterCoreKeys.SNAPSHOT_PROCESSING_TIME, timer.ElapsedMilliseconds.ToString());
@@ -1157,7 +1157,7 @@ namespace SS.Integration.Adapter
             _logger.InfoFormat("Finished processing {0} for {1}", logString, snapshot);
         }
 
-        private void FixtureProcessingAtPluginStarted()
+        private void FixtureProcessingAtPluginStarted(Fixture fixture)
         {
             _isProcessiongAtPluginSide = true;
             var warnCount = 0;
@@ -1165,7 +1165,7 @@ namespace SS.Integration.Adapter
             {
                 warnCount++;
                 _logger.Warn(
-                    $"Fixture processing for {_resource} is taking too long to complete. Currently it is processing for {warnCount} minutes. New updates will wait until this processing to complete.");
+                    $"Fixture processing for {fixture} is taking too long to complete. Currently it is processing for {warnCount} minutes. New updates will wait until this processing to complete.");
             };
             _pluginTimeoutTimer.Start();
         }
@@ -1174,6 +1174,7 @@ namespace SS.Integration.Adapter
         {
             _pluginTimeoutTimer.Stop();
             _isProcessiongAtPluginSide = false;
+
         }
 
         private bool VerifySequenceOnSnapshot(Fixture snapshot)
