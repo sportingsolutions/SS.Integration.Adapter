@@ -55,7 +55,6 @@ namespace SS.Integration.Adapter
         private readonly ISettings _settings;
 
         private bool _isProcessiongAtPluginSide = false;
-        private readonly Timer _pluginTimeoutTimer;
         private int _lastSequenceAtValidate;
 
         private int _currentSequence;
@@ -145,8 +144,6 @@ namespace SS.Integration.Adapter
                 _fixtureStartTime = DateTime.Parse(resource.Content.StartTime);
 
             _logger.DebugFormat("Listener instantiated for {0}", resource);
-
-            _pluginTimeoutTimer = new Timer() { Interval = 60000 };
         }
 
 
@@ -1069,6 +1066,7 @@ namespace SS.Integration.Adapter
 
             Stopwatch timer = new Stopwatch();
             timer.Start();
+            var pluginTimeoutTimer = new Timer() { Interval = 60000 };
 
             try
             {
@@ -1092,8 +1090,8 @@ namespace SS.Integration.Adapter
                 {
                     _marketsRuleManager.ApplyRules(snapshot, isRemovalDisabled: true);
                 }
-
-                FixtureProcessingAtPluginStarted(snapshot);
+                
+                FixtureProcessingAtPluginStarted(snapshot, pluginTimeoutTimer);
 
                 if (isFullSnapshot)
                     _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
@@ -1149,7 +1147,7 @@ namespace SS.Integration.Adapter
             }
             finally
             {
-                FixtureProcessingAtPluginFinished();
+                FixtureProcessingAtPluginFinished(pluginTimeoutTimer);
                 timer.Stop();
                 if (isFullSnapshot)
                     _Stats.AddValue(AdapterCoreKeys.SNAPSHOT_PROCESSING_TIME, timer.ElapsedMilliseconds.ToString());
@@ -1160,22 +1158,22 @@ namespace SS.Integration.Adapter
             _logger.InfoFormat("Finished processing {0} for {1}", logString, snapshot);
         }
 
-        private void FixtureProcessingAtPluginStarted(Fixture fixture)
+        private void FixtureProcessingAtPluginStarted(Fixture fixture, Timer timer)
         {
             _isProcessiongAtPluginSide = true;
             var warnCount = 0;
-            _pluginTimeoutTimer.Elapsed += (sender, e) =>
+            timer.Elapsed += (sender, e) =>
             {
                 warnCount++;
                 _logger.Warn(
                     $"Fixture processing for {fixture} is taking too long to complete. Currently it is processing for {warnCount} minutes. New updates will wait until this processing to complete.");
             };
-            _pluginTimeoutTimer.Start();
+            timer.Start();
         }
 
-        private void FixtureProcessingAtPluginFinished()
+        private void FixtureProcessingAtPluginFinished(Timer timer)
         {
-            _pluginTimeoutTimer.Stop();
+            timer.Stop();
             _isProcessiongAtPluginSide = false;
 
         }
