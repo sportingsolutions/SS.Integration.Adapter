@@ -55,7 +55,7 @@ namespace SS.Integration.Adapter
         private readonly ISettings _settings;
 
         private bool _isProcessiongAtPluginSide = false;
-        private int _lastSequenceAtValidate;
+        private int suspiciousValidations;
 
         private int _currentSequence;
         private int _currentEpoch;
@@ -416,21 +416,20 @@ namespace SS.Integration.Adapter
 
         private bool ValidateStream()
         {
-            var lastSequenceAtValidate = _lastSequenceAtValidate;
-            _lastSequenceAtValidate = _currentSequence;
             //no point running validation before Prematch as Adpater should not be connected
-            if (!IsStreaming || IsFixtureSetup || _resource.IsMatchOver)
-                return true;
-
-            var difference = SequenceOnStreamingAvailable - _currentSequence;
-
-            if (difference > 0 && !_isProcessiongAtPluginSide && _currentSequence == lastSequenceAtValidate)
+            if (!IsStreaming 
+                    || IsFixtureSetup 
+                    || _resource.IsMatchOver 
+                    || _isProcessiongAtPluginSide 
+                    || SequenceOnStreamingAvailable <= _currentSequence)
             {
-                return false;
+                suspiciousValidations = 0;
+                return true;
             }
 
+            suspiciousValidations++;
             //when difference is greater than threshold it's not valid
-            return !(difference > _settings.StreamSafetyThreshold);
+            return (suspiciousValidations > _settings.StreamSafetyThreshold);
         }
 
         /// <summary>
