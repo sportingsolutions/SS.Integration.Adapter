@@ -163,18 +163,19 @@ namespace SS.Integration.Adapter.UdapiClient
                 catch (Exception ex)
                 {
                     lastException = ex;
-                       counter++;
+                    counter++;
+                    string message =
+                        $"{ex.GetType().Name}: Failed to init Udapi service  on attempt {counter}.";
                     if (counter == _settings.MaxRetryAttempts)
                     {
-                        _logger.Error(
-                              String.Format("Failed to successfully execute Sporting Solutions method after all {0} attempts",
-                                            _settings.MaxRetryAttempts), ex);
+                        _logger.Error(message + Environment.NewLine + $"Stack Trace:{ex.StackTrace}");
                     }
                     else
                     {
-                        _logger.Warn($"{ex.GetType().Name}: Failed to successfully execute Sporting Solutions method on attempt {counter}. Stack Trace:{ex.StackTrace}");
+                        _logger.Warn(message);
                     }
-                    if (ex as NotAuthenticatedException!=null)
+                   
+                    if (ex as NotAuthenticatedException != null)
                     {
                         connectSession = true;
                     }
