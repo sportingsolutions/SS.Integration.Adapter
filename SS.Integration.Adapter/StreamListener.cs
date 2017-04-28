@@ -398,12 +398,13 @@ namespace SS.Integration.Adapter
 
             if (!IsFixtureSetup)
             {
-                _logger.DebugFormat(
-                    "Listener state for {4} has sequence={0} processedSequence={1} isDisconnected={2} isStreaming={3}",
-                    SequenceOnStreamingAvailable, _currentSequence, IsDisconnected, IsStreaming, resource);
+                _logger.Debug(
+                    $"Listener state for {resource} has sequence={SequenceOnStreamingAvailable} processedSequence={_currentSequence} " +
+                    (SequenceOnStreamingAvailable> _currentSequence ? $"missedSequence={SequenceOnStreamingAvailable- _currentSequence} ": "")  +
+                    $"isDisconnected={IsDisconnected} isStreaming={IsStreaming} isMatchOver={resource.IsMatchOver} isProcessingAtPlugin={_isProcessiongAtPluginSide}");
             }
 
-            if (ValidateStream())
+            if (ValidateStream(resource))
             {
                 StartStreaming();
             }
@@ -414,22 +415,55 @@ namespace SS.Integration.Adapter
             }
         }
 
-        private bool ValidateStream()
+        private bool ValidateStream(IResourceFacade resource)
         {
             //no point running validation before Prematch as Adpater should not be connected
-            if (!IsStreaming 
-                    || IsFixtureSetup 
-                    || _resource.IsMatchOver 
-                    || _isProcessiongAtPluginSide 
-                    || SequenceOnStreamingAvailable <= _currentSequence)
+
+            if (SequenceOnStreamingAvailable <= _currentSequence)
             {
                 suspiciousValidations = 0;
                 return true;
             }
 
+            if (!IsStreaming)
+            {
+                _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Not Streaming\"");
+                suspiciousValidations = 0;
+                return true;
+            }
+
+            if (_resource.IsMatchOver)
+            {
+                _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Match Is Over\"");
+                suspiciousValidations = 0;
+                return true;
+            }
+
+            if (IsFixtureSetup)
+            {
+                _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Fixture is in setup state\"");
+                suspiciousValidations = 0;
+                return true;
+            }
+
+            if (_isProcessiongAtPluginSide)
+            {
+                _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Fixture is processing at plugin side\"");
+                suspiciousValidations = 0;
+                return true;
+            }
+
+            
+
             suspiciousValidations++;
-            //when difference is greater than threshold it's not valid
-            return (suspiciousValidations > _settings.StreamSafetyThreshold);
+
+            if (suspiciousValidations < _settings.StreamSafetyThreshold)
+            {
+                _logger.Debug($"ValidateStream passed with SuspiciousValidations={suspiciousValidations} as StreamSafetyThreshold={_settings.StreamSafetyThreshold} was not reached for {resource}");
+                return true;
+            }
+                //when difference is greater than threshold it's not valid
+            return false;
         }
 
         /// <summary>
@@ -1065,8 +1099,7 @@ namespace SS.Integration.Adapter
 
             Stopwatch timer = new Stopwatch();
             timer.Start();
-            var pluginTimeoutTimer = new Timer() { Interval = 60000 };
-
+            
             try
             {
                 if (isFullSnapshot && !VerifySequenceOnSnapshot(snapshot)) return;
@@ -1089,8 +1122,8 @@ namespace SS.Integration.Adapter
                 {
                     _marketsRuleManager.ApplyRules(snapshot, isRemovalDisabled: true);
                 }
-                
-                FixtureProcessingAtPluginStarted(snapshot, pluginTimeoutTimer);
+
+                _isProcessiongAtPluginSide = true;
 
                 if (isFullSnapshot)
                     _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
@@ -1146,7 +1179,7 @@ namespace SS.Integration.Adapter
             }
             finally
             {
-                FixtureProcessingAtPluginFinished(pluginTimeoutTimer);
+                _isProcessiongAtPluginSide = false;
                 timer.Stop();
                 if (isFullSnapshot)
                     _Stats.AddValue(AdapterCoreKeys.SNAPSHOT_PROCESSING_TIME, timer.ElapsedMilliseconds.ToString());
@@ -1157,26 +1190,7 @@ namespace SS.Integration.Adapter
             _logger.InfoFormat("Finished processing {0} for {1}", logString, snapshot);
         }
 
-        private void FixtureProcessingAtPluginStarted(Fixture fixture, Timer timer)
-        {
-            _isProcessiongAtPluginSide = true;
-            var warnCount = 0;
-            timer.Elapsed += (sender, e) =>
-            {
-                warnCount++;
-                _logger.Warn(
-                    $"Fixture processing for {fixture} is taking too long to complete. Currently it is processing for {warnCount} minutes. New updates will wait until this processing to complete.");
-            };
-            timer.Start();
-        }
-
-        private void FixtureProcessingAtPluginFinished(Timer timer)
-        {
-            timer.Stop();
-            _isProcessiongAtPluginSide = false;
-
-        }
-
+        
         private bool VerifySequenceOnSnapshot(Fixture snapshot)
         {
             if (snapshot.Sequence < _lastSequenceProcessedInSnapshot)
