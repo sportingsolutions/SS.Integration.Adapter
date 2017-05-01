@@ -55,7 +55,13 @@ namespace SS.Integration.Adapter
         private readonly ISettings _settings;
 
         private bool _isProcessiongAtPluginSide = false;
-        //private int suspiciousValidations;
+
+
+
+        private int suspiciousValidations;
+        private bool streamUpdateArrived = false;
+        private Timer streamValidationTimer;
+        
 
         private int _currentSequence;
         private int _currentEpoch;
@@ -143,8 +149,14 @@ namespace SS.Integration.Adapter
             if (resource.Content != null && !string.IsNullOrEmpty(resource.Content.StartTime))
                 _fixtureStartTime = DateTime.Parse(resource.Content.StartTime);
 
+            streamValidationTimer = new Timer(_settings.StreamSafetyCheckInterval > 0 ? _settings.StreamSafetyCheckInterval : 1 * 1000);
+            streamValidationTimer.Elapsed += ValidateUnprocessedSequenceOccurrence;
+        
+
             _logger.DebugFormat("Listener instantiated for {0}", resource);
         }
+
+        
 
 
         public string FixtureId
@@ -340,8 +352,15 @@ namespace SS.Integration.Adapter
                 throw new ObjectDisposedException("StreamListener for fixtureId={0} has been disposed and can't be started", FixtureId);
 
             StartStreaming();
+            StartStreamMonitoring();
 
             return !IsErrored;
+        }
+
+        private void StartStreamMonitoring()
+        {
+            _logger.Debug($"Start monitoring StreamListener for {_resource}");
+            streamValidationTimer.Start();
         }
 
         /// <summary>
@@ -354,6 +373,7 @@ namespace SS.Integration.Adapter
 
             _logger.InfoFormat("Stopping listener for {0} sport={1}", FixtureId, _resource.Sport);
 
+            StopStreamMonitoring();
             _resource.StreamConnected -= ResourceOnStreamConnected;
             _resource.StreamDisconnected -= ResourceOnStreamDisconnected;
             _resource.StreamEvent -= ResourceOnStreamEvent;
@@ -368,6 +388,12 @@ namespace SS.Integration.Adapter
             }
 
             IsDisconnected = true;
+        }
+
+        private void StopStreamMonitoring()
+        {
+            _logger.Debug($"Stop monitoring StreamListener for {_resource}");
+            streamValidationTimer.Stop();
         }
 
         /// <summary>
@@ -404,7 +430,7 @@ namespace SS.Integration.Adapter
                     $"isDisconnected={IsDisconnected} isStreaming={IsStreaming} isMatchOver={resource.IsMatchOver} isProcessingAtPlugin={_isProcessiongAtPluginSide}");
             }
 
-            if (ValidateStream(resource))
+            if (ValidateProcessedSequenceGap(resource))
             {
                 StartStreaming();
             }
@@ -415,7 +441,7 @@ namespace SS.Integration.Adapter
             }
         }
 
-        private bool ValidateStream(IResourceFacade resource)
+        private bool ValidateProcessedSequenceGap(IResourceFacade resource)
         {
             if (SequenceOnStreamingAvailable - _currentSequence <= _settings.StreamSafetyThreshold)
                 return true;
@@ -425,6 +451,36 @@ namespace SS.Integration.Adapter
 
             return false;
         }
+
+
+
+        private void ValidateUnprocessedSequenceOccurrence(object sender, ElapsedEventArgs elapsedEventArgs)
+        {
+            if (SequenceOnStreamingAvailable <= _currentSequence)
+            {
+                suspiciousValidations = 0;
+                return;
+            }
+
+            if (ShouldIgnoreUnprocessedSequence(_resource))
+            {
+                suspiciousValidations = 0;
+                return;
+            }
+            suspiciousValidations++;
+
+            if (suspiciousValidations < _settings.StreamSafetyOccurrence)
+            {
+                _logger.Debug($"ValidateUnprocessedSequenceOccurrence passed with SuspiciousValidations={suspiciousValidations} as StreamSafetyOccurrence={_settings.StreamSafetyOccurrence} was not reached for {_resource}");
+                return;
+            }
+
+
+            _logger.WarnFormat("ValidateUnprocessedSequenceOccurrence detected that stream is invalid for {0}. The streaming will be restarted.", _resource);
+            Stop();
+        }
+
+        
 
         private bool ShouldIgnoreUnprocessedSequence(IResourceFacade resource)
         {
@@ -1382,6 +1438,13 @@ namespace SS.Integration.Adapter
                 IsDisconnected = true;
                 _logger.Info("Listener disposed");
             }
+        }
+
+        public override string ToString()
+        {
+            return
+                $"Fixture {_resource} sequence={SequenceOnStreamingAvailable} processedSequence={_currentSequence}";
+
         }
     }
 }

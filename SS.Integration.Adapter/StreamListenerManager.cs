@@ -451,6 +451,8 @@ namespace SS.Integration.Adapter
                 _logger.ErrorFormat("Event state errored on attempt to save it: {0}",ex);
             }
         }
+
+        
     }
 }
 

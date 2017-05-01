@@ -18,6 +18,7 @@ using System.Text;
 using log4net;
 using log4net.Repository.Hierarchy;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Common.Converters;
 
 namespace SS.Integration.Adapter.Configuration
 {
@@ -119,6 +120,10 @@ namespace SS.Integration.Adapter.Configuration
             value = ConfigurationManager.AppSettings["streamSafetyThreshold"];
             StreamSafetyThreshold = string.IsNullOrEmpty(value) ? DEFAULT_STREAM_THRESHOLD : Convert.ToInt32(value);
 
+            StreamSafetyOccurrence = ConfigurationManager.AppSettings["streamSafetyOccurrence"].IntFromString(10);
+
+            StreamSafetyCheckInterval = ConfigurationManager.AppSettings["streamSafetyCheckInterval"].IntFromString(10);
+            
             LogAll();
         }
 
@@ -179,6 +184,8 @@ namespace SS.Integration.Adapter.Configuration
         public int StartStreamingTimeoutInSeconds { get; private set; }
         public bool SkipRulesOnError { get; private set; }
         public int StreamSafetyThreshold { get; private set; }
+        public int StreamSafetyOccurrence { get; }
+        public int StreamSafetyCheckInterval { get; }
 
         public bool UseSupervisor { get; private set; }
         public bool ShouldDelayStopStreaming(string sport)

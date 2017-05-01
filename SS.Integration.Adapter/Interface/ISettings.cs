@@ -160,6 +160,18 @@ namespace SS.Integration.Adapter.Interface
         int StreamSafetyThreshold { get; }
 
         /// <summary>
+        /// Number of checks when checker tetect that there are unprocessed sequences before the Stop streaming is called
+        /// Setting this too very low value like 1 or 2 can cause StopStreaming being called during Plugin processing
+        /// </summary>
+        int StreamSafetyOccurrence { get; }
+
+
+        /// <summary>
+        /// Timer interval for StreamSafetyOccurrence check
+        /// </summary>
+        int StreamSafetyCheckInterval { get; }
+
+        /// <summary>
         /// Indicates if the adapter should introduce
         /// a delay before stop streaming for fixtures
         /// that belong to a given sport
