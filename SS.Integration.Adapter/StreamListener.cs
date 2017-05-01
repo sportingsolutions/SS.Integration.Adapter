@@ -55,7 +55,7 @@ namespace SS.Integration.Adapter
         private readonly ISettings _settings;
 
         private bool _isProcessiongAtPluginSide = false;
-        private int suspiciousValidations;
+        //private int suspiciousValidations;
 
         private int _currentSequence;
         private int _currentEpoch;
@@ -417,52 +417,40 @@ namespace SS.Integration.Adapter
 
         private bool ValidateStream(IResourceFacade resource)
         {
-            //no point running validation before Prematch as Adpater should not be connected
-
-            if (SequenceOnStreamingAvailable <= _currentSequence)
-            {
-                suspiciousValidations = 0;
+            if (SequenceOnStreamingAvailable - _currentSequence <= _settings.StreamSafetyThreshold)
                 return true;
-            }
 
+            if (ShouldIgnoreUnprocessedSequence(resource))
+                return true;
+
+            return false;
+        }
+
+        private bool ShouldIgnoreUnprocessedSequence(IResourceFacade resource)
+        {
             if (!IsStreaming)
             {
                 _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Not Streaming\"");
-                suspiciousValidations = 0;
                 return true;
             }
 
             if (_resource.IsMatchOver)
             {
                 _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Match Is Over\"");
-                suspiciousValidations = 0;
                 return true;
             }
 
             if (IsFixtureSetup)
             {
                 _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Fixture is in setup state\"");
-                suspiciousValidations = 0;
                 return true;
             }
 
             if (_isProcessiongAtPluginSide)
             {
                 _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Fixture is processing at plugin side\"");
-                suspiciousValidations = 0;
                 return true;
             }
-
-            
-
-            suspiciousValidations++;
-
-            if (suspiciousValidations < _settings.StreamSafetyThreshold)
-            {
-                _logger.Debug($"ValidateStream passed with SuspiciousValidations={suspiciousValidations} as StreamSafetyThreshold={_settings.StreamSafetyThreshold} was not reached for {resource}");
-                return true;
-            }
-                //when difference is greater than threshold it's not valid
             return false;
         }
 
