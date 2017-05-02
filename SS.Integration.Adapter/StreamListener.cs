@@ -60,7 +60,7 @@ namespace SS.Integration.Adapter
 
         private int suspiciousValidations;
         private bool streamUpdateArrived = false;
-        private Timer streamValidationTimer;
+        private readonly Timer streamValidationTimer;
         
 
         private int _currentSequence;
@@ -149,7 +149,7 @@ namespace SS.Integration.Adapter
             if (resource.Content != null && !string.IsNullOrEmpty(resource.Content.StartTime))
                 _fixtureStartTime = DateTime.Parse(resource.Content.StartTime);
 
-            streamValidationTimer = new Timer(_settings.StreamSafetyCheckInterval > 0 ? _settings.StreamSafetyCheckInterval : 1 * 1000);
+            streamValidationTimer = new Timer((_settings.StreamSafetyCheckInterval > 0 ? _settings.StreamSafetyCheckInterval : 1) * 1000);
             streamValidationTimer.Elapsed += ValidateUnprocessedSequenceOccurrence;
         
 
@@ -462,6 +462,13 @@ namespace SS.Integration.Adapter
                 return;
             }
 
+            if (streamUpdateArrived)
+            {
+                _logger.Debug($"ValidateUnprocessedSequenceOccurrence skipped for {_resource} Reason=\"Stream Update Arrived\"");
+                suspiciousValidations = 0;
+                return;
+            }
+
             if (ShouldIgnoreUnprocessedSequence(_resource))
             {
                 suspiciousValidations = 0;
@@ -725,6 +732,7 @@ namespace SS.Integration.Adapter
                     _logger.WarnFormat("Failed to acquire lock while trying to process stream update {0}", fixtureDelta);
                     return;
                 }
+                streamUpdateArrived = true;
 
                 RaiseEvent(OnBeginStreamUpdateProcessing, null, fixtureDelta);
 
@@ -838,6 +846,7 @@ namespace SS.Integration.Adapter
             }
             finally
             {
+                streamUpdateArrived = false;
                 ReleaseLock();
             }
 
