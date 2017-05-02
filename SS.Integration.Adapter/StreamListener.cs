@@ -938,7 +938,7 @@ namespace SS.Integration.Adapter
                 return false;
             }
 
-            _currentSequence = fixtureDelta.Sequence;
+            //_currentSequence = fixtureDelta.Sequence;
 
             return true;
         }
