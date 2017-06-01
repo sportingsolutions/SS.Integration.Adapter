@@ -440,7 +440,7 @@ namespace SS.Integration.Adapter
                 return true;
             }
 
-            if (IsFixtureSetup)
+            if (!_settings.AllowFixtureStreamingInSetupMode && IsFixtureSetup)
             {
                 _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Fixture is in setup state\"");
                 return true;
