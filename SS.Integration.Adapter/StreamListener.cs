@@ -440,7 +440,7 @@ namespace SS.Integration.Adapter
                 return true;
             }
 
-            if (IsFixtureSetup)
+            if (!_settings.AllowFixtureStreamingInSetupMode && IsFixtureSetup)
             {
                 _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Fixture is in setup state\"");
                 return true;
@@ -483,7 +483,7 @@ namespace SS.Integration.Adapter
             }
 
             // Only start streaming if fixture is not Setup/Ready
-            if (!IsFixtureSetup)
+            if (!IsFixtureSetup || _settings.AllowFixtureStreamingInSetupMode)
             {
                 ConnectToStreamServer();
             }

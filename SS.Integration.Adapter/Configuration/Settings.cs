@@ -43,6 +43,7 @@ namespace SS.Integration.Adapter.Configuration
         private const int DEFAULT_PREMATCH_SUSPENSION_BEFORE_STARTTIME_IN_MINS = 15;
         private const int DEFAULT_START_STREAMING_TIMEOUT = 60;
         private const int DEFAULT_STREAM_THRESHOLD = int.MaxValue;
+        private const bool DEFAULT_ALLOW_FIXTURE_STREAMING_IN_SETUP_MODE = false;
 
         public Settings()
         {
@@ -119,6 +120,9 @@ namespace SS.Integration.Adapter.Configuration
             value = ConfigurationManager.AppSettings["streamSafetyThreshold"];
             StreamSafetyThreshold = string.IsNullOrEmpty(value) ? DEFAULT_STREAM_THRESHOLD : Convert.ToInt32(value);
 
+            value = ConfigurationManager.AppSettings["allowFixtureStreamingInSetupMode"];
+            AllowFixtureStreamingInSetupMode = !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
+
             LogAll();
         }
 
@@ -177,6 +181,7 @@ namespace SS.Integration.Adapter.Configuration
         public bool DisablePrematchSuspensionOnDisconnection { get; private set; }
         public int PreMatchSuspensionBeforeStartTimeInMins { get; private set; }
         public int StartStreamingTimeoutInSeconds { get; private set; }
+        public bool AllowFixtureStreamingInSetupMode { get; }
         public bool SkipRulesOnError { get; private set; }
         public int StreamSafetyThreshold { get; private set; }
 

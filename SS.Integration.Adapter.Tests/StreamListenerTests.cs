@@ -2128,5 +2128,46 @@ namespace SS.Integration.Adapter.Tests
             resource.Verify(x => x.GetSnapshot(), Times.Exactly(3), "The StreamListener was supposed to acquire 3 snasphots");
             connector.Verify(x => x.ProcessSnapshot(It.IsAny<Fixture>(), It.IsAny<bool>()), Times.Exactly(2));
         }
+
+        [Test]
+        public void TestFixtureStartStreamingWhenInSetupModeAndConfigEnabled()
+        {
+            // STEP 1: prepare the stub data
+            Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
+            Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();
+            Mock<IEventState> state = new Mock<IEventState>();
+
+            _settings.Setup(x => x.AllowFixtureStreamingInSetupMode).Returns(true);
+
+            var provider = new StateManager(_settings.Object, connector.Object);
+
+            var fixtureSnapshot = new Fixture { Id = "ABC", Epoch = 0, MatchStatus = "30", Sequence = 1 };
+
+            resource.Setup(x => x.Id).Returns("ABC");
+            resource.Setup(x => x.Content).Returns(new Summary());
+            resource.Setup(x => x.MatchStatus).Returns(MatchStatus.Setup);
+            resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
+            resource.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += (e, o) => { }, EventArgs.Empty);
+
+            //sequence of 3 snapshots middle one should raise an exception
+            resource.SetupSequence(r => r.GetSnapshot())
+                .Returns(FixtureJsonHelper.ToJson(fixtureSnapshot));
+
+
+            // STEP 2: start the listener
+            StreamListener listener = new StreamListener(resource.Object, connector.Object, state.Object, provider, _settings.Object);
+
+            listener.MonitorEvents();
+
+            listener.Start();
+            listener.ShouldRaise("OnConnected");
+            listener.ShouldRaise("OnBeginSnapshotProcessing");
+            listener.ShouldRaise("OnFinishedSnapshotProcessing");
+
+            listener.IsErrored.Should().BeFalse();
+
+            listener.Stop();
+            listener.ShouldRaise("OnStop");
+        }
     }
 }

@@ -173,6 +173,9 @@ namespace SS.Integration.Adapter.Interface
         /// </summary>
         int StartStreamingTimeoutInSeconds { get; }
 
-
+        /// <summary>
+        /// This flag tells wether the fixture is allowed to start streaming when IsFixtureSetup is true
+        /// </summary>
+        bool AllowFixtureStreamingInSetupMode { get; }
     }
 }
