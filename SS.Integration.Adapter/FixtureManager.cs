@@ -42,6 +42,12 @@ namespace SS.Integration.Adapter
         {
             try
             {
+                if (_creationQueueCancellationToken.IsCancellationRequested)
+                {
+                    _logger.DebugFormat("Fixture creation task={0} will terminate as requested", Task.CurrentId);
+                    return;
+                }
+
                 foreach (var resource in _resourceCreationQueue.GetConsumingEnumerable(_creationQueueCancellationToken.Token))
                 {
                     try
@@ -236,8 +242,15 @@ namespace SS.Integration.Adapter
         }
         public void Dispose()
         {
+            _creationQueueCancellationToken.Cancel();
+            foreach (var creationTask in _creationTasks)
+            {
+                creationTask.Wait();
+                creationTask.Dispose();
+            }
             _resourceCreationQueue.Dispose();
             _creationQueueCancellationToken.Dispose();
+            
         }
     }
 }
