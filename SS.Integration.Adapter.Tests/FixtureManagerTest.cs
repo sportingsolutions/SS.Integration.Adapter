@@ -25,7 +25,7 @@ namespace SS.Integration.Adapter.Tests
 
             var testing = new FixtureManager(5, streamManager.Object, service.Object.GetResources);
             testing.Dispose();
-            Thread.Sleep(50000);
+            Thread.Sleep(10000);
 
 
         }
