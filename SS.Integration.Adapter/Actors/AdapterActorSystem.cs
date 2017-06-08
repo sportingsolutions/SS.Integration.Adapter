@@ -8,8 +8,8 @@ namespace SS.Integration.Adapter.Actors
     {
         private const string UserSystemPath = "/user/";
 
-        public const string FixtureManagerActorPath = UserSystemPath + FixtureManagerActor.ActorName;
-        public const string SportsProcessorRouterActorPath = UserSystemPath + FixtureManagerActor.ActorName;
+        public const string SportsProcessorActorPath = UserSystemPath + SportsProcessorActor.ActorName;
+        public const string SportProcessorActorPath = UserSystemPath + SportProcessorRouterActor.ActorName;
 
         private static ActorSystem _actorSystem = ActorSystem.Create("AdapterSystem");
         private static ISettings _settings;
@@ -23,29 +23,38 @@ namespace SS.Integration.Adapter.Actors
         /// <summary>
         /// Actor system shouldn't be provided unless your implemention specifically requires it
         /// </summary>
+        /// <param name="streamListenerManager"></param>
         /// <param name="actorSystem"></param>
         /// <param name="initialiseActors"></param>
-        public static void Init(ISettings settings, IServiceFacade udAPIService, IStreamListenerManager streamListenerManager, ActorSystem actorSystem = null, bool initialiseActors = true)
+        /// <param name="settings"></param>
+        /// <param name="udApiService"></param>
+        public static void Init(
+            ISettings settings, 
+            IServiceFacade udApiService, 
+            IStreamListenerManager streamListenerManager, 
+            ActorSystem actorSystem = null, 
+            bool initialiseActors = true)
         {
             _settings = settings;
-            _udApiService = udAPIService;
+            _udApiService = udApiService;
             _streamListenerManager = streamListenerManager;
             _actorSystem = actorSystem ?? _actorSystem;
 
             if (initialiseActors)
             {
                 var sportProcessorRouterActor = ActorSystem.ActorOf(
-                    Props.Create<SportProcessorActor>(_streamListenerManager)
+                    Props.Create<SportProcessorRouterActor>(_streamListenerManager)
                         .WithRouter(new SmallestMailboxPool(_settings.FixtureCreationConcurrency)),
                     "sport-processor-pool");
 
                 ActorSystem.ActorOf(
                     Props.Create(() =>
-                        new FixtureManagerActor(
+                        new SportsProcessorActor(
                             _settings,
                             _udApiService,
-                            sportProcessorRouterActor)),
-                    FixtureManagerActor.ActorName);
+                            sportProcessorRouterActor,
+                            _streamListenerManager)),
+                    SportsProcessorActor.ActorName);
             }
         }
 
