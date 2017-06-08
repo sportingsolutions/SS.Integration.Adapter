@@ -82,11 +82,12 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Actors\SportProcessorActor.cs" />
     <Compile Include="Adapter.cs" />
-    <Compile Include="AdapterActorSystem.cs" />
+    <Compile Include="Actors\AdapterActorSystem.cs" />
     <Compile Include="Configuration\Settings.cs" />
     <Compile Include="FixtureJsonHelper.cs" />
-    <Compile Include="FixtureManagerActor.cs" />
+    <Compile Include="Actors\FixtureManagerActor.cs" />
     <Compile Include="Interface\IEventState.cs" />
     <Compile Include="Interface\IListener.cs" />
     <Compile Include="Interface\IMarketRuleManager.cs" />

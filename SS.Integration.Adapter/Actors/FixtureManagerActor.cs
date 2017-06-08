@@ -9,7 +9,7 @@ using SS.Integration.Common.Stats;
 using SS.Integration.Common.Stats.Interface;
 using SS.Integration.Common.Stats.Keys;
 
-namespace SS.Integration.Adapter
+namespace SS.Integration.Adapter.Actors
 {
     public class FixtureManagerActor : ReceiveActor, IWithUnboundedStash
     {
@@ -17,25 +17,21 @@ namespace SS.Integration.Adapter
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(FixtureManagerActor));
         private readonly ISettings _settings;
-        private readonly IStreamListenerManager _streamListenerManager;
-        private readonly Func<IEnumerable<IFeature>> _getSportsFunc;
-        private readonly Func<string, List<IResourceFacade>> _getResourcesForSportFunc;
+        private readonly IServiceFacade _serviceFacade;
         private readonly IStatsHandle _stats;
 
         public IStash Stash { get; set; }
 
         public FixtureManagerActor(
             ISettings settings,
-            IStreamListenerManager streamListenerManager, 
-            Func<IEnumerable<IFeature>> getSportsFunc, 
-            Func<string, List<IResourceFacade>> getResourcesForSportFunc)
+            IServiceFacade serviceFacade,
+            IActorRef sportProcessorRouterActor)
         {
             _settings = settings;
-            _streamListenerManager = streamListenerManager;
-            _getSportsFunc = getSportsFunc;
-            _getResourcesForSportFunc = getResourcesForSportFunc;
+            _serviceFacade = serviceFacade;
 
             AvailableState();
+
             Context.System.Scheduler.ScheduleTellRepeatedly(
                 TimeSpan.Zero,
                 TimeSpan.FromMilliseconds(_settings.FixtureCheckerFrequency),
@@ -52,11 +48,12 @@ namespace SS.Integration.Adapter
 
         private void BusyState()
         {
-            Receive<ProcessSportsMessage>(o => Stash.Stash());
+            //Receive<ProcessSportsMessage>(o => Stash.Stash());
         }
 
         private void ProcessSports()
         {
+            var sports = _serviceFacade.GetSports();
         }
 
         /*private void CreateFixture()

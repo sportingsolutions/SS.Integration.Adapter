@@ -2,7 +2,7 @@
 using Akka.Routing;
 using SS.Integration.Adapter.Interface;
 
-namespace SS.Integration.Adapter
+namespace SS.Integration.Adapter.Actors
 {
     public static class AdapterActorSystem
     {
@@ -34,13 +34,17 @@ namespace SS.Integration.Adapter
 
             if (initialiseActors)
             {
+                var sportProcessorRouterActor = ActorSystem.ActorOf(
+                    Props.Create<SportProcessorActor>(_streamListenerManager)
+                        .WithRouter(new SmallestMailboxPool(_settings.FixtureCreationConcurrency)),
+                    "sport-processor-pool");
+
                 ActorSystem.ActorOf(
                     Props.Create(() =>
-                            new FixtureManagerActor(
-                                _streamListenerManager,
-                                _udApiService.GetSports,
-                                _udApiService.GetResources))
-                        .WithRouter(new SmallestMailboxPool(_settings.FixtureCreationConcurrency)),
+                        new FixtureManagerActor(
+                            _settings,
+                            _udApiService,
+                            sportProcessorRouterActor)),
                     FixtureManagerActor.ActorName);
             }
         }
