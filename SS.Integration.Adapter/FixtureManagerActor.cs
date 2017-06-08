@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Resources;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Akka.Actor;
 using log4net;
-using log4net.Core;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Common.Stats;
+using SS.Integration.Common.Stats.Interface;
+using SS.Integration.Common.Stats.Keys;
 
 namespace SS.Integration.Adapter
 {
@@ -18,35 +15,39 @@ namespace SS.Integration.Adapter
     {
         public const string ActorName = "FixtureManagerActor";
 
-        private readonly BlockingCollection<IResourceFacade> _resourceCreationQueue = new BlockingCollection<IResourceFacade>(new ConcurrentQueue<IResourceFacade>());
-        private readonly CancellationTokenSource _creationQueueCancellationToken = new CancellationTokenSource();
-        ///private readonly Task[] _creationTasks;
-        private readonly ILog _logger = LogManager.GetLogger(typeof(FixtureManager));
-        private ConcurrentDictionary<string, IResourceFacade> _cachedResources = new ConcurrentDictionary<string, IResourceFacade>();
-
-        internal IStreamListenerManager _streamManager { get; private set; }
-        private Func<string, List<IResourceFacade>> GetResourcesForSportFunc { get; set; }
+        private readonly ILog _logger = LogManager.GetLogger(typeof(FixtureManagerActor));
+        private readonly ISettings _settings;
+        private readonly IStreamListenerManager _streamListenerManager;
+        private readonly Func<IEnumerable<IFeature>> _getSportsFunc;
+        private readonly Func<string, List<IResourceFacade>> _getResourcesForSportFunc;
+        private readonly IStatsHandle _stats;
 
         public IStash Stash { get; set; }
 
-        public FixtureManagerActor(int concurrencyLevel, IStreamListenerManager streamManager, Func<string, List<IResourceFacade>> getResourcesForSport)
+        public FixtureManagerActor(
+            ISettings settings,
+            IStreamListenerManager streamListenerManager, 
+            Func<IEnumerable<IFeature>> getSportsFunc, 
+            Func<string, List<IResourceFacade>> getResourcesForSportFunc)
         {
-            GetResourcesForSportFunc = getResourcesForSport;
-            _streamManager = streamManager;
-            _streamManager.ProcessResourceHook = ReProcessFixture;
+            _settings = settings;
+            _streamListenerManager = streamListenerManager;
+            _getSportsFunc = getSportsFunc;
+            _getResourcesForSportFunc = getResourcesForSportFunc;
 
             AvailableState();
-
-            //_creationTasks = new Task[concurrencyLevel];
-            //for (var i = 0; i < concurrencyLevel; i++)
-            //{
-            //    _creationTasks[i] = Task.Factory.StartNew(CreateFixture, _creationQueueCancellationToken.Token);
-            //}
+            Context.System.Scheduler.ScheduleTellRepeatedly(
+                TimeSpan.Zero,
+                TimeSpan.FromMilliseconds(_settings.FixtureCheckerFrequency),
+                Self,
+                new ProcessSportsMessage(),
+                Self);
+            _stats = StatsManager.Instance["adapter.core.fixturemanager"].GetHandle();
         }
 
         private void AvailableState()
         {
-            Receive<ProcessSportsMessage>(o => ProcessSports(o));
+            Receive<ProcessSportsMessage>(o => ProcessSports());
         }
 
         private void BusyState()
@@ -54,7 +55,11 @@ namespace SS.Integration.Adapter
             Receive<ProcessSportsMessage>(o => Stash.Stash());
         }
 
-        private void CreateFixture()
+        private void ProcessSports()
+        {
+        }
+
+        /*private void CreateFixture()
         {
             try
             {
@@ -92,164 +97,37 @@ namespace SS.Integration.Adapter
                 _logger.Error(string.Format("An error occured on fixture creation task={0}", Task.CurrentId), ex);
             }
 
-        }
+        }*/
 
-        private void ValidateCache(IResourceFacade resource)
+        private void GetStatistics()
         {
-            //this ensures that cached object is not already used in stream listener - if we got a newer version is best to replace it
-            if (_cachedResources.ContainsKey(resource.Id))
-            {
-                IResourceFacade ignore = null;
-                _cachedResources.TryRemove(resource.Id, out ignore);
-            }
-
-        }
-
-
-        public int QueueSize { get { return _resourceCreationQueue.Count; } }
-
-        public void ReProcessFixture(string fixtureId)
-        {
-            if (!_cachedResources.ContainsKey(fixtureId))
-            {
-                _logger.WarnFormat("Attempted to fast track fixtureId={0} to creation queue but the resource did not exist. The fixture will be added on the next timer tick", fixtureId);
-                return;
-            }
-
-            var resource = _cachedResources[fixtureId];
-            ProcessResource(resource.Sport, resource);
-        }
-
-        private void ProcessSports(ProcessSportsMessage message)
-        {
-            var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
-            Parallel.ForEach(message.Sports, parallelOptions, ProcessSport);
-        }
-
-        private bool ValidateResources(IList<IResourceFacade> resources, string sport)
-        {
-            var valid = true;
-
-            if (resources == null)
-            {
-                _logger.WarnFormat("Cannot find sport={0} in UDAPI....", sport);
-                valid = false;
-            }
-            else if (resources.Count == 0)
-            {
-                _logger.DebugFormat("There are currently no fixtures for sport={0} in UDAPI", sport);
-                valid = false;
-            }
-
-            return valid;
-        }
-
-        //it's internal due to UT
-        internal void ProcessSport(string sport)
-        {
-            _logger.InfoFormat("Getting the list of available fixtures for sport={0} from GTP", sport);
-
-            var resources = GetResourcesForSportFunc(sport);
-
-            if (ValidateResources(resources, sport))
-            {
-                var processingFactor = resources.Count / 10;
-
-                _logger.DebugFormat("Received count={0} fixtures to process in sport={1}", resources.Count, sport);
-
-                var po = new ParallelOptions { MaxDegreeOfParallelism = processingFactor == 0 ? 1 : processingFactor };
-
-                if (resources.Count > 1)
-                {
-                    resources.Sort((x, y) =>
-                    {
-                        if (x.Content.MatchStatus > y.Content.MatchStatus)
-                            return -1;
-
-                        return x.Content.MatchStatus < y.Content.MatchStatus
-                            ? 1
-                            : DateTime.Parse(x.Content.StartTime).CompareTo(DateTime.Parse(y.Content.StartTime));
-
-                    });
-                }
-
-                Parallel.ForEach(resources,
-                    po,
-                    resource =>
-                    {
-                        try
-                        {
-                            ProcessResource(sport, resource);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.Error(
-                                string.Format("An error occured while processing {0} for sport={1}", resource, sport), ex);
-                        }
-                    });
-
-            }
-
-            if (resources != null)
-                RemoveDeletedFixtures(sport, resources);
-
-            _logger.InfoFormat("Finished processing fixtures for sport={0}", sport);
-        }
-
-        private void RemoveDeletedFixtures(string sport, IEnumerable<IResourceFacade> resources)
-        {
-            var currentfixturesLookup = resources.ToDictionary(r => r.Id);
-
-            _streamManager.UpdateCurrentlyAvailableFixtures(sport, currentfixturesLookup);
-        }
-
-        private void ProcessResource(string sport, IResourceFacade resource)
-        {
-            _logger.DebugFormat("Attempt to process {0} for sport={1}", resource, sport);
-
-            _cachedResources.AddOrUpdate(resource.Id, resource, (k, v) => v);
-
-            // make sure that the resource is not already being processed by some other thread
-            if (!_streamManager.TryLockProcessing(resource.Id))
-                return;
-
-            bool addedToQueue = false;
+            var currentlyConnected = _streamListenerManager.ListenersCount;
 
             try
             {
-                _logger.InfoFormat("Processing {0}", resource);
+                _stats.AddValueUnsafe(AdapterCoreKeys.ADAPTER_TOTAL_MEMORY, GC.GetTotalMemory(false).ToString());
+                _stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_HEALTH_CHECK, "1");
+                _stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_FIXTURE_TOTAL, currentlyConnected.ToString());
 
-                if (_streamManager.ShouldProcessResource(resource))
+                foreach (var sport in _streamListenerManager.GetListenersBySport())
                 {
-                    if (_resourceCreationQueue.All(x => x.Id != resource.Id))
-                    {
-                        _logger.DebugFormat("Adding {0} to the creation queue ", resource);
-                        _resourceCreationQueue.Add(resource);
-                        addedToQueue = true;
-                        _logger.DebugFormat("Added {0} to the creation queue", resource);
-                    }
-                    else
-                    {
-                        _logger.DebugFormat("{0} is already added to the creation queue ", resource);
-                    }
+                    _stats.SetValueUnsafe(string.Format(AdapterCoreKeys.SPORT_FIXTURE_TOTAL, sport.Key),
+                        sport.Count().ToString());
+                    _stats.SetValueUnsafe(string.Format(AdapterCoreKeys.SPORT_FIXTURE_STREAMING_TOTAL, sport.Key),
+                        sport.Count(x => x.IsStreaming).ToString());
+                    _stats.SetValueUnsafe(string.Format(AdapterCoreKeys.SPORT_FIXTURE_IN_PLAY_TOTAL, sport.Key),
+                        sport.Count(x => x.IsInPlay).ToString());
                 }
             }
-            finally
+            catch
             {
-                if (!addedToQueue)
-                    _streamManager.ReleaseProcessing(resource.Id);
             }
 
+            _logger.DebugFormat($"Currently adapter is streaming fixtureCount={currentlyConnected}");
         }
-        public void Dispose()
-        {
-            _resourceCreationQueue.Dispose();
-            _creationQueueCancellationToken.Dispose();
-        }
-    }
 
-    internal class ProcessSportsMessage
-    {
-        public List<string> Sports { get; set; }
+        private class ProcessSportsMessage
+        {
+        }
     }
 }

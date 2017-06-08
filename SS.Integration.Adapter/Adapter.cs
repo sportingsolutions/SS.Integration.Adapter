@@ -13,12 +13,10 @@
 //limitations under the License.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
-using System.Linq;
-using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Interfaces;
@@ -27,7 +25,6 @@ using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Common.Stats;
 using SS.Integration.Common.Stats.Interface;
 using SS.Integration.Common.Stats.Keys;
-using System.Diagnostics;
 
 namespace SS.Integration.Adapter
 {
@@ -37,21 +34,18 @@ namespace SS.Integration.Adapter
 
         public delegate void StreamEventHandler(object sender, string fixtureId);
 
-        private readonly static object _sync = new object();
         private readonly ILog _logger = LogManager.GetLogger(typeof(Adapter).ToString());
         
         private readonly List<string> _sports;
         
         private readonly IStatsHandle _stats;
-        private Timer _trigger;
-
-        private FixtureManager _fixtureManager;
 
         public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector, IStreamListenerManager listenersManager)
         {
             _listenersManager = listenersManager;
-            
+
             Settings = settings;
+
             UDAPIService = udapiServiceFacade;
             PlatformConnector = platformConnector;
 
@@ -114,9 +108,7 @@ namespace SS.Integration.Adapter
                     _sports.Add(sport.Name);
                 }
 
-                _fixtureManager = new FixtureManager(Settings.FixtureCreationConcurrency, _listenersManager, UDAPIService.GetResources);
-
-                _trigger = new Timer(timerAutoEvent => TimerEvent(), null, 0, Settings.FixtureCheckerFrequency);
+                AdapterActorSystem.Init(Settings, UDAPIService, _listenersManager);
 
                 _logger.InfoFormat("Adapter started");
                 _stats.SetValue(AdapterCoreKeys.ADAPTER_STARTED, "1");
@@ -141,18 +133,7 @@ namespace SS.Integration.Adapter
 
             try
             {
-                if (_trigger != null)
-                {
-                    var wait_handler = new ManualResetEvent(false);
-                    _trigger.Dispose(wait_handler);
-                    wait_handler.WaitOne();
-                    wait_handler.Dispose();
-                    _trigger = null;
-                    _fixtureManager.Dispose();
-                }
-
-                if (PlatformConnector != null)
-                    PlatformConnector.Dispose();
+                PlatformConnector?.Dispose();
 
                 UDAPIService.Disconnect();
             }
@@ -164,63 +145,6 @@ namespace SS.Integration.Adapter
             _stats.SetValue(AdapterCoreKeys.ADAPTER_STARTED, "0");
             _logger.InfoFormat("Adapter stopped");
         }
-        
-        /// <summary>
-        /// This method could be accessed by multi threads if the ProcessSport takes long time
-        /// </summary>
-        internal void TimerEvent()
-        {
-            try
-            {
-                _logger.DebugFormat("Adapter is querying API for fixtures");
-                _fixtureManager.ProcessSports(_sports);
-                GetStatistics();
-
-            }
-            catch (Exception ex)
-            {
-                if (ex is AggregateException)
-                {
-                    var ae = ex as AggregateException;
-                    foreach (var exception in ae.InnerExceptions)
-                    {
-                        _logger.Error("Error processing sports: ", exception);
-                    }
-                }
-                else
-                {
-                    _logger.Error("Error processing sports: ", ex);
-                }
-
-                ReconnectAPI();
-            }
-        }
-
-        private void ReconnectAPI()
-        {
-            var success = false;
-            var attempts = 0;
-            while (!success || attempts > Settings.MaxRetryAttempts)
-            {
-                try
-                {
-                    lock (_sync)
-                    {
-                        UDAPIService.Connect();
-                        success = true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    attempts++;
-                    _logger.ErrorFormat("Error trying to create a new session: {0}", ex);
-                }
-            }
-            if (!success)
-            {
-                _logger.Warn("Failed to create a session!");
-            }
-        }
 
         internal void AddSport(string sport)
         {
@@ -228,31 +152,6 @@ namespace SS.Integration.Adapter
                 _sports.Add(sport);
         }
 
-        private void GetStatistics()
-        {
-            var queueSize = _fixtureManager.QueueSize;
-            var currentlyConnected = _listenersManager.ListenersCount;
-
-            try
-            {
-                _stats.AddValueUnsafe(AdapterCoreKeys.ADAPTER_TOTAL_MEMORY, GC.GetTotalMemory(false).ToString());
-                _stats.AddValueUnsafe(AdapterCoreKeys.ADAPTER_RUNNING_THREADS, Process.GetCurrentProcess().Threads.Count.ToString());
-                _stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_HEALTH_CHECK, "1");
-                _stats.SetValueUnsafe(AdapterCoreKeys.ADAPTER_FIXTURE_TOTAL, currentlyConnected.ToString());
-
-                foreach (var sport in _listenersManager.GetListenersBySport())
-                {
-                    _stats.SetValueUnsafe(string.Format(AdapterCoreKeys.SPORT_FIXTURE_TOTAL, sport.Key), sport.Count().ToString());
-                    _stats.SetValueUnsafe(string.Format(AdapterCoreKeys.SPORT_FIXTURE_STREAMING_TOTAL, sport.Key), sport.Count(x => x.IsStreaming).ToString());
-                    _stats.SetValueUnsafe(string.Format(AdapterCoreKeys.SPORT_FIXTURE_IN_PLAY_TOTAL, sport.Key), sport.Count(x => x.IsInPlay).ToString());
-                }
-            }
-            catch { }
-
-            _logger.DebugFormat("Currently adapter is streaming fixtureCount={0} and creation queue has queueSize={1} elements", currentlyConnected, queueSize);
-
-        }
-        
         private void PopuplateAdapterVersionInfo()
         {
             var adapterVersionInfo = AdapterVersionInfo.GetAdapterVersionInfo() as AdapterVersionInfo;
