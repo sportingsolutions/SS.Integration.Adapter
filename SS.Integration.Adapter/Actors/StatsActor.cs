@@ -15,12 +15,10 @@ namespace SS.Integration.Adapter.Actors
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StatsActor));
         private readonly IStatsHandle _stats;
-        private readonly IStreamListenerManager _streamListenerManager;
 
-        public StatsActor(IStreamListenerManager streamListenerManager)
+        public StatsActor()
         {
             _stats = StatsManager.Instance["adapter.core.stats"].GetHandle();
-            _streamListenerManager = streamListenerManager;
 
             Receive<ProcessStatistics>(o => GetStatistics());
         }

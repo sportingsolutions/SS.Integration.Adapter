@@ -1,6 +1,5 @@
 ﻿using System;
 using Akka.Actor;
-using log4net;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
 
@@ -10,22 +9,18 @@ namespace SS.Integration.Adapter.Actors
     /// This class has the responibility to repeatedly schedule all sports processing at specified interval (default 60 seconds)
     /// Also Statistics Generation is triggered with each interval
     /// </summary>
-    public class SportsProcessorActor : ReceiveActor, IWithUnboundedStash
+    public class SportsProcessorActor : ReceiveActor
     {
         public const string ActorName = "SportsProcessorActor";
 
-        private readonly ILog _logger = LogManager.GetLogger(typeof(SportsProcessorActor));
         private readonly IServiceFacade _serviceFacade;
         private readonly IActorRef _sportProcessorRouterActor;
         private readonly IActorRef _statsActor;
 
-        public IStash Stash { get; set; }
-
         public SportsProcessorActor(
             ISettings settings,
             IServiceFacade serviceFacade,
-            IActorRef sportProcessorRouterActor,
-            IStreamListenerManager streamListenerManager)
+            IActorRef sportProcessorRouterActor)
         {
             _serviceFacade = serviceFacade;
             _sportProcessorRouterActor = sportProcessorRouterActor;
@@ -38,7 +33,7 @@ namespace SS.Integration.Adapter.Actors
                 Self,
                 new ProcessSportsMessage(),
                 Self);
-            _statsActor = Context.ActorOf(Props.Create<StatsActor>(streamListenerManager), StatsActor.ActorName);
+            _statsActor = Context.ActorOf(Props.Create<StatsActor>(), StatsActor.ActorName);
         }
 
         private void DefaultBehavior()
@@ -48,7 +43,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void ProcessSports()
         {
-            _logger.Debug("Start ProcessSports");
+            _statsActor.Tell(new ProcessStatistics());
 
             var sports = _serviceFacade.GetSports();
 
@@ -56,14 +51,14 @@ namespace SS.Integration.Adapter.Actors
             {
                 _sportProcessorRouterActor.Tell(new ProcessSportMessage {Sport = sport.Name});
             }
-
-            _statsActor.Tell(new ProcessStatistics());
-
-            _logger.Debug("End ProcessSports");
         }
+
+        #region Private messages
 
         private class ProcessSportsMessage
         {
         }
+
+        #endregion
     }
 }

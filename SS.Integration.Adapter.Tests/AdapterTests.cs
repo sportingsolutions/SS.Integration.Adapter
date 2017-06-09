@@ -123,9 +123,6 @@ namespace SS.Integration.Adapter.Tests
                 streamListenerManager.Object
                 );
 
-            foreach (var sport in this.Sports(ListOfSports.GiveMeFew))
-                adapter.AddSport(sport);
-
             adapter.Start();
             adapter.Stop();
 
@@ -369,7 +366,6 @@ namespace SS.Integration.Adapter.Tests
             Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object,streamListenerManager);
             adapter.StateManager.ClearState("1");
             adapter.StateManager.ClearState("2");
-            adapter.AddSport("Football");
 
             streamListenerManager.StreamCreated += delegate(object sender, string e)
                 {
@@ -383,8 +379,6 @@ namespace SS.Integration.Adapter.Tests
 
             adapter.Start();
 
-            adapter.TimerEvent();
-
             Thread.Sleep(500);
 
             created.Should().Be(2);
@@ -394,12 +388,8 @@ namespace SS.Integration.Adapter.Tests
                 return new List<IResourceFacade> {fixtureTwo.Object}; 
             });
 
-            adapter.TimerEvent();
-
             Thread.Sleep(500);
             created.Should().Be(2);
-
-            adapter.TimerEvent();
             Thread.Sleep(500);
 
             created.Should().Be(1);

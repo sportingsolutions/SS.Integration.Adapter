@@ -12,13 +12,15 @@ using SS.Integration.Adapter.Interface;
 namespace SS.Integration.Adapter.Actors
 {
     /// <summary>
-    /// StreamListener Builder is responsible for mamanging concurrent creation of stream listeners
+    /// StreamListener Builder is responsible for mananging concurrent creation of stream listeners
     /// </summary>
-    public class StreamListenerBuilderActor : ReceiveActor 
+    public class StreamListenerBuilderActor : ReceiveActor, IWithUnboundedStash
     {
+        public IStash Stash { get; set; }
+
         public StreamListenerBuilderActor()
         {
-            
+            Active();
         }
 
         //In the active state StreamListeners can be created on demand
@@ -40,23 +42,21 @@ namespace SS.Integration.Adapter.Actors
         {
             //Stash messages until CreationCompleted/Failed message is received
         }
-
-
     }
 
     #region Public messages
 
     internal class CreateStreamListenerMessage
     {
-        internal IResource Resource { get; set; }
+        internal IResourceFacade Resource { get; set; }
     }
 
-    internal class CreationCompleted
+    internal class StreamListenerCreationCompleted
     {
 
     }
 
-    internal class CreationFailed
+    internal class StreamListenerCreationFailed
     {
         private string FixtureId { get; set; }
     }

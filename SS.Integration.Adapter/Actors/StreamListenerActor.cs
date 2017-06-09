@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SS.Integration.Adapter.Actors.Messages
+namespace SS.Integration.Adapter.Actors
 {
     /// <summary>
     /// This class is responsible for managing resource and streaming 
@@ -38,7 +38,7 @@ namespace SS.Integration.Adapter.Actors.Messages
         public void Disconnected()
         {
             //All futher messages are discarded
-            StreamDisconnectedMessage
+            //StreamDisconnectedMessage
            
         }
 
@@ -51,7 +51,7 @@ namespace SS.Integration.Adapter.Actors.Messages
         // Happy to break it down further to FeedProcessorActor in order to include all business logic around Sequences and Snapshots
 
     }
-
+    /*
     #region Private messages
 
     public class TakeSnapshotMsg
@@ -76,4 +76,5 @@ public StreamHealthCheckMessage()
     }
 
     #endregion
+    */
 }
