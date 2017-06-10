@@ -28,9 +28,9 @@ namespace SS.Integration.Adapter.Actors
         /// <param name="settings"></param>
         /// <param name="udApiService"></param>
         public static void Init(
-            ISettings settings, 
-            IServiceFacade udApiService, 
-            ActorSystem actorSystem = null, 
+            ISettings settings,
+            IServiceFacade udApiService,
+            ActorSystem actorSystem = null,
             bool initialiseActors = true)
         {
             _settings = settings;
@@ -40,7 +40,7 @@ namespace SS.Integration.Adapter.Actors
             if (initialiseActors)
             {
                 var sportProcessorRouterActor = ActorSystem.ActorOf(
-                    Props.Create(() => new SportProcessorRouterActor(_udApiService))
+                    Props.Create(() => new SportProcessorRouterActor(_settings, _udApiService))
                         .WithRouter(new SmallestMailboxPool(_settings.FixtureCreationConcurrency)),
                     "sport-processor-pool");
 

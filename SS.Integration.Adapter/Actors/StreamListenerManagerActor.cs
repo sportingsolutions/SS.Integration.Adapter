@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Akka.Actor;
+using SS.Integration.Adapter.Interface;
 
 namespace SS.Integration.Adapter.Actors
 {
@@ -10,9 +11,9 @@ namespace SS.Integration.Adapter.Actors
 
         private IActorRef _streamListenerBuilderActorRef;
 
-        public StreamListenerManagerActor()
+        public StreamListenerManagerActor(ISettings settings)
         {
-            _streamListenerBuilderActorRef = Context.ActorOf(Props.Create(() => new StreamListenerBuilderActor()));
+            _streamListenerBuilderActorRef = Context.ActorOf(Props.Create(() => new StreamListenerBuilderActor(settings)));
 
             DefaultBehaviour();
         }

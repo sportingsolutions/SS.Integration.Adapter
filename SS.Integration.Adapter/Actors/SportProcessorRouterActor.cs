@@ -17,10 +17,12 @@ namespace SS.Integration.Adapter.Actors
         public const string ActorName = "SportProcessorRouterActor";
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(SportProcessorRouterActor));
+        private readonly ISettings _settings;
         private readonly IServiceFacade _serviceFacade;
 
-        public SportProcessorRouterActor(IServiceFacade serviceFacade)
+        public SportProcessorRouterActor(ISettings settings, IServiceFacade serviceFacade)
         {
+            _settings = settings;
             _serviceFacade = serviceFacade;
             DefaultBehavior();
         }
@@ -54,7 +56,7 @@ namespace SS.Integration.Adapter.Actors
 
                 ICanTell streamListenerManagerActor =
                     Equals(Context.Child(message.Sport), Nobody.Instance)
-                        ? Context.ActorOf(Props.Create(() => new StreamListenerManagerActor()), message.Sport)
+                        ? Context.ActorOf(Props.Create(() => new StreamListenerManagerActor(_settings)), message.Sport)
                         : Context.ActorSelection($"{Self.Path}/{message.Sport}") as ICanTell;
                 foreach (var resource in resources)
                 {
