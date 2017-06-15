@@ -87,6 +87,7 @@
     <Compile Include="Actors\SportProcessorActor.cs" />
     <Compile Include="Actors\StreamListenerBuilderActor.cs" />
     <Compile Include="Actors\StreamListenerManagerActor.cs" />
+    <Compile Include="Actors\StreamStatsActor.cs" />
     <Compile Include="Adapter.cs" />
     <Compile Include="Actors\AdapterActorSystem.cs" />
     <Compile Include="Configuration\Settings.cs" />
