@@ -13,13 +13,12 @@
 //limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using SS.Integration.Adapter.Interface;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Interfaces;
+using SS.Integration.Adapter.Actors;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Common.Stats;
@@ -35,8 +34,6 @@ namespace SS.Integration.Adapter
         public delegate void StreamEventHandler(object sender, string fixtureId);
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(Adapter).ToString());
-        
-        private readonly List<string> _sports;
         
         private readonly IStatsHandle _stats;
 
@@ -66,8 +63,6 @@ namespace SS.Integration.Adapter
 
 
             ThreadPool.SetMinThreads(500, 500);
-            
-            _sports = new List<string>();
             
             _stats = StatsManager.Instance["adapter.core"].GetHandle();
 
@@ -103,12 +98,7 @@ namespace SS.Integration.Adapter
                 
                 _logger.Debug("Adapter connected to the UDAPI - initialising...");
 
-                foreach (var sport in UDAPIService.GetSports())
-                {
-                    _sports.Add(sport.Name);
-                }
-
-                AdapterActorSystem.Init(Settings, UDAPIService, _listenersManager);
+                AdapterActorSystem.Init(Settings, UDAPIService);
 
                 _logger.InfoFormat("Adapter started");
                 _stats.SetValue(AdapterCoreKeys.ADAPTER_STARTED, "1");
@@ -144,12 +134,6 @@ namespace SS.Integration.Adapter
             
             _stats.SetValue(AdapterCoreKeys.ADAPTER_STARTED, "0");
             _logger.InfoFormat("Adapter stopped");
-        }
-
-        internal void AddSport(string sport)
-        {
-            if (!_sports.Contains(sport))
-                _sports.Add(sport);
         }
 
         private void PopuplateAdapterVersionInfo()
