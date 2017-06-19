@@ -45,7 +45,9 @@ namespace SS.Integration.Adapter.Actors
             Receive<CreateStreamListenerMessage>(o =>
             {
                 if (_concurrentInitializations > _settings.FixtureCreationConcurrency)
+                {
                     Stash.Stash();
+                }
                 else
                 {
                     Become(Active);
@@ -57,7 +59,9 @@ namespace SS.Integration.Adapter.Actors
         private void CreateStreamListenerMessageHandler(CreateStreamListenerMessage o)
         {
             if (_concurrentInitializations > _settings.FixtureCreationConcurrency)
+            {
                 Become(Busy);
+            }
         }
     }
 
