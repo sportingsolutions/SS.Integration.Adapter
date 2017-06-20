@@ -1,17 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Akka.Actor;
+﻿using Akka.Actor;
 using log4net;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Exceptions;
 using SS.Integration.Adapter.Model.Interfaces;
+using SS.Integration.Common.Extensions;
+using SS.Integration.Common.Stats;
+using SS.Integration.Common.Stats.Interface;
 using SS.Integration.Common.Stats.Keys;
+using System;
+using System.Diagnostics;
 
 namespace SS.Integration.Adapter.Actors
 {
@@ -25,43 +24,28 @@ namespace SS.Integration.Adapter.Actors
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerActor).ToString());
         private readonly IResourceFacade _resource;
         private readonly IAdapterPlugin _platformConnector;
+        private readonly IEventState _eventState;
+        private readonly IStatsHandle _stats;
         private readonly IMarketRulesManager _marketsRuleManager;
+
+        private int _currentSequence;
+        private int _lastSequenceProcessedInSnapshot;
 
         #endregion
 
         #region Constructors
 
         public StreamListenerActor(
-            IResourceFacade resource, 
-            IAdapterPlugin platformConnector, 
-            IEventState eventState, 
-            IStateManager stateManager, 
-            ISettings settings)
+            IResourceFacade resource,
+            IAdapterPlugin platformConnector,
+            IEventState eventState,
+            IStateManager stateManager)
         {
-            if (resource == null)
-            {
-                throw new ArgumentNullException(nameof(resource));
-            }
-            if (platformConnector == null)
-            {
-                throw new ArgumentNullException(nameof(platformConnector));
-            }
-            if (eventState == null)
-            {
-                throw new ArgumentNullException(nameof(eventState));
-            }
-            if (stateManager == null)
-            {
-                throw new ArgumentNullException(nameof(stateManager));
-            }
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
-
-            _resource = resource;
-            _platformConnector = platformConnector;
-            _marketsRuleManager = stateManager.CreateNewMarketRuleManager(resource.Id);
+            _resource = resource ?? throw new ArgumentNullException(nameof(resource));
+            _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
+            _eventState = eventState ?? throw new ArgumentNullException(nameof(eventState));
+            _marketsRuleManager = stateManager?.CreateNewMarketRuleManager(resource.Id) ?? throw new ArgumentNullException(nameof(stateManager));
+            _stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
 
             Initializing();
         }
@@ -79,21 +63,14 @@ namespace SS.Integration.Adapter.Actors
         /// </summary>
         private void Initializing()
         {
-            //All messages are stashed until it changes state
-            //Once completed it sends message
-            //StreamListenerCreationCompletedMessage() -> StreamListenerBuilderActor
-
-            //Create HealthCheckActor()
-
-            Receive<TakeSnapshotMsg>(o => ProcessSnapshot());
-
+            Receive<TakeSnapshotMsg>(o => RetrieveAndProcessSnapshot());
             Self.Tell(new TakeSnapshotMsg());
         }
 
         //Initialised but not streaming yet - this can happen when you start fixture in Setup
         private void Ready()
         {
-
+            
         }
 
         //Connected and streaming state - all messages should be processed
@@ -121,114 +98,6 @@ namespace SS.Integration.Adapter.Actors
 
         #region Private methods
 
-        private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool setErrorState = true, bool skipMarketRules = false)
-        {
-            var logString = isFullSnapshot ? "snapshot" : "stream update";
-
-            if (snapshot == null || (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id)))
-                throw new ArgumentException($"Received empty {logString} for {_resource}");
-
-            _logger.InfoFormat("Processing {0} for {1}", logString, snapshot);
-
-            Stopwatch timer = new Stopwatch();
-            timer.Start();
-
-            try
-            {
-                if (isFullSnapshot && !VerifySequenceOnSnapshot(snapshot)) return;
-
-                if (!skipMarketRules)
-                {
-                    _marketsRuleManager.ApplyRules(snapshot);
-
-                    snapshot.IsModified = true;
-                }
-                else
-                {
-                    _marketsRuleManager.ApplyRules(snapshot, isRemovalDisabled: true);
-                }
-
-                if (isFullSnapshot)
-                    _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
-                else
-                    _platformConnector.ProcessStreamUpdate(snapshot, hasEpochChanged);
-
-
-                UpdateState(snapshot, isFullSnapshot);
-            }
-            catch (FixtureIgnoredException ex)
-            {
-                _logger.WarnFormat("{0} received a FixtureIgnoredException", _resource);
-                IsIgnored = true;
-
-                _Stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
-                RaiseEvent(OnError, ex);
-            }
-            catch (AggregateException ex)
-            {
-                _marketsRuleManager.RollbackChanges();
-
-                int total = ex.InnerExceptions.Count;
-                int count = 0;
-                foreach (var e in ex.InnerExceptions)
-                {
-                    _logger.Error(string.Format("Error processing {0} for {1} ({2}/{3})", logString, snapshot, ++count, total), e);
-                }
-
-                _Stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
-                RaiseEvent(OnError, ex);
-
-                if (setErrorState)
-                    SetErrorState();
-                else
-                    throw;
-            }
-            catch (Exception ex)
-            {
-                _marketsRuleManager.RollbackChanges();
-
-                _Stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
-
-                _logger.Error(string.Format("Error processing {0} {1}", logString, snapshot), ex);
-
-                RaiseEvent(OnError, ex);
-
-                if (setErrorState)
-                    SetErrorState();
-                else
-                    throw;
-            }
-            finally
-            {
-                _isProcessiongAtPluginSide = false;
-                timer.Stop();
-                if (isFullSnapshot)
-                    _Stats.AddValue(AdapterCoreKeys.SNAPSHOT_PROCESSING_TIME, timer.ElapsedMilliseconds.ToString());
-                else
-                    _Stats.AddValue(AdapterCoreKeys.UPDATE_PROCESSING_TIME, timer.ElapsedMilliseconds.ToString());
-            }
-
-            _logger.InfoFormat("Finished processing {0} for {1}", logString, snapshot);
-        }
-
-        private void UpdateState(Fixture snapshot, bool isSnapshot = false)
-        {
-
-            _marketsRuleManager.CommitChanges();
-
-            var status = (MatchStatus)Enum.Parse(typeof(MatchStatus), snapshot.MatchStatus);
-
-            _eventState.UpdateFixtureState(_resource.Sport, _resource.Id, snapshot.Sequence, status, snapshot.Epoch);
-
-            if (isSnapshot)
-            {
-                _lastSequenceProcessedInSnapshot = snapshot.Sequence;
-                _currentEpoch = snapshot.Epoch;
-            }
-
-            _currentSequence = snapshot.Sequence;
-        }
-
         private bool VerifySequenceOnSnapshot(Fixture snapshot)
         {
             if (snapshot.Sequence < _lastSequenceProcessedInSnapshot)
@@ -251,14 +120,118 @@ namespace SS.Integration.Adapter.Actors
 
         }
 
-        private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false, bool skipMarketRules = false)
+        private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false)
         {
             var snapshot = RetrieveSnapshot();
             if (snapshot != null)
             {
-                var shouldSkipProcessingMarketRules = skipMarketRules || (_settings.SkipRulesOnError && IsErrored);
-                ProcessSnapshot(snapshot, true, hasEpochChanged, !IsErrored, shouldSkipProcessingMarketRules);
+                ProcessSnapshot(snapshot, true, hasEpochChanged);
             }
+        }
+
+        private Fixture RetrieveSnapshot()
+        {
+            _logger.DebugFormat("Getting snapshot for {0}", _resource);
+
+            var snapshotJson = _resource.GetSnapshot();
+
+            if (string.IsNullOrEmpty(snapshotJson))
+                throw new Exception($"Received empty snapshot for {_resource}");
+
+            var snapshot = FixtureJsonHelper.GetFromJson(snapshotJson);
+            if (snapshot == null || snapshot != null && snapshot.Id.IsNullOrWhiteSpace())
+                throw new Exception($"Received a snapshot that resulted in an empty snapshot object {_resource}"
+                                    + Environment.NewLine +
+                                    $"Platform raw data=\"{snapshotJson}\"");
+
+            if (snapshot.Sequence < _currentSequence)
+                throw new Exception(
+                    $"Received snapshot {snapshot} with sequence lower than currentSequence={_currentSequence}");
+
+            _stats.IncrementValue(AdapterCoreKeys.SNAPSHOT_COUNTER);
+
+            return snapshot;
+        }
+
+        private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged)
+        {
+            var logString = isFullSnapshot ? "snapshot" : "stream update";
+
+            if (snapshot == null || (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id)))
+                throw new ArgumentException($"Received empty {logString} for {_resource}");
+
+            _logger.InfoFormat("Processing {0} for {1}", logString, snapshot);
+
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+
+            try
+            {
+                if (isFullSnapshot && !VerifySequenceOnSnapshot(snapshot)) return;
+
+                _marketsRuleManager.ApplyRules(snapshot);
+                snapshot.IsModified = true;
+
+                if (isFullSnapshot)
+                    _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
+                else
+                    _platformConnector.ProcessStreamUpdate(snapshot, hasEpochChanged);
+
+
+                UpdateState(snapshot, isFullSnapshot);
+            }
+            catch (FixtureIgnoredException)
+            {
+                _logger.WarnFormat("{0} received a FixtureIgnoredException", _resource);
+
+                _stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
+            }
+            catch (AggregateException ex)
+            {
+                _marketsRuleManager.RollbackChanges();
+
+                int total = ex.InnerExceptions.Count;
+                int count = 0;
+                foreach (var e in ex.InnerExceptions)
+                {
+                    _logger.Error($"Error processing {logString} for {snapshot} ({++count}/{total})", e);
+                }
+
+                _stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
+            }
+            catch (Exception ex)
+            {
+                _marketsRuleManager.RollbackChanges();
+
+                _stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
+
+                _logger.Error($"Error processing {logString} {snapshot}", ex);
+            }
+            finally
+            {
+                timer.Stop();
+                _stats.AddValue(
+                    isFullSnapshot ? AdapterCoreKeys.SNAPSHOT_PROCESSING_TIME : AdapterCoreKeys.UPDATE_PROCESSING_TIME,
+                    timer.ElapsedMilliseconds.ToString());
+            }
+
+            _logger.InfoFormat("Finished processing {0} for {1}", logString, snapshot);
+        }
+
+        private void UpdateState(Fixture snapshot, bool isSnapshot = false)
+        {
+            _marketsRuleManager.CommitChanges();
+
+            var status = (MatchStatus)Enum.Parse(typeof(MatchStatus), snapshot.MatchStatus);
+
+            _eventState.UpdateFixtureState(_resource.Sport, _resource.Id, snapshot.Sequence, status, snapshot.Epoch);
+
+            if (isSnapshot)
+            {
+                _lastSequenceProcessedInSnapshot = snapshot.Sequence;
+            }
+
+            _currentSequence = snapshot.Sequence;
         }
 
         #endregion
