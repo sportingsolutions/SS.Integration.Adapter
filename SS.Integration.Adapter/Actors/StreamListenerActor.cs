@@ -26,6 +26,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly IAdapterPlugin _platformConnector;
         private readonly IEventState _eventState;
         private readonly IStatsHandle _stats;
+        private readonly IStateManager _stateManager;
         private readonly IMarketRulesManager _marketsRuleManager;
 
         private int _currentSequence;
@@ -44,6 +45,7 @@ namespace SS.Integration.Adapter.Actors
             _resource = resource ?? throw new ArgumentNullException(nameof(resource));
             _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
             _eventState = eventState ?? throw new ArgumentNullException(nameof(eventState));
+            _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
             _marketsRuleManager = stateManager?.CreateNewMarketRuleManager(resource.Id) ?? throw new ArgumentNullException(nameof(stateManager));
             _stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
 
@@ -70,7 +72,7 @@ namespace SS.Integration.Adapter.Actors
         //Initialised but not streaming yet - this can happen when you start fixture in Setup
         private void Ready()
         {
-            
+
         }
 
         //Connected and streaming state - all messages should be processed
@@ -122,10 +124,37 @@ namespace SS.Integration.Adapter.Actors
 
         private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false)
         {
-            var snapshot = RetrieveSnapshot();
-            if (snapshot != null)
+            FixtureState state = _eventState.GetFixtureState(_resource.Id);
+            int savedResourceSequence = -1;
+            if (state != null)
             {
-                ProcessSnapshot(snapshot, true, hasEpochChanged);
+                savedResourceSequence = state.Sequence;
+            }
+
+            _logger.DebugFormat("{0} has stored sequence={1} and resource current sequence={2}", _resource, savedResourceSequence, _resource.Content.Sequence);
+
+            if (savedResourceSequence == -1 || _resource.Content.Sequence != savedResourceSequence)
+            {
+                var snapshot = RetrieveSnapshot();
+                if (snapshot != null)
+                {
+                    ProcessSnapshot(snapshot, true, hasEpochChanged);
+                }
+            }
+            else
+            {
+                Fixture fixture = new Fixture
+                {
+                    Id = _resource.Id,
+                    Sequence = savedResourceSequence
+                };
+
+                if (state != null)
+                    fixture.MatchStatus = state.MatchStatus.ToString();
+
+                //unsuspends markets suspended by adapter
+                _stateManager.StateProvider.SuspensionManager.Unsuspend(fixture.Id);
+                _platformConnector.UnSuspend(fixture);
             }
         }
 
