@@ -11,6 +11,7 @@ using SS.Integration.Common.Stats.Interface;
 using SS.Integration.Common.Stats.Keys;
 using System;
 using System.Diagnostics;
+using System.Timers;
 
 namespace SS.Integration.Adapter.Actors
 {
@@ -19,9 +20,19 @@ namespace SS.Integration.Adapter.Actors
     /// </summary>
     public class StreamListenerActor : ReceiveActor
     {
+        public enum StreamListenerState
+        {
+            Initializing,
+            Ready,
+            Streaming,
+            Disconnected,
+            Finished
+        }
+
         #region Attributes
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerActor).ToString());
+        private readonly ISettings _settings;
         private readonly IResourceFacade _resource;
         private readonly IAdapterPlugin _platformConnector;
         private readonly IEventState _eventState;
@@ -34,13 +45,20 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
+        #region Properties
+
+        public StreamListenerState State { get; private set; }
+
+        #endregion
+
         #region Constructors
 
         public StreamListenerActor(
             IResourceFacade resource,
             IAdapterPlugin platformConnector,
             IEventState eventState,
-            IStateManager stateManager)
+            IStateManager stateManager,
+            ISettings settings)
         {
             _resource = resource ?? throw new ArgumentNullException(nameof(resource));
             _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
@@ -48,6 +66,7 @@ namespace SS.Integration.Adapter.Actors
             _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
             _marketsRuleManager = stateManager?.CreateNewMarketRuleManager(resource.Id) ?? throw new ArgumentNullException(nameof(stateManager));
             _stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
             Initializing();
         }
@@ -65,19 +84,35 @@ namespace SS.Integration.Adapter.Actors
         /// </summary>
         private void Initializing()
         {
-            Receive<TakeSnapshotMsg>(o => RetrieveAndProcessSnapshot());
-            Self.Tell(new TakeSnapshotMsg());
+            State = StreamListenerState.Initializing;
+            var fixtureState = _eventState.GetFixtureState(_resource.Id);
+
+            if (fixtureState != null ? fixtureState.MatchStatus == MatchStatus.MatchOver : _resource.IsMatchOver)
+            {
+                _logger.WarnFormat("Listener will not start for {0} as the resource is marked as ended", _resource);
+                return;
+            }
+
+            RetrieveAndProcessSnapshot();
+
+            if (_resource.MatchStatus != MatchStatus.Ready &&
+                (_resource.MatchStatus != MatchStatus.Setup || _settings.AllowFixtureStreamingInSetupMode))
+            {
+                ConnectToStreamServer();
+                Become(Streaming);
+            }
         }
 
         //Initialised but not streaming yet - this can happen when you start fixture in Setup
         private void Ready()
         {
-
+            State = StreamListenerState.Ready;
         }
 
         //Connected and streaming state - all messages should be processed
         private void Streaming()
         {
+            State = StreamListenerState.Streaming;
             // Sends feed messages to plugin for processing 
             // Sends messages to healthcheck Actor to validate time and sequences
         }
@@ -87,18 +122,26 @@ namespace SS.Integration.Adapter.Actors
         {
             //All futher messages are discarded
             //StreamDisconnectedMessage
-
+            State = StreamListenerState.Disconnected;
         }
 
         //Match over has been processed no further messages should be accepted 
         private void Finished()
         {
+            State = StreamListenerState.Finished;
             //Match over arrived it should disconnect and let StreamListenerManager now it's completed
         }
 
         #endregion
 
         #region Private methods
+
+        private void ConnectToStreamServer()
+        {
+            _logger.DebugFormat("Starting streaming for {0} - resource has sequence={1}", _resource, _resource.Content.Sequence);
+            StartStreamingWithChecking(() => _resource.StartStreaming(), _resource);
+            _logger.DebugFormat("Started streaming for {0} - resource has sequence={1}", _resource, _resource.Content.Sequence);
+        }
 
         private bool VerifySequenceOnSnapshot(Fixture snapshot)
         {
@@ -112,9 +155,25 @@ namespace SS.Integration.Adapter.Actors
             return true;
         }
 
-        private void StartStreaming()
+        private void StartStreamingWithChecking(Action action, object obj)
         {
+            var timeoutTimer = new Timer();
+            var warnCount = 0;
+            timeoutTimer.Elapsed += (sender, e) =>
+            {
+                warnCount++;
+                _logger.Warn(
+                    $"StartStreaming for {obj} did't respond for {warnCount * _settings.StartStreamingTimeoutInSeconds} seconds. Possible network problem or port 5672 is locked");
+            };
+            var interval = _settings.StartStreamingTimeoutInSeconds;
+            if (interval <= 0)
+                interval = 1;
+            timeoutTimer.Interval = interval * 1000;
+            timeoutTimer.Start();
 
+            action();
+
+            timeoutTimer.Stop();
         }
 
         private void StopStreaming()
@@ -277,6 +336,11 @@ namespace SS.Integration.Adapter.Actors
     #region Internal messages
 
     internal class StartStreamingMsg
+    {
+        public string FixtureId { get; set; }
+    }
+
+    internal class StreamConnectedMsg
     {
         public string FixtureId { get; set; }
     }
