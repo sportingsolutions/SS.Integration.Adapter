@@ -40,6 +40,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly IStateManager _stateManager;
         private readonly IMarketRulesManager _marketsRuleManager;
 
+        private int _currentEpoch;
         private int _currentSequence;
         private int _lastSequenceProcessedInSnapshot;
 
@@ -47,7 +48,7 @@ namespace SS.Integration.Adapter.Actors
 
         #region Properties
 
-        public StreamListenerState State { get; private set; }
+        internal StreamListenerState State { get; private set; }
 
         #endregion
 
@@ -64,7 +65,7 @@ namespace SS.Integration.Adapter.Actors
             _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
             _eventState = eventState ?? throw new ArgumentNullException(nameof(eventState));
             _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
-            _marketsRuleManager = stateManager?.CreateNewMarketRuleManager(resource.Id) ?? throw new ArgumentNullException(nameof(stateManager));
+            _marketsRuleManager = _stateManager.CreateNewMarketRuleManager(resource.Id);
             _stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
@@ -76,6 +77,7 @@ namespace SS.Integration.Adapter.Actors
         #region Behaviors
 
         /// <summary>
+        /// If fixture has MatchOver State then don't initialize and move to Finished State.
         /// While the first snapshot is being processed it stays in the Initializing state.
         /// After the first snapshot has been processed it can:
         /// - either start streaming and moves to Streaming state
@@ -87,19 +89,25 @@ namespace SS.Integration.Adapter.Actors
             State = StreamListenerState.Initializing;
             var fixtureState = _eventState.GetFixtureState(_resource.Id);
 
+            _currentEpoch = fixtureState?.Epoch ?? -1;
+            _currentSequence = _resource.Content.Sequence;
+            _lastSequenceProcessedInSnapshot = -1;
+
             if (fixtureState != null ? fixtureState.MatchStatus == MatchStatus.MatchOver : _resource.IsMatchOver)
             {
                 _logger.WarnFormat("Listener will not start for {0} as the resource is marked as ended", _resource);
+                Become(Finished);
                 return;
             }
 
-            RetrieveAndProcessSnapshot();
-
-            if (_resource.MatchStatus != MatchStatus.Ready &&
-                (_resource.MatchStatus != MatchStatus.Setup || _settings.AllowFixtureStreamingInSetupMode))
+            if (!(_resource.MatchStatus == MatchStatus.Ready ||
+                _resource.MatchStatus == MatchStatus.Setup && !_settings.AllowFixtureStreamingInSetupMode))
             {
                 ConnectToStreamServer();
-                Become(Streaming);
+            }
+            else
+            {
+                Become(Ready);
             }
         }
 
@@ -107,12 +115,18 @@ namespace SS.Integration.Adapter.Actors
         private void Ready()
         {
             State = StreamListenerState.Ready;
+            Receive<TakeSnapshotMsg>(o => RetrieveAndProcessSnapshot());
+
+            Self.Tell(new TakeSnapshotMsg());
         }
 
         //Connected and streaming state - all messages should be processed
         private void Streaming()
         {
             State = StreamListenerState.Streaming;
+            Receive<TakeSnapshotMsg>(o => RetrieveAndProcessSnapshot());
+
+            Self.Tell(new TakeSnapshotMsg());
             // Sends feed messages to plugin for processing 
             // Sends messages to healthcheck Actor to validate time and sequences
         }
@@ -174,11 +188,9 @@ namespace SS.Integration.Adapter.Actors
             action();
 
             timeoutTimer.Stop();
-        }
 
-        private void StopStreaming()
-        {
-
+            Become(Streaming);
+            Context.Parent.Tell(new StreamConnectedMsg {FixtureId = _resource.Id});
         }
 
         private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false)
@@ -334,11 +346,6 @@ namespace SS.Integration.Adapter.Actors
     }
 
     #region Internal messages
-
-    internal class StartStreamingMsg
-    {
-        public string FixtureId { get; set; }
-    }
 
     internal class StreamConnectedMsg
     {
