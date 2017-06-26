@@ -154,7 +154,6 @@ namespace SS.Integration.Adapter.Actors
             Receive<StreamConnectedMsg>(a => StreamConnectedHandler(a));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedHandler(a));
             Receive<ResourceStateUpdateMsg>(a => UpdateResourceState(a));
-            Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
 
             Self.Tell(new TakeSnapshotMsg());
         }

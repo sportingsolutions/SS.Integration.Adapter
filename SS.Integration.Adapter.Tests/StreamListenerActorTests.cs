@@ -58,7 +58,7 @@ namespace SS.Integration.Adapter.Tests
             _pluginMock = new Mock<IAdapterPlugin>();
 
             _settingsMock = new Mock<ISettings>();
-            _settingsMock.Setup(x => x.ProcessingLockTimeOutInSecs).Returns(10);
+            _settingsMock.SetupGet(a => a.StreamSafetyThreshold).Returns(5);
 
             _serviceMock = new Mock<IServiceFacade>();
 
@@ -83,9 +83,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_1,
-                /*resourceMatchStatus*/MatchStatus.InRunning,
                 /*storedMatchStatus*/MatchStatus.InRunning,
-                /*resourceSequence*/2,
                 /*storedSequence*/1,
                 out resourceFacadeMock);
 
@@ -130,10 +128,8 @@ namespace SS.Integration.Adapter.Tests
             //
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*fixtureData*/FixtureSamples.football_inplay_snapshot_1,
-                /*resourceMatchStatus*/MatchStatus.MatchOver,
+                /*fixtureData*/FixtureSamples.football_matchover_snapshot_1,
                 /*storedMatchStatus*/MatchStatus.InRunning,
-                /*resourceSequence*/2,
                 /*storedSequence*/1,
                 out resourceFacadeMock);
 
@@ -184,10 +180,8 @@ namespace SS.Integration.Adapter.Tests
             //
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*fixtureData*/FixtureSamples.football_inplay_snapshot_1,
-                /*resourceMatchStatus*/MatchStatus.MatchOver,
+                /*fixtureData*/FixtureSamples.football_matchover_snapshot_1,
                 /*storedMatchStatus*/MatchStatus.MatchOver,
-                /*resourceSequence*/2,
                 /*storedSequence*/1,
                 out resourceFacadeMock);
 
@@ -239,9 +233,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_1,
-                /*resourceMatchStatus*/MatchStatus.InRunning,
                 /*storedMatchStatus*/MatchStatus.Prematch,
-                /*resourceSequence*/2,
                 /*storedSequence*/1,
                 out resourceFacadeMock);
 
@@ -293,10 +285,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_1,
-                /*resourceMatchStatus*/MatchStatus.InRunning,
                 /*storedMatchStatus*/MatchStatus.InRunning,
-                /*resourceSequence*/1,
-                /*storedSequence*/1,
+                /*storedSequence*/2,
                 out resourceFacadeMock);
 
             //
@@ -341,9 +331,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
                 /*fixtureData*/FixtureSamples.football_ready_snapshot_2,
-                /*resourceMatchStatus*/MatchStatus.Ready,
                 /*storedMatchStatus*/MatchStatus.Ready,
-                /*resourceSequence*/2,
                 /*storedSequence*/1,
                 out resourceFacadeMock);
 
@@ -388,10 +376,8 @@ namespace SS.Integration.Adapter.Tests
             //
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*fixtureData*/FixtureSamples.football_ready_snapshot_2,
-                /*resourceMatchStatus*/MatchStatus.Setup,
+                /*fixtureData*/FixtureSamples.football_setup_snapshot_1,
                 /*storedMatchStatus*/MatchStatus.Setup,
-                /*resourceSequence*/2,
                 /*storedSequence*/1,
                 out resourceFacadeMock);
             _settingsMock.SetupGet(a => a.AllowFixtureStreamingInSetupMode).Returns(false);
@@ -430,7 +416,7 @@ namespace SS.Integration.Adapter.Tests
 
         [Test]
         [Category("StreamListenerActor")]
-        public void ProcessSnapshotBothOnInitializationAndOnStreamUpdateWhenMovingFromInitializedStateToStreamingState()
+        public void ProcessSnapshotOnlyOnceWhenMovingFromInitializedStateToStreamingState()
         {
             //
             //Arrange
@@ -438,9 +424,7 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
                 /*fixtureData*/FixtureSamples.football_setup_snapshot_1,
-                /*resourceMatchStatus*/MatchStatus.Setup,
                 /*storedMatchStatus*/MatchStatus.Setup,
-                /*resourceSequence*/2,
                 /*storedSequence*/1,
                 out resourceFacadeMock);
             var resourceFacadeUpdateMock = new Mock<IResourceFacade>();
@@ -473,13 +457,13 @@ namespace SS.Integration.Adapter.Tests
             //
             AwaitAssert(() =>
                 {
-                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
                     _pluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
                         Times.Once);
                     _pluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
-                        Times.Once);
+                        Times.Never);
                     _pluginMock.Verify(a =>
                             a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
@@ -488,15 +472,155 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     _pluginMock.Verify(a =>
                             a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Once);
+                        Times.Never);
                     _suspensionManager.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
                     _suspensionManager.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)), SuspensionReason.SUSPENSION),
-                        Times.Once);
+                        Times.Never);
                     Assert.AreEqual(StreamListenerActor.StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        [Test]
+        [Category("StreamListenerActor")]
+        public void ProcessSnapshotOnUpdateMessageNotDoneWhenSequenceInvalidLowerThanCurrentSequence()
+        {
+            //
+            //Arrange
+            //
+            Mock<IResourceFacade> resourceFacadeMock;
+            SetupCommonMockObjects(
+                /*fixtureData*/FixtureSamples.football_inplay_snapshot_1,
+                /*storedMatchStatus*/MatchStatus.InRunning,
+                /*storedSequence*/1,
+                out resourceFacadeMock);
+            var update = new Fixture
+            {
+                Id = resourceFacadeMock.Object.Id,
+                //invalid sequence
+                Sequence = resourceFacadeMock.Object.Content.Sequence - 1,
+                MatchStatus = ((int)resourceFacadeMock.Object.MatchStatus).ToString()
+            };
+            StreamMessage message = new StreamMessage { Content = update };
+
+            //
+            //Act
+            //
+            var actor = ActorOfAsTestActorRef(() =>
+                new StreamListenerActor(
+                    resourceFacadeMock.Object,
+                    _pluginMock.Object,
+                    _eventStateMock.Object,
+                    _stateManagerMock.Object,
+                    _settingsMock.Object));
+
+            actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+            {
+                resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                _pluginMock.Verify(a =>
+                        a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                    Times.Once);
+                _pluginMock.Verify(a =>
+                        a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
+                    Times.Never);
+                _pluginMock.Verify(a =>
+                        a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                    Times.Never);
+                _pluginMock.Verify(a =>
+                        a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                    Times.Never);
+                _pluginMock.Verify(a =>
+                        a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                    Times.Never);
+                _suspensionManager.Verify(a =>
+                        a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                    Times.Never);
+                _suspensionManager.Verify(a =>
+                        a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)), SuspensionReason.SUSPENSION),
+                    Times.Never);
+                Assert.AreEqual(StreamListenerActor.StreamListenerState.Streaming, actor.UnderlyingActor.State);
+            },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        [Test]
+        [Category("StreamListenerActor")]
+        public void ProcessSnapshotOnUpdateMessageWhenSequenceInvalidMoreThan1GreaterThanCurrentSequence()
+        {
+            //
+            //Arrange
+            //
+            Mock<IResourceFacade> resourceFacadeMock;
+            SetupCommonMockObjects(
+                /*fixtureData*/FixtureSamples.football_inplay_snapshot_1,
+                /*storedMatchStatus*/MatchStatus.InRunning,
+                /*storedSequence*/1,
+                out resourceFacadeMock);
+            var update = new Fixture
+            {
+                Id = resourceFacadeMock.Object.Id,
+                //invalid sequence
+                Sequence = resourceFacadeMock.Object.Content.Sequence + 2,
+                MatchStatus = ((int)resourceFacadeMock.Object.MatchStatus).ToString()
+            };
+            StreamMessage message = new StreamMessage { Content = update };
+
+            //
+            //Act
+            //
+            var actor = ActorOfAsTestActorRef(() =>
+                new StreamListenerActor(
+                    resourceFacadeMock.Object,
+                    _pluginMock.Object,
+                    _eventStateMock.Object,
+                    _stateManagerMock.Object,
+                    _settingsMock.Object));
+
+            //resourceFacadeMock.SetupGet(o => o.Content.Sequence).Returns(update.Sequence);
+            //resourceFacadeMock.Setup(o => o.Content).Returns(new Summary { Sequence = snapshot.Sequence });
+            resourceFacadeMock.Object.Content.Sequence = update.Sequence;
+
+            actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+            {
+                resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
+                _pluginMock.Verify(a =>
+                        a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                    Times.Exactly(2));
+                _pluginMock.Verify(a =>
+                        a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
+                    Times.Never);
+                _pluginMock.Verify(a =>
+                        a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                    Times.Never);
+                _pluginMock.Verify(a =>
+                        a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                    Times.Never);
+                _pluginMock.Verify(a =>
+                        a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                    Times.Never);
+                _suspensionManager.Verify(a =>
+                        a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                    Times.Never);
+                _suspensionManager.Verify(a =>
+                        a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)), SuspensionReason.SUSPENSION),
+                    Times.Once);
+                Assert.AreEqual(StreamListenerActor.StreamListenerState.Streaming, actor.UnderlyingActor.State);
+            },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
@@ -507,9 +631,7 @@ namespace SS.Integration.Adapter.Tests
 
         private void SetupCommonMockObjects(
             byte[] fixtureData,
-            MatchStatus resourceMatchStatus,
             MatchStatus storedMatchStatus,
-            int resourceSequence,
             int storedSequence,
             out Mock<IResourceFacade> resourceFacadeMock)
         {
@@ -517,9 +639,16 @@ namespace SS.Integration.Adapter.Tests
 
             var snapshotJson = System.Text.Encoding.UTF8.GetString(fixtureData);
             var snapshot = FixtureJsonHelper.GetFromJson(snapshotJson);
+            var storedFixtureState =
+                new FixtureState
+                {
+                    Id = snapshot.Id,
+                    Sequence = storedSequence,
+                    MatchStatus = storedMatchStatus
+                };
             resourceFacadeMock.Setup(o => o.Id).Returns(snapshot.Id);
-            resourceFacadeMock.Setup(o => o.MatchStatus).Returns(resourceMatchStatus);
-            resourceFacadeMock.Setup(o => o.Content).Returns(new Summary { Sequence = resourceSequence });
+            resourceFacadeMock.Setup(o => o.MatchStatus).Returns((MatchStatus)Convert.ToInt32(snapshot.MatchStatus));
+            resourceFacadeMock.Setup(o => o.Content).Returns(new Summary { Sequence = snapshot.Sequence });
             resourceFacadeMock.Setup(o => o.GetSnapshot()).Returns(snapshotJson);
             resourceFacadeMock.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
             resourceFacadeMock.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);
@@ -532,7 +661,22 @@ namespace SS.Integration.Adapter.Tests
             _stateProvider.SetupGet(o => o.SuspensionManager)
                 .Returns(_suspensionManager.Object);
             _eventStateMock.Setup(o => o.GetFixtureState(It.Is<string>(id => id.Equals(snapshot.Id))))
-                .Returns(new FixtureState { Id = snapshot.Id, Sequence = storedSequence, MatchStatus = storedMatchStatus });
+                .Returns(storedFixtureState);
+            _eventStateMock.Setup(o =>
+                o.UpdateFixtureState(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<int>(),
+                    It.IsAny<MatchStatus>(),
+                    It.IsAny<int>())).Callback<string, string, int, MatchStatus, int>(
+                (sport, fixtureId, sequence, matchStatus, epoch) =>
+                {
+                    storedFixtureState.Sport = sport;
+                    storedFixtureState.Id = fixtureId;
+                    storedFixtureState.Sequence = sequence;
+                    storedFixtureState.MatchStatus = matchStatus;
+                    storedFixtureState.Epoch = epoch;
+                });
         }
 
         #endregion
