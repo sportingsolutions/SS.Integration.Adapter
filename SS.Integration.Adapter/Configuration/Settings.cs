@@ -43,7 +43,6 @@ namespace SS.Integration.Adapter.Configuration
         private const int DEFAULT_PREMATCH_SUSPENSION_BEFORE_STARTTIME_IN_MINS = 15;
         private const int DEFAULT_START_STREAMING_TIMEOUT = 60;
         private const int DEFAULT_STREAM_THRESHOLD = int.MaxValue;
-        private const bool DEFAULT_ALLOW_FIXTURE_STREAMING_IN_SETUP_MODE = false;
 
         public Settings()
         {

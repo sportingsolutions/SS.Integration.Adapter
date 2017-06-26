@@ -13,6 +13,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using SportingSolutions.Udapi.Sdk.Extensions;
+using SportingSolutions.Udapi.Sdk.Interfaces;
 
 namespace SS.Integration.Adapter.Actors
 {
@@ -24,7 +25,7 @@ namespace SS.Integration.Adapter.Actors
         public enum StreamListenerState
         {
             Initializing,
-            Ready,
+            Initialized,
             Streaming,
             Disconnected,
             Finished
@@ -72,6 +73,9 @@ namespace SS.Integration.Adapter.Actors
             _marketsRuleManager = _stateManager.CreateNewMarketRuleManager(resource.Id);
             _stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+
+            _resource.StreamConnected += Resource_StreamConnected;
+            _resource.StreamDisconnected += Resource_StreamDisconnected;
 
             Initializing();
         }
@@ -123,23 +127,23 @@ namespace SS.Integration.Adapter.Actors
 
             Receive<StreamConnectedMsg>(a => StreamConnectedHandler(a));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedHandler(a));
+            Receive<ResourceStateUpdateMsg>(a => UpdateResourceState(a));
             Receive<StartStreamingNotRespondingMsg>(a => StartStreamingNotRespondingHandler(a));
 
-            if (!(_resource.MatchStatus == MatchStatus.Ready ||
-                _resource.MatchStatus == MatchStatus.Setup && !_settings.AllowFixtureStreamingInSetupMode))
+            if (_resource.MatchStatus != MatchStatus.Setup || _settings.AllowFixtureStreamingInSetupMode)
             {
                 ConnectToStreamServer();
             }
             else
             {
-                Become(Ready);
+                Become(Initialized);
             }
         }
 
         //Initialised but not streaming yet - this can happen when you start fixture in Setup
-        private void Ready()
+        private void Initialized()
         {
-            State = StreamListenerState.Ready;
+            State = StreamListenerState.Initialized;
             Receive<TakeSnapshotMsg>(o =>
             {
                 if (_shouldProcessFirstFullSnapshot)
@@ -147,8 +151,10 @@ namespace SS.Integration.Adapter.Actors
                     RetrieveAndProcessSnapshot();
                 }
             });
-            Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
+            Receive<StreamConnectedMsg>(a => StreamConnectedHandler(a));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedHandler(a));
+            Receive<ResourceStateUpdateMsg>(a => UpdateResourceState(a));
+            Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
 
             Self.Tell(new TakeSnapshotMsg());
         }
@@ -164,12 +170,11 @@ namespace SS.Integration.Adapter.Actors
                     RetrieveAndProcessSnapshot();
                 }
             });
-            Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedHandler(a));
+            Receive<ResourceStateUpdateMsg>(a => UpdateResourceState(a));
+            Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
 
             Self.Tell(new TakeSnapshotMsg());
-            // Sends feed messages to plugin for processing 
-            // Sends messages to healthcheck Actor to validate time and sequences
         }
 
         //Suspends the fixture and sends message to Stream Listener Manager
@@ -191,6 +196,30 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
+        #region Events Handlers
+
+        private void Resource_StreamConnected(object sender, EventArgs e)
+        {
+            var resource = sender as IResource;
+            var resourceFacade = sender as IResourceFacade;
+            if (resource != null)
+                Self.Tell(new StreamConnectedMsg { FixtureId = resource.Id });
+            else if(resourceFacade != null)
+                Self.Tell(new StreamConnectedMsg { FixtureId = resourceFacade.Id });
+        }
+
+        private void Resource_StreamDisconnected(object sender, EventArgs e)
+        {
+            var resource = sender as IResource;
+            var resourceFacade = sender as IResourceFacade;
+            if (resource != null)
+                Self.Tell(new StreamConnectedMsg { FixtureId = resource.Id });
+            else if (resourceFacade != null)
+                Self.Tell(new StreamConnectedMsg { FixtureId = resourceFacade.Id });
+        }
+
+        #endregion
+
         #region Private methods
 
         private void ConnectToStreamServer()
@@ -202,7 +231,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void StreamConnectedHandler(StreamConnectedMsg msg)
         {
-            //Check for the correct fixture, but this should never happen as the Resource Actor should be a child of the Stream Listener Actor
+            //Check for the correct fixture, but this should never happen
             if (msg.FixtureId != _resource.Id)
             {
                 return;
@@ -213,7 +242,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void StreamDisconnectedHandler(StreamDisconnectedMsg msg)
         {
-            //Check for the correct fixture, but this should never happen as the Resource Actor should be a child of the Stream Listener Actor
+            //Check for the correct fixture, but this should never happen
             if (msg.FixtureId != _resource.Id)
             {
                 return;
@@ -229,7 +258,7 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.InfoFormat($"{fixtureDelta} stream update arrived");
 
-            //Check for the correct fixture, but this should never happen as the Resource Actor should be a child of the Stream Listener Actor
+            //Check for the correct fixture, but this should never happen
             if (fixtureDelta.Id != _resource.Id)
             {
                 _logger.WarnFormat($"{fixtureDelta} stream update rejected as it links to a different resource!");
@@ -379,7 +408,6 @@ namespace SS.Integration.Adapter.Actors
             action();
 
             startStreamingNotResponding.Cancel();
-            Self.Tell(new StreamConnectedMsg { FixtureId = _resource.Id });
         }
 
         private void StartStreamingNotRespondingHandler(StartStreamingNotRespondingMsg msg)
@@ -569,17 +597,6 @@ namespace SS.Integration.Adapter.Actors
             _stateManager.StateProvider.SuspensionManager.Suspend(_resource.Id, reason);
         }
 
-        private bool ShouldSuspendOnDisconnection()
-        {
-            var state = _eventState.GetFixtureState(_resource.Id);
-            if (state == null || !_fixtureStartTime.HasValue)
-                return true;
-
-            var spanBetweenNowAndStartTime = _fixtureStartTime.Value - DateTime.UtcNow;
-            var doNotSuspend = _settings.DisablePrematchSuspensionOnDisconnection && spanBetweenNowAndStartTime.TotalMinutes > _settings.PreMatchSuspensionBeforeStartTimeInMins;
-            return !doNotSuspend;
-        }
-
         private void UpdateState(Fixture snapshot, bool isSnapshot = false)
         {
             _marketsRuleManager.CommitChanges();
@@ -594,6 +611,80 @@ namespace SS.Integration.Adapter.Actors
             }
 
             _currentSequence = snapshot.Sequence;
+        }
+
+        private void UpdateResourceState(ResourceStateUpdateMsg msg)
+        {
+            if (_resource == null || msg.Resource == null || msg.Resource.Id != _resource.Id)
+                return;
+
+            _resource.Content.Sequence = msg.Resource.Content.Sequence;
+            _resource.Content.MatchStatus = msg.Resource.Content.MatchStatus;
+
+            _logger.Debug(
+                $"Listener state for resource {msg.Resource} has " +
+                $"sequence={msg.Resource.Content.Sequence} " +
+                $"processedSequence={_currentSequence} " +
+                (msg.Resource.Content.Sequence > _currentSequence
+                    ? $"missedSequence={msg.Resource.Content.Sequence - _currentSequence} "
+                    : "") +
+                $"State={State} " +
+                $"isMatchOver={msg.Resource.IsMatchOver}");
+
+            bool isMatchOver = msg.Resource.Content.MatchStatus == (int)MatchStatus.MatchOver || msg.Resource.IsMatchOver;
+            if (isMatchOver)
+            {
+                ProcessMatchOver();
+                Become(Finished);
+                return;
+            }
+
+            if (ValidateStream(msg.Resource))
+            {
+                if (State != StreamListenerState.Streaming &&
+                    (msg.Resource.Content.MatchStatus != (int)MatchStatus.Setup || _settings.AllowFixtureStreamingInSetupMode))
+                {
+                    ConnectToStreamServer();
+                }
+            }
+            else
+            {
+                _logger.WarnFormat($"Detected invalid stream for resource {msg.Resource}");
+            }
+        }
+
+        private bool ValidateStream(IResourceFacade resource)
+        {
+            if (resource.Content.Sequence - _currentSequence <= _settings.StreamSafetyThreshold)
+                return true;
+
+            if (ShouldIgnoreUnprocessedSequence(resource))
+                return true;
+
+            return false;
+        }
+
+        private bool ShouldIgnoreUnprocessedSequence(IResourceFacade resource)
+        {
+            if (State != StreamListenerState.Streaming)
+            {
+                _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Not Streaming\"");
+                return true;
+            }
+
+            if (resource.Content.MatchStatus == (int)MatchStatus.MatchOver)
+            {
+                _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Match Is Over\"");
+                return true;
+            }
+
+            if (resource.MatchStatus == MatchStatus.Setup && !_settings.AllowFixtureStreamingInSetupMode)
+            {
+                _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Fixture is in setup state\"");
+                return true;
+            }
+
+            return false;
         }
 
         #endregion
@@ -626,6 +717,11 @@ namespace SS.Integration.Adapter.Actors
     internal class StreamUpdateMsg
     {
         public string Data { get; set; }
+    }
+
+    internal class ResourceStateUpdateMsg
+    {
+        public IResourceFacade Resource { get; set; }
     }
 
     internal class StreamHealthCheckMsg

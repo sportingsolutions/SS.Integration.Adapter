@@ -13,10 +13,9 @@
 //limitations under the License.
 
 using System;
-using System.Threading.Tasks;
 using Akka.TestKit.NUnit;
-using FluentAssertions;
 using Moq;
+using Newtonsoft.Json;
 using NUnit.Framework;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Actors;
@@ -32,6 +31,13 @@ namespace SS.Integration.Adapter.Tests
     [TestFixture]
     public class StreamListenerActorTests : TestKit
     {
+        #region Constants
+
+        public const int ASSERT_WAIT_TIMEOUT = 2500 /*ms*/;
+        public const int ASSERT_EXEC_INTERVAL = 250 /*ms*/;
+
+        #endregion
+
         #region Attributes
 
         private Mock<ISettings> _settingsMock;
@@ -69,46 +75,50 @@ namespace SS.Integration.Adapter.Tests
 
         [Test]
         [Category("StreamListenerActor")]
-        public void OnInitializationStartStreamingAndProcessFirstSnapshotWhenMatchStatusNotReadyOrSetup()
+        public void OnInitializationStartStreamingAndProcessFirstSnapshotWhenMatchStatusNotReadyNorSetup()
         {
             //
             //Arrange
             //
-            Mock<IResourceFacade> resourceMock;
+            Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_1,
                 /*resourceMatchStatus*/MatchStatus.InRunning,
                 /*storedMatchStatus*/MatchStatus.InRunning,
                 /*resourceSequence*/2,
                 /*storedSequence*/1,
-                out resourceMock);
+                out resourceFacadeMock);
 
             //
             //Act
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceMock.Object,
+                    resourceFacadeMock.Object,
                     _pluginMock.Object,
                     _eventStateMock.Object,
                     _stateManagerMock.Object,
                     _settingsMock.Object));
-            Task.Delay(TimeSpan.FromMilliseconds(500)).Wait();
 
             //
             //Assert
             //
-            resourceMock.Verify(a => a.GetSnapshot(), Times.Once);
-            _pluginMock.Verify(a =>
-                    a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceMock.Object.Id)), false),
-                Times.Once);
-            _pluginMock.Verify(a =>
-                    a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceMock.Object.Id))),
-                Times.Never);
-            _suspensionManager.Verify(a =>
-                    a.Unsuspend(It.Is<string>(id => id.Equals(resourceMock.Object.Id))),
-                Times.Never);
-            Assert.AreEqual(StreamListenerActor.StreamListenerState.Streaming, actor.UnderlyingActor.State);
+            AwaitAssert(() =>
+                {
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _suspensionManager.Verify(a =>
+                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    Assert.AreEqual(StreamListenerActor.StreamListenerState.Streaming, actor.UnderlyingActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
         [Test]
@@ -118,47 +128,51 @@ namespace SS.Integration.Adapter.Tests
             //
             //Arrange
             //
-            Mock<IResourceFacade> resourceMock;
+            Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_1,
                 /*resourceMatchStatus*/MatchStatus.MatchOver,
                 /*storedMatchStatus*/MatchStatus.InRunning,
                 /*resourceSequence*/2,
                 /*storedSequence*/1,
-                out resourceMock);
+                out resourceFacadeMock);
 
             //
             //Act
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceMock.Object,
+                    resourceFacadeMock.Object,
                     _pluginMock.Object,
                     _eventStateMock.Object,
                     _stateManagerMock.Object,
                     _settingsMock.Object));
-            Task.Delay(TimeSpan.FromMilliseconds(500)).Wait();
 
             //
             //Assert
             //
-            resourceMock.Verify(a => a.GetSnapshot(), Times.Once);
-            _pluginMock.Verify(a =>
-                    a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceMock.Object.Id)), true),
-                Times.Once);
-            _pluginMock.Verify(a =>
-                    a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceMock.Object.Id))),
-                Times.Never);
-            _suspensionManager.Verify(a =>
-                    a.Unsuspend(It.Is<string>(id => id.Equals(resourceMock.Object.Id))),
-                Times.Never);
-            _suspensionManager.Verify(a =>
-                    a.Suspend(It.Is<string>(id => id.Equals(resourceMock.Object.Id)), SuspensionReason.SUSPENSION),
-                Times.Once);
-            _stateManagerMock.Verify(a =>
-                    a.ClearState(It.Is<string>(id => id.Equals(resourceMock.Object.Id))),
-                Times.Once);
-            Assert.AreEqual(StreamListenerActor.StreamListenerState.Finished, actor.UnderlyingActor.State);
+            AwaitAssert(() =>
+                {
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
+                        Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _suspensionManager.Verify(a =>
+                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _suspensionManager.Verify(a =>
+                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)), SuspensionReason.SUSPENSION),
+                        Times.Once);
+                    _stateManagerMock.Verify(a =>
+                            a.ClearState(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    Assert.AreEqual(StreamListenerActor.StreamListenerState.Finished, actor.UnderlyingActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
         [Test]
@@ -168,47 +182,51 @@ namespace SS.Integration.Adapter.Tests
             //
             //Arrange
             //
-            Mock<IResourceFacade> resourceMock;
+            Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_1,
                 /*resourceMatchStatus*/MatchStatus.MatchOver,
                 /*storedMatchStatus*/MatchStatus.MatchOver,
                 /*resourceSequence*/2,
                 /*storedSequence*/1,
-                out resourceMock);
+                out resourceFacadeMock);
 
             //
             //Act
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceMock.Object,
+                    resourceFacadeMock.Object,
                     _pluginMock.Object,
                     _eventStateMock.Object,
                     _stateManagerMock.Object,
                     _settingsMock.Object));
-            Task.Delay(TimeSpan.FromMilliseconds(500)).Wait();
 
             //
             //Assert
             //
-            resourceMock.Verify(a => a.GetSnapshot(), Times.Never);
-            _pluginMock.Verify(a =>
-                    a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceMock.Object.Id)), true),
-                Times.Never);
-            _pluginMock.Verify(a =>
-                    a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceMock.Object.Id))),
-                Times.Never);
-            _suspensionManager.Verify(a =>
-                    a.Unsuspend(It.Is<string>(id => id.Equals(resourceMock.Object.Id))),
-                Times.Never);
-            _suspensionManager.Verify(a =>
-                    a.Suspend(It.Is<string>(id => id.Equals(resourceMock.Object.Id)), SuspensionReason.SUSPENSION),
-                Times.Never);
-            _stateManagerMock.Verify(a =>
-                    a.ClearState(It.Is<string>(id => id.Equals(resourceMock.Object.Id))),
-                Times.Never);
-            Assert.AreEqual(StreamListenerActor.StreamListenerState.Finished, actor.UnderlyingActor.State);
+            AwaitAssert(() =>
+                {
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Never);
+                    _pluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
+                        Times.Never);
+                    _pluginMock.Verify(a =>
+                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _suspensionManager.Verify(a =>
+                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _suspensionManager.Verify(a =>
+                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)), SuspensionReason.SUSPENSION),
+                        Times.Never);
+                    _stateManagerMock.Verify(a =>
+                            a.ClearState(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    Assert.AreEqual(StreamListenerActor.StreamListenerState.Finished, actor.UnderlyingActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
         [Test]
@@ -218,47 +236,51 @@ namespace SS.Integration.Adapter.Tests
             //
             //Arrange
             //
-            Mock<IResourceFacade> resourceMock;
+            Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_1,
                 /*resourceMatchStatus*/MatchStatus.InRunning,
                 /*storedMatchStatus*/MatchStatus.Prematch,
                 /*resourceSequence*/2,
                 /*storedSequence*/1,
-                out resourceMock);
+                out resourceFacadeMock);
 
             //
             //Act
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceMock.Object,
+                    resourceFacadeMock.Object,
                     _pluginMock.Object,
                     _eventStateMock.Object,
                     _stateManagerMock.Object,
                     _settingsMock.Object));
-            Task.Delay(TimeSpan.FromMilliseconds(500)).Wait();
 
             //
             //Assert
             //
-            resourceMock.Verify(a => a.GetSnapshot(), Times.Once);
-            _pluginMock.Verify(a =>
-                    a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceMock.Object.Id)), false),
-                Times.Once);
-            _pluginMock.Verify(a =>
-                    a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceMock.Object.Id))),
-                Times.Never);
-            _suspensionManager.Verify(a =>
-                    a.Unsuspend(It.Is<string>(id => id.Equals(resourceMock.Object.Id))),
-                Times.Never);
-            _suspensionManager.Verify(a =>
-                    a.Suspend(It.Is<string>(id => id.Equals(resourceMock.Object.Id)), SuspensionReason.SUSPENSION),
-                Times.Never);
-            _stateManagerMock.Verify(a =>
-                    a.ClearState(It.Is<string>(id => id.Equals(resourceMock.Object.Id))),
-                Times.Never);
-            Assert.AreEqual(StreamListenerActor.StreamListenerState.Streaming, actor.UnderlyingActor.State);
+            AwaitAssert(() =>
+                {
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _suspensionManager.Verify(a =>
+                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _suspensionManager.Verify(a =>
+                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)), SuspensionReason.SUSPENSION),
+                        Times.Never);
+                    _stateManagerMock.Verify(a =>
+                            a.ClearState(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    Assert.AreEqual(StreamListenerActor.StreamListenerState.Streaming, actor.UnderlyingActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
         [Test]
@@ -268,130 +290,215 @@ namespace SS.Integration.Adapter.Tests
             //
             //Arrange
             //
-            Mock<IResourceFacade> resourceMock;
+            Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_1,
                 /*resourceMatchStatus*/MatchStatus.InRunning,
                 /*storedMatchStatus*/MatchStatus.InRunning,
                 /*resourceSequence*/1,
                 /*storedSequence*/1,
-                out resourceMock);
+                out resourceFacadeMock);
 
             //
             //Act
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceMock.Object,
+                    resourceFacadeMock.Object,
                     _pluginMock.Object,
                     _eventStateMock.Object,
                     _stateManagerMock.Object,
                     _settingsMock.Object));
-            Task.Delay(TimeSpan.FromMilliseconds(500)).Wait();
 
             //
             //Assert
             //
-            resourceMock.Verify(a => a.GetSnapshot(), Times.Never);
-            _pluginMock.Verify(a =>
-                    a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceMock.Object.Id)), false),
-                Times.Never);
-            _pluginMock.Verify(a =>
-                    a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceMock.Object.Id))),
-                Times.Once);
-            _suspensionManager.Verify(a =>
-                    a.Unsuspend(It.Is<string>(id => id.Equals(resourceMock.Object.Id))),
-                Times.Once);
-            Assert.AreEqual(StreamListenerActor.StreamListenerState.Streaming, actor.UnderlyingActor.State);
+            AwaitAssert(() =>
+                {
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Never);
+                    _pluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Never);
+                    _pluginMock.Verify(a =>
+                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    _suspensionManager.Verify(a =>
+                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    Assert.AreEqual(StreamListenerActor.StreamListenerState.Streaming, actor.UnderlyingActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
         [Test]
         [Category("StreamListenerActor")]
-        public void OnInitializationMoveToReadyStateWhenMatchStatusReadyOrSetupWithNotAllowStreamingInSetupMode()
+        public void OnInitializationStartStreamingWhenMatchStatusReady()
         {
             //
             //Arrange
             //
-            Mock<IResourceFacade> resourceMock;
+            Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
                 /*fixtureData*/FixtureSamples.football_ready_snapshot_2,
                 /*resourceMatchStatus*/MatchStatus.Ready,
                 /*storedMatchStatus*/MatchStatus.Ready,
                 /*resourceSequence*/2,
                 /*storedSequence*/1,
-                out resourceMock);
+                out resourceFacadeMock);
 
             //
             //Act
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceMock.Object,
+                    resourceFacadeMock.Object,
                     _pluginMock.Object,
                     _eventStateMock.Object,
                     _stateManagerMock.Object,
                     _settingsMock.Object));
-            Task.Delay(TimeSpan.FromMilliseconds(500)).Wait();
 
             //
             //Assert
             //
-            resourceMock.Verify(a => a.GetSnapshot(), Times.Once);
-            _pluginMock.Verify(a =>
-                    a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceMock.Object.Id)), false),
-                Times.Once);
-            _pluginMock.Verify(a =>
-                    a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceMock.Object.Id))),
-                Times.Never);
-            _suspensionManager.Verify(a =>
-                    a.Unsuspend(It.Is<string>(id => id.Equals(resourceMock.Object.Id))),
-                Times.Never);
-            Assert.AreEqual(StreamListenerActor.StreamListenerState.Ready, actor.UnderlyingActor.State);
+            AwaitAssert(() =>
+                {
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _suspensionManager.Verify(a =>
+                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    Assert.AreEqual(StreamListenerActor.StreamListenerState.Streaming, actor.UnderlyingActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
         [Test]
         [Category("StreamListenerActor")]
-        public void ProcessSnapshotOnlyOnceWhenMovingFromReadyStateToStreamingState()
+        public void OnInitializationMoveToInitializedStateWhenMatchStatusSetupWithNotAllowStreamingInSetupMode()
         {
-            throw new NotImplementedException();
             //
             //Arrange
             //
-            //Mock<IResourceFacade> resourceMock;
-            //SetupCommonMockObjects(
-            //    /*fixtureData*/FixtureSamples.football_ready_snapshot_2,
-            //    /*resourceMatchStatus*/MatchStatus.Ready,
-            //    /*storedMatchStatus*/MatchStatus.Ready,
-            //    /*resourceSequence*/2,
-            //    /*storedSequence*/1,
-            //    out resourceMock);
+            Mock<IResourceFacade> resourceFacadeMock;
+            SetupCommonMockObjects(
+                /*fixtureData*/FixtureSamples.football_ready_snapshot_2,
+                /*resourceMatchStatus*/MatchStatus.Setup,
+                /*storedMatchStatus*/MatchStatus.Setup,
+                /*resourceSequence*/2,
+                /*storedSequence*/1,
+                out resourceFacadeMock);
+            _settingsMock.SetupGet(a => a.AllowFixtureStreamingInSetupMode).Returns(false);
 
-            ////
-            ////Act
-            ////
-            //var actor = ActorOfAsTestActorRef(() =>
-            //    new StreamListenerActor(
-            //        resourceMock.Object,
-            //        _pluginMock.Object,
-            //        _eventStateMock.Object,
-            //        _stateManagerMock.Object,
-            //        _settingsMock.Object));
-            //Task.Delay(TimeSpan.FromMilliseconds(500)).Wait();
+            //
+            //Act
+            //
+            var actor = ActorOfAsTestActorRef(() =>
+                new StreamListenerActor(
+                    resourceFacadeMock.Object,
+                    _pluginMock.Object,
+                    _eventStateMock.Object,
+                    _stateManagerMock.Object,
+                    _settingsMock.Object));
 
-            ////
-            ////Assert
-            ////
-            //resourceMock.Verify(a => a.GetSnapshot(), Times.Once);
-            //_pluginMock.Verify(a =>
-            //        a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceMock.Object.Id)), false),
-            //    Times.Once);
-            //_pluginMock.Verify(a =>
-            //        a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceMock.Object.Id))),
-            //    Times.Never);
-            //_suspensionManager.Verify(a =>
-            //        a.Unsuspend(It.Is<string>(id => id.Equals(resourceMock.Object.Id))),
-            //    Times.Never);
-            //Assert.AreEqual(StreamListenerActor.StreamListenerState.Ready, actor.UnderlyingActor.State);
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _suspensionManager.Verify(a =>
+                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    Assert.AreEqual(StreamListenerActor.StreamListenerState.Initialized, actor.UnderlyingActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        [Test]
+        [Category("StreamListenerActor")]
+        public void ProcessSnapshotBothOnInitializationAndOnStreamUpdateWhenMovingFromInitializedStateToStreamingState()
+        {
+            //
+            //Arrange
+            //
+            Mock<IResourceFacade> resourceFacadeMock;
+            SetupCommonMockObjects(
+                /*fixtureData*/FixtureSamples.football_setup_snapshot_1,
+                /*resourceMatchStatus*/MatchStatus.Setup,
+                /*storedMatchStatus*/MatchStatus.Setup,
+                /*resourceSequence*/2,
+                /*storedSequence*/1,
+                out resourceFacadeMock);
+            var resourceFacadeUpdateMock = new Mock<IResourceFacade>();
+            resourceFacadeUpdateMock.Setup(o => o.Id).Returns(resourceFacadeMock.Object.Id);
+            resourceFacadeUpdateMock.Setup(o => o.IsMatchOver).Returns(false);
+            resourceFacadeUpdateMock.Setup(o => o.MatchStatus).Returns(MatchStatus.InRunning);
+            resourceFacadeUpdateMock.Setup(o => o.Content).Returns(new Summary
+            {
+                Id = resourceFacadeMock.Object.Id,
+                Sequence = 3,
+                MatchStatus = (int)MatchStatus.Ready
+            });
+            _settingsMock.SetupGet(a => a.AllowFixtureStreamingInSetupMode).Returns(false);
+
+            //
+            //Act
+            //
+            var actor = ActorOfAsTestActorRef(() =>
+                new StreamListenerActor(
+                    resourceFacadeMock.Object,
+                    _pluginMock.Object,
+                    _eventStateMock.Object,
+                    _stateManagerMock.Object,
+                    _settingsMock.Object));
+
+            actor.Tell(new ResourceStateUpdateMsg { Resource = resourceFacadeUpdateMock.Object });
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
+                    _pluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
+                        Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _pluginMock.Verify(a =>
+                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _pluginMock.Verify(a =>
+                            a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    _suspensionManager.Verify(a =>
+                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _suspensionManager.Verify(a =>
+                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)), SuspensionReason.SUSPENSION),
+                        Times.Once);
+                    Assert.AreEqual(StreamListenerActor.StreamListenerState.Streaming, actor.UnderlyingActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
         #endregion
@@ -404,17 +511,18 @@ namespace SS.Integration.Adapter.Tests
             MatchStatus storedMatchStatus,
             int resourceSequence,
             int storedSequence,
-            out Mock<IResourceFacade> resourceMock)
+            out Mock<IResourceFacade> resourceFacadeMock)
         {
-            resourceMock = new Mock<IResourceFacade>();
+            resourceFacadeMock = new Mock<IResourceFacade>();
 
             var snapshotJson = System.Text.Encoding.UTF8.GetString(fixtureData);
             var snapshot = FixtureJsonHelper.GetFromJson(snapshotJson);
-            resourceMock.Setup(o => o.Id).Returns(snapshot.Id);
-            resourceMock.Setup(o => o.MatchStatus).Returns(resourceMatchStatus);
-            resourceMock.Setup(o => o.Content).Returns(new Summary { Sequence = resourceSequence });
-            resourceMock.Setup(o => o.GetSnapshot())
-                .Returns(snapshotJson);
+            resourceFacadeMock.Setup(o => o.Id).Returns(snapshot.Id);
+            resourceFacadeMock.Setup(o => o.MatchStatus).Returns(resourceMatchStatus);
+            resourceFacadeMock.Setup(o => o.Content).Returns(new Summary { Sequence = resourceSequence });
+            resourceFacadeMock.Setup(o => o.GetSnapshot()).Returns(snapshotJson);
+            resourceFacadeMock.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
+            resourceFacadeMock.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);
             _stateManagerMock.Setup(o => o.CreateNewMarketRuleManager(It.Is<string>(id => id.Equals(snapshot.Id))))
                 .Returns(new Mock<IMarketRulesManager>().Object);
             _stateProvider = new Mock<IStateProvider>();
