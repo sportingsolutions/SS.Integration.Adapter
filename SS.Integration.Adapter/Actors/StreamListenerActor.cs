@@ -13,7 +13,6 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using SportingSolutions.Udapi.Sdk.Extensions;
-using SportingSolutions.Udapi.Sdk.Interfaces;
 
 namespace SS.Integration.Adapter.Actors
 {
@@ -24,7 +23,6 @@ namespace SS.Integration.Adapter.Actors
     {
         public enum StreamListenerState
         {
-            Initializing,
             Initialized,
             Streaming,
             Disconnected,
@@ -42,6 +40,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly IStateManager _stateManager;
         private readonly IMarketRulesManager _marketsRuleManager;
 
+        private readonly string _fixtureId;
         private int _currentEpoch;
         private int _currentSequence;
         private int _lastSequenceProcessedInSnapshot;
@@ -77,26 +76,9 @@ namespace SS.Integration.Adapter.Actors
             _resource.StreamConnected += Resource_StreamConnected;
             _resource.StreamDisconnected += Resource_StreamDisconnected;
 
-            Initializing();
-        }
-
-        #endregion
-
-        #region Behaviors
-
-        /// <summary>
-        /// If fixture has MatchOver State then don't initialize and move to Finished State.
-        /// While the first snapshot is being processed it stays in the Initializing state.
-        /// After the first snapshot has been processed it can:
-        /// - either start streaming and moves to Streaming state
-        /// OR
-        /// - move to Ready state as not allowed to be streaming yet and waits for a signal to start streaming
-        /// </summary>
-        private void Initializing()
-        {
-            State = StreamListenerState.Initializing;
             var fixtureState = _eventState.GetFixtureState(_resource.Id);
 
+            _fixtureId = _resource.Id;
             _currentEpoch = fixtureState?.Epoch ?? -1;
             _currentSequence = _resource.Content.Sequence;
             _lastSequenceProcessedInSnapshot = -1;
@@ -140,10 +122,15 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
+        #endregion
+
+        #region Behaviors
+
         //Initialised but not streaming yet - this can happen when you start fixture in Setup
         private void Initialized()
         {
             State = StreamListenerState.Initialized;
+
             Receive<TakeSnapshotMsg>(o =>
             {
                 if (_shouldProcessFirstFullSnapshot)
@@ -173,7 +160,16 @@ namespace SS.Integration.Adapter.Actors
             Receive<ResourceStateUpdateMsg>(a => UpdateResourceState(a));
             Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
 
-            Self.Tell(new TakeSnapshotMsg());
+            FixtureState fixtureState = _eventState.GetFixtureState(_resource.Id);
+
+            if (IsSnapshotNeeded(fixtureState))
+            {
+                RetrieveAndProcessSnapshot();
+            }
+            else
+            {
+                UnsuspendFixture(fixtureState);
+            }
         }
 
         //Suspends the fixture and sends message to Stream Listener Manager
@@ -199,22 +195,12 @@ namespace SS.Integration.Adapter.Actors
 
         private void Resource_StreamConnected(object sender, EventArgs e)
         {
-            var resource = sender as IResource;
-            var resourceFacade = sender as IResourceFacade;
-            if (resource != null)
-                Self.Tell(new StreamConnectedMsg { FixtureId = resource.Id });
-            else if(resourceFacade != null)
-                Self.Tell(new StreamConnectedMsg { FixtureId = resourceFacade.Id });
+            Self.Tell(new StreamConnectedMsg { FixtureId = _fixtureId });
         }
 
         private void Resource_StreamDisconnected(object sender, EventArgs e)
         {
-            var resource = sender as IResource;
-            var resourceFacade = sender as IResourceFacade;
-            if (resource != null)
-                Self.Tell(new StreamConnectedMsg { FixtureId = resource.Id });
-            else if (resourceFacade != null)
-                Self.Tell(new StreamConnectedMsg { FixtureId = resourceFacade.Id });
+            Self.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId });
         }
 
         #endregion
@@ -419,40 +405,40 @@ namespace SS.Integration.Adapter.Actors
 
         private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false)
         {
-            FixtureState state = _eventState.GetFixtureState(_resource.Id);
-            int savedResourceSequence = -1;
-            if (state != null)
+            var snapshot = RetrieveSnapshot();
+            if (snapshot != null)
             {
-                savedResourceSequence = state.Sequence;
-            }
-
-            _logger.DebugFormat("{0} has stored sequence={1} and resource current sequence={2}", _resource, savedResourceSequence, _resource.Content.Sequence);
-
-            if (savedResourceSequence == -1 || _resource.Content.Sequence != savedResourceSequence)
-            {
-                var snapshot = RetrieveSnapshot();
-                if (snapshot != null)
-                {
-                    ProcessSnapshot(snapshot, true, hasEpochChanged);
-                }
-            }
-            else
-            {
-                Fixture fixture = new Fixture
-                {
-                    Id = _resource.Id,
-                    Sequence = savedResourceSequence
-                };
-
-                if (state != null)
-                    fixture.MatchStatus = state.MatchStatus.ToString();
-
-                //unsuspends markets suspended by adapter
-                _stateManager.StateProvider.SuspensionManager.Unsuspend(fixture.Id);
-                _platformConnector.UnSuspend(fixture);
+                ProcessSnapshot(snapshot, true, hasEpochChanged);
             }
 
             _shouldProcessFirstFullSnapshot = false;
+        }
+
+        private bool IsSnapshotNeeded(FixtureState state)
+        {
+            _logger.DebugFormat(
+                $"{_resource} has stored sequence={state?.Sequence}; resource current sequence={_resource.Content.Sequence}");
+
+            return state == null || _resource.Content.Sequence != state.Sequence;
+        }
+
+        private void UnsuspendFixture(FixtureState state)
+        {
+            Fixture fixture = new Fixture
+            {
+                Id = _resource.Id,
+                Sequence = -1
+            };
+
+            if (state != null)
+            {
+                fixture.Sequence = state.Sequence;
+                fixture.MatchStatus = state.MatchStatus.ToString();
+            }
+
+            //unsuspends markets suspended by adapter
+            _stateManager.StateProvider.SuspensionManager.Unsuspend(fixture.Id);
+            _platformConnector.UnSuspend(fixture);
         }
 
         private Fixture RetrieveSnapshot()
@@ -576,6 +562,7 @@ namespace SS.Integration.Adapter.Actors
                 SuspendAndReprocessSnapshot(true);
                 _stateManager.ClearState(_resource.Id);
                 Self.Tell(new StreamDisconnectedMsg { FixtureId = _resource.Id });
+                Become(Finished);
             }
             catch (Exception e)
             {
