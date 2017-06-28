@@ -118,17 +118,17 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="football_inplay_snapshot_1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>data\football-inplay-snapshot-1;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="football_inplay_snapshot_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>data\football-inplay-snapshot-2;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="football_matchover_snapshot_1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>data\football-matchover-snapshot-1;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="football_matchover_snapshot_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>data\football-matchover-snapshot-2;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="football_ready_snapshot_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>data\football-ready-snapshot-2;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="football_ready_snapshot_3" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>data\football-ready-snapshot-3;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="football_setup_snapshot_1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>data\football-setup-snapshot-1;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="football_setup_snapshot_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>data\football-setup-snapshot-2;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="horseracing" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Data\horseracing;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>

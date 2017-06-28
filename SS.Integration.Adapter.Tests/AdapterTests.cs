@@ -400,7 +400,7 @@ namespace SS.Integration.Adapter.Tests
         [Test]
         public void SubParticipantsTest()
         {
-            var fixture = TestHelper.GetFixtureFromResource("football-inplay-snapshot-1");
+            var fixture = TestHelper.GetFixtureFromResource("football-inplay-snapshot-2");
             fixture.Participants.Should().NotBeNull();
             fixture.Participants.Should().NotBeEmpty();
             fixture.Participants.First().SubParticpants.Should().BeEmpty();
