@@ -13,6 +13,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using SportingSolutions.Udapi.Sdk.Extensions;
+using SS.Integration.Adapter.Actors.Messages;
 
 namespace SS.Integration.Adapter.Actors
 {
@@ -130,9 +131,15 @@ namespace SS.Integration.Adapter.Actors
 
         private void Resource_StreamDisconnected(object sender, EventArgs e)
         {
-            //TODO: TRIGGER QUICK RECONNECTION IF MATCH INPLAY, OR FORWARD StreamDisconnectedMsg AND BECOME STOPPED
-            Self.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId });
-            Become(Stopped);
+            if (_resource.MatchStatus == MatchStatus.InRunning)
+            {
+
+            }
+            else
+            {
+                Self.Tell(new StreamDisconnectedMsg {FixtureId = _fixtureId});
+                Become(Stopped);
+            }
         }
 
         #endregion
@@ -672,37 +679,4 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
     }
-
-    #region Internal messages
-
-    internal class StreamConnectedMsg
-    {
-        public string FixtureId { get; set; }
-    }
-
-    internal class StreamDisconnectedMsg
-    {
-        public string FixtureId { get; set; }
-    }
-
-    internal class StreamUpdateMsg
-    {
-        public string Data { get; set; }
-    }
-
-    internal class ResourceStateUpdateMsg
-    {
-        public IResourceFacade Resource { get; set; }
-    }
-
-    internal class StreamHealthCheckMsg
-    {
-        public string FixtureId { get; set; }
-
-        public int Sequence { get; set; }
-
-        public DateTime Received { get; set; }
-    }
-
-    #endregion
 }

@@ -1,11 +1,7 @@
-﻿using System;
-using System.Linq;
-using Akka.Actor;
+﻿using Akka.Actor;
 using log4net;
-using SS.Integration.Adapter.Interface;
 using SS.Integration.Common.Stats;
 using SS.Integration.Common.Stats.Interface;
-using SS.Integration.Common.Stats.Keys;
 
 namespace SS.Integration.Adapter.Actors
 {

@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Akka.Actor;
-using SportingSolutions.Udapi.Sdk.Interfaces;
+﻿using Akka.Actor;
+using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
 
 namespace SS.Integration.Adapter.Actors
@@ -64,24 +57,5 @@ namespace SS.Integration.Adapter.Actors
             }
         }
     }
-
-    #region Public messages
-
-    internal class CreateStreamListenerMessage
-    {
-        internal IResourceFacade Resource { get; set; }
-    }
-
-    internal class StreamListenerCreationCompleted
-    {
-
-    }
-
-    internal class StreamListenerCreationFailed
-    {
-        private string FixtureId { get; set; }
-    }
-
-    #endregion
 
 }

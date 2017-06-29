@@ -19,6 +19,7 @@ using Newtonsoft.Json;
 using NUnit.Framework;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Actors;
+using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;

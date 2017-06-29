@@ -43,8 +43,6 @@ namespace SS.Integration.Adapter.Actors
 
         private void ProcessSports()
         {
-            //_statsActor.Tell(new ProcessStatistics());
-
             var sports = _serviceFacade.GetSports();
 
             foreach (var sport in sports)
