@@ -1,7 +1,6 @@
 ﻿namespace SS.Integration.Adapter.Actors.Messages
 {
-    internal class StreamListenerCreationCompleted
+    internal class ResourceStopStreamingMsg
     {
-
     }
 }

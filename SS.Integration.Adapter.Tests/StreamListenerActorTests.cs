@@ -13,6 +13,9 @@
 //limitations under the License.
 
 using System;
+using System.Threading.Tasks;
+using Akka.Actor;
+using Akka.TestKit;
 using Akka.TestKit.NUnit;
 using Moq;
 using Newtonsoft.Json;
@@ -33,6 +36,7 @@ namespace SS.Integration.Adapter.Tests
 
         public const int ASSERT_WAIT_TIMEOUT = 2500 /*ms*/;
         public const int ASSERT_EXEC_INTERVAL = 250 /*ms*/;
+        public const string STREAM_LISTENER_ACTOR_CATEGORY = nameof(StreamListenerActor);
 
         #endregion
 
@@ -56,7 +60,9 @@ namespace SS.Integration.Adapter.Tests
             _pluginMock = new Mock<IAdapterPlugin>();
 
             _settingsMock = new Mock<ISettings>();
-            _settingsMock.SetupGet(a => a.StreamSafetyThreshold).Returns(5);
+            _settingsMock.SetupGet(a => a.StreamSafetyThreshold).Returns(3);
+            _settingsMock.SetupGet(a => a.FixtureCreationConcurrency).Returns(3);
+            _settingsMock.SetupGet(a => a.EventStateFilePath).Returns(string.Empty);
 
             _serviceMock = new Mock<IServiceFacade>();
 
@@ -64,7 +70,13 @@ namespace SS.Integration.Adapter.Tests
 
             _stateManagerMock = new Mock<IStateManager>();
 
-            AdapterActorSystem.Init(_settingsMock.Object, _serviceMock.Object, Sys, false);
+            AdapterActorSystem.Init(
+                _settingsMock.Object,
+                _serviceMock.Object,
+                _pluginMock.Object,
+                _stateManagerMock.Object,
+                Sys,
+                false);
         }
 
         #endregion
@@ -76,7 +88,7 @@ namespace SS.Integration.Adapter.Tests
         /// when the saved state is not null and current resource sequence has not changed compared to the saved state sequence.
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnInitializationDoNotProcessSnapshotIfSavedStateIsNotNullAndSequenceHasNotChanged()
         {
             //
@@ -127,7 +139,7 @@ namespace SS.Integration.Adapter.Tests
         /// also we start streaming when the current resource state is not Ready nor Setup (for this test status is InPlay).
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnInitializationStartStreamingAndProcessFirstSnapshotWhenMatchStatusNotReadyNorSetup()
         {
             //
@@ -177,7 +189,7 @@ namespace SS.Integration.Adapter.Tests
         /// This test ensures we process the match over when status has changed from InPlay to MatchOver
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnInitializationMoveToFinishedStateWhenResourceHasMatchOverStatus()
         {
             //
@@ -234,7 +246,7 @@ namespace SS.Integration.Adapter.Tests
         /// This test ensures we move directly to finished state on initialization when the fixture has status match over on the saved state
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnInitializationMoveToFinishedStateWhenMatchOverWasAlreadyProcessed()
         {
             //
@@ -291,7 +303,7 @@ namespace SS.Integration.Adapter.Tests
         /// This test ensures we process the new match status change on initialization when the stored match status is different than the current one
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnInitializationProcessFullSnapshotWhenCurrentMatchStatusIsDifferentThanStoredMatchStatus()
         {
             //
@@ -350,7 +362,7 @@ namespace SS.Integration.Adapter.Tests
         /// Also we ensure the Unsuspend Fixture is called given the Sequence has not changed (stored Sequence is the same as the current one)
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnInitializationAfterStartStreamingUnSuspendFixtureOnProcessSnapshotWhenSequenceHasNotChanged()
         {
             //
@@ -401,7 +413,7 @@ namespace SS.Integration.Adapter.Tests
         /// Also the first snapshot is processed due to sequence change
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnInitializationStartStreamingWhenMatchStatusReady()
         {
             //
@@ -452,7 +464,7 @@ namespace SS.Integration.Adapter.Tests
         /// Also First Snapshot is not processed and Fixture is Unsuspended as the current sequence is the same as the stored one.
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnInitializationMoveToInitializedStateWhenMatchStatusSetupWithNotAllowStreamingInSetupMode()
         {
             //
@@ -506,7 +518,7 @@ namespace SS.Integration.Adapter.Tests
         /// - second snapshot processing is done after we process the resource state update message due to match status changed
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnUpdateResourceStateProcessSnapshotWhenMovingFromInitializedStateToStreamingState()
         {
             //
@@ -583,7 +595,7 @@ namespace SS.Integration.Adapter.Tests
         /// then we ignore the snapshot and we don't process it
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnUpdateMessageProcessSnapshotNotDoneWhenSequenceInvalidLowerThanCurrentSequence()
         {
             //
@@ -657,7 +669,7 @@ namespace SS.Integration.Adapter.Tests
         /// then we process the full snapshot again. First snapshot processing happens on initialization due to different current sequence than stored one.
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnUpdateMessageProcessSnapshotWhenSequenceInvalidMoreThan1GreaterThanCurrentSequence()
         {
             //
@@ -733,7 +745,7 @@ namespace SS.Integration.Adapter.Tests
         /// then we suspend the fixture and we process the full snapshot with epoch change.
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnUpdateMessageProcessEpochChangeWhenMatchStatusChange()
         {
             //
@@ -809,7 +821,7 @@ namespace SS.Integration.Adapter.Tests
         /// then we suspend the fixture and we process the full snapshot with epoch change.
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnUpdateMessageWhenInvalidEpochLowerThanCurrentThenSuspendAndProcessSnapshot()
         {
             //
@@ -882,7 +894,7 @@ namespace SS.Integration.Adapter.Tests
         /// This test ensures that after receiving the update message with valid sequence and valid epoch then stream update is processed
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnUpdateMessageProcessStreamUpdate()
         {
             //
@@ -963,7 +975,7 @@ namespace SS.Integration.Adapter.Tests
         /// and stop streaming
         /// </summary>
         [Test]
-        [Category("StreamListenerActor")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnUpdateMessageProcessFixtureDeletionWithEpochChange()
         {
             //
@@ -1037,6 +1049,91 @@ namespace SS.Integration.Adapter.Tests
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        [Test]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
+        public void OnDisconnectionEnsureReconnectWhenMatchInPlay()
+        {
+            //
+            //Arrange
+            //
+            Fixture snapshot;
+            Mock<IResourceFacade> resourceFacadeMock;
+            SetupCommonMockObjects(
+                /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
+                /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
+                out snapshot,
+                out resourceFacadeMock);
+
+            //
+            //Act
+            //
+            var streamListenerManagerActor =
+                ActorOfAsTestActorRef(() =>
+                    new StreamListenerManagerActor(
+                        _settingsMock.Object,
+                        _pluginMock.Object,
+                        _stateManagerMock.Object));
+            streamListenerManagerActor.Tell(new CreateStreamListenerMsg { Resource = resourceFacadeMock.Object });
+
+            var streamListenerActorName = StreamListenerActor.ActorName + "For" + resourceFacadeMock.Object.Id;
+            TestActorRef<StreamListenerActor> streamListenerActor = null;
+
+            AwaitAssert(() =>
+                {
+                    streamListenerActor = ((LocalActorRef)streamListenerManagerActor.Ref).GetChild(
+                        new[] { streamListenerActorName }) as TestActorRef<StreamListenerActor>;
+                    Assert.NotNull(streamListenerActor);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+
+            streamListenerActor.UnderlyingActor.ResourceActorRef.Tell(
+                new ResourceStopStreamingMsg(),
+                streamListenerManagerActor);
+
+            Task.Delay(10000).Wait();
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                    resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Never);
+                    _pluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
+                        Times.Never);
+                    _pluginMock.Verify(a =>
+                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _pluginMock.Verify(a =>
+                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _pluginMock.Verify(a =>
+                            a.ProcessFixtureDeletion(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _suspensionManager.Verify(a =>
+                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _suspensionManager.Verify(a =>
+                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
+                                SuspensionReason.DISCONNECT_EVENT),
+                        Times.Once);
+                    Assert.AreEqual(StreamListenerActor.StreamListenerState.Streaming, streamListenerActor.UnderlyingActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
         #endregion
 
         #region Private methods
@@ -1054,7 +1151,13 @@ namespace SS.Integration.Adapter.Tests
             var snapshotVar = snapshot;
             resourceFacadeMock.Setup(o => o.Id).Returns(snapshot.Id);
             resourceFacadeMock.Setup(o => o.MatchStatus).Returns((MatchStatus)Convert.ToInt32(snapshot.MatchStatus));
-            resourceFacadeMock.Setup(o => o.Content).Returns(new Summary { Sequence = snapshot.Sequence });
+            resourceFacadeMock.Setup(o => o.Content).Returns(new Summary
+            {
+                Id = snapshot.Id,
+                Sequence = snapshot.Sequence,
+                MatchStatus = Convert.ToInt32(snapshot.MatchStatus),
+                StartTime = snapshot.StartTime?.ToString("yyyy-MM-ddTHH:mm:ssZ")
+            });
             resourceFacadeMock.Setup(o => o.GetSnapshot()).Returns(snapshotJson);
             resourceFacadeMock.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
             resourceFacadeMock.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);

@@ -1,8 +1,7 @@
 ﻿namespace SS.Integration.Adapter.Actors.Messages
 {
-    internal class StreamDisconnectedMsg
+    internal class StreamListenerStoppedMsg
     {
         public string FixtureId { get; set; }
-        public string Sport { get; set; }
     }
 }

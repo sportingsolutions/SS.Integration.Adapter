@@ -4,6 +4,7 @@ using Akka.Actor;
 using log4net;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Actors
 {
@@ -14,31 +15,49 @@ namespace SS.Integration.Adapter.Actors
     /// </summary>
     public class SportProcessorRouterActor : ReceiveActor
     {
-        public const string ActorName = "SportProcessorRouterActor";
+        #region Constants
+
+        public const string ActorName = nameof(SportProcessorRouterActor);
+
+        #endregion
+
+        #region Attributes
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(SportProcessorRouterActor));
         private readonly ISettings _settings;
+        private readonly IAdapterPlugin _adapterPlugin;
+        private readonly IStateManager _stateManager;
         private readonly IServiceFacade _serviceFacade;
 
-        public SportProcessorRouterActor(ISettings settings, IServiceFacade serviceFacade)
+        #endregion
+
+        #region Constructors
+
+        public SportProcessorRouterActor(
+            ISettings settings, 
+            IAdapterPlugin adapterPlugin,
+            IStateManager stateManager, 
+            IServiceFacade serviceFacade)
         {
-            _settings = settings;
-            _serviceFacade = serviceFacade;
-            DefaultBehavior();
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _adapterPlugin = adapterPlugin ?? throw new ArgumentNullException(nameof(adapterPlugin));
+            _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
+            _serviceFacade = serviceFacade ?? throw new ArgumentNullException(nameof(serviceFacade));
+
+            Receive<ProcessSportMsg>(o => ProcessSportMsgHandler(o));
         }
 
-        private void DefaultBehavior()
-        {
-            Receive<ProcessSportMessage>(o => ProcessSportMessageHandler(o));
-        }
+        #endregion
 
-        private void ProcessSportMessageHandler(ProcessSportMessage message)
+        #region Private methods
+
+        private void ProcessSportMsgHandler(ProcessSportMsg msg)
         {
-            var resources = _serviceFacade.GetResources(message.Sport);
-            if (ValidateResources(resources, message.Sport))
+            var resources = _serviceFacade.GetResources(msg.Sport);
+            if (ValidateResources(resources, msg.Sport))
             {
                 _logger.DebugFormat(
-                    $"Received {resources.Count} fixtures to process in sport={message.Sport}");
+                    $"Received {resources.Count} fixtures to process in sport={msg.Sport}");
 
                 if (resources.Count > 1)
                 {
@@ -54,13 +73,21 @@ namespace SS.Integration.Adapter.Actors
                     });
                 }
 
-                ICanTell streamListenerManagerActor =
-                    Equals(Context.Child(message.Sport), Nobody.Instance)
-                        ? Context.ActorOf(Props.Create(() => new StreamListenerManagerActor(_settings)), message.Sport)
-                        : Context.ActorSelection($"{Self.Path}/{message.Sport}") as ICanTell;
+                var streamListenerManagerActor =
+                    Context.Child(StreamListenerManagerActor.ActorName + "For" + msg.Sport);
+                if (Equals(streamListenerManagerActor, Nobody.Instance))
+                {
+                    streamListenerManagerActor = Context.ActorOf(Props.Create(() =>
+                            new StreamListenerManagerActor(
+                                _settings,
+                                _adapterPlugin,
+                                _stateManager)),
+                        StreamListenerManagerActor.ActorName + "For" + msg.Sport);
+                }
+
                 foreach (var resource in resources)
                 {
-                    streamListenerManagerActor.Tell(new CreateStreamListenerMessage { Resource = resource }, Self);
+                    streamListenerManagerActor.Tell(new CreateStreamListenerMsg { Resource = resource }, Self);
                 }
             }
         }
@@ -82,5 +109,7 @@ namespace SS.Integration.Adapter.Actors
 
             return valid;
         }
+
+        #endregion
     }
 }

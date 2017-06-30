@@ -22,12 +22,23 @@ namespace SS.Integration.Adapter.Actors
     /// </summary>
     public class StreamListenerActor : ReceiveActor
     {
-        public enum StreamListenerState
+        #region Constants
+
+        public const string ActorName = nameof(StreamListenerActor);
+
+        #endregion
+
+        #region Enums
+
+        internal enum StreamListenerState
         {
             Initialized,
             Streaming,
+            Disconnected,
             Stopped
         }
+
+        #endregion
 
         #region Attributes
 
@@ -39,13 +50,15 @@ namespace SS.Integration.Adapter.Actors
         private readonly IStatsHandle _stats;
         private readonly IStateManager _stateManager;
         private readonly IMarketRulesManager _marketsRuleManager;
+        private readonly IActorRef _resourceActor;
 
         private readonly string _fixtureId;
         private int _currentEpoch;
         private int _currentSequence;
         private int _lastSequenceProcessedInSnapshot;
+        private ICancelable _startStreamingNotResponding;
         private int _startStreamingNotResondingWarnCount;
-        private bool _skipFixtureSuspentionOnDisconnection;
+        private bool _stopStreamingTriggered;
         private DateTime? _fixtureStartTime;
 
         #endregion
@@ -53,6 +66,7 @@ namespace SS.Integration.Adapter.Actors
         #region Properties
 
         internal StreamListenerState State { get; private set; }
+        internal IActorRef ResourceActorRef => _resourceActor;
 
         #endregion
 
@@ -73,6 +87,9 @@ namespace SS.Integration.Adapter.Actors
             _stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _fixtureId = _resource.Id;
+            _resourceActor = Context.ActorOf(
+                Props.Create(() => new ResourceActor(_resource)),
+                ResourceActor.ActorName + _resource.Id);
 
             Initialize();
         }
@@ -86,9 +103,8 @@ namespace SS.Integration.Adapter.Actors
         {
             State = StreamListenerState.Initialized;
 
-            Receive<TakeSnapshotMsg>(o => RetrieveAndProcessSnapshot());
             Receive<StreamConnectedMsg>(a => Become(Streaming));
-            Receive<StreamDisconnectedMsg>(a => StreamDisconnectedHandler(a));
+            Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
             Receive<ResourceStateUpdateMsg>(a => UpdateResourceState(a));
         }
 
@@ -97,10 +113,12 @@ namespace SS.Integration.Adapter.Actors
         {
             State = StreamListenerState.Streaming;
 
-            Receive<TakeSnapshotMsg>(o => RetrieveAndProcessSnapshot());
+            Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
             Receive<ResourceStateUpdateMsg>(a => UpdateResourceState(a));
             Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
-            Receive<StreamDisconnectedMsg>(a => StreamDisconnectedHandler(a));
+
+            _startStreamingNotResponding?.Cancel();
+            _startStreamingNotResponding = null;
 
             FixtureState fixtureState = _eventState.GetFixtureState(_resource.Id);
 
@@ -114,32 +132,22 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
+        //No further messages should be accepted, resource has been disconnected, the actor will be restared
+        private void Disconnected()
+        {
+            State = StreamListenerState.Disconnected;
+
+            //tell Stream Listener Manager Actor that we got disconnected so it can kill and recreate this child actor
+            Context.Parent.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId, Sport = _resource.Sport });
+        }
+
         //No further messages should be accepted, resource has stopped streaming
         private void Stopped()
         {
             State = StreamListenerState.Stopped;
-        }
 
-        #endregion
-
-        #region Events Handlers
-
-        private void Resource_StreamConnected(object sender, EventArgs e)
-        {
-            Self.Tell(new StreamConnectedMsg { FixtureId = _fixtureId });
-        }
-
-        private void Resource_StreamDisconnected(object sender, EventArgs e)
-        {
-            if (_resource.MatchStatus == MatchStatus.InRunning)
-            {
-
-            }
-            else
-            {
-                Self.Tell(new StreamDisconnectedMsg {FixtureId = _fixtureId});
-                Become(Stopped);
-            }
+            //tell Stream Listener Manager Actor that we stopped so it can kill this child actor
+            Context.Parent.Tell(new StreamListenerStoppedMsg { FixtureId = _fixtureId });
         }
 
         #endregion
@@ -149,15 +157,13 @@ namespace SS.Integration.Adapter.Actors
         private void Initialize()
         {
             Receive<StreamConnectedMsg>(a => Become(Streaming));
+            Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
             Receive<ResourceStateUpdateMsg>(a => UpdateResourceState(a));
             Receive<StartStreamingNotRespondingMsg>(a => StartStreamingNotRespondingHandler(a));
 
-            _resource.StreamConnected += Resource_StreamConnected;
-            _resource.StreamDisconnected += Resource_StreamDisconnected;
-
             var fixtureState = _eventState.GetFixtureState(_resource.Id);
 
-            _skipFixtureSuspentionOnDisconnection = false;
+            _stopStreamingTriggered = false;
             _currentEpoch = fixtureState?.Epoch ?? -1;
             _currentSequence = _resource.Content.Sequence;
             _lastSequenceProcessedInSnapshot = -1;
@@ -206,7 +212,22 @@ namespace SS.Integration.Adapter.Actors
         private void ConnectToStreamServer()
         {
             _logger.DebugFormat("Starting streaming for {0} - resource has sequence={1}", _resource, _resource.Content.Sequence);
-            StartStreamingWithChecking(() => _resource.StartStreaming(), _resource);
+
+            var interval = _settings.StartStreamingTimeoutInSeconds;
+            if (interval <= 0)
+                interval = 1;
+
+            _startStreamingNotResondingWarnCount = 0;
+            _startStreamingNotResponding =
+                Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(
+                    interval * 1000,
+                    interval * 1000,
+                    Self,
+                    new StartStreamingNotRespondingMsg(),
+                    Self);
+
+            _resourceActor.Tell(new ResourceStartStreamingMsg());
+
             _logger.DebugFormat("Started streaming for {0} - resource has sequence={1}", _resource, _resource.Content.Sequence);
         }
 
@@ -270,13 +291,12 @@ namespace SS.Integration.Adapter.Actors
                     return;
                 }
 
-
                 _logger.InfoFormat(
                     "Stream update {0} has epoch change with reason {1}, the snapshot will be processed instead.",
                     fixtureDelta,
                     //aggregates LastEpochChange reasons into string like "BaseVariables,Starttime"
                     fixtureDelta.LastEpochChangeReason != null && fixtureDelta.LastEpochChangeReason.Length > 0
-                        ? fixtureDelta.LastEpochChangeReason.Select(x => ((EpochChangeReason) x).ToString())
+                        ? fixtureDelta.LastEpochChangeReason.Select(x => ((EpochChangeReason)x).ToString())
                             .Aggregate((first, second) => $"{first}, {second}")
                         : "Unknown");
 
@@ -287,14 +307,19 @@ namespace SS.Integration.Adapter.Actors
             _logger.InfoFormat("Update fo {0} processed successfully", fixtureDelta);
         }
 
-        private void StreamDisconnectedHandler(StreamDisconnectedMsg msg)
+        private void StreamDisconnectedMsgHandler(StreamDisconnectedMsg msg)
         {
-            if (!_skipFixtureSuspentionOnDisconnection)
+            if (!_stopStreamingTriggered)
             {
-                SuspendFixture(SuspensionReason.DISCONNECT_EVENT);
+                if (ShouldSuspendOnDisconnection())
+                {
+                    SuspendFixture(SuspensionReason.DISCONNECT_EVENT);
+                }
+
+                Become(Disconnected);
             }
-            _skipFixtureSuspentionOnDisconnection = false;
-            Context.Parent.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId });
+
+            _stopStreamingTriggered = false;
         }
 
         private bool IsSnapshotNeeded(FixtureState state)
@@ -364,26 +389,6 @@ namespace SS.Integration.Adapter.Actors
             }
 
             return true;
-        }
-
-        private void StartStreamingWithChecking(Action action, object obj)
-        {
-            var interval = _settings.StartStreamingTimeoutInSeconds;
-            if (interval <= 0)
-                interval = 1;
-
-            _startStreamingNotResondingWarnCount = 0;
-            ICancelable startStreamingNotResponding =
-                Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(
-                    interval * 1000,
-                    interval * 1000,
-                    Self,
-                    new StartStreamingNotRespondingMsg(),
-                    Self);
-
-            action();
-
-            startStreamingNotResponding.Cancel();
         }
 
         private void StartStreamingNotRespondingHandler(StartStreamingNotRespondingMsg msg)
@@ -659,19 +664,27 @@ namespace SS.Integration.Adapter.Actors
 
         private void StopStreaming()
         {
-            _skipFixtureSuspentionOnDisconnection = true;
+            _stopStreamingTriggered = true;
 
-            //StopStreaming will trigger Resource_StreamDisconnected
-            _resource.StopStreaming();
+            _resourceActor.Tell(new ResourceStopStreamingMsg());
+
+            Become(Stopped);
+        }
+
+        private bool ShouldSuspendOnDisconnection()
+        {
+            var state = _eventState.GetFixtureState(_fixtureId);
+            if (state == null || !_fixtureStartTime.HasValue)
+                return true;
+
+            var spanBetweenNowAndStartTime = _fixtureStartTime.Value - DateTime.UtcNow;
+            var doNotSuspend = _settings.DisablePrematchSuspensionOnDisconnection && spanBetweenNowAndStartTime.TotalMinutes > _settings.PreMatchSuspensionBeforeStartTimeInMins;
+            return !doNotSuspend;
         }
 
         #endregion
 
         #region Private messages
-
-        private class TakeSnapshotMsg
-        {
-        }
 
         private class StartStreamingNotRespondingMsg
         {

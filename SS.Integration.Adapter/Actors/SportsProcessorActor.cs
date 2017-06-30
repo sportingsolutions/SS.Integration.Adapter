@@ -11,22 +11,32 @@ namespace SS.Integration.Adapter.Actors
     /// </summary>
     public class SportsProcessorActor : ReceiveActor
     {
-        public const string ActorName = "SportsProcessorActor";
+        #region Constants
+
+        public const string ActorName = nameof(SportsProcessorActor);
+
+        #endregion
+
+        #region Attribues
 
         private readonly IServiceFacade _serviceFacade;
         private readonly IActorRef _sportProcessorRouterActor;
         private readonly IActorRef _statsActor;
+
+        #endregion
+
+        #region Constructors
 
         public SportsProcessorActor(
             ISettings settings,
             IServiceFacade serviceFacade,
             IActorRef sportProcessorRouterActor)
         {
-            _serviceFacade = serviceFacade;
-            _sportProcessorRouterActor = sportProcessorRouterActor;
+            _serviceFacade = serviceFacade ?? throw new ArgumentNullException(nameof(serviceFacade));
+            _sportProcessorRouterActor = sportProcessorRouterActor ?? throw new ArgumentNullException(nameof(sportProcessorRouterActor));
 
-            DefaultBehavior();
-        
+            Receive<ProcessSportsMessage>(o => ProcessSports());
+
             Context.System.Scheduler.ScheduleTellRepeatedly(
                 TimeSpan.Zero,
                 TimeSpan.FromMilliseconds(settings.FixtureCheckerFrequency),
@@ -36,10 +46,9 @@ namespace SS.Integration.Adapter.Actors
             _statsActor = Context.ActorOf(Props.Create<StatsActor>(), StatsActor.ActorName);
         }
 
-        private void DefaultBehavior()
-        {
-            Receive<ProcessSportsMessage>(o => ProcessSports());
-        }
+        #endregion
+
+        #region Private methods
 
         private void ProcessSports()
         {
@@ -47,9 +56,11 @@ namespace SS.Integration.Adapter.Actors
 
             foreach (var sport in sports)
             {
-                _sportProcessorRouterActor.Tell(new ProcessSportMessage {Sport = sport.Name});
+                _sportProcessorRouterActor.Tell(new ProcessSportMsg {Sport = sport.Name});
             }
         }
+
+        #endregion
 
         #region Private messages
 

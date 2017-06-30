@@ -7,7 +7,7 @@ namespace SS.Integration.Adapter.Actors
 {
     public class StatsActor : ReceiveActor
     {
-        public const string ActorName = "StatsActor";
+        public const string ActorName = nameof(StatsActor);
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StatsActor));
         private readonly IStatsHandle _stats;

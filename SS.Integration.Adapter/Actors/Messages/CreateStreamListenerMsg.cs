@@ -2,7 +2,7 @@
 
 namespace SS.Integration.Adapter.Actors.Messages
 {
-    internal class CreateStreamListenerMessage
+    internal class CreateStreamListenerMsg
     {
         internal IResourceFacade Resource { get; set; }
     }

@@ -82,18 +82,22 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Actors\Messages\CreateStreamListenerMessage.cs" />
-    <Compile Include="Actors\Messages\ProcessSportMessage.cs" />
+    <Compile Include="Actors\Messages\CreateStreamListenerMsg.cs" />
+    <Compile Include="Actors\Messages\ProcessSportMsg.cs" />
+    <Compile Include="Actors\Messages\ResourceStartStreamingMsg.cs" />
+    <Compile Include="Actors\Messages\ResourceStopStreamingMsg.cs" />
     <Compile Include="Actors\Messages\ResourceStateUpdateMsg.cs" />
+    <Compile Include="Actors\Messages\StreamListenerStoppedMsg.cs" />
     <Compile Include="Actors\Messages\StreamConnectedMsg.cs" />
     <Compile Include="Actors\Messages\StreamDisconnectedMsg.cs" />
     <Compile Include="Actors\Messages\StreamHealthCheckMsg.cs" />
-    <Compile Include="Actors\Messages\StreamListenerCreationCompleted.cs" />
-    <Compile Include="Actors\Messages\StreamListenerCreationFailed.cs" />
+    <Compile Include="Actors\Messages\StreamListenerCreationCompletedMsg.cs" />
+    <Compile Include="Actors\Messages\StreamListenerCreationFailedMsg.cs" />
     <Compile Include="Actors\Messages\StreamUpdateMsg.cs" />
     <Compile Include="Actors\StatsActor.cs" />
     <Compile Include="Actors\SportProcessorRouterActor.cs" />
     <Compile Include="Actors\StreamHealthCheckActor.cs" />
+    <Compile Include="Actors\ResourceActor.cs" />
     <Compile Include="Actors\StreamListenerActor.cs" />
     <Compile Include="Actors\StreamListenerBuilderActor.cs" />
     <Compile Include="Actors\StreamListenerManagerActor.cs" />

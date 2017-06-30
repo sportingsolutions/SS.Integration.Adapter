@@ -98,7 +98,7 @@ namespace SS.Integration.Adapter
                 
                 _logger.Debug("Adapter connected to the UDAPI - initialising...");
 
-                AdapterActorSystem.Init(Settings, UDAPIService);
+                AdapterActorSystem.Init(Settings, UDAPIService, PlatformConnector, StateManager);
 
                 _logger.InfoFormat("Adapter started");
                 _stats.SetValue(AdapterCoreKeys.ADAPTER_STARTED, "1");
