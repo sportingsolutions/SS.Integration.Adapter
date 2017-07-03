@@ -75,7 +75,7 @@ namespace SS.Integration.Adapter.Actors
 
                 var streamListenerManagerActor =
                     Context.Child(StreamListenerManagerActor.ActorName + "For" + msg.Sport);
-                if (Equals(streamListenerManagerActor, Nobody.Instance))
+                if (streamListenerManagerActor.IsNobody())
                 {
                     streamListenerManagerActor = Context.ActorOf(Props.Create(() =>
                             new StreamListenerManagerActor(

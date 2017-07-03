@@ -63,7 +63,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void CreateStreamListenerMsgHandler(CreateStreamListenerMsg msg)
         {
-            if (Equals(Context.Child(StreamListenerActor.ActorName + "For" + msg.Resource.Id), Nobody.Instance))
+            if (Context.Child(StreamListenerActor.ActorName + "For" + msg.Resource.Id).IsNobody())
             {
                 _streamListenerBuilderActorRef.Tell(msg);
             }
@@ -95,8 +95,8 @@ namespace SS.Integration.Adapter.Actors
         private void StopStreamListenerChildActor(string fixtureId)
         {
             IActorRef streamListenerActor = Context.Child(StreamListenerActor.ActorName + "For" + fixtureId);
-            if (!Equals(streamListenerActor, Nobody.Instance))
-                Context.Stop(streamListenerActor);
+            if (!streamListenerActor.IsNobody())
+                streamListenerActor.GracefulStop(TimeSpan.FromSeconds(5)).Wait();
         }
 
         private void ResetSendProcessSportMsgHandler(ResetSendProcessSportMsg msg)

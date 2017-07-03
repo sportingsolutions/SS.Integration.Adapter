@@ -66,7 +66,6 @@ namespace SS.Integration.Adapter.Actors
         #region Properties
 
         internal StreamListenerState State { get; private set; }
-        internal IActorRef ResourceActorRef => _resourceActor;
 
         #endregion
 
@@ -89,7 +88,7 @@ namespace SS.Integration.Adapter.Actors
             _fixtureId = _resource.Id;
             _resourceActor = Context.ActorOf(
                 Props.Create(() => new ResourceActor(_resource)),
-                ResourceActor.ActorName + _resource.Id);
+                ResourceActor.ActorName);
 
             Initialize();
         }
@@ -602,7 +601,7 @@ namespace SS.Integration.Adapter.Actors
                 $"State={State} " +
                 $"isMatchOver={msg.Resource.IsMatchOver}");
 
-            bool isMatchOver = msg.Resource.Content.MatchStatus == (int)MatchStatus.MatchOver || msg.Resource.IsMatchOver;
+            /*bool isMatchOver = msg.Resource.Content.MatchStatus == (int)MatchStatus.MatchOver || msg.Resource.IsMatchOver;
             if (isMatchOver)
             {
                 var isStreaming = State == StreamListenerState.Streaming;
@@ -612,7 +611,7 @@ namespace SS.Integration.Adapter.Actors
                     StopStreaming();
                 }
                 return;
-            }
+            }*/
 
             if (ValidateStream(msg.Resource))
             {

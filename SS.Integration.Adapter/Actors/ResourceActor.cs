@@ -54,6 +54,14 @@ namespace SS.Integration.Adapter.Actors
             Context.Parent.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId, Sport = _resource.Sport });
         }
 
+        protected override void PostStop()
+        {
+            base.PostStop();
+
+            _resource.StreamConnected -= Resource_StreamConnected;
+            _resource.StreamDisconnected -= Resource_StreamDisconnected;
+        }
+
         #endregion
 
         #region Private methods
