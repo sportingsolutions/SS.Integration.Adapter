@@ -20,7 +20,7 @@ namespace SS.Integration.Adapter.Actors
     /// <summary>
     /// This class is responsible for managing resource and streaming 
     /// </summary>
-    public class StreamListenerActor : ReceiveActor
+    public class StreamListenerActor : ReceiveActor, IWithUnboundedStash
     {
         #region Constants
 
@@ -32,9 +32,11 @@ namespace SS.Integration.Adapter.Actors
 
         internal enum StreamListenerState
         {
+            Initializing,
             Initialized,
             Streaming,
             Disconnected,
+            Errored,
             Stopped
         }
 
@@ -58,7 +60,6 @@ namespace SS.Integration.Adapter.Actors
         private int _lastSequenceProcessedInSnapshot;
         private ICancelable _startStreamingNotResponding;
         private int _startStreamingNotResondingWarnCount;
-        private bool _stopStreamingTriggered;
         private DateTime? _fixtureStartTime;
 
         #endregion
@@ -66,6 +67,8 @@ namespace SS.Integration.Adapter.Actors
         #region Properties
 
         internal StreamListenerState State { get; private set; }
+
+        public IStash Stash { get; set; }
 
         #endregion
 
@@ -78,19 +81,28 @@ namespace SS.Integration.Adapter.Actors
             IStateManager stateManager,
             ISettings settings)
         {
-            _resource = resource ?? throw new ArgumentNullException(nameof(resource));
-            _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
-            _eventState = eventState ?? throw new ArgumentNullException(nameof(eventState));
-            _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
-            _marketsRuleManager = _stateManager.CreateNewMarketRuleManager(resource.Id);
-            _stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _fixtureId = _resource.Id;
-            _resourceActor = Context.ActorOf(
-                Props.Create(() => new ResourceActor(_resource)),
-                ResourceActor.ActorName);
+            try
+            {
+                _resource = resource ?? throw new ArgumentNullException(nameof(resource));
+                _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
+                _eventState = eventState ?? throw new ArgumentNullException(nameof(eventState));
+                _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
+                _marketsRuleManager = _stateManager.CreateNewMarketRuleManager(resource.Id);
+                _stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
+                _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+                _fixtureId = _resource.Id;
+                _resourceActor = Context.ActorOf(
+                    Props.Create(() => new ResourceActor(_resource)),
+                    ResourceActor.ActorName);
 
-            Initialize();
+                Initialize();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(
+                    $"Stream Listener instantiation failed for resource {_resource} - exception - {ex}");
+                Become(Errored);
+            }
         }
 
         #endregion
@@ -104,7 +116,7 @@ namespace SS.Integration.Adapter.Actors
 
             Receive<StreamConnectedMsg>(a => Become(Streaming));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
-            Receive<ResourceStateUpdateMsg>(a => UpdateResourceState(a));
+            Receive<ResourceStateUpdateMsg>(a => ResourceStateUpdateMsgHandler(a));
         }
 
         //Connected and streaming state - all messages should be processed
@@ -112,22 +124,33 @@ namespace SS.Integration.Adapter.Actors
         {
             State = StreamListenerState.Streaming;
 
-            Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
-            Receive<ResourceStateUpdateMsg>(a => UpdateResourceState(a));
-            Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
-
-            _startStreamingNotResponding?.Cancel();
-            _startStreamingNotResponding = null;
-
-            FixtureState fixtureState = _eventState.GetFixtureState(_resource.Id);
-
-            if (IsSnapshotNeeded(fixtureState))
+            try
             {
-                RetrieveAndProcessSnapshot();
+                Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
+                Receive<ResourceStateUpdateMsg>(a => ResourceStateUpdateMsgHandler(a));
+                Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
+
+                _startStreamingNotResponding?.Cancel();
+                _startStreamingNotResponding = null;
+
+                FixtureState fixtureState = _eventState.GetFixtureState(_resource.Id);
+
+                if (IsSnapshotNeeded(fixtureState))
+                {
+                    RetrieveAndProcessSnapshot();
+                }
+                else
+                {
+                    UnsuspendFixture(fixtureState);
+                }
+
+                Stash.UnstashAll();
             }
-            else
+            catch (Exception ex)
             {
-                UnsuspendFixture(fixtureState);
+                _logger.Error(
+                    $"Failed moving to Streaming State for resource {_resource} - exception - {ex}");
+                Become(Errored);
             }
         }
 
@@ -138,6 +161,55 @@ namespace SS.Integration.Adapter.Actors
 
             //tell Stream Listener Manager Actor that we got disconnected so it can kill and recreate this child actor
             Context.Parent.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId, Sport = _resource.Sport });
+        }
+
+        //Error has occured, resource will try to recover by processing full snapshot
+        private void Errored()
+        {
+            var prevState = State;
+            State = StreamListenerState.Errored;
+
+            Exception erroredEx = null;
+            try
+            {
+                _logger.Warn(
+                    $"Fixture {_resource} is in Errored State - trying now to suspend and reprocess full snapshot");
+
+                SuspendAndReprocessSnapshot();
+
+                switch (prevState)
+                {
+                    case StreamListenerState.Initializing:
+                        {
+                            Initialize();
+                            break;
+                        }
+                    case StreamListenerState.Streaming:
+                        {
+                            Become(Streaming);
+                            break;
+                        }
+                }
+            }
+            catch (Exception ex)
+            {
+                erroredEx = ex;
+            }
+
+            if (erroredEx != null)
+            {
+                try
+                {
+                    _logger.Error(
+                        $"Suspending Fixture {_resource} with FIXTURE_ERRORED as Stream Listener failed to recover from Errored State - exception - {erroredEx}");
+                    SuspendFixture(SuspensionReason.FIXTURE_ERRORED);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(
+                        $"Failed Suspending Fixture {_resource} on Errored State - exception - {ex}");
+                }
+            }
         }
 
         //No further messages should be accepted, resource has stopped streaming
@@ -151,66 +223,246 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
+        #region Message Handlers
+
+        private void StreamUpdateHandler(StreamUpdateMsg msg)
+        {
+            try
+            {
+                var deltaMessage = msg.Data.FromJson<StreamMessage>();
+                var fixtureDelta = deltaMessage.GetContent<Fixture>();
+
+                _logger.Info($"{fixtureDelta} stream update arrived");
+
+                if (!IsSequenceValid(fixtureDelta))
+                {
+                    _logger.Warn($"Update for {fixtureDelta} will not be processed because sequence is not valid");
+
+                    // if snapshot was already processed with higher sequence no need to process this sequence
+                    // THIS should never happen!!
+                    if (fixtureDelta.Sequence <= _lastSequenceProcessedInSnapshot)
+                    {
+                        _logger.Warn(
+                            $"Stream update {fixtureDelta} will be ignored because snapshot with higher sequence={_lastSequenceProcessedInSnapshot} was already processed");
+
+                        return;
+                    }
+
+                    SuspendAndReprocessSnapshot();
+                    return;
+                }
+
+                bool hasEpochChanged;
+                var epochValid = IsEpochValid(fixtureDelta, out hasEpochChanged);
+
+                if (epochValid)
+                {
+                    ProcessSnapshot(fixtureDelta, false, hasEpochChanged);
+                }
+                else
+                {
+                    _fixtureStartTime = fixtureDelta.StartTime ?? _fixtureStartTime;
+
+                    if (fixtureDelta.IsMatchStatusChanged && !string.IsNullOrEmpty(fixtureDelta.MatchStatus))
+                    {
+                        _logger.Debug(
+                            $"{_resource} has changed matchStatus={Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus)}");
+                        _platformConnector.ProcessMatchStatus(fixtureDelta);
+                    }
+
+                    if (fixtureDelta.IsMatchStatusChanged && fixtureDelta.IsMatchOver || fixtureDelta.IsDeleted)
+                    {
+
+                        if (fixtureDelta.IsDeleted)
+                        {
+                            ProcessFixtureDelete(fixtureDelta);
+                            StopStreaming();
+                        }
+                        else
+                        {
+                            ProcessMatchOver();
+                            StopStreaming();
+                        }
+
+                        return;
+                    }
+
+                    //epoch change reason - aggregates LastEpochChange reasons into string like "BaseVariables,Starttime"
+                    var reason =
+                        fixtureDelta.LastEpochChangeReason != null && fixtureDelta.LastEpochChangeReason.Length > 0
+                            ? fixtureDelta.LastEpochChangeReason.Select(x => ((EpochChangeReason)x).ToString())
+                                .Aggregate((first, second) => $"{first}, {second}")
+                            : "Unknown";
+                    _logger.Info(
+                        $"Stream update {fixtureDelta} has epoch change with reason {reason}, the snapshot will be processed instead.");
+
+                    SuspendAndReprocessSnapshot(hasEpochChanged);
+                    return;
+                }
+
+                _logger.Info($"Update fo {fixtureDelta} processed successfully");
+            }
+            catch (AggregateException ex)
+            {
+                int total = ex.InnerExceptions.Count;
+                int count = 0;
+                foreach (var innerEx in ex.InnerExceptions)
+                {
+                    _logger.Error($"Error processing update for {_resource} {innerEx} ({++count}/{total})");
+                }
+
+                Become(Errored);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error processing update {_resource} - exception - {ex}");
+
+                Become(Errored);
+            }
+        }
+
+        private void StreamDisconnectedMsgHandler(StreamDisconnectedMsg msg)
+        {
+            try
+            {
+                if (ShouldSuspendOnDisconnection())
+                {
+                    SuspendFixture(SuspensionReason.DISCONNECT_EVENT);
+                }
+
+                Become(Disconnected);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error processing disconnection for {_resource} - exception - {ex}");
+
+                Become(Errored);
+            }
+        }
+
+        private void ResourceStateUpdateMsgHandler(ResourceStateUpdateMsg msg)
+        {
+            if (_resource == null || msg.Resource == null || msg.Resource.Id != _resource.Id)
+                return;
+
+            try
+            {
+                _resource.Content.Sequence = msg.Resource.Content.Sequence;
+                _resource.Content.MatchStatus = msg.Resource.Content.MatchStatus;
+
+                _logger.Debug(
+                    $"Listener state for resource {msg.Resource} has " +
+                    $"sequence={msg.Resource.Content.Sequence} " +
+                    $"processedSequence={_currentSequence} " +
+                    (msg.Resource.Content.Sequence > _currentSequence
+                        ? $"missedSequence={msg.Resource.Content.Sequence - _currentSequence} "
+                        : "") +
+                    $"State={State} " +
+                    $"isMatchOver={msg.Resource.IsMatchOver}");
+
+                if (ValidateStream(msg.Resource))
+                {
+                    if (State != StreamListenerState.Streaming &&
+                        (msg.Resource.Content.MatchStatus != (int)MatchStatus.Setup ||
+                         _settings.AllowFixtureStreamingInSetupMode))
+                    {
+                        ConnectToStreamServer();
+                    }
+                }
+                else
+                {
+                    _logger.Warn($"Detected invalid stream for resource {msg.Resource}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error processing resource state update for {_resource} - exception - {ex}");
+
+                Become(Errored);
+            }
+        }
+
+        private void StartStreamingNotRespondingHandler(StartStreamingNotRespondingMsg msg)
+        {
+            var unresponsiveTime = _startStreamingNotResondingWarnCount * _settings.StartStreamingTimeoutInSeconds;
+            _logger.Warn(
+                $"StartStreaming for {_resource} did't respond for {unresponsiveTime} seconds. " +
+                "Possible network problem or port 5672 is locked");
+        }
+
+        #endregion
+
         #region Private methods
 
         private void Initialize()
         {
-            Receive<StreamConnectedMsg>(a => Become(Streaming));
-            Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
-            Receive<ResourceStateUpdateMsg>(a => UpdateResourceState(a));
-            Receive<StartStreamingNotRespondingMsg>(a => StartStreamingNotRespondingHandler(a));
-
-            var fixtureState = _eventState.GetFixtureState(_resource.Id);
-
-            _stopStreamingTriggered = false;
-            _currentEpoch = fixtureState?.Epoch ?? -1;
-            _currentSequence = _resource.Content.Sequence;
-            _lastSequenceProcessedInSnapshot = -1;
-
-            if (!string.IsNullOrEmpty(_resource.Content?.StartTime))
+            try
             {
-                _fixtureStartTime = DateTime.Parse(_resource.Content.StartTime);
-            }
+                State = StreamListenerState.Initializing;
 
-            bool isMatchOver = _resource.MatchStatus == MatchStatus.MatchOver || _resource.IsMatchOver;
-            bool processMatchOver =
-                isMatchOver && (fixtureState == null || fixtureState.MatchStatus != MatchStatus.MatchOver);
+                Receive<StreamConnectedMsg>(a => Become(Streaming));
+                Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
+                Receive<ResourceStateUpdateMsg>(a => ResourceStateUpdateMsgHandler(a));
+                Receive<StartStreamingNotRespondingMsg>(a => StartStreamingNotRespondingHandler(a));
+                Receive<StreamUpdateMsg>(a => Stash.Stash());
 
-            if (isMatchOver)
-            {
-                _logger.WarnFormat("Listener will not start for {0} as the resource is marked as ended", _resource);
-                if (processMatchOver)
+                var fixtureState = _eventState.GetFixtureState(_resource.Id);
+
+                _currentEpoch = fixtureState?.Epoch ?? -1;
+                _currentSequence = _resource.Content.Sequence;
+                _lastSequenceProcessedInSnapshot = -1;
+
+                if (!string.IsNullOrEmpty(_resource.Content?.StartTime))
                 {
-                    ProcessMatchOver();
+                    _fixtureStartTime = DateTime.Parse(_resource.Content.StartTime);
                 }
-                Become(Stopped);
-            }
-            else
-            {
-                //either connect to stream server and go to Streaming State, or go to Initialized State
-                if (_resource.MatchStatus != MatchStatus.Setup || _settings.AllowFixtureStreamingInSetupMode)
+
+                bool isMatchOver = _resource.MatchStatus == MatchStatus.MatchOver || _resource.IsMatchOver;
+                bool processMatchOver =
+                    isMatchOver && (fixtureState == null || fixtureState.MatchStatus != MatchStatus.MatchOver);
+
+                if (isMatchOver)
                 {
-                    ConnectToStreamServer();
+                    _logger.Warn($"Listener will not start for {_resource} as the resource is marked as ended");
+                    if (processMatchOver)
+                    {
+                        ProcessMatchOver();
+                    }
+                    Become(Stopped);
                 }
                 else
                 {
-                    if (IsSnapshotNeeded(fixtureState))
+                    //either connect to stream server and go to Streaming State, or go to Initialized State
+                    if (_resource.MatchStatus != MatchStatus.Setup || _settings.AllowFixtureStreamingInSetupMode)
                     {
-                        RetrieveAndProcessSnapshot();
+                        ConnectToStreamServer();
                     }
                     else
                     {
-                        UnsuspendFixture(fixtureState);
-                    }
+                        if (IsSnapshotNeeded(fixtureState))
+                        {
+                            RetrieveAndProcessSnapshot();
+                        }
+                        else
+                        {
+                            UnsuspendFixture(fixtureState);
+                        }
 
-                    Become(Initialized);
+                        Become(Initialized);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error on Initialize resource {_resource} - exception - {ex}");
+
+                Become(Errored);
             }
         }
 
         private void ConnectToStreamServer()
         {
-            _logger.DebugFormat("Starting streaming for {0} - resource has sequence={1}", _resource, _resource.Content.Sequence);
+            _logger.Debug($"Starting streaming for {_resource} - resource has sequence={_resource.Content.Sequence}");
 
             var interval = _settings.StartStreamingTimeoutInSeconds;
             if (interval <= 0)
@@ -227,103 +479,12 @@ namespace SS.Integration.Adapter.Actors
 
             _resourceActor.Tell(new ResourceStartStreamingMsg());
 
-            _logger.DebugFormat("Started streaming for {0} - resource has sequence={1}", _resource, _resource.Content.Sequence);
-        }
-
-        private void StreamUpdateHandler(StreamUpdateMsg msg)
-        {
-            var deltaMessage = msg.Data.FromJson<StreamMessage>();
-            var fixtureDelta = deltaMessage.GetContent<Fixture>();
-
-            _logger.InfoFormat($"{fixtureDelta} stream update arrived");
-
-            if (!IsSequenceValid(fixtureDelta))
-            {
-                _logger.WarnFormat("Update for {0} will not be processed because sequence is not valid", fixtureDelta);
-
-                // if snapshot was already processed with higher sequence no need to process this sequence
-                // THIS should never happen!!
-                if (fixtureDelta.Sequence <= _lastSequenceProcessedInSnapshot)
-                {
-                    _logger.WarnFormat("Stream update {0} will be ignored because snapshot with higher sequence={1} was already processed",
-                        fixtureDelta, _lastSequenceProcessedInSnapshot);
-
-                    return;
-                }
-
-                SuspendAndReprocessSnapshot();
-                return;
-            }
-
-            bool hasEpochChanged;
-            var epochValid = IsEpochValid(fixtureDelta, out hasEpochChanged);
-
-            if (epochValid)
-            {
-                ProcessSnapshot(fixtureDelta, false, hasEpochChanged);
-            }
-            else
-            {
-                _fixtureStartTime = fixtureDelta.StartTime ?? _fixtureStartTime;
-
-                if (fixtureDelta.IsMatchStatusChanged && !string.IsNullOrEmpty(fixtureDelta.MatchStatus))
-                {
-                    _logger.DebugFormat("{0} has changed matchStatus={1}", _resource,
-                        Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus));
-                    _platformConnector.ProcessMatchStatus(fixtureDelta);
-                }
-
-                if (fixtureDelta.IsMatchStatusChanged && fixtureDelta.IsMatchOver || fixtureDelta.IsDeleted)
-                {
-
-                    if (fixtureDelta.IsDeleted)
-                    {
-                        ProcessFixtureDelete(fixtureDelta);
-                        StopStreaming();
-                    }
-                    else
-                    {
-                        ProcessMatchOver();
-                        StopStreaming();
-                    }
-
-                    return;
-                }
-
-                _logger.InfoFormat(
-                    "Stream update {0} has epoch change with reason {1}, the snapshot will be processed instead.",
-                    fixtureDelta,
-                    //aggregates LastEpochChange reasons into string like "BaseVariables,Starttime"
-                    fixtureDelta.LastEpochChangeReason != null && fixtureDelta.LastEpochChangeReason.Length > 0
-                        ? fixtureDelta.LastEpochChangeReason.Select(x => ((EpochChangeReason)x).ToString())
-                            .Aggregate((first, second) => $"{first}, {second}")
-                        : "Unknown");
-
-                SuspendAndReprocessSnapshot(hasEpochChanged);
-                return;
-            }
-
-            _logger.InfoFormat("Update fo {0} processed successfully", fixtureDelta);
-        }
-
-        private void StreamDisconnectedMsgHandler(StreamDisconnectedMsg msg)
-        {
-            if (!_stopStreamingTriggered)
-            {
-                if (ShouldSuspendOnDisconnection())
-                {
-                    SuspendFixture(SuspensionReason.DISCONNECT_EVENT);
-                }
-
-                Become(Disconnected);
-            }
-
-            _stopStreamingTriggered = false;
+            _logger.Debug($"Started streaming for {_resource} - resource has sequence={_resource.Content.Sequence}");
         }
 
         private bool IsSnapshotNeeded(FixtureState state)
         {
-            _logger.DebugFormat(
+            _logger.Debug(
                 $"{_resource} has stored sequence={state?.Sequence}; resource sequence={_resource.Content.Sequence}");
 
             return state == null || _resource.Content.Sequence != state.Sequence;
@@ -333,15 +494,15 @@ namespace SS.Integration.Adapter.Actors
         {
             if (fixtureDelta.Sequence < _currentSequence)
             {
-                _logger.DebugFormat("sequence={0} is less than current_sequence={1} in {2}",
-                    fixtureDelta.Sequence, _currentSequence, fixtureDelta);
+                _logger.Debug(
+                    $"sequence={fixtureDelta.Sequence} is less than current_sequence={_currentSequence} in {fixtureDelta}");
                 return false;
             }
 
             if (fixtureDelta.Sequence - _currentSequence > 1)
             {
-                _logger.DebugFormat("sequence={0} is more than one greater that current_sequence={1} in {2} ",
-                    fixtureDelta.Sequence, _currentSequence, fixtureDelta);
+                _logger.Debug(
+                    $"sequence={fixtureDelta.Sequence} is more than one greater that current_sequence={_currentSequence} in {fixtureDelta} ");
                 return false;
             }
 
@@ -356,7 +517,8 @@ namespace SS.Integration.Adapter.Actors
 
             if (fixtureDelta.Epoch < _currentEpoch)
             {
-                _logger.WarnFormat("Unexpected Epoch={0} when current={1} for {2}", fixtureDelta.Epoch, _currentEpoch, fixtureDelta);
+                _logger.Warn(
+                    $"Unexpected Epoch={fixtureDelta.Epoch} when current={_currentEpoch} for {fixtureDelta}");
                 return false;
             }
 
@@ -364,14 +526,16 @@ namespace SS.Integration.Adapter.Actors
                 return true;
 
             // Cases for fixtureDelta.Epoch > _currentEpoch
-            _logger.InfoFormat("Epoch changed for {0} from={1} to={2}", fixtureDelta, _currentEpoch, fixtureDelta.Epoch);
+            _logger.Info(
+                $"Epoch changed for {fixtureDelta} from={_currentEpoch} to={fixtureDelta.Epoch}");
 
             _currentEpoch = fixtureDelta.Epoch;
 
             //the epoch change reason can contain multiple reasons
             if (fixtureDelta.IsStartTimeChanged && fixtureDelta.LastEpochChangeReason.Length == 1)
             {
-                _logger.InfoFormat("{0} has had its start time changed", fixtureDelta);
+                _logger.Info(
+                    $"{fixtureDelta} has had its start time changed");
                 return true;
             }
 
@@ -382,20 +546,12 @@ namespace SS.Integration.Adapter.Actors
         {
             if (snapshot.Sequence < _lastSequenceProcessedInSnapshot)
             {
-                _logger.WarnFormat("Newer snapshot {0} was already processed on another thread, current sequence={1}", snapshot,
-                    _currentSequence);
+                _logger.Warn(
+                    $"Newer snapshot {snapshot} was already processed on another thread, current sequence={_currentSequence}");
                 return false;
             }
 
             return true;
-        }
-
-        private void StartStreamingNotRespondingHandler(StartStreamingNotRespondingMsg msg)
-        {
-            var unresponsiveTime = _startStreamingNotResondingWarnCount * _settings.StartStreamingTimeoutInSeconds;
-            _logger.Warn(
-                $"StartStreaming for {_resource} did't respond for {unresponsiveTime} seconds. " +
-                "Possible network problem or port 5672 is locked");
         }
 
         private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false)
@@ -428,7 +584,7 @@ namespace SS.Integration.Adapter.Actors
 
         private Fixture RetrieveSnapshot()
         {
-            _logger.DebugFormat("Getting snapshot for {0}", _resource);
+            _logger.Debug($"Getting snapshot for {_resource}");
 
             var snapshotJson = _resource.GetSnapshot();
 
@@ -458,7 +614,7 @@ namespace SS.Integration.Adapter.Actors
             if (snapshot == null || (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id)))
                 throw new ArgumentException($"Received empty {logString} for {_resource}");
 
-            _logger.InfoFormat("Processing {0} for {1}", logString, snapshot);
+            _logger.Info($"Processing {logString} for {snapshot}");
 
             Stopwatch timer = new Stopwatch();
             timer.Start();
@@ -481,7 +637,7 @@ namespace SS.Integration.Adapter.Actors
             }
             catch (FixtureIgnoredException)
             {
-                _logger.WarnFormat("{0} received a FixtureIgnoredException", _resource);
+                _logger.Warn($"{_resource} received a FixtureIgnoredException");
 
                 _stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
             }
@@ -497,6 +653,7 @@ namespace SS.Integration.Adapter.Actors
                 }
 
                 _stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
+
             }
             catch (Exception ex)
             {
@@ -514,12 +671,13 @@ namespace SS.Integration.Adapter.Actors
                     timer.ElapsedMilliseconds.ToString());
             }
 
-            _logger.InfoFormat("Finished processing {0} for {1}", logString, snapshot);
+            _logger.Info($"Finished processing {logString} for {snapshot}");
         }
 
         private void ProcessFixtureDelete(Fixture fixtureDelta)
         {
-            _logger.InfoFormat("{0} has been deleted from the GTP Fixture Factory. Suspending all markets and stopping the stream.", _resource);
+            _logger.Info(
+                $"{_resource} has been deleted from the GTP Fixture Factory. Suspending all markets and stopping the stream.");
 
             try
             {
@@ -540,16 +698,17 @@ namespace SS.Integration.Adapter.Actors
 
         private void ProcessMatchOver()
         {
-            _logger.InfoFormat("{0} is Match Over. Suspending all markets and stopping the stream.", _resource);
+            _logger.Info($"{_resource} is Match Over. Suspending all markets and stopping the stream.");
 
             try
             {
                 SuspendAndReprocessSnapshot(true);
                 _stateManager.ClearState(_resource.Id);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.Error($"An error occured while trying to process match over resource {_resource.Id}", e);
+                _logger.Error($"An error occured while trying to process match over resource {_resource.Id} - exception - {ex}");
+                throw;
             }
         }
 
@@ -561,7 +720,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void SuspendFixture(SuspensionReason reason)
         {
-            _logger.InfoFormat("Suspending fixtureId={0} due reason={1}", _resource.Id, reason);
+            _logger.Info($"Suspending fixtureId={_resource.Id} due reason={reason}");
 
             _stateManager.StateProvider.SuspensionManager.Suspend(_resource.Id, reason);
             _platformConnector.Suspend(_resource.Id);
@@ -581,50 +740,6 @@ namespace SS.Integration.Adapter.Actors
             }
 
             _currentSequence = snapshot.Sequence;
-        }
-
-        private void UpdateResourceState(ResourceStateUpdateMsg msg)
-        {
-            if (_resource == null || msg.Resource == null || msg.Resource.Id != _resource.Id)
-                return;
-
-            _resource.Content.Sequence = msg.Resource.Content.Sequence;
-            _resource.Content.MatchStatus = msg.Resource.Content.MatchStatus;
-
-            _logger.Debug(
-                $"Listener state for resource {msg.Resource} has " +
-                $"sequence={msg.Resource.Content.Sequence} " +
-                $"processedSequence={_currentSequence} " +
-                (msg.Resource.Content.Sequence > _currentSequence
-                    ? $"missedSequence={msg.Resource.Content.Sequence - _currentSequence} "
-                    : "") +
-                $"State={State} " +
-                $"isMatchOver={msg.Resource.IsMatchOver}");
-
-            /*bool isMatchOver = msg.Resource.Content.MatchStatus == (int)MatchStatus.MatchOver || msg.Resource.IsMatchOver;
-            if (isMatchOver)
-            {
-                var isStreaming = State == StreamListenerState.Streaming;
-                ProcessMatchOver();
-                if (isStreaming)
-                {
-                    StopStreaming();
-                }
-                return;
-            }*/
-
-            if (ValidateStream(msg.Resource))
-            {
-                if (State != StreamListenerState.Streaming &&
-                    (msg.Resource.Content.MatchStatus != (int)MatchStatus.Setup || _settings.AllowFixtureStreamingInSetupMode))
-                {
-                    ConnectToStreamServer();
-                }
-            }
-            else
-            {
-                _logger.WarnFormat($"Detected invalid stream for resource {msg.Resource}");
-            }
         }
 
         private bool ValidateStream(IResourceFacade resource)
@@ -663,8 +778,6 @@ namespace SS.Integration.Adapter.Actors
 
         private void StopStreaming()
         {
-            _stopStreamingTriggered = true;
-
             _resourceActor.Tell(new ResourceStopStreamingMsg());
 
             Become(Stopped);

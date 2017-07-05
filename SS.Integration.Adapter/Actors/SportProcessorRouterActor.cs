@@ -56,8 +56,7 @@ namespace SS.Integration.Adapter.Actors
             var resources = _serviceFacade.GetResources(msg.Sport);
             if (ValidateResources(resources, msg.Sport))
             {
-                _logger.DebugFormat(
-                    $"Received {resources.Count} fixtures to process in sport={msg.Sport}");
+                _logger.Debug($"Received {resources.Count} fixtures to process in sport={msg.Sport}");
 
                 if (resources.Count > 1)
                 {
@@ -98,12 +97,12 @@ namespace SS.Integration.Adapter.Actors
 
             if (resources == null)
             {
-                _logger.WarnFormat("Cannot find sport={0} in UDAPI....", sport);
+                _logger.Warn($"Cannot find sport={sport} in UDAPI....");
                 valid = false;
             }
             else if (resources.Count == 0)
             {
-                _logger.DebugFormat("There are currently no fixtures for sport={0} in UDAPI", sport);
+                _logger.Debug($"There are currently no fixtures for sport={sport} in UDAPI");
                 valid = false;
             }
 

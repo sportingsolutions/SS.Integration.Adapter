@@ -103,15 +103,21 @@ namespace SS.Integration.Adapter.Actors
 
         private void BuildStreamListenerActorMsgHandler(BuildStreamListenerActorMsg msg)
         {
-            _streamListenerManagerActorContext.ActorOf(Props.Create(() =>
-                    new StreamListenerActor(
-                        msg.Resource,
-                        _adapterPlugin,
-                        _eventState,
-                        _stateManager,
-                        _settings)),
-                StreamListenerActor.ActorName + "For" + msg.Resource.Id);
-            _concurrentInitializations--;
+            try
+            {
+                _streamListenerManagerActorContext.ActorOf(Props.Create(() =>
+                        new StreamListenerActor(
+                            msg.Resource,
+                            _adapterPlugin,
+                            _eventState,
+                            _stateManager,
+                            _settings)),
+                    StreamListenerActor.ActorName + "For" + msg.Resource.Id);
+            }
+            finally
+            {
+                _concurrentInitializations--;
+            }
         }
 
         #endregion

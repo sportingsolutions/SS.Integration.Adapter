@@ -45,7 +45,7 @@ namespace SS.Integration.Adapter.Actors
             //{
             //}
 
-            //_logger.DebugFormat($"Currently adapter is streaming fixtureCount={currentlyConnected}");
+            //_logger.Debug($"Currently adapter is streaming fixtureCount={currentlyConnected}");
         }
     }
 
