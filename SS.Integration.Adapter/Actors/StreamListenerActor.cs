@@ -169,32 +169,9 @@ namespace SS.Integration.Adapter.Actors
             var prevState = State;
             State = StreamListenerState.Errored;
 
-            Exception erroredEx = null;
-            try
-            {
-                _logger.Warn(
-                    $"Fixture {_resource} is in Errored State - trying now to suspend and reprocess full snapshot");
-
-                SuspendAndReprocessSnapshot();
-
-                switch (prevState)
-                {
-                    case StreamListenerState.Initializing:
-                        {
-                            Initialize();
-                            break;
-                        }
-                    case StreamListenerState.Streaming:
-                        {
-                            Become(Streaming);
-                            break;
-                        }
-                }
-            }
-            catch (Exception ex)
-            {
-                erroredEx = ex;
-            }
+            SuspendFixture(SuspensionReason.SUSPENSION);
+            Exception erroredEx;
+            RecoverFromErroredState(prevState, out erroredEx);
 
             if (erroredEx != null)
             {
@@ -209,7 +186,14 @@ namespace SS.Integration.Adapter.Actors
                     _logger.Error(
                         $"Failed Suspending Fixture {_resource} on Errored State - exception - {ex}");
                 }
+
+                if (prevState == StreamListenerState.Initializing)
+                {
+                    Become(Stopped);
+                }
             }
+
+            Receive<StreamUpdateMsg>(a => RecoverFromErroredState(prevState, out erroredEx));
         }
 
         //No further messages should be accepted, resource has stopped streaming
@@ -556,11 +540,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false)
         {
-            var snapshot = RetrieveSnapshot();
-            if (snapshot != null)
-            {
-                ProcessSnapshot(snapshot, true, hasEpochChanged);
-            }
+            ProcessSnapshot(RetrieveSnapshot(), true, hasEpochChanged);
         }
 
         private void UnsuspendFixture(FixtureState state)
@@ -653,7 +633,7 @@ namespace SS.Integration.Adapter.Actors
                 }
 
                 _stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
-
+                throw;
             }
             catch (Exception ex)
             {
@@ -662,6 +642,7 @@ namespace SS.Integration.Adapter.Actors
                 _stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
 
                 _logger.Error($"Error processing {logString} {snapshot}", ex);
+                throw;
             }
             finally
             {
@@ -792,6 +773,40 @@ namespace SS.Integration.Adapter.Actors
             var spanBetweenNowAndStartTime = _fixtureStartTime.Value - DateTime.UtcNow;
             var doNotSuspend = _settings.DisablePrematchSuspensionOnDisconnection && spanBetweenNowAndStartTime.TotalMinutes > _settings.PreMatchSuspensionBeforeStartTimeInMins;
             return !doNotSuspend;
+        }
+
+        private void RecoverFromErroredState(StreamListenerState prevState, out Exception erroredEx)
+        {
+            erroredEx = null;
+
+            try
+            {
+                _logger.Warn(
+                    $"Fixture {_resource} is in Errored State - trying now to reprocess full snapshot");
+
+                RetrieveAndProcessSnapshot();
+
+                switch (prevState)
+                {
+                    case StreamListenerState.Initializing:
+                    {
+                        Initialize();
+                        break;
+                    }
+                    case StreamListenerState.Streaming:
+                    {
+                        Become(Streaming);
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(
+                    $"Fixture {_resource} failed to recover from Errored State - exception - {ex}");
+
+                erroredEx = ex;
+            }
         }
 
         #endregion
