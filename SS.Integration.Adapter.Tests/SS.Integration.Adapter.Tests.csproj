@@ -105,6 +105,7 @@
   <ItemGroup>
     <Compile Include="AdapterTests.cs" />
     <Compile Include="EventStateTests.cs" />
+    <Compile Include="FixtureManagerTest.cs" />
     <Compile Include="FixtureSamples.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

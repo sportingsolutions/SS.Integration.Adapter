@@ -13,9 +13,12 @@
 //limitations under the License.
 
 using System;
+using System.Configuration;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.ServiceProcess;
+using System.Threading;
 using log4net;
 
 namespace SS.Integration.Adapter.WindowsService
@@ -27,6 +30,7 @@ namespace SS.Integration.Adapter.WindowsService
         /// </summary>
         public static void Main()
         {
+            SetCulture();
             var path = Assembly.GetExecutingAssembly().Location;
             var fileInfo = new FileInfo(path);
             var dir = fileInfo.DirectoryName;
@@ -36,11 +40,11 @@ namespace SS.Integration.Adapter.WindowsService
 
             logger.Info("Initialising SportingSolutions Integration WindowsService");
 
-            var servicesToRun = new ServiceBase[] 
-                { 
-                    new AdapterService() 
+            var servicesToRun = new ServiceBase[]
+                {
+                    new AdapterService()
                 };
-
+            logger.Info("App culture=" + CultureInfo.DefaultThreadCurrentCulture);
 
             if (Environment.UserInteractive)
             {
@@ -70,6 +74,17 @@ namespace SS.Integration.Adapter.WindowsService
                 logger.Info("Attempting to run Adapter Service");
                 ServiceBase.Run(servicesToRun);
             }
+        }
+
+        static void SetCulture()
+        {
+            var cultureName = ConfigurationManager.AppSettings["enforceCulture"];
+            if (string.IsNullOrWhiteSpace(cultureName))
+                cultureName = "en-GB";
+            cultureName = cultureName.Trim();
+            CultureInfo culture = new CultureInfo(cultureName);
+            Thread.CurrentThread.CurrentCulture = culture;
+            CultureInfo.DefaultThreadCurrentCulture = culture;
         }
     }
 }
