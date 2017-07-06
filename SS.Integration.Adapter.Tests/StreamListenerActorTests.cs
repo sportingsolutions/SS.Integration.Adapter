@@ -1101,6 +1101,7 @@ namespace SS.Integration.Adapter.Tests
                                 _settingsMock.Object,
                                 _pluginMock.Object,
                                 _stateManagerMock.Object,
+                                _eventStateMock.Object,
                                 _serviceMock.Object))
                         .WithRouter(new SmallestMailboxPool(_settingsMock.Object.FixtureCreationConcurrency)),
                     "sport-processor-pool");
@@ -1161,17 +1162,17 @@ namespace SS.Integration.Adapter.Tests
                     Assert.NotNull(streamListenerActor);
                     Assert.NotNull(resourceActorRef);
 
-                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Never);
                     resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Once);
                     _pluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
-                        Times.Once);
+                        Times.Never);
                     _pluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
                         Times.Never);
                     _pluginMock.Verify(a =>
                             a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Once);
+                        Times.Exactly(2));
                     _pluginMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
@@ -1183,7 +1184,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     _suspensionManager.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Once);
+                        Times.Exactly(2));
                     _suspensionManager.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
@@ -1551,6 +1552,7 @@ namespace SS.Integration.Adapter.Tests
                                 _settingsMock.Object,
                                 _pluginMock.Object,
                                 _stateManagerMock.Object,
+                                _eventStateMock.Object,
                                 _serviceMock.Object))
                         .WithRouter(new SmallestMailboxPool(_settingsMock.Object.FixtureCreationConcurrency)),
                     "sport-processor-pool");

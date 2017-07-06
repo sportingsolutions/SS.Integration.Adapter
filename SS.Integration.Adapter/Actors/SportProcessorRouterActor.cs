@@ -27,6 +27,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly ISettings _settings;
         private readonly IAdapterPlugin _adapterPlugin;
         private readonly IStateManager _stateManager;
+        private readonly IEventState _eventState;
         private readonly IServiceFacade _serviceFacade;
 
         #endregion
@@ -36,12 +37,14 @@ namespace SS.Integration.Adapter.Actors
         public SportProcessorRouterActor(
             ISettings settings, 
             IAdapterPlugin adapterPlugin,
-            IStateManager stateManager, 
+            IStateManager stateManager,
+            IEventState eventState,
             IServiceFacade serviceFacade)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _adapterPlugin = adapterPlugin ?? throw new ArgumentNullException(nameof(adapterPlugin));
             _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
+            _eventState = eventState ?? throw new ArgumentNullException(nameof(eventState));
             _serviceFacade = serviceFacade ?? throw new ArgumentNullException(nameof(serviceFacade));
 
             Receive<ProcessSportMsg>(o => ProcessSportMsgHandler(o));
@@ -80,7 +83,8 @@ namespace SS.Integration.Adapter.Actors
                             new StreamListenerManagerActor(
                                 _settings,
                                 _adapterPlugin,
-                                _stateManager)),
+                                _stateManager,
+                                _eventState)),
                         StreamListenerManagerActor.ActorName + "For" + msg.Sport);
                 }
 

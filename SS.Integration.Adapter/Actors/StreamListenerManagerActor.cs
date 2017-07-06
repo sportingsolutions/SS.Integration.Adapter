@@ -29,15 +29,16 @@ namespace SS.Integration.Adapter.Actors
         public StreamListenerManagerActor(
             ISettings settings,
             IAdapterPlugin adapterPlugin,
-            IStateManager stateManager)
+            IStateManager stateManager,
+            IEventState eventState)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             if (adapterPlugin == null)
                 throw new ArgumentNullException(nameof(adapterPlugin));
             if (stateManager == null)
                 throw new ArgumentNullException(nameof(stateManager));
-
-            IEventState eventState = EventState.Create(new FileStoreProvider(settings.StateProviderPath), settings);
+            if (eventState == null)
+                throw new ArgumentNullException(nameof(eventState));
 
             _shouldSendProcessSportMessage = true;
 

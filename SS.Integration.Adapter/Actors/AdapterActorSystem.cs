@@ -2,6 +2,7 @@
 using Akka.Actor;
 using Akka.Routing;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Actors
@@ -47,6 +48,8 @@ namespace SS.Integration.Adapter.Actors
             _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
             _actorSystem = actorSystem ?? _actorSystem;
 
+            IEventState eventState = EventState.Create(new FileStoreProvider(_settings.StateProviderPath), _settings);
+
             if (initialiseActors)
             {
                 var sportProcessorRouterActor = ActorSystem.ActorOf(
@@ -55,6 +58,7 @@ namespace SS.Integration.Adapter.Actors
                                 _settings,
                                 _adapterPlugin,
                                 _stateManager,
+                                eventState,
                                 _udApiService))
                         .WithRouter(new SmallestMailboxPool(_settings.FixtureCreationConcurrency)),
                     "sport-processor-pool");
