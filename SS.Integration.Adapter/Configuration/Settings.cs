@@ -42,6 +42,7 @@ namespace SS.Integration.Adapter.Configuration
         private const string DEFAULT_SUPERVISOR_STATE_PATH = @"SupervisorState";
         private const int DEFAULT_PREMATCH_SUSPENSION_BEFORE_STARTTIME_IN_MINS = 15;
         private const int DEFAULT_START_STREAMING_TIMEOUT = 60;
+        private const int DEFAULT_START_STREAMING_ATTEMPTS = 10;
         private const int DEFAULT_STREAM_THRESHOLD = int.MaxValue;
 
         public Settings()
@@ -108,6 +109,11 @@ namespace SS.Integration.Adapter.Configuration
             value = ConfigurationManager.AppSettings["startStreamingTimeoutInSeconds"];
             StartStreamingTimeoutInSeconds = string.IsNullOrEmpty(value)
                 ? DEFAULT_START_STREAMING_TIMEOUT
+                : int.Parse(value);
+
+            value = ConfigurationManager.AppSettings["startStreamingAttempts"];
+            StartStreamingAttempts = string.IsNullOrEmpty(value)
+                ? DEFAULT_START_STREAMING_ATTEMPTS
                 : int.Parse(value);
 
             value = ConfigurationManager.AppSettings["disablePrematchSuspensionOnDisconnection"];
@@ -180,6 +186,7 @@ namespace SS.Integration.Adapter.Configuration
         public bool DisablePrematchSuspensionOnDisconnection { get; private set; }
         public int PreMatchSuspensionBeforeStartTimeInMins { get; private set; }
         public int StartStreamingTimeoutInSeconds { get; private set; }
+        public int StartStreamingAttempts { get; private set; }
         public bool AllowFixtureStreamingInSetupMode { get; }
         public bool SkipRulesOnError { get; private set; }
         public int StreamSafetyThreshold { get; private set; }

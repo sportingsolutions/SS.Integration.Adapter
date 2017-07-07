@@ -82,6 +82,8 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Actors\Messages\StartStreamingNotRespondingMsg.cs" />
+    <Compile Include="Actors\Messages\ConnectToStreamServerMsg.cs" />
     <Compile Include="Actors\Messages\CreateStreamListenerMsg.cs" />
     <Compile Include="Actors\Messages\ProcessSportMsg.cs" />
     <Compile Include="Actors\Messages\ResourceStartStreamingMsg.cs" />
@@ -93,6 +95,8 @@
     <Compile Include="Actors\Messages\StreamHealthCheckMsg.cs" />
     <Compile Include="Actors\Messages\StreamListenerCreationCompletedMsg.cs" />
     <Compile Include="Actors\Messages\StreamListenerCreationFailedMsg.cs" />
+    <Compile Include="Actors\Messages\FixtureValidationMsg.cs" />
+    <Compile Include="Actors\Messages\StreamValidationMsg.cs" />
     <Compile Include="Actors\Messages\StreamUpdateMsg.cs" />
     <Compile Include="Actors\StatsActor.cs" />
     <Compile Include="Actors\SportProcessorRouterActor.cs" />

@@ -2,7 +2,6 @@
 using Akka.Actor;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
-using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Actors
@@ -55,6 +54,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<CreateStreamListenerMsg>(o => CreateStreamListenerMsgHandler(o));
             Receive<StreamDisconnectedMsg>(o => StreamDisconnectedMsgHandler(o));
             Receive<StreamListenerStoppedMsg>(o => StreamListenerStoppedMsgHandler(o));
+            Receive<StartStreamingNotRespondingMsg>(o => StopStreamListenerChildActor(o.FixtureId));
             Receive<ResetSendProcessSportMsg>(o => ResetSendProcessSportMsgHandler(o));
         }
 

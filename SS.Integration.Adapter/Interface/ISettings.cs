@@ -174,6 +174,11 @@ namespace SS.Integration.Adapter.Interface
         int StartStreamingTimeoutInSeconds { get; }
 
         /// <summary>
+        /// This is the number of attempts the stream listener tries to start streaming before it is stopped on failure
+        /// </summary>
+        int StartStreamingAttempts { get; }
+
+        /// <summary>
         /// This flag tells wether the fixture is allowed to start streaming when IsFixtureSetup is true
         /// </summary>
         bool AllowFixtureStreamingInSetupMode { get; }
