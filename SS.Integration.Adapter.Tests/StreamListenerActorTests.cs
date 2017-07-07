@@ -1080,128 +1080,6 @@ namespace SS.Integration.Adapter.Tests
         }
 
         /// <summary>
-        /// This test ensures that when disconnection occurs then the reconnection is automatically done.
-        /// </summary>
-        [Test]
-        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
-        public void OnDisconnectionEnsureReconnectWhenMatchInPlay()
-        {
-            //
-            //Arrange
-            //
-            Fixture snapshot;
-            Mock<IResourceFacade> resourceFacadeMock;
-            SetupCommonMockObjects(
-                /*sport*/"Football",
-                /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
-                /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
-                out snapshot,
-                out resourceFacadeMock);
-            _serviceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals("Football"))))
-                .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
-
-            var sportProcessorRouterActor =
-                ActorOfAsTestActorRef<SportProcessorRouterActor>(
-                    Props.Create(() =>
-                            new SportProcessorRouterActor(
-                                _settingsMock.Object,
-                                _pluginMock.Object,
-                                _stateManagerMock.Object,
-                                _eventStateMock.Object,
-                                _serviceMock.Object))
-                        .WithRouter(new SmallestMailboxPool(_settingsMock.Object.FixtureCreationConcurrency)),
-                    "sport-processor-pool");
-
-            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = "Football" });
-
-            IActorRef streamListenerManagerActorRef = null;
-            IActorRef streamListenerActorRef = null;
-            StreamListenerActor streamListenerActor = null;
-            IActorRef resourceActorRef = null;
-
-            //Get child actors instances
-            AwaitAssert(() =>
-                {
-                    streamListenerManagerActorRef = streamListenerActorRef =
-                        GetChildActorRef(
-                            sportProcessorRouterActor,
-                            StreamListenerManagerActor.ActorName + "ForFootball");
-                    streamListenerActorRef =
-                        GetChildActorRef(
-                            streamListenerManagerActorRef,
-                            StreamListenerActor.ActorName + "For" + resourceFacadeMock.Object.Id);
-                    streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
-                    resourceActorRef = GetChildActorRef(streamListenerActorRef, ResourceActor.ActorName);
-                    Assert.NotNull(streamListenerActorRef);
-                    Assert.NotNull(streamListenerActor);
-                    Assert.NotNull(resourceActorRef);
-                },
-                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-
-            //
-            //Act
-            //
-            //Wait 1 second and force Stream Disconnection
-            Task.Delay(1000).Wait();
-            resourceActorRef.Tell(
-                new ResourceStopStreamingMsg(),
-                streamListenerManagerActorRef);
-
-            //
-            //Assert
-            //
-            AwaitAssert(() =>
-                {
-                    streamListenerManagerActorRef = streamListenerActorRef =
-                        GetChildActorRef(
-                            sportProcessorRouterActor,
-                            StreamListenerManagerActor.ActorName + "ForFootball");
-                    streamListenerActorRef =
-                        GetChildActorRef(
-                            streamListenerManagerActorRef,
-                            StreamListenerActor.ActorName + "For" + resourceFacadeMock.Object.Id);
-                    streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
-                    resourceActorRef = GetChildActorRef(streamListenerActorRef, ResourceActor.ActorName);
-
-                    Assert.NotNull(streamListenerActorRef);
-                    Assert.NotNull(streamListenerActor);
-                    Assert.NotNull(resourceActorRef);
-
-                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Never);
-                    resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Once);
-                    _pluginMock.Verify(a =>
-                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
-                        Times.Never);
-                    _pluginMock.Verify(a =>
-                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
-                        Times.Never);
-                    _pluginMock.Verify(a =>
-                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Exactly(2));
-                    _pluginMock.Verify(a =>
-                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Once);
-                    _pluginMock.Verify(a =>
-                            a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Never);
-                    _pluginMock.Verify(a =>
-                            a.ProcessFixtureDeletion(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Never);
-                    _suspensionManager.Verify(a =>
-                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Exactly(2));
-                    _suspensionManager.Verify(a =>
-                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.DISCONNECT_EVENT),
-                        Times.Once);
-                    Assert.AreEqual(StreamListenerActor.StreamListenerState.Streaming, streamListenerActor.State);
-                },
-                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-        }
-
-        /// <summary>
         /// This test ensures that on update message when json parsing error occurs we move to Errored State
         /// and try to recover by processing full snapshot, then move back to Streaming State
         /// </summary>
@@ -1729,6 +1607,128 @@ namespace SS.Integration.Adapter.Tests
                                 StreamListenerActor.ActorName + "For" + resourceFacadeMock.Object.Id)
                             .ResolveOne(TimeSpan.FromSeconds(5)).Wait();
                     }).InnerException.Should().BeOfType<ActorNotFoundException>();
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        /// <summary>
+        /// This test ensures that when disconnection occurs then the reconnection is automatically done.
+        /// </summary>
+        [Test]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
+        public void OnDisconnectionEnsureReconnectWhenMatchInPlay()
+        {
+            //
+            //Arrange
+            //
+            Fixture snapshot;
+            Mock<IResourceFacade> resourceFacadeMock;
+            SetupCommonMockObjects(
+                /*sport*/"Football",
+                /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
+                /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
+                out snapshot,
+                out resourceFacadeMock);
+            _serviceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals("Football"))))
+                .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
+
+            var sportProcessorRouterActor =
+                ActorOfAsTestActorRef<SportProcessorRouterActor>(
+                    Props.Create(() =>
+                            new SportProcessorRouterActor(
+                                _settingsMock.Object,
+                                _pluginMock.Object,
+                                _stateManagerMock.Object,
+                                _eventStateMock.Object,
+                                _serviceMock.Object))
+                        .WithRouter(new SmallestMailboxPool(_settingsMock.Object.FixtureCreationConcurrency)),
+                    "sport-processor-pool");
+
+            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = "Football" });
+
+            IActorRef streamListenerManagerActorRef = null;
+            IActorRef streamListenerActorRef = null;
+            StreamListenerActor streamListenerActor = null;
+            IActorRef resourceActorRef = null;
+
+            //Get child actors instances
+            AwaitAssert(() =>
+                {
+                    streamListenerManagerActorRef = streamListenerActorRef =
+                        GetChildActorRef(
+                            sportProcessorRouterActor,
+                            StreamListenerManagerActor.ActorName + "ForFootball");
+                    streamListenerActorRef =
+                        GetChildActorRef(
+                            streamListenerManagerActorRef,
+                            StreamListenerActor.ActorName + "For" + resourceFacadeMock.Object.Id);
+                    streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
+                    resourceActorRef = GetChildActorRef(streamListenerActorRef, ResourceActor.ActorName);
+                    Assert.NotNull(streamListenerActorRef);
+                    Assert.NotNull(streamListenerActor);
+                    Assert.NotNull(resourceActorRef);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+
+            //
+            //Act
+            //
+            //Wait 1 second and force Stream Disconnection
+            Task.Delay(1000).Wait();
+            resourceActorRef.Tell(
+                new ResourceStopStreamingMsg(),
+                streamListenerManagerActorRef);
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    streamListenerManagerActorRef = streamListenerActorRef =
+                        GetChildActorRef(
+                            sportProcessorRouterActor,
+                            StreamListenerManagerActor.ActorName + "ForFootball");
+                    streamListenerActorRef =
+                        GetChildActorRef(
+                            streamListenerManagerActorRef,
+                            StreamListenerActor.ActorName + "For" + resourceFacadeMock.Object.Id);
+                    streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
+                    resourceActorRef = GetChildActorRef(streamListenerActorRef, ResourceActor.ActorName);
+
+                    Assert.NotNull(streamListenerActorRef);
+                    Assert.NotNull(streamListenerActor);
+                    Assert.NotNull(resourceActorRef);
+
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Never);
+                    resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Never);
+                    _pluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
+                        Times.Never);
+                    _pluginMock.Verify(a =>
+                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Exactly(2));
+                    _pluginMock.Verify(a =>
+                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    _pluginMock.Verify(a =>
+                            a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _pluginMock.Verify(a =>
+                            a.ProcessFixtureDeletion(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    _suspensionManager.Verify(a =>
+                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Exactly(2));
+                    _suspensionManager.Verify(a =>
+                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
+                                SuspensionReason.DISCONNECT_EVENT),
+                        Times.Once);
+                    Assert.AreEqual(StreamListenerActor.StreamListenerState.Streaming, streamListenerActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));

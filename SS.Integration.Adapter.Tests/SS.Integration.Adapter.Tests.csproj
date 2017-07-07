@@ -120,7 +120,7 @@
     <Compile Include="StreamListenerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SuspensionTests.cs" />
-    <Compile Include="AkkaTestHelper.cs" />
+    <Compile Include="BaseTestKit.cs" />
     <Compile Include="TestHelper.cs">
       <SubType>Code</SubType>
     </Compile>

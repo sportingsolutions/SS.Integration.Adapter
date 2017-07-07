@@ -132,7 +132,8 @@ namespace SS.Integration.Adapter.Actors
                 Receive<ResourceStateUpdateMsg>(a => ResourceStateUpdateMsgHandler(a));
                 Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
 
-                _streamHealthCheckActor.Tell(new StreamConnectedMsg { FixtureId = _resource.Id });
+                var streamConnectedMsg = new StreamConnectedMsg {FixtureId = _resource.Id};
+                _streamHealthCheckActor.Tell(streamConnectedMsg);
 
                 FixtureState fixtureState = _eventState.GetFixtureState(_resource.Id);
 
@@ -146,6 +147,7 @@ namespace SS.Integration.Adapter.Actors
                 }
 
                 Stash.UnstashAll();
+                Context.Parent.Tell(streamConnectedMsg);
             }
             catch (Exception ex)
             {

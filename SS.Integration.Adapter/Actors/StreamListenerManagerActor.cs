@@ -1,5 +1,6 @@
 ﻿using System;
 using Akka.Actor;
+using log4net;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model.Interfaces;
@@ -17,7 +18,9 @@ namespace SS.Integration.Adapter.Actors
 
         #region Attributes
 
+        private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerManagerActor).ToString());
         private readonly ISettings _settings;
+        private readonly IEventState _eventState;
         private readonly IActorRef _streamListenerBuilderActorRef;
         private bool _shouldSendProcessSportMessage;
 
@@ -36,8 +39,7 @@ namespace SS.Integration.Adapter.Actors
                 throw new ArgumentNullException(nameof(adapterPlugin));
             if (stateManager == null)
                 throw new ArgumentNullException(nameof(stateManager));
-            if (eventState == null)
-                throw new ArgumentNullException(nameof(eventState));
+            _eventState = eventState ?? throw new ArgumentNullException(nameof(eventState));
 
             _shouldSendProcessSportMessage = true;
 
@@ -52,6 +54,7 @@ namespace SS.Integration.Adapter.Actors
                     StreamListenerBuilderActor.ActorName);
 
             Receive<CreateStreamListenerMsg>(o => CreateStreamListenerMsgHandler(o));
+            Receive<StreamConnectedMsg>(o => StreamConnectedMsgHandler(o));
             Receive<StreamDisconnectedMsg>(o => StreamDisconnectedMsgHandler(o));
             Receive<StreamListenerStoppedMsg>(o => StreamListenerStoppedMsgHandler(o));
             Receive<StartStreamingNotRespondingMsg>(o => StopStreamListenerChildActor(o.FixtureId));
@@ -68,6 +71,11 @@ namespace SS.Integration.Adapter.Actors
             {
                 _streamListenerBuilderActorRef.Tell(msg);
             }
+        }
+
+        private void StreamConnectedMsgHandler(StreamConnectedMsg msg)
+        {
+            SaveEventState();
         }
 
         private void StreamDisconnectedMsgHandler(StreamDisconnectedMsg msg)
@@ -103,6 +111,22 @@ namespace SS.Integration.Adapter.Actors
         private void ResetSendProcessSportMsgHandler(ResetSendProcessSportMsg msg)
         {
             _shouldSendProcessSportMessage = true;
+        }
+
+        #endregion
+
+        #region Private methods
+
+        private void SaveEventState()
+        {
+            try
+            {
+                _eventState.WriteToFile();
+            }
+            catch (Exception ex)
+            {
+                _logger.ErrorFormat("Event state errored on attempt to save it: {0}", ex);
+            }
         }
 
         #endregion
