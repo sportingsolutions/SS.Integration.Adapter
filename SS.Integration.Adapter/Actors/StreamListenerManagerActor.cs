@@ -13,6 +13,7 @@ namespace SS.Integration.Adapter.Actors
         #region Constants
 
         public const string ActorName = nameof(StreamListenerManagerActor);
+        public const string Path = "/user/" + ActorName;
 
         #endregion
 
@@ -67,7 +68,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void CreateStreamListenerMsgHandler(CreateStreamListenerMsg msg)
         {
-            if (Context.Child(StreamListenerActor.ActorName + "For" + msg.Resource.Id).IsNobody())
+            if (Context.Child(StreamListenerActor.GetName(msg.Resource.Id)).IsNobody())
             {
                 _streamListenerBuilderActorRef.Tell(msg);
             }
@@ -103,7 +104,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void StopStreamListenerChildActor(string fixtureId)
         {
-            IActorRef streamListenerActor = Context.Child(StreamListenerActor.ActorName + "For" + fixtureId);
+            IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(fixtureId));
             if (!streamListenerActor.IsNobody())
                 streamListenerActor.GracefulStop(TimeSpan.FromSeconds(5)).Wait();
         }

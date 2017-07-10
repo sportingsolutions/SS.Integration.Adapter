@@ -18,6 +18,7 @@ namespace SS.Integration.Adapter.Actors
         #region Constants
 
         public const string ActorName = nameof(SportProcessorRouterActor);
+        public const string Path = "/user/" + ActorName;
 
         #endregion
 
@@ -75,18 +76,7 @@ namespace SS.Integration.Adapter.Actors
                     });
                 }
 
-                var streamListenerManagerActor =
-                    Context.Child(StreamListenerManagerActor.ActorName + "For" + msg.Sport);
-                if (streamListenerManagerActor.IsNobody())
-                {
-                    streamListenerManagerActor = Context.ActorOf(Props.Create(() =>
-                            new StreamListenerManagerActor(
-                                _settings,
-                                _adapterPlugin,
-                                _stateManager,
-                                _eventState)),
-                        StreamListenerManagerActor.ActorName + "For" + msg.Sport);
-                }
+                var streamListenerManagerActor = Context.System.ActorSelection(StreamListenerManagerActor.Path);
 
                 foreach (var resource in resources)
                 {

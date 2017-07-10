@@ -1,5 +1,4 @@
-﻿using System;
-using Akka.Actor;
+﻿using Akka.Actor;
 using Akka.Routing;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
@@ -9,21 +8,7 @@ namespace SS.Integration.Adapter.Actors
 {
     public static class AdapterActorSystem
     {
-        private const string UserSystemPath = "/user/";
-
-        public const string SportsProcessorActorPath = UserSystemPath + SportsProcessorActor.ActorName;
-        public const string SportProcessorRouterActorPath = UserSystemPath + SportProcessorRouterActor.ActorName;
-        public const string StreamListenerManagerActorPath = UserSystemPath + StreamListenerManagerActor.ActorName;
-
-        private static ActorSystem _actorSystem = ActorSystem.Create("AdapterSystem");
-        private static ISettings _settings;
-        private static IServiceFacade _udApiService;
-        private static IAdapterPlugin _adapterPlugin;
-        private static IStateManager _stateManager;
-
-        static AdapterActorSystem()
-        {
-        }
+        private static ActorSystem _actorSystem;
 
         /// <summary>
         /// Actor system shouldn't be provided unless your implemention specifically requires it
@@ -33,44 +18,44 @@ namespace SS.Integration.Adapter.Actors
         /// <param name="adapterPlugin"></param>
         /// <param name="stateManager"></param>
         /// <param name="actorSystem"></param>
-        /// <param name="initialiseActors"></param>
         public static void Init(
             ISettings settings,
             IServiceFacade udApiService,
             IAdapterPlugin adapterPlugin,
             IStateManager stateManager,
-            ActorSystem actorSystem = null,
-            bool initialiseActors = true)
+            ActorSystem actorSystem = null)
         {
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _udApiService = udApiService ?? throw new ArgumentNullException(nameof(udApiService));
-            _adapterPlugin = adapterPlugin ?? throw new ArgumentNullException(nameof(adapterPlugin));
-            _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
-            _actorSystem = actorSystem ?? _actorSystem;
+            _actorSystem = actorSystem ?? ActorSystem.Create("AdapterSystem");
 
-            IEventState eventState = EventState.Create(new FileStoreProvider(_settings.StateProviderPath), _settings);
+            IEventState eventState = EventState.Create(new FileStoreProvider(settings.StateProviderPath), settings);
 
-            if (initialiseActors)
-            {
-                var sportProcessorRouterActor = ActorSystem.ActorOf(
-                    Props.Create(() =>
-                            new SportProcessorRouterActor(
-                                _settings,
-                                _adapterPlugin,
-                                _stateManager,
-                                eventState,
-                                _udApiService))
-                        .WithRouter(new SmallestMailboxPool(_settings.FixtureCreationConcurrency)),
-                    "sport-processor-pool");
+            var sportProcessorRouterActor = ActorSystem.ActorOf(
+                Props.Create(() =>
+                        new SportProcessorRouterActor(
+                            settings,
+                            adapterPlugin,
+                            stateManager,
+                            eventState,
+                            udApiService))
+                    .WithRouter(new SmallestMailboxPool(settings.FixtureCreationConcurrency)),
+                SportProcessorRouterActor.ActorName);
 
-                ActorSystem.ActorOf(
-                    Props.Create(() =>
-                        new SportsProcessorActor(
-                            _settings,
-                            _udApiService,
-                            sportProcessorRouterActor)),
-                    SportsProcessorActor.ActorName);
-            }
+            ActorSystem.ActorOf(
+                Props.Create(() =>
+                    new SportsProcessorActor(
+                        settings,
+                        udApiService,
+                        sportProcessorRouterActor)),
+                SportsProcessorActor.ActorName);
+
+            ActorSystem.ActorOf(
+                Props.Create(() =>
+                    new StreamListenerManagerActor(
+                        settings,
+                        adapterPlugin,
+                        stateManager,
+                        eventState)),
+                StreamListenerManagerActor.ActorName);
         }
 
         public static ActorSystem ActorSystem => _actorSystem;

@@ -74,14 +74,6 @@ namespace SS.Integration.Adapter.Tests
             _eventStateMock = new Mock<IEventState>();
 
             _stateManagerMock = new Mock<IStateManager>();
-
-            AdapterActorSystem.Init(
-                _settingsMock.Object,
-                _serviceMock.Object,
-                _pluginMock.Object,
-                _stateManagerMock.Object,
-                Sys,
-                false);
         }
 
         #endregion
@@ -1493,7 +1485,7 @@ namespace SS.Integration.Adapter.Tests
                     {
                         Sys.ActorSelection(
                                 streamListenerManagerActorRef,
-                                StreamListenerActor.ActorName + "For" + resourceFacadeMock.Object.Id)
+                                StreamListenerActor.GetName(resourceFacadeMock.Object.Id))
                             .ResolveOne(TimeSpan.FromSeconds(5)).Wait();
                     }).InnerException.Should().BeOfType<ActorNotFoundException>();
                 },
@@ -1552,7 +1544,7 @@ namespace SS.Integration.Adapter.Tests
                     "sport-processor-pool");
 
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = "Football" });
-            //wait for 5 seconds while the health checks go every seconds and after 3 attempts the manager kills the actor
+            //wait for 5 seconds while the health checks run every second and after 3 attempts the manager kills the actor
             Task.Delay(5000).Wait();
             IActorRef streamListenerManagerActorRef;
 
@@ -1604,7 +1596,7 @@ namespace SS.Integration.Adapter.Tests
                     {
                         Sys.ActorSelection(
                                 streamListenerManagerActorRef,
-                                StreamListenerActor.ActorName + "For" + resourceFacadeMock.Object.Id)
+                                StreamListenerActor.GetName(resourceFacadeMock.Object.Id))
                             .ResolveOne(TimeSpan.FromSeconds(5)).Wait();
                     }).InnerException.Should().BeOfType<ActorNotFoundException>();
                 },
@@ -1662,7 +1654,7 @@ namespace SS.Integration.Adapter.Tests
                     streamListenerActorRef =
                         GetChildActorRef(
                             streamListenerManagerActorRef,
-                            StreamListenerActor.ActorName + "For" + resourceFacadeMock.Object.Id);
+                            StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
                     streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
                     resourceActorRef = GetChildActorRef(streamListenerActorRef, ResourceActor.ActorName);
                     Assert.NotNull(streamListenerActorRef);
@@ -1693,7 +1685,7 @@ namespace SS.Integration.Adapter.Tests
                     streamListenerActorRef =
                         GetChildActorRef(
                             streamListenerManagerActorRef,
-                            StreamListenerActor.ActorName + "For" + resourceFacadeMock.Object.Id);
+                            StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
                     streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
                     resourceActorRef = GetChildActorRef(streamListenerActorRef, ResourceActor.ActorName);
 

@@ -29,18 +29,14 @@ namespace SS.Integration.Adapter
 {
     public class Adapter
     {
-        private readonly IStreamListenerManager _listenersManager;
-
         public delegate void StreamEventHandler(object sender, string fixtureId);
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(Adapter).ToString());
         
         private readonly IStatsHandle _stats;
 
-        public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector, IStreamListenerManager listenersManager)
+        public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector)
         {
-            _listenersManager = listenersManager;
-
             Settings = settings;
 
             UDAPIService = udapiServiceFacade;
@@ -49,8 +45,6 @@ namespace SS.Integration.Adapter
             var statemanager = new StateManager(settings,platformConnector);
             StateManager = statemanager;
             StateProviderProxy.Init(statemanager);
-
-            listenersManager.StateManager = statemanager;
 
             if (settings.StatsEnabled)
                 StatsManager.Configure();

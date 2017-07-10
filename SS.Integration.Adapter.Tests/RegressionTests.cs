@@ -73,8 +73,6 @@ namespace SS.Integration.Adapter.Tests
             settings.Setup(x => x.ProcessingLockTimeOutInSecs).Returns(10);
             settings.Setup(x => x.StreamSafetyThreshold).Returns(int.MaxValue);
 
-            var streamListenerManager = new StreamListenerManager(settings.Object);
-            streamListenerManager.StateManager = new Mock<IStateManager>().Object;
             feature.Setup(x => x.Name).Returns("Football");
 
             service.Setup(x => x.GetSports()).Returns(new List<IFeature> { feature.Object });
@@ -102,12 +100,10 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
             resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
 
-            Adapter adapter = new Adapter(settings.Object, service.Object, plugin.Object,streamListenerManager)
+            Adapter adapter = new Adapter(settings.Object, service.Object, plugin.Object)
             {
                 StateManager = provider
             };
-
-            streamListenerManager.EventState = eventstate.Object;
 
             adapter.Start();
 

@@ -2,6 +2,7 @@
 using log4net;
 using SS.Integration.Adapter.Interface;
 using System;
+using SportingSolutions.Udapi.Sdk.Events;
 using SS.Integration.Adapter.Actors.Messages;
 
 namespace SS.Integration.Adapter.Actors
@@ -22,13 +23,15 @@ namespace SS.Integration.Adapter.Actors
         private readonly ILog _logger = LogManager.GetLogger(typeof(ResourceActor).ToString());
         private readonly IResourceFacade _resource;
         private readonly string _fixtureId;
+        private readonly IActorRef _streamListenerActor;
 
         #endregion
 
         #region Constructors
 
-        public ResourceActor(IResourceFacade resource)
+        public ResourceActor(IActorRef streamListenerActor, IResourceFacade resource)
         {
+            _streamListenerActor = streamListenerActor ?? throw new ArgumentNullException(nameof(streamListenerActor));
             _resource = resource ?? throw new ArgumentNullException(nameof(resource));
             _fixtureId = _resource.Id;
 
@@ -45,13 +48,13 @@ namespace SS.Integration.Adapter.Actors
         private void Resource_StreamConnected(object sender, EventArgs e)
         {
             _logger.Info("Resource Stream Connected");
-            Context.Parent.Tell(new StreamConnectedMsg { FixtureId = _fixtureId });
+            _streamListenerActor.Tell(new StreamConnectedMsg { FixtureId = _fixtureId });
         }
 
         private void Resource_StreamDisconnected(object sender, EventArgs e)
         {
             _logger.Info("Resource Stream Disconnected");
-            Context.Parent.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId, Sport = _resource.Sport });
+            _streamListenerActor.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId, Sport = _resource.Sport });
         }
 
         protected override void PostStop()
@@ -60,6 +63,7 @@ namespace SS.Integration.Adapter.Actors
 
             _resource.StreamConnected -= Resource_StreamConnected;
             _resource.StreamDisconnected -= Resource_StreamDisconnected;
+            _resource.StreamEvent -= Resource_StreamEvent;
         }
 
         #endregion
@@ -70,6 +74,12 @@ namespace SS.Integration.Adapter.Actors
         {
             _resource.StreamConnected += Resource_StreamConnected;
             _resource.StreamDisconnected += Resource_StreamDisconnected;
+            _resource.StreamEvent += Resource_StreamEvent;
+        }
+
+        private void Resource_StreamEvent(object sender, StreamEventArgs e)
+        {
+            _streamListenerActor.Tell(new StreamUpdateMsg { Data = e.Update });
         }
 
         private void ResourceStartStreamingMsgHandler(ResourceStartStreamingMsg resourceStartStreamingMsg)

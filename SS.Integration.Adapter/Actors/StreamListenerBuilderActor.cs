@@ -112,7 +112,7 @@ namespace SS.Integration.Adapter.Actors
                             _eventState,
                             _stateManager,
                             _settings)),
-                    StreamListenerActor.ActorName + "For" + msg.Resource.Id);
+                    StreamListenerActor.GetName(msg.Resource.Id));
             }
             finally
             {

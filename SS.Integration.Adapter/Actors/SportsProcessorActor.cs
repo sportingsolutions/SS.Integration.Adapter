@@ -14,6 +14,7 @@ namespace SS.Integration.Adapter.Actors
         #region Constants
 
         public const string ActorName = nameof(SportsProcessorActor);
+        public const string Path = "/user/" + ActorName;
 
         #endregion
 

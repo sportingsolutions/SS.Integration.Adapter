@@ -91,7 +91,7 @@ namespace SS.Integration.Adapter.Actors
                 _settings = settings ?? throw new ArgumentNullException(nameof(settings));
                 _fixtureId = _resource.Id;
                 _resourceActor = Context.ActorOf(
-                    Props.Create(() => new ResourceActor(_resource)),
+                    Props.Create(() => new ResourceActor(Self, _resource)),
                     ResourceActor.ActorName);
                 _streamHealthCheckActor = Context.ActorOf(
                     Props.Create(() => new StreamHealthCheckActor(_resource, _settings, Context)),
@@ -344,6 +344,18 @@ namespace SS.Integration.Adapter.Actors
 
                 Become(Errored);
             }
+        }
+
+        #endregion
+
+        #region Static methods
+
+        public static string GetName(string resourceId)
+        {
+            if(string.IsNullOrWhiteSpace(resourceId))
+                throw new ArgumentNullException(nameof(resourceId));
+
+            return string.Concat(ActorName, "-for-", resourceId);
         }
 
         #endregion
