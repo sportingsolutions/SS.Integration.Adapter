@@ -31,18 +31,28 @@ namespace SS.Integration.Adapter.WindowsService
 {
     public partial class AdapterService : ServiceBase
     {
+        #region Attributes
+
         private readonly ILog _logger = LogManager.GetLogger(typeof(AdapterService).ToString());
         private static Task _adapterWorkerThread;
         private Adapter _adapter;
         private ISupervisor _supervisor;
-        private int fatalExceptionsCounter = 0;
+        private int _fatalExceptionsCounter = 0;
         private bool _skipRestartOnFatalException;
-        public static IAdapterPlugin PlatformConnectorInstance;
+
+        #endregion
+
+        #region Properties
+
         [Import]
         public IAdapterPlugin PlatformConnector { get; set; }
 
         [Import(AllowDefault = true)]
         public IPluginBootstrapper<NinjectModule> PluginBootstrapper { get; set; }
+
+        #endregion
+
+        #region Constructors
 
         public AdapterService()
         {
@@ -54,70 +64,37 @@ namespace SS.Integration.Adapter.WindowsService
             Compose();
         }
 
-        private int GetMaxFailures()
-        {
-            int maxFailures = 0;
-            int.TryParse(ConfigurationManager.AppSettings["maxUnhandledExceptions"], out maxFailures);
-            _skipRestartOnFatalException = !bool.Parse(ConfigurationManager.AppSettings["skipRestartOnFatalException"]) ;
+        #endregion
 
-            return maxFailures;
-        }
-
-        private void Compose()
-        {
-            _logger.Info("Adapter Service is looking for a plugin");
-            CompositionContainer container = null;
-
-            try
-            {
-                string codebase = AppDomain.CurrentDomain.BaseDirectory;
-
-                var pluginAssembly = ConfigurationManager.AppSettings["pluginAssembly"];
-                var catalog = new SafeDirectoryCatalog(codebase, pluginAssembly);
-                container = new CompositionContainer(catalog);
-                container.ComposeParts(this);
-                PlatformConnectorInstance = PlatformConnector;
-            }
-            catch (CompositionException ex)
-            {
-                foreach (var error in ex.Errors)
-                {
-                    _logger.Fatal("Error when loading plugin", error.Exception);
-                }
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                foreach (var error in ex.LoaderExceptions)
-                {
-                    _logger.Fatal("Error when searching for plugin", error);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Fatal("Error when loading plugin", ex);
-            }
-            finally
-            {
-                if (container != null)
-                {
-                    container.Dispose();
-                }
-            }
-        }
+        #region Protected methods
 
         protected override void OnStart(string[] args)
         {
             _adapterWorkerThread = Task.Factory.StartNew(InitialiseAdapter, TaskCreationOptions.LongRunning);
             _adapterWorkerThread.ContinueWith(t =>
+            {
+                if (t.IsFaulted || t.Status == TaskStatus.Faulted)
                 {
-                    if (t.IsFaulted || t.Status == TaskStatus.Faulted)
-                    {
-                        _logger.FatalFormat("Problem starting adapter {0}", t.Exception);
-                    }
-                });
+                    _logger.FatalFormat("Problem starting adapter {0}", t.Exception);
+                }
+            });
         }
 
-        internal void InitialiseAdapter()
+        protected override void OnStop()
+        {
+            _logger.Info("Requesting Adapter Stop");
+
+            _adapter.Stop();
+            _adapterWorkerThread.Wait();
+            _adapterWorkerThread.ContinueWith(task => { _logger.InfoFormat("Adapter successfully stopped"); Environment.Exit(0); });
+            _supervisor?.Dispose();
+        }
+
+        #endregion
+
+        #region Private methods
+
+        private void InitialiseAdapter()
         {
             _logger.Info("Requesting Adapter Start");
 
@@ -140,9 +117,9 @@ namespace SS.Integration.Adapter.WindowsService
 
             var settings = iocContainer.Get<ISettings>();
             var service = iocContainer.Get<IServiceFacade>();
-            
+
             iocContainer.Settings.InjectNonPublic = true;
-            
+
             //needed for Plugin properties since plugin is not instantiated by Ninject
             iocContainer.Inject(PlatformConnector);
 
@@ -178,15 +155,76 @@ namespace SS.Integration.Adapter.WindowsService
             _logger.Info("Adapter has started");
         }
 
-        protected override void OnStop()
+        private void RestartAdapter()
         {
-            _logger.Info("Requesting Adapter Stop");
+            if (_skipRestartOnFatalException)
+                return;
 
+            _fatalExceptionsCounter++;
             _adapter.Stop();
-            _adapterWorkerThread.Wait();
-            _adapterWorkerThread.ContinueWith(task => { _logger.InfoFormat("Adapter successfully stopped"); Environment.Exit(0); });
-            if (_supervisor != null)
-                _supervisor.Dispose();
+            int maxFailures = GetMaxFailures();
+
+            //0 means no limit
+            maxFailures = maxFailures > 0 ? maxFailures : int.MaxValue;
+
+            if (maxFailures > _fatalExceptionsCounter)
+            {
+                _adapter.Start();
+            }
+            else
+            {
+                _logger.WarnFormat("Adapter registered {0} FATAL/Unhandled exceptions and will stop the service now", GetMaxFailures());
+            }
+        }
+
+        private int GetMaxFailures()
+        {
+            int maxFailures = 0;
+            int.TryParse(ConfigurationManager.AppSettings["maxUnhandledExceptions"], out maxFailures);
+            _skipRestartOnFatalException = !bool.Parse(ConfigurationManager.AppSettings["skipRestartOnFatalException"]) ;
+
+            return maxFailures;
+        }
+
+        private void Compose()
+        {
+            _logger.Info("Adapter Service is looking for a plugin");
+            CompositionContainer container = null;
+
+            try
+            {
+                string codebase = AppDomain.CurrentDomain.BaseDirectory;
+
+                var pluginAssembly = ConfigurationManager.AppSettings["pluginAssembly"];
+                var catalog = new SafeDirectoryCatalog(codebase, pluginAssembly);
+                container = new CompositionContainer(catalog);
+                container.ComposeParts(this);
+            }
+            catch (CompositionException ex)
+            {
+                foreach (var error in ex.Errors)
+                {
+                    _logger.Fatal("Error when loading plugin", error.Exception);
+                }
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                foreach (var error in ex.LoaderExceptions)
+                {
+                    _logger.Fatal("Error when searching for plugin", error);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Fatal("Error when loading plugin", ex);
+            }
+            finally
+            {
+                if (container != null)
+                {
+                    container.Dispose();
+                }
+            }
         }
 
         private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
@@ -197,28 +235,6 @@ namespace SS.Integration.Adapter.WindowsService
                 OnStop();
             else
                 RestartAdapter();
-        }
-
-        private void RestartAdapter()
-        {
-            if(_skipRestartOnFatalException)
-                return;
-
-            fatalExceptionsCounter++;
-            _adapter.Stop();
-            int maxFailures = GetMaxFailures();
-            
-            //0 means no limit
-            maxFailures = maxFailures > 0 ? maxFailures : int.MaxValue;
-
-            if (maxFailures > fatalExceptionsCounter)
-            {
-                _adapter.Start();
-            }
-            else
-            {
-                _logger.WarnFormat("Adapter registered {0} FATAL/Unhandled exceptions and will stop the service now",GetMaxFailures());
-            }
         }
 
         private void TaskSchedulerOnUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs unobservedTaskExceptionEventArgs)
@@ -239,5 +255,7 @@ namespace SS.Integration.Adapter.WindowsService
 
             RestartAdapter();
         }
+
+        #endregion
     }
 }

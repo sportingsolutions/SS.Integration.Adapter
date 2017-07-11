@@ -73,7 +73,9 @@ namespace SS.Integration.Adapter.Actors
 
         private void StartStreamingNotRespondingMsgHandler(StartStreamingNotRespondingMsg msg)
         {
-            var unresponsiveTime = ++_startStreamingNotRespondingWarnCount * _settings.StartStreamingTimeoutInSeconds;
+            //
+            _startStreamingNotRespondingWarnCount += 1;
+            var unresponsiveTime = _startStreamingNotRespondingWarnCount * _settings.StartStreamingTimeoutInSeconds;
             _logger.Warn(
                 $"StartStreaming for {_resource} did't respond for {unresponsiveTime} seconds. " +
                 "Possible network problem or port 5672 is locked");

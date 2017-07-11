@@ -25,8 +25,8 @@ namespace SS.Integration.Adapter.Interface
         void StartStreaming(string fixtureId);
         void StopStreaming(string fixtureId);
 
-        event Adapter.StreamEventHandler StreamCreated;
-        event Adapter.StreamEventHandler StreamRemoved;
+        //event Adapter.StreamEventHandler StreamCreated;
+        //event Adapter.StreamEventHandler StreamRemoved;
 
         IStateManager StateManager { get; set; }
 

@@ -29,47 +29,56 @@ namespace SS.Integration.Adapter
 {
     public class Adapter
     {
-        public delegate void StreamEventHandler(object sender, string fixtureId);
+        #region Attributes
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(Adapter).ToString());
-        
         private readonly IStatsHandle _stats;
+        private readonly ISettings _settings;
+        private readonly IStateManager _stateManager;
+        private readonly IServiceFacade _udapiServiceFacade;
+        private readonly IAdapterPlugin _platformConnector;
 
-        public Adapter(ISettings settings, IServiceFacade udapiServiceFacade, IAdapterPlugin platformConnector)
+        #endregion
+
+        #region Properties
+
+        internal IStateManager StateManager => _stateManager;
+
+        #endregion
+
+        #region Constructors
+
+        public Adapter(
+            ISettings settings,
+            IServiceFacade udapiServiceFacade,
+            IAdapterPlugin platformConnector)
         {
-            Settings = settings;
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _udapiServiceFacade = udapiServiceFacade ?? throw new ArgumentNullException(nameof(udapiServiceFacade));
+            _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
 
-            UDAPIService = udapiServiceFacade;
-            PlatformConnector = platformConnector;
-
-            var statemanager = new StateManager(settings,platformConnector);
-            StateManager = statemanager;
-            StateProviderProxy.Init(statemanager);
+            _stateManager = new StateManager(settings, platformConnector);
+            StateProviderProxy.Init((IStateProvider)_stateManager);
 
             if (settings.StatsEnabled)
                 StatsManager.Configure();
 
             // we just need the initialisation
-            new SuspensionManager(statemanager, PlatformConnector);
+            new SuspensionManager((IStateProvider)_stateManager, _platformConnector);
 
             platformConnector.Initialise();
-            statemanager.AddRules(platformConnector.MarketRules);
-
+            ((StateManager)_stateManager).AddRules(platformConnector.MarketRules);
 
             ThreadPool.SetMinThreads(500, 500);
-            
+
             _stats = StatsManager.Instance["adapter.core"].GetHandle();
 
             PopuplateAdapterVersionInfo();
         }
-        
-        internal IStateManager StateManager { get; set; }
 
-        internal static IAdapterPlugin PlatformConnector { get; private set; }
+        #endregion
 
-        internal ISettings Settings { get; private set; }
-
-        internal IServiceFacade UDAPIService { get; private set; }
+        #region Message Handlers
 
         /// <summary>
         /// Starts the adapter.
@@ -83,16 +92,16 @@ namespace SS.Integration.Adapter
             try
             {
                 LogVersions();
-                
+
                 _logger.Info("Adapter is connecting to the UDAPI service...");
 
-                UDAPIService.Connect();
-                if (!UDAPIService.IsConnected)
+                _udapiServiceFacade.Connect();
+                if (!_udapiServiceFacade.IsConnected)
                     return;
-                
+
                 _logger.Debug("Adapter connected to the UDAPI - initialising...");
 
-                AdapterActorSystem.Init(Settings, UDAPIService, PlatformConnector, StateManager);
+                AdapterActorSystem.Init(_settings, _udapiServiceFacade, _platformConnector, _stateManager);
 
                 _logger.InfoFormat("Adapter started");
                 _stats.SetValue(AdapterCoreKeys.ADAPTER_STARTED, "1");
@@ -117,18 +126,22 @@ namespace SS.Integration.Adapter
 
             try
             {
-                PlatformConnector?.Dispose();
-
-                UDAPIService.Disconnect();
+                _platformConnector?.Dispose();
+                _udapiServiceFacade?.Disconnect();
+                AdapterActorSystem.Dispose();
             }
             catch (Exception e)
             {
                 _logger.Error("An error occured while disposing the adapter", e);
             }
-            
+
             _stats.SetValue(AdapterCoreKeys.ADAPTER_STARTED, "0");
             _logger.InfoFormat("Adapter stopped");
         }
+
+        #endregion
+
+        #region Private methods
 
         private void PopuplateAdapterVersionInfo()
         {
@@ -146,19 +159,20 @@ namespace SS.Integration.Adapter
 
             adapterVersionInfo.UdapiSDKVersion = sdkVersionString;
 
-            if (PlatformConnector != null)
+            if (_platformConnector != null)
             {
-                var pluginAssembly = Assembly.GetAssembly(PlatformConnector.GetType());
+                var pluginAssembly = Assembly.GetAssembly(_platformConnector.GetType());
                 adapterVersionInfo.PluginName = pluginAssembly.GetName().Name;
                 adapterVersionInfo.PluginVersion = pluginAssembly.GetName().Version.ToString();
             }
         }
-        
+
         private void LogVersions()
         {
             var adapterVersionInfo = AdapterVersionInfo.GetAdapterVersionInfo();
             _logger.InfoFormat("Sporting Solutions Adapter version={0} using Sporting Solutions SDK version={1}, with plugin={2} pluginVersion={3}", adapterVersionInfo.AdapterVersion, adapterVersionInfo.UdapiSDKVersion, adapterVersionInfo.PluginName, adapterVersionInfo.PluginVersion);
         }
 
+        #endregion
     }
 }

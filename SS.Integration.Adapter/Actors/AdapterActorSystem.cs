@@ -11,23 +11,30 @@ namespace SS.Integration.Adapter.Actors
         private static ActorSystem _actorSystem;
 
         /// <summary>
-        /// Actor system shouldn't be provided unless your implemention specifically requires it
+        /// 
         /// </summary>
         /// <param name="settings"></param>
         /// <param name="udApiService"></param>
         /// <param name="adapterPlugin"></param>
         /// <param name="stateManager"></param>
-        /// <param name="actorSystem"></param>
         public static void Init(
             ISettings settings,
             IServiceFacade udApiService,
             IAdapterPlugin adapterPlugin,
-            IStateManager stateManager,
-            ActorSystem actorSystem = null)
+            IStateManager stateManager)
         {
-            _actorSystem = actorSystem ?? ActorSystem.Create("AdapterSystem");
+            _actorSystem = ActorSystem.Create("AdapterSystem");
 
             IEventState eventState = EventState.Create(new FileStoreProvider(settings.StateProviderPath), settings);
+
+            ActorSystem.ActorOf(
+                Props.Create(() =>
+                    new StreamListenerManagerActor(
+                        settings,
+                        adapterPlugin,
+                        stateManager,
+                        eventState)),
+                StreamListenerManagerActor.ActorName);
 
             var sportProcessorRouterActor = ActorSystem.ActorOf(
                 Props.Create(() =>
@@ -47,15 +54,12 @@ namespace SS.Integration.Adapter.Actors
                         udApiService,
                         sportProcessorRouterActor)),
                 SportsProcessorActor.ActorName);
+        }
 
-            ActorSystem.ActorOf(
-                Props.Create(() =>
-                    new StreamListenerManagerActor(
-                        settings,
-                        adapterPlugin,
-                        stateManager,
-                        eventState)),
-                StreamListenerManagerActor.ActorName);
+        public static void Dispose()
+        {
+            _actorSystem?.Dispose();
+            _actorSystem = null;
         }
 
         public static ActorSystem ActorSystem => _actorSystem;

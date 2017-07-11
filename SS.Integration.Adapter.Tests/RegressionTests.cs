@@ -62,7 +62,6 @@ namespace SS.Integration.Adapter.Tests
             var feature = new Mock<IFeature>();
             var resource = new Mock<IResourceFacade>();
             var eventstate = new Mock<IEventState>();
-            var provider = new StateManager(settings.Object, plugin.Object);
 
             Fixture fixture = new Fixture {Id = "ABC", FixtureName = "ABC", Sequence = 2, MatchStatus = "10" };
             fixture.Tags.Add("Sport", "Football");
@@ -100,10 +99,7 @@ namespace SS.Integration.Adapter.Tests
             resource.Setup(x => x.GetSnapshot()).Returns(FixtureJsonHelper.ToJson(fixture));
             resource.Setup(x => x.StartStreaming()).Raises(x => x.StreamConnected += null, EventArgs.Empty);
 
-            Adapter adapter = new Adapter(settings.Object, service.Object, plugin.Object)
-            {
-                StateManager = provider
-            };
+            Adapter adapter = new Adapter(settings.Object, service.Object, plugin.Object);
 
             adapter.Start();
 

@@ -64,7 +64,7 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
-        #region Private methods
+        #region Message Handlers
 
         private void CreateStreamListenerMsgHandler(CreateStreamListenerMsg msg)
         {

@@ -40,8 +40,8 @@ namespace SS.Integration.Adapter
         private readonly static object _sync = new object();
         protected readonly ISettings _settings;
 
-        public event Adapter.StreamEventHandler StreamCreated;
-        public event Adapter.StreamEventHandler StreamRemoved;
+        //public event Adapter.StreamEventHandler StreamCreated;
+        //public event Adapter.StreamEventHandler StreamRemoved;
 
         public IEventState EventState { get; set; }
 
@@ -427,16 +427,16 @@ namespace SS.Integration.Adapter
 
         protected virtual void OnStreamCreated(string fixtureId)
         {
-            if (StreamCreated != null)
-            {
-                StreamCreated(this, fixtureId);
-            }
+            //if (StreamCreated != null)
+            //{
+            //    StreamCreated(this, fixtureId);
+            //}
         }
 
         protected virtual void OnStreamRemoved(string fixtureId)
         {
-            if (StreamRemoved != null)
-                StreamRemoved(this, fixtureId);
+            //if (StreamRemoved != null)
+            //    StreamRemoved(this, fixtureId);
         }
 
         private void SaveEventState()
