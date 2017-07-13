@@ -62,13 +62,5 @@ namespace SS.Integration.Adapter.Actors
         }
 
         #endregion
-
-        #region Private messages
-
-        private class ProcessSportsMessage
-        {
-        }
-
-        #endregion
     }
 }

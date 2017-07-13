@@ -27,6 +27,8 @@ using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 using Akka.Routing;
 using FluentAssertions;
+using SportingSolutions.Udapi.Sdk;
+using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Enums;
 
 namespace SS.Integration.Adapter.Tests
@@ -53,6 +55,7 @@ namespace SS.Integration.Adapter.Tests
             SettingsMock.SetupGet(a => a.FixtureCheckerFrequency).Returns(10000);
             SettingsMock.SetupGet(a => a.EventStateFilePath).Returns(string.Empty);
 
+            FootabllSportMock = new Mock<IFeature>();
             ServiceMock = new Mock<IServiceFacade>();
             EventStateMock = new Mock<IEventState>();
             StateManagerMock = new Mock<IStateManager>();
@@ -80,7 +83,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
                 /*storedData*/new { Epoch = 7, Sequence = 1, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
@@ -143,7 +146,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_matchover_snapshot_2,
                 /*storedData*/new { Epoch = 7, Sequence = 1, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
@@ -203,7 +206,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_matchover_snapshot_2,
                 /*storedData*/new { Epoch = 7, Sequence = 1, MatchStatus = MatchStatus.MatchOver },
                 out snapshot,
@@ -263,7 +266,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
                 /*storedData*/new { Epoch = 7, Sequence = 1, MatchStatus = MatchStatus.Prematch },
                 out snapshot,
@@ -334,7 +337,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_ready_snapshot_3,
                 /*storedData*/new { Epoch = 3, Sequence = 1, MatchStatus = MatchStatus.Ready },
                 out snapshot,
@@ -398,7 +401,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_setup_snapshot_2,
                 /*storedData*/new { Epoch = 3, Sequence = 2, MatchStatus = MatchStatus.Setup },
                 out snapshot,
@@ -452,7 +455,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
@@ -511,7 +514,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
@@ -593,7 +596,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
                 /*storedData*/new { Epoch = 7, Sequence = 1, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
@@ -688,7 +691,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_ready_snapshot_3,
                 /*storedData*/new { Epoch = 3, Sequence = 2, MatchStatus = MatchStatus.Ready },
                 out snapshot,
@@ -782,7 +785,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
@@ -868,7 +871,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
@@ -967,7 +970,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_ready_snapshot_3,
                 /*storedData*/new { Epoch = 3, Sequence = 2, MatchStatus = MatchStatus.Ready },
                 out snapshot,
@@ -1068,7 +1071,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
@@ -1149,9 +1152,9 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
-                /*storedData*/new {Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning},
+                /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock,
                 (mockObj, snapshotJson) =>
@@ -1250,7 +1253,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
@@ -1411,12 +1414,12 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
-            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals("Football"))))
+            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
                 .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
             //this will force initialization to fail
             resourceFacadeMock.Reset();
@@ -1442,7 +1445,7 @@ namespace SS.Integration.Adapter.Tests
                         .WithRouter(new SmallestMailboxPool(SettingsMock.Object.FixtureCreationConcurrency)),
                     SportProcessorRouterActor.ActorName);
 
-            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = "Football" });
+            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
             //
             //Assert
@@ -1506,12 +1509,14 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
-            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals("Football"))))
+
+            ServiceMock.Setup(o => o.GetSports()).Returns(new[] {FootabllSportMock.Object});
+            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
                 .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
             StreamValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
@@ -1540,8 +1545,15 @@ namespace SS.Integration.Adapter.Tests
                     Props.Create(() => new SportProcessorRouterActor(ServiceMock.Object))
                         .WithRouter(new SmallestMailboxPool(SettingsMock.Object.FixtureCreationConcurrency)),
                     SportProcessorRouterActor.ActorName);
+            ActorOfAsTestActorRef<SportsProcessorActor>(
+                Props.Create(() =>
+                    new SportsProcessorActor(
+                        SettingsMock.Object,
+                        ServiceMock.Object,
+                        sportProcessorRouterActor)),
+                SportsProcessorActor.ActorName);
 
-            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = "Football" });
+            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
             IActorRef streamListenerActorRef = null;
             StreamListenerActor streamListenerActor = null;

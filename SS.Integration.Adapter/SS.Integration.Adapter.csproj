@@ -83,6 +83,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Actors\Messages\ProcessResourceMsg.cs" />
+    <Compile Include="Actors\Messages\ProcessSportsMessage.cs" />
     <Compile Include="Actors\Messages\StartStreamingNotRespondingMsg.cs" />
     <Compile Include="Actors\Messages\ConnectToStreamServerMsg.cs" />
     <Compile Include="Actors\Messages\CreateStreamListenerMsg.cs" />

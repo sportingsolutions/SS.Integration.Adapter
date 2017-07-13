@@ -124,7 +124,13 @@ namespace SS.Integration.Adapter.Actors
                                 _streamValidation,
                                 _fixtureValidation)),
                         streamListenerActorName);
+
+                    Context.Parent.Tell(new StreamListenerCreationCompletedMsg { Resource = msg.Resource });
                 }
+            }
+            catch (Exception ex)
+            {
+                Context.Parent.Tell(new StreamListenerCreationFailedMsg { Resource = msg.Resource, Exception = ex });
             }
             finally
             {

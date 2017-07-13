@@ -3,6 +3,7 @@ using System.Reflection;
 using Akka.Actor;
 using Akka.TestKit.NUnit;
 using Moq;
+using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
@@ -21,6 +22,7 @@ namespace SS.Integration.Adapter.Tests
 
         #region Attributes
 
+        protected Mock<IFeature> FootabllSportMock;
         protected Mock<ISettings> SettingsMock;
         protected Mock<IAdapterPlugin> PluginMock;
         protected Mock<IServiceFacade> ServiceMock;
@@ -44,6 +46,8 @@ namespace SS.Integration.Adapter.Tests
             Action<Mock<IResourceFacade>, string> resourceGetSnapshotCallsSequence = null)
         {
             resourceFacadeMock = new Mock<IResourceFacade>();
+
+            FootabllSportMock.SetupGet(o => o.Name).Returns("Football");
 
             var snapshotJson = System.Text.Encoding.UTF8.GetString(fixtureData);
             snapshot = FixtureJsonHelper.GetFromJson(snapshotJson);

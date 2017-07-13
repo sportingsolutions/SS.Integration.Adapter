@@ -60,9 +60,9 @@ namespace SS.Integration.Adapter
 
         #region Private methods
 
-        private bool ShouldIgnoreUnprocessedSequence(IResourceFacade resource, Enums.StreamListenerState state)
+        private bool ShouldIgnoreUnprocessedSequence(IResourceFacade resource, StreamListenerState state)
         {
-            if (state != Enums.StreamListenerState.Streaming)
+            if (state != StreamListenerState.Streaming)
             {
                 _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Not Streaming\"");
                 return true;

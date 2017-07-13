@@ -25,7 +25,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly ISettings _settings;
         private readonly IEventState _eventState;
         private readonly IActorRef _streamListenerBuilderActorRef;
-        private readonly Dictionary<long, string> _sportProcessingTrigger;
+        private bool _shouldSendProcessSportsMessage;
 
         #endregion
 
@@ -46,7 +46,7 @@ namespace SS.Integration.Adapter.Actors
                 throw new ArgumentNullException(nameof(stateManager));
             _eventState = eventState ?? throw new ArgumentNullException(nameof(eventState));
 
-            _sportProcessingTrigger = new Dictionary<long, string>();
+            _shouldSendProcessSportsMessage = true;
 
             _streamListenerBuilderActorRef =
                 Context.ActorOf(Props.Create(() =>
@@ -65,7 +65,10 @@ namespace SS.Integration.Adapter.Actors
             Receive<StreamDisconnectedMsg>(o => StreamDisconnectedMsgHandler(o));
             Receive<StreamListenerStoppedMsg>(o => StreamListenerStoppedMsgHandler(o));
             Receive<StartStreamingNotRespondingMsg>(o => StopStreamListenerChildActor(o.FixtureId));
+            Receive<StreamListenerCreationCompletedMsg>(o => StreamListenerCreationCompletedMsgHandler(o));
+            Receive<StreamListenerCreationFailedMsg>(o => StreamListenerCreationFailedMsgHandler(o));
             Receive<Terminated>(o => TerminatedHandler(o));
+            Receive<ResetSendProcessSportsMsg>(o => ResetSendProcessSportsMsgHandler(o));
         }
 
         #endregion
@@ -85,6 +88,18 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
+        private void StreamListenerCreationCompletedMsgHandler(StreamListenerCreationCompletedMsg msg)
+        {
+            _logger.Info(
+                $"Stream Listener has been created for Resource {msg.Resource}");
+        }
+
+        private void StreamListenerCreationFailedMsgHandler(StreamListenerCreationFailedMsg msg)
+        {
+            _logger.Error(
+                $"Stream Listener Creation Failed for Resource {msg.Resource} - Exception -> {msg.Exception}");
+        }
+
         private void StreamConnectedMsgHandler(StreamConnectedMsg msg)
         {
             IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.FixtureId));
@@ -93,9 +108,6 @@ namespace SS.Integration.Adapter.Actors
 
         private void StreamDisconnectedMsgHandler(StreamDisconnectedMsg msg)
         {
-            IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.FixtureId));
-            _sportProcessingTrigger[streamListenerActor.Path.Uid] = msg.Sport;
-
             StopStreamListenerChildActor(msg.FixtureId);
         }
 
@@ -103,6 +115,35 @@ namespace SS.Integration.Adapter.Actors
         {
             StopStreamListenerChildActor(msg.FixtureId);
         }
+
+        private void TerminatedHandler(Terminated t)
+        {
+            Context.Unwatch(t.ActorRef);
+
+            if (!_shouldSendProcessSportsMessage)
+                return;
+
+            var sportsProcessorActor = Context.System.ActorSelection(SportsProcessorActor.Path);
+            sportsProcessorActor.Tell(new ProcessSportsMessage());
+
+            //avoid sending ProcessSportsMsg too many times when disconnection occurs
+            Context.System.Scheduler.ScheduleTellOnce(
+                TimeSpan.FromMilliseconds(_settings.FixtureCheckerFrequency),
+                Self,
+                new ResetSendProcessSportsMsg(),
+                Self);
+            _shouldSendProcessSportsMessage = false;
+        }
+
+        private void ResetSendProcessSportsMsgHandler(ResetSendProcessSportsMsg msg)
+        {
+            _shouldSendProcessSportsMessage = true;
+        }
+
+
+        #endregion
+
+        #region Private methods
 
         private void StopStreamListenerChildActor(string fixtureId)
         {
@@ -113,19 +154,15 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
-        private void TerminatedHandler(Terminated t)
-        {
-            Context.Unwatch(t.ActorRef);
+        #endregion
 
-            if (_sportProcessingTrigger.ContainsKey(t.ActorRef.Path.Uid))
-            {
-                var sport = _sportProcessingTrigger[t.ActorRef.Path.Uid];
-                var sportProcessorRouterActor = Context.System.ActorSelection(SportProcessorRouterActor.Path);
-                sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = sport });
-                _sportProcessingTrigger.Remove(t.ActorRef.Path.Uid);
-            }
+        #region Private messages
+
+        private class ResetSendProcessSportsMsg
+        {
         }
 
         #endregion
+
     }
 }

@@ -26,6 +26,7 @@ using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 using Akka.Routing;
 using FluentAssertions;
+using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Enums;
 
 namespace SS.Integration.Adapter.Tests
@@ -52,6 +53,7 @@ namespace SS.Integration.Adapter.Tests
             SettingsMock.SetupGet(a => a.FixtureCheckerFrequency).Returns(10000);
             SettingsMock.SetupGet(a => a.EventStateFilePath).Returns(string.Empty);
 
+            FootabllSportMock = new Mock<IFeature>();
             ServiceMock = new Mock<IServiceFacade>();
             EventStateMock = new Mock<IEventState>();
             StateManagerMock = new Mock<IStateManager>();
@@ -81,12 +83,12 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_setup_snapshot_2,
                 /*storedData*/new { Epoch = 3, Sequence = 1, MatchStatus = MatchStatus.Setup },
                 out snapshot,
                 out resourceFacadeMock);
-            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals("Football"))))
+            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
                 .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
             StreamValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
@@ -120,7 +122,7 @@ namespace SS.Integration.Adapter.Tests
                         .WithRouter(new SmallestMailboxPool(SettingsMock.Object.FixtureCreationConcurrency)),
                     SportProcessorRouterActor.ActorName);
 
-            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = "Football" });
+            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
             IActorRef streamListenerActorRef;
             StreamListenerActor streamListenerActor = null;
@@ -160,7 +162,7 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<int>()))
                 .Returns(true);
             //This call will trigger health check message
-            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = "Football" });
+            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
             //
             //Assert
@@ -210,7 +212,7 @@ namespace SS.Integration.Adapter.Tests
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
-                /*sport*/"Football",
+                /*sport*/FootabllSportMock.Object.Name,
                 /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
                 /*storedData*/new { Epoch = 7, Sequence = 1, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
@@ -222,11 +224,11 @@ namespace SS.Integration.Adapter.Tests
                 .Returns(true);
             SettingsMock.SetupGet(o => o.StartStreamingTimeoutInSeconds).Returns(1);
             SettingsMock.SetupGet(o => o.StartStreamingAttempts).Returns(3);
-            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals("Football"))))
+            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
                 .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
             resourceFacadeMock.Reset();
             resourceFacadeMock.Setup(o => o.Id).Returns(snapshot.Id);
-            resourceFacadeMock.Setup(o => o.Sport).Returns("Football");
+            resourceFacadeMock.Setup(o => o.Sport).Returns(FootabllSportMock.Object.Name);
             resourceFacadeMock.Setup(o => o.MatchStatus).Returns((MatchStatus)Convert.ToInt32(snapshot.MatchStatus));
             resourceFacadeMock.Setup(o => o.Content).Returns(new Summary
             {
@@ -256,7 +258,7 @@ namespace SS.Integration.Adapter.Tests
                         .WithRouter(new SmallestMailboxPool(SettingsMock.Object.FixtureCreationConcurrency)),
                     SportProcessorRouterActor.ActorName);
 
-            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = "Football" });
+            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
             //wait for 5 seconds while the health checks run every second and after 3 attempts the manager kills the actor
             Task.Delay(5000).Wait();
