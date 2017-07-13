@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Moq;
 using NUnit.Framework;
@@ -24,6 +25,7 @@ using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 using Akka.Routing;
+using FluentAssertions;
 using SS.Integration.Adapter.Enums;
 
 namespace SS.Integration.Adapter.Tests
@@ -71,7 +73,7 @@ namespace SS.Integration.Adapter.Tests
         /// </summary>
         [Test]
         [Category(STREAM_HEALTH_CHECK_ACTOR_CATEGORY)]
-        public void OnHealthCheckConnectToStreamingServerAndProcessSnapshot()
+        public void ConnectToStreamingServerAndProcessSnapshot()
         {
             //
             //Arrange
@@ -189,6 +191,120 @@ namespace SS.Integration.Adapter.Tests
                                 SuspensionReason.SUSPENSION),
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        /// <summary>
+        /// This test ensures that when trying to connect to the streaming server and that is not responding
+        /// then the Stream Listener Child actor is stopped by the Stream Listener Manager
+        /// </summary>
+        [Test]
+        [Category(STREAM_HEALTH_CHECK_ACTOR_CATEGORY)]
+        public void WhenStartStreamingIsNotRespondingThenStopStreamListener()
+        {
+            //
+            //Arrange
+            //
+            Fixture snapshot;
+            Mock<IResourceFacade> resourceFacadeMock;
+            SetupCommonMockObjects(
+                /*sport*/"Football",
+                /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
+                /*storedData*/new { Epoch = 7, Sequence = 1, MatchStatus = MatchStatus.InRunning },
+                out snapshot,
+                out resourceFacadeMock);
+            StreamValidationMock.Setup(a =>
+                    a.CanConnectToStreamServer(
+                        It.IsAny<IResourceFacade>(),
+                        It.IsAny<StreamListenerState>()))
+                .Returns(true);
+            SettingsMock.SetupGet(o => o.StartStreamingTimeoutInSeconds).Returns(1);
+            SettingsMock.SetupGet(o => o.StartStreamingAttempts).Returns(3);
+            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals("Football"))))
+                .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
+            resourceFacadeMock.Reset();
+            resourceFacadeMock.Setup(o => o.Id).Returns(snapshot.Id);
+            resourceFacadeMock.Setup(o => o.Sport).Returns("Football");
+            resourceFacadeMock.Setup(o => o.MatchStatus).Returns((MatchStatus)Convert.ToInt32(snapshot.MatchStatus));
+            resourceFacadeMock.Setup(o => o.Content).Returns(new Summary
+            {
+                Id = snapshot.Id,
+                Sequence = snapshot.Sequence,
+                MatchStatus = Convert.ToInt32(snapshot.MatchStatus),
+                StartTime = snapshot.StartTime?.ToString("yyyy-MM-ddTHH:mm:ssZ")
+            });
+
+            //
+            //Act
+            //
+            var streamListenerManagerActor =
+                ActorOfAsTestActorRef<StreamListenerManagerActor>(
+                    Props.Create(() =>
+                        new StreamListenerManagerActor(
+                            SettingsMock.Object,
+                            PluginMock.Object,
+                            StateManagerMock.Object,
+                            EventStateMock.Object,
+                            StreamValidationMock.Object,
+                            FixtureValidationMock.Object)),
+                    StreamListenerManagerActor.ActorName);
+            var sportProcessorRouterActor =
+                ActorOfAsTestActorRef<SportProcessorRouterActor>(
+                    Props.Create(() => new SportProcessorRouterActor(ServiceMock.Object))
+                        .WithRouter(new SmallestMailboxPool(SettingsMock.Object.FixtureCreationConcurrency)),
+                    SportProcessorRouterActor.ActorName);
+
+            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = "Football" });
+
+            //wait for 5 seconds while the health checks run every second and after 3 attempts the manager kills the actor
+            Task.Delay(5000).Wait();
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Never);
+                    PluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Never);
+                    PluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
+                        Times.Never);
+                    PluginMock.Verify(a =>
+                            a.ProcessStreamUpdate(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Never);
+                    PluginMock.Verify(a =>
+                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    PluginMock.Verify(a =>
+                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    SuspensionManager.Verify(a =>
+                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    SuspensionManager.Verify(a =>
+                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
+                                SuspensionReason.SUSPENSION),
+                        Times.Never);
+                    SuspensionManager.Verify(a =>
+                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
+                                SuspensionReason.FIXTURE_ERRORED),
+                        Times.Never);
+                    SuspensionManager.Verify(a =>
+                            a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
+                                SuspensionReason.DISCONNECT_EVENT),
+                        Times.Never);
+
+                    Assert.Throws<AggregateException>(() =>
+                    {
+                        Sys.ActorSelection(
+                                streamListenerManagerActor,
+                                StreamListenerActor.GetName(resourceFacadeMock.Object.Id))
+                            .ResolveOne(TimeSpan.FromSeconds(5)).Wait();
+                    }).InnerException.Should().BeOfType<ActorNotFoundException>();
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
