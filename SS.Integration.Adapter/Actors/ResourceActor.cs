@@ -54,7 +54,7 @@ namespace SS.Integration.Adapter.Actors
         private void Resource_StreamDisconnected(object sender, EventArgs e)
         {
             _logger.Info("Resource Stream Disconnected");
-            _streamListenerActor.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId, Sport = _resource.Sport });
+            _streamListenerActor.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId });
         }
 
         protected override void PostStop()

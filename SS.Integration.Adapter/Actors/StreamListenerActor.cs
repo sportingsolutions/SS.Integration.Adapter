@@ -28,24 +28,12 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
-        #region Enums
-
-        internal enum StreamListenerState
-        {
-            Initializing,
-            Initialized,
-            Streaming,
-            Disconnected,
-            Errored,
-            Stopped
-        }
-
-        #endregion
-
         #region Attributes
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerActor).ToString());
         private readonly ISettings _settings;
+        private readonly IStreamValidation _streamValidation;
+        private readonly IFixtureValidation _fixtureValidation;
         private readonly IResourceFacade _resource;
         private readonly IAdapterPlugin _platformConnector;
         private readonly IEventState _eventState;
@@ -65,7 +53,7 @@ namespace SS.Integration.Adapter.Actors
 
         #region Properties
 
-        internal StreamListenerState State { get; private set; }
+        internal Enums.StreamListenerState State { get; private set; }
 
         public IStash Stash { get; set; }
 
@@ -78,7 +66,9 @@ namespace SS.Integration.Adapter.Actors
             IAdapterPlugin platformConnector,
             IEventState eventState,
             IStateManager stateManager,
-            ISettings settings)
+            ISettings settings,
+            IStreamValidation streamValidation,
+            IFixtureValidation fixtureValidation)
         {
             try
             {
@@ -89,12 +79,14 @@ namespace SS.Integration.Adapter.Actors
                 _marketsRuleManager = _stateManager.CreateNewMarketRuleManager(resource.Id);
                 _stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
                 _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+                _streamValidation = streamValidation ?? throw new ArgumentNullException(nameof(streamValidation));
+                _fixtureValidation = fixtureValidation ?? throw new ArgumentNullException(nameof(fixtureValidation));
                 _fixtureId = _resource.Id;
                 _resourceActor = Context.ActorOf(
                     Props.Create(() => new ResourceActor(Self, _resource)),
                     ResourceActor.ActorName);
                 _streamHealthCheckActor = Context.ActorOf(
-                    Props.Create(() => new StreamHealthCheckActor(_resource, _settings, Context)),
+                    Props.Create(() => new StreamHealthCheckActor(_resource, _settings, _streamValidation)),
                     StreamHealthCheckActor.ActorName);
 
                 Initialize();
@@ -114,30 +106,31 @@ namespace SS.Integration.Adapter.Actors
         //Initialised but not streaming yet - this can happen when you start fixture in Setup
         private void Initialized()
         {
-            State = StreamListenerState.Initialized;
+            State = Enums.StreamListenerState.Initialized;
 
+            Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServer());
             Receive<StreamConnectedMsg>(a => Become(Streaming));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
-            Receive<ResourceStateUpdateMsg>(a => ResourceStateUpdateMsgHandler(a));
+            Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
         }
 
         //Connected and streaming state - all messages should be processed
         private void Streaming()
         {
-            State = StreamListenerState.Streaming;
+            State = Enums.StreamListenerState.Streaming;
 
             try
             {
                 Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
-                Receive<ResourceStateUpdateMsg>(a => ResourceStateUpdateMsgHandler(a));
                 Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
+                Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
 
-                var streamConnectedMsg = new StreamConnectedMsg {FixtureId = _resource.Id};
+                var streamConnectedMsg = new StreamConnectedMsg { FixtureId = _resource.Id };
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
 
                 FixtureState fixtureState = _eventState.GetFixtureState(_resource.Id);
 
-                if (IsSnapshotNeeded(fixtureState))
+                if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
                 {
                     RetrieveAndProcessSnapshot();
                 }
@@ -157,10 +150,10 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
-        //No further messages should be accepted, resource has been disconnected, the actor will be restared
+        //Resource has been disconnected, quick reconnection will occur soon
         private void Disconnected()
         {
-            State = StreamListenerState.Disconnected;
+            State = Enums.StreamListenerState.Disconnected;
 
             //tell Stream Listener Manager Actor that we got disconnected so it can kill and recreate this child actor
             Context.Parent.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId, Sport = _resource.Sport });
@@ -170,7 +163,7 @@ namespace SS.Integration.Adapter.Actors
         private void Errored()
         {
             var prevState = State;
-            State = StreamListenerState.Errored;
+            State = Enums.StreamListenerState.Errored;
 
             SuspendFixture(SuspensionReason.SUSPENSION);
             Exception erroredEx;
@@ -190,19 +183,20 @@ namespace SS.Integration.Adapter.Actors
                         $"Failed Suspending Fixture {_resource} on Errored State - exception - {ex}");
                 }
 
-                if (prevState == StreamListenerState.Initializing)
+                if (prevState == Enums.StreamListenerState.Initializing)
                 {
                     Become(Stopped);
                 }
             }
 
             Receive<StreamUpdateMsg>(a => RecoverFromErroredState(prevState, out erroredEx));
+            Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
         }
 
         //No further messages should be accepted, resource has stopped streaming
         private void Stopped()
         {
-            State = StreamListenerState.Stopped;
+            State = Enums.StreamListenerState.Stopped;
 
             //tell Stream Listener Manager Actor that we stopped so it can kill this child actor
             Context.Parent.Tell(new StreamListenerStoppedMsg { FixtureId = _fixtureId });
@@ -211,6 +205,14 @@ namespace SS.Integration.Adapter.Actors
         #endregion
 
         #region Message Handlers
+
+        private void StreamHealthCheckMsgHandler(StreamHealthCheckMsg msg)
+        {
+            msg.StreamingState = State;
+            msg.CurrentSequence = _currentSequence;
+
+            _streamHealthCheckActor.Tell(msg);
+        }
 
         private void StreamUpdateHandler(StreamUpdateMsg msg)
         {
@@ -221,18 +223,9 @@ namespace SS.Integration.Adapter.Actors
 
                 _logger.Info($"{fixtureDelta} stream update arrived");
 
-                var fixtureValidationMsg = new FixtureValidationMsg
-                {
-                    FixtureDetla = fixtureDelta,
-                    Sequence = _currentSequence,
-                    Epoch = _currentEpoch
-                };
-                fixtureValidationMsg =
-                    _streamHealthCheckActor.Ask<FixtureValidationMsg>(fixtureValidationMsg).Result;
-
                 _currentSequence = fixtureDelta.Sequence;
 
-                if (!fixtureValidationMsg.IsSequenceValid)
+                if (!_fixtureValidation.IsSequenceValid(fixtureDelta, _currentSequence))
                 {
                     _logger.Warn($"Update for {fixtureDelta} will not be processed because sequence is not valid");
 
@@ -253,7 +246,7 @@ namespace SS.Integration.Adapter.Actors
                 bool hasEpochChanged = fixtureDelta.Epoch != _currentEpoch;
                 _currentEpoch = fixtureDelta.Epoch;
 
-                if (fixtureValidationMsg.IsEpochValid)
+                if (_fixtureValidation.IsEpochValid(fixtureDelta, _currentEpoch))
                 {
                     ProcessSnapshot(fixtureDelta, false, hasEpochChanged);
                     _logger.Info($"Update for {fixtureDelta} processed successfully");
@@ -286,7 +279,8 @@ namespace SS.Integration.Adapter.Actors
         {
             try
             {
-                if (ShouldSuspendOnDisconnection())
+                var fixtureState = _eventState.GetFixtureState(_fixtureId);
+                if (_streamValidation.ShouldSuspendOnDisconnection(fixtureState, _fixtureStartTime))
                 {
                     SuspendFixture(SuspensionReason.DISCONNECT_EVENT);
                 }
@@ -301,58 +295,13 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
-        private void ResourceStateUpdateMsgHandler(ResourceStateUpdateMsg msg)
-        {
-            if (_resource == null || msg.Resource == null || msg.Resource.Id != _resource.Id)
-                return;
-
-            try
-            {
-                _resource.Content.Sequence = msg.Resource.Content.Sequence;
-                _resource.Content.MatchStatus = msg.Resource.Content.MatchStatus;
-
-                _logger.Debug(
-                    $"Listener state for resource {msg.Resource} has " +
-                    $"sequence={msg.Resource.Content.Sequence} " +
-                    $"processedSequence={_currentSequence} " +
-                    (msg.Resource.Content.Sequence > _currentSequence
-                        ? $"missedSequence={msg.Resource.Content.Sequence - _currentSequence} "
-                        : "") +
-                    $"State={State} " +
-                    $"isMatchOver={msg.Resource.IsMatchOver}");
-
-                var streamValidationMsg = new StreamValidationMsg
-                {
-                    Resource = msg.Resource,
-                    State = State,
-                    CurrentSequence = _currentSequence
-                };
-                var streamIsValid = _streamHealthCheckActor.Ask<bool>(streamValidationMsg).Result;
-                var isFixtureInSetup = msg.Resource.Content.MatchStatus == (int)MatchStatus.Setup;
-                var connectToStreamServer =
-                    State != StreamListenerState.Streaming &&
-                    (!isFixtureInSetup || _settings.AllowFixtureStreamingInSetupMode);
-
-                if (streamIsValid && connectToStreamServer)
-                {
-                    ConnectToStreamServer();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error($"Error processing resource state update for {_resource} - exception - {ex}");
-
-                Become(Errored);
-            }
-        }
-
         #endregion
 
         #region Static methods
 
         public static string GetName(string resourceId)
         {
-            if(string.IsNullOrWhiteSpace(resourceId))
+            if (string.IsNullOrWhiteSpace(resourceId))
                 throw new ArgumentNullException(nameof(resourceId));
 
             return string.Concat(ActorName, "-for-", resourceId);
@@ -366,11 +315,10 @@ namespace SS.Integration.Adapter.Actors
         {
             try
             {
-                State = StreamListenerState.Initializing;
+                State = Enums.StreamListenerState.Initializing;
 
                 Receive<StreamConnectedMsg>(a => Become(Streaming));
                 Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
-                Receive<ResourceStateUpdateMsg>(a => ResourceStateUpdateMsgHandler(a));
                 Receive<StreamUpdateMsg>(a => Stash.Stash());
 
                 var fixtureState = _eventState.GetFixtureState(_resource.Id);
@@ -399,17 +347,14 @@ namespace SS.Integration.Adapter.Actors
                 }
                 else
                 {
-                    var isFixtureInSetup = _resource.MatchStatus == MatchStatus.Setup;
-                    var connectToStreamServer = !isFixtureInSetup || _settings.AllowFixtureStreamingInSetupMode;
-
                     //either connect to stream server and go to Streaming State, or go to Initialized State
-                    if (connectToStreamServer)
+                    if (_streamValidation.CanConnectToStreamServer(_resource, State))
                     {
                         ConnectToStreamServer();
                     }
                     else
                     {
-                        if (IsSnapshotNeeded(fixtureState))
+                        if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
                         {
                             RetrieveAndProcessSnapshot();
                         }
@@ -438,14 +383,6 @@ namespace SS.Integration.Adapter.Actors
             _resourceActor.Tell(new ResourceStartStreamingMsg());
 
             _logger.Debug($"Started streaming for {_resource} - resource has sequence={_resource.Content.Sequence}");
-        }
-
-        private bool IsSnapshotNeeded(FixtureState state)
-        {
-            _logger.Debug(
-                $"{_resource} has stored sequence={state?.Sequence}; resource sequence={_resource.Content.Sequence}");
-
-            return state == null || _resource.Content.Sequence != state.Sequence;
         }
 
         private bool VerifySequenceOnSnapshot(Fixture snapshot)
@@ -693,18 +630,7 @@ namespace SS.Integration.Adapter.Actors
             Become(Stopped);
         }
 
-        private bool ShouldSuspendOnDisconnection()
-        {
-            var state = _eventState.GetFixtureState(_fixtureId);
-            if (state == null || !_fixtureStartTime.HasValue)
-                return true;
-
-            var spanBetweenNowAndStartTime = _fixtureStartTime.Value - DateTime.UtcNow;
-            var doNotSuspend = _settings.DisablePrematchSuspensionOnDisconnection && spanBetweenNowAndStartTime.TotalMinutes > _settings.PreMatchSuspensionBeforeStartTimeInMins;
-            return !doNotSuspend;
-        }
-
-        private void RecoverFromErroredState(StreamListenerState prevState, out Exception erroredEx)
+        private void RecoverFromErroredState(Enums.StreamListenerState prevState, out Exception erroredEx)
         {
             erroredEx = null;
 
@@ -717,12 +643,12 @@ namespace SS.Integration.Adapter.Actors
 
                 switch (prevState)
                 {
-                    case StreamListenerState.Initializing:
+                    case Enums.StreamListenerState.Initializing:
                         {
                             Initialize();
                             break;
                         }
-                    case StreamListenerState.Streaming:
+                    case Enums.StreamListenerState.Streaming:
                         {
                             Become(Streaming);
                             break;

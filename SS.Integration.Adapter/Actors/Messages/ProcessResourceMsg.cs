@@ -2,8 +2,8 @@
 
 namespace SS.Integration.Adapter.Actors.Messages
 {
-    internal class ResourceStateUpdateMsg
+    internal class ProcessResourceMsg
     {
-        public IResourceFacade Resource { get; set; }
+        internal IResourceFacade Resource { get; set; }
     }
 }

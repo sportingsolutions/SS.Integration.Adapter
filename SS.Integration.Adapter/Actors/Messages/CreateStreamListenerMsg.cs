@@ -1,9 +1,6 @@
-﻿using SS.Integration.Adapter.Interface;
-
-namespace SS.Integration.Adapter.Actors.Messages
+﻿namespace SS.Integration.Adapter.Actors.Messages
 {
-    internal class CreateStreamListenerMsg
+    internal class CreateStreamListenerMsg : ProcessResourceMsg
     {
-        internal IResourceFacade Resource { get; set; }
     }
 }

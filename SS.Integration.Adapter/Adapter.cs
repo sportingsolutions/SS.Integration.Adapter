@@ -37,6 +37,8 @@ namespace SS.Integration.Adapter
         private readonly IStateManager _stateManager;
         private readonly IServiceFacade _udapiServiceFacade;
         private readonly IAdapterPlugin _platformConnector;
+        private readonly IStreamValidation _streamValidation;
+        private readonly IFixtureValidation _fixtureValidation;
 
         #endregion
 
@@ -51,11 +53,15 @@ namespace SS.Integration.Adapter
         public Adapter(
             ISettings settings,
             IServiceFacade udapiServiceFacade,
-            IAdapterPlugin platformConnector)
+            IAdapterPlugin platformConnector,
+            IStreamValidation streamValidation,
+            IFixtureValidation fixtureValidation)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _udapiServiceFacade = udapiServiceFacade ?? throw new ArgumentNullException(nameof(udapiServiceFacade));
             _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
+            _streamValidation = streamValidation ?? throw new ArgumentNullException(nameof(streamValidation));
+            _fixtureValidation = fixtureValidation ?? throw new ArgumentNullException(nameof(fixtureValidation));
 
             _stateManager = new StateManager(settings, platformConnector);
             StateProviderProxy.Init((IStateProvider)_stateManager);
@@ -78,7 +84,7 @@ namespace SS.Integration.Adapter
 
         #endregion
 
-        #region Message Handlers
+        #region Public methods
 
         /// <summary>
         /// Starts the adapter.
@@ -101,7 +107,13 @@ namespace SS.Integration.Adapter
 
                 _logger.Debug("Adapter connected to the UDAPI - initialising...");
 
-                AdapterActorSystem.Init(_settings, _udapiServiceFacade, _platformConnector, _stateManager);
+                AdapterActorSystem.Init(
+                    _settings,
+                    _udapiServiceFacade,
+                    _platformConnector,
+                    _stateManager,
+                    _streamValidation,
+                    _fixtureValidation);
 
                 _logger.InfoFormat("Adapter started");
                 _stats.SetValue(AdapterCoreKeys.ADAPTER_STARTED, "1");

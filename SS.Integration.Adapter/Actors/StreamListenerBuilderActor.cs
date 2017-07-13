@@ -24,7 +24,9 @@ namespace SS.Integration.Adapter.Actors
         private readonly IAdapterPlugin _adapterPlugin;
         private readonly IEventState _eventState;
         private readonly IStateManager _stateManager;
-        private static int _concurrentInitializations = 0;
+        private readonly IStreamValidation _streamValidation;
+        private readonly IFixtureValidation _fixtureValidation;
+        private static int _concurrentInitializations;
 
         #endregion
 
@@ -41,7 +43,9 @@ namespace SS.Integration.Adapter.Actors
             IActorContext streamListenerManagerActorContext,
             IAdapterPlugin adapterPlugin,
             IEventState eventState,
-            IStateManager stateManager)
+            IStateManager stateManager,
+            IStreamValidation streamValidation,
+            IFixtureValidation fixtureValidation)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _streamListenerManagerActorContext =
@@ -50,6 +54,8 @@ namespace SS.Integration.Adapter.Actors
             _adapterPlugin = adapterPlugin ?? throw new ArgumentNullException(nameof(adapterPlugin));
             _eventState = eventState ?? throw new ArgumentNullException(nameof(eventState));
             _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
+            _streamValidation = streamValidation ?? throw new ArgumentNullException(nameof(streamValidation));
+            _fixtureValidation = fixtureValidation ?? throw new ArgumentNullException(nameof(fixtureValidation));
 
             Active();
         }
@@ -105,14 +111,20 @@ namespace SS.Integration.Adapter.Actors
         {
             try
             {
-                _streamListenerManagerActorContext.ActorOf(Props.Create(() =>
-                        new StreamListenerActor(
-                            msg.Resource,
-                            _adapterPlugin,
-                            _eventState,
-                            _stateManager,
-                            _settings)),
-                    StreamListenerActor.GetName(msg.Resource.Id));
+                var streamListenerActorName = StreamListenerActor.GetName(msg.Resource.Id);
+                if (_streamListenerManagerActorContext.Child(streamListenerActorName).IsNobody())
+                {
+                    _streamListenerManagerActorContext.ActorOf(Props.Create(() =>
+                            new StreamListenerActor(
+                                msg.Resource,
+                                _adapterPlugin,
+                                _eventState,
+                                _stateManager,
+                                _settings,
+                                _streamValidation,
+                                _fixtureValidation)),
+                        streamListenerActorName);
+                }
             }
             finally
             {

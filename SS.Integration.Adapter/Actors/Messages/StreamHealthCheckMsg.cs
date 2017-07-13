@@ -1,13 +1,8 @@
-﻿using System;
-
-namespace SS.Integration.Adapter.Actors.Messages
+﻿namespace SS.Integration.Adapter.Actors.Messages
 {
-    internal class StreamHealthCheckMsg
+    internal class StreamHealthCheckMsg : ProcessResourceMsg
     {
-        public string FixtureId { get; set; }
-
-        public int Sequence { get; set; }
-
-        public DateTime Received { get; set; }
+        public Enums.StreamListenerState StreamingState { get; set; }
+        public int CurrentSequence { get; set; }
     }
 }

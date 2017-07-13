@@ -17,11 +17,15 @@ namespace SS.Integration.Adapter.Actors
         /// <param name="udApiService"></param>
         /// <param name="adapterPlugin"></param>
         /// <param name="stateManager"></param>
+        /// <param name="streamValidation"></param>
+        /// <param name="fixtureValidation"></param>
         public static void Init(
             ISettings settings,
             IServiceFacade udApiService,
             IAdapterPlugin adapterPlugin,
-            IStateManager stateManager)
+            IStateManager stateManager,
+            IStreamValidation streamValidation,
+            IFixtureValidation fixtureValidation)
         {
             _actorSystem = ActorSystem.Create("AdapterSystem");
 
@@ -33,17 +37,13 @@ namespace SS.Integration.Adapter.Actors
                         settings,
                         adapterPlugin,
                         stateManager,
-                        eventState)),
+                        eventState,
+                        streamValidation,
+                        fixtureValidation)),
                 StreamListenerManagerActor.ActorName);
 
             var sportProcessorRouterActor = ActorSystem.ActorOf(
-                Props.Create(() =>
-                        new SportProcessorRouterActor(
-                            settings,
-                            adapterPlugin,
-                            stateManager,
-                            eventState,
-                            udApiService))
+                Props.Create(() => new SportProcessorRouterActor(udApiService))
                     .WithRouter(new SmallestMailboxPool(settings.FixtureCreationConcurrency)),
                 SportProcessorRouterActor.ActorName);
 

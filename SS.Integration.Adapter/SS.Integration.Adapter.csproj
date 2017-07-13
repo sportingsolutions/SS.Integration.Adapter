@@ -82,21 +82,19 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Actors\Messages\ProcessResourceMsg.cs" />
     <Compile Include="Actors\Messages\StartStreamingNotRespondingMsg.cs" />
     <Compile Include="Actors\Messages\ConnectToStreamServerMsg.cs" />
     <Compile Include="Actors\Messages\CreateStreamListenerMsg.cs" />
     <Compile Include="Actors\Messages\ProcessSportMsg.cs" />
     <Compile Include="Actors\Messages\ResourceStartStreamingMsg.cs" />
     <Compile Include="Actors\Messages\ResourceStopStreamingMsg.cs" />
-    <Compile Include="Actors\Messages\ResourceStateUpdateMsg.cs" />
+    <Compile Include="Actors\Messages\StreamHealthCheckMsg.cs" />
     <Compile Include="Actors\Messages\StreamListenerStoppedMsg.cs" />
     <Compile Include="Actors\Messages\StreamConnectedMsg.cs" />
     <Compile Include="Actors\Messages\StreamDisconnectedMsg.cs" />
-    <Compile Include="Actors\Messages\StreamHealthCheckMsg.cs" />
     <Compile Include="Actors\Messages\StreamListenerCreationCompletedMsg.cs" />
     <Compile Include="Actors\Messages\StreamListenerCreationFailedMsg.cs" />
-    <Compile Include="Actors\Messages\FixtureValidationMsg.cs" />
-    <Compile Include="Actors\Messages\StreamValidationMsg.cs" />
     <Compile Include="Actors\Messages\StreamUpdateMsg.cs" />
     <Compile Include="Actors\StatsActor.cs" />
     <Compile Include="Actors\SportProcessorRouterActor.cs" />
@@ -109,8 +107,11 @@
     <Compile Include="Adapter.cs" />
     <Compile Include="Actors\AdapterActorSystem.cs" />
     <Compile Include="Configuration\Settings.cs" />
+    <Compile Include="Enums\StreamListenerState.cs" />
     <Compile Include="FixtureJsonHelper.cs" />
     <Compile Include="Actors\SportsProcessorActor.cs" />
+    <Compile Include="Interface\IFixtureValidation.cs" />
+    <Compile Include="Interface\IStreamValidation.cs" />
     <Compile Include="Interface\IEventState.cs" />
     <Compile Include="Interface\IListener.cs" />
     <Compile Include="Interface\IMarketRuleManager.cs" />
@@ -139,6 +140,8 @@
     <Compile Include="MarketRules\Model\SelectionState.cs" />
     <Compile Include="StreamListener.cs" />
     <Compile Include="DefaultReconnectStrategy.cs" />
+    <Compile Include="FixtureValidation.cs" />
+    <Compile Include="StreamValidation.cs" />
     <Compile Include="SuspensionManager.cs" />
     <Compile Include="UdapiClient\UdapiResourceFacade.cs" />
     <Compile Include="UdapiClient\UdapiServiceFacade.cs" />

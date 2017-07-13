@@ -32,7 +32,7 @@ namespace SS.Integration.Adapter.Interface
 
         int ListenersCount { get; }
         void StopAll();
-        
+
         /// <summary>
         /// This method indicates which fixtures are currently present in the feed
         /// for a given sport

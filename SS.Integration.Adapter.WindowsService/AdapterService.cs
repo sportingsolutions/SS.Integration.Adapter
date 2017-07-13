@@ -117,13 +117,21 @@ namespace SS.Integration.Adapter.WindowsService
 
             var settings = iocContainer.Get<ISettings>();
             var service = iocContainer.Get<IServiceFacade>();
+            var streamValidation = iocContainer.Get<IStreamValidation>();
+            var fixtureValidation = iocContainer.Get<IFixtureValidation>();
 
             iocContainer.Settings.InjectNonPublic = true;
 
             //needed for Plugin properties since plugin is not instantiated by Ninject
             iocContainer.Inject(PlatformConnector);
 
-            _adapter = new Adapter(settings, service, PlatformConnector);
+            _adapter =
+                new Adapter(
+                    settings,
+                    service,
+                    PlatformConnector,
+                    streamValidation,
+                    fixtureValidation);
 
             if (settings.UseSupervisor)
             {

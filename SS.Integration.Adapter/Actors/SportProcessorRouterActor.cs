@@ -25,27 +25,14 @@ namespace SS.Integration.Adapter.Actors
         #region Attributes
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(SportProcessorRouterActor));
-        private readonly ISettings _settings;
-        private readonly IAdapterPlugin _adapterPlugin;
-        private readonly IStateManager _stateManager;
-        private readonly IEventState _eventState;
         private readonly IServiceFacade _serviceFacade;
 
         #endregion
 
         #region Constructors
 
-        public SportProcessorRouterActor(
-            ISettings settings, 
-            IAdapterPlugin adapterPlugin,
-            IStateManager stateManager,
-            IEventState eventState,
-            IServiceFacade serviceFacade)
+        public SportProcessorRouterActor(IServiceFacade serviceFacade)
         {
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _adapterPlugin = adapterPlugin ?? throw new ArgumentNullException(nameof(adapterPlugin));
-            _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
-            _eventState = eventState ?? throw new ArgumentNullException(nameof(eventState));
             _serviceFacade = serviceFacade ?? throw new ArgumentNullException(nameof(serviceFacade));
 
             Receive<ProcessSportMsg>(o => ProcessSportMsgHandler(o));
@@ -80,7 +67,7 @@ namespace SS.Integration.Adapter.Actors
 
                 foreach (var resource in resources)
                 {
-                    streamListenerManagerActor.Tell(new CreateStreamListenerMsg { Resource = resource }, Self);
+                    streamListenerManagerActor.Tell(new ProcessResourceMsg { Resource = resource }, Self);
                 }
             }
         }

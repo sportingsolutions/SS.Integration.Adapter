@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using Akka.Actor;
+using Akka.Dispatch.SysMsg;
 using log4net;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
@@ -23,7 +25,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly ISettings _settings;
         private readonly IEventState _eventState;
         private readonly IActorRef _streamListenerBuilderActorRef;
-        private bool _shouldSendProcessSportMessage;
+        private readonly Dictionary<long, string> _sportProcessingTrigger;
 
         #endregion
 
@@ -33,7 +35,9 @@ namespace SS.Integration.Adapter.Actors
             ISettings settings,
             IAdapterPlugin adapterPlugin,
             IStateManager stateManager,
-            IEventState eventState)
+            IEventState eventState,
+            IStreamValidation streamValidation,
+            IFixtureValidation fixtureValidation)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             if (adapterPlugin == null)
@@ -42,7 +46,7 @@ namespace SS.Integration.Adapter.Actors
                 throw new ArgumentNullException(nameof(stateManager));
             _eventState = eventState ?? throw new ArgumentNullException(nameof(eventState));
 
-            _shouldSendProcessSportMessage = true;
+            _sportProcessingTrigger = new Dictionary<long, string>();
 
             _streamListenerBuilderActorRef =
                 Context.ActorOf(Props.Create(() =>
@@ -51,50 +55,48 @@ namespace SS.Integration.Adapter.Actors
                             Context,
                             adapterPlugin,
                             eventState,
-                            stateManager)),
+                            stateManager,
+                            streamValidation,
+                            fixtureValidation)),
                     StreamListenerBuilderActor.ActorName);
 
-            Receive<CreateStreamListenerMsg>(o => CreateStreamListenerMsgHandler(o));
+            Receive<ProcessResourceMsg>(o => ProcessResourceMsgHandler(o));
             Receive<StreamConnectedMsg>(o => StreamConnectedMsgHandler(o));
             Receive<StreamDisconnectedMsg>(o => StreamDisconnectedMsgHandler(o));
             Receive<StreamListenerStoppedMsg>(o => StreamListenerStoppedMsgHandler(o));
             Receive<StartStreamingNotRespondingMsg>(o => StopStreamListenerChildActor(o.FixtureId));
-            Receive<ResetSendProcessSportMsg>(o => ResetSendProcessSportMsgHandler(o));
+            Receive<Terminated>(o => TerminatedHandler(o));
         }
 
         #endregion
 
         #region Message Handlers
 
-        private void CreateStreamListenerMsgHandler(CreateStreamListenerMsg msg)
+        private void ProcessResourceMsgHandler(ProcessResourceMsg msg)
         {
-            if (Context.Child(StreamListenerActor.GetName(msg.Resource.Id)).IsNobody())
+            IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.Resource.Id));
+            if (streamListenerActor.IsNobody())
             {
-                _streamListenerBuilderActorRef.Tell(msg);
+                _streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = msg.Resource });
+            }
+            else
+            {
+                streamListenerActor.Tell(new StreamHealthCheckMsg { Resource = msg.Resource });
             }
         }
 
         private void StreamConnectedMsgHandler(StreamConnectedMsg msg)
         {
-            SaveEventState();
+            IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.FixtureId));
+            Context.Watch(streamListenerActor);
         }
 
         private void StreamDisconnectedMsgHandler(StreamDisconnectedMsg msg)
         {
+            IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.FixtureId));
+            _sportProcessingTrigger[streamListenerActor.Path.Uid] = msg.Sport;
+
             StopStreamListenerChildActor(msg.FixtureId);
-
-            if (_shouldSendProcessSportMessage)
-            {
-                Context.Parent.Tell(new ProcessSportMsg {Sport = msg.Sport});
-
-                //should not send ProcessSportMsg during in the same cycle
-                Context.System.Scheduler.ScheduleTellOnce(
-                    TimeSpan.FromMilliseconds(_settings.FixtureCheckerFrequency),
-                    Self,
-                    new ResetSendProcessSportMsg(),
-                    Self);
-                _shouldSendProcessSportMessage = false;
-            }
         }
 
         private void StreamListenerStoppedMsgHandler(StreamListenerStoppedMsg msg)
@@ -106,36 +108,22 @@ namespace SS.Integration.Adapter.Actors
         {
             IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(fixtureId));
             if (!streamListenerActor.IsNobody())
-                streamListenerActor.GracefulStop(TimeSpan.FromSeconds(5)).Wait();
-        }
-
-        private void ResetSendProcessSportMsgHandler(ResetSendProcessSportMsg msg)
-        {
-            _shouldSendProcessSportMessage = true;
-        }
-
-        #endregion
-
-        #region Private methods
-
-        private void SaveEventState()
-        {
-            try
             {
-                _eventState.WriteToFile();
-            }
-            catch (Exception ex)
-            {
-                _logger.ErrorFormat("Event state errored on attempt to save it: {0}", ex);
+                Context.Stop(streamListenerActor);
             }
         }
 
-        #endregion
+        private void TerminatedHandler(Terminated t)
+        {
+            Context.Unwatch(t.ActorRef);
 
-        #region Private messages
-
-        private class ResetSendProcessSportMsg
-        {   
+            if (_sportProcessingTrigger.ContainsKey(t.ActorRef.Path.Uid))
+            {
+                var sport = _sportProcessingTrigger[t.ActorRef.Path.Uid];
+                var sportProcessorRouterActor = Context.System.ActorSelection(SportProcessorRouterActor.Path);
+                sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = sport });
+                _sportProcessingTrigger.Remove(t.ActorRef.Path.Uid);
+            }
         }
 
         #endregion

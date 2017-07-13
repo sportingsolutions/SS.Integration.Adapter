@@ -19,9 +19,9 @@ namespace SS.Integration.Adapter.Actors
         #region Attributes
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerActor).ToString());
-        private readonly ISettings _settings;
         private readonly IResourceFacade _resource;
-        private readonly IActorContext _streamListenerContext;
+        private readonly ISettings _settings;
+        private readonly IStreamValidation _streamValidation;
         private ICancelable _startStreamingNotResponding;
         private int _startStreamingNotRespondingWarnCount;
 
@@ -32,22 +32,64 @@ namespace SS.Integration.Adapter.Actors
         public StreamHealthCheckActor(
             IResourceFacade resource,
             ISettings settings,
-            IActorContext streamListenerContext)
+            IStreamValidation streamValidation)
         {
             _resource = resource ?? throw new ArgumentNullException(nameof(resource));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _streamListenerContext = streamListenerContext ?? throw new ArgumentNullException(nameof(streamListenerContext));
+            _streamValidation = streamValidation ?? throw new ArgumentNullException(nameof(streamValidation));
 
             Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServerMsgHandler(a));
             Receive<StreamConnectedMsg>(a => StreamConnectedMsgHandler(a));
             Receive<StartStreamingNotRespondingMsg>(a => StartStreamingNotRespondingMsgHandler(a));
-            Receive<StreamValidationMsg>(a => StreamValidationMsgHandler(a));
-            Receive<FixtureValidationMsg>(a => FixtureValidationMsgHandler(a));
+            Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
         }
 
         #endregion
 
         #region Message Handlers
+
+        private void StreamHealthCheckMsgHandler(StreamHealthCheckMsg msg)
+        {
+            if (_resource == null || msg.Resource == null || msg.Resource.Id != _resource.Id)
+                return;
+
+            try
+            {
+                _resource.Content.Sequence = msg.Resource.Content.Sequence;
+                _resource.Content.MatchStatus = msg.Resource.Content.MatchStatus;
+
+                _logger.Debug(
+                    $"Listener state for resource {msg.Resource} has " +
+                    $"sequence={msg.Resource.Content.Sequence} " +
+                    $"processedSequence={msg.CurrentSequence} " +
+                    (msg.Resource.Content.Sequence > msg.CurrentSequence
+                        ? $"missedSequence={msg.Resource.Content.Sequence - msg.CurrentSequence} "
+                        : "") +
+                    $"State={msg.StreamingState} " +
+                    $"isMatchOver={msg.Resource.IsMatchOver}");
+
+                var streamIsValid =
+                    _streamValidation.ValidateStream(msg.Resource, msg.StreamingState, msg.CurrentSequence);
+
+                if (!streamIsValid)
+                {
+                    _logger.Warn($"Detected invalid stream for resource {msg.Resource}");
+                }
+
+                var connectToStreamServer =
+                    _streamValidation.CanConnectToStreamServer(msg.Resource, msg.StreamingState);
+
+                if (streamIsValid && connectToStreamServer)
+                {
+                    Context.Parent.Tell(new ConnectToStreamServerMsg());
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error occured on Stream Health Check for resource {_resource} - exception - {ex}");
+                throw;
+            }
+        }
 
         private void ConnectToStreamServerMsgHandler(ConnectToStreamServerMsg msg)
         {
@@ -73,7 +115,6 @@ namespace SS.Integration.Adapter.Actors
 
         private void StartStreamingNotRespondingMsgHandler(StartStreamingNotRespondingMsg msg)
         {
-            //
             _startStreamingNotRespondingWarnCount += 1;
             var unresponsiveTime = _startStreamingNotRespondingWarnCount * _settings.StartStreamingTimeoutInSeconds;
             _logger.Warn(
@@ -83,109 +124,9 @@ namespace SS.Integration.Adapter.Actors
             if (_startStreamingNotRespondingWarnCount > _settings.StartStreamingAttempts)
             {
                 _startStreamingNotResponding.Cancel();
-                _streamListenerContext.Parent.Tell(msg);
+                var streamListenerManagerActor = Context.System.ActorSelection(StreamListenerManagerActor.Path);
+                streamListenerManagerActor.Tell(msg);
             }
-        }
-
-        private void StreamValidationMsgHandler(StreamValidationMsg msg)
-        {
-            if (ValidateStream(msg.Resource, msg.State, msg.CurrentSequence))
-                Sender.Tell(true);
-
-            _logger.Warn($"Detected invalid stream for resource {msg.Resource}");
-
-            Sender.Tell(false);
-        }
-
-        private void FixtureValidationMsgHandler(FixtureValidationMsg msg)
-        {
-            msg.IsSequenceValid = IsSequenceValid(msg.FixtureDetla, msg.Sequence);
-            msg.IsEpochValid = IsEpochValid(msg.FixtureDetla, msg.Epoch);
-
-            Sender.Tell(msg);
-        }
-
-        #endregion
-
-        #region Private methods
-
-        private bool ValidateStream(IResourceFacade resource, StreamListenerActor.StreamListenerState state, int sequence)
-        {
-            if (resource.Content.Sequence - sequence <= _settings.StreamSafetyThreshold)
-                return true;
-
-            if (ShouldIgnoreUnprocessedSequence(resource, state))
-                return true;
-
-            return false;
-        }
-
-        private bool ShouldIgnoreUnprocessedSequence(IResourceFacade resource, StreamListenerActor.StreamListenerState state)
-        {
-            if (state != StreamListenerActor.StreamListenerState.Streaming)
-            {
-                _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Not Streaming\"");
-                return true;
-            }
-
-            if (resource.Content.MatchStatus == (int)MatchStatus.MatchOver)
-            {
-                _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Match Is Over\"");
-                return true;
-            }
-
-            if (resource.MatchStatus == MatchStatus.Setup && !_settings.AllowFixtureStreamingInSetupMode)
-            {
-                _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Fixture is in setup state\"");
-                return true;
-            }
-
-            return false;
-        }
-
-        private bool IsSequenceValid(Fixture fixtureDelta, int sequence)
-        {
-            if (fixtureDelta.Sequence < sequence)
-            {
-                _logger.Debug(
-                    $"fixture delta sequence={fixtureDelta.Sequence} is less than current sequence={sequence} in {fixtureDelta}");
-                return false;
-            }
-
-            if (fixtureDelta.Sequence - sequence > 1)
-            {
-                _logger.Debug(
-                    $"fixture delta sequence={fixtureDelta.Sequence} is more than one greater that current sequence={sequence} in {fixtureDelta} ");
-                return false;
-            }
-
-            return true;
-        }
-
-        private bool IsEpochValid(Fixture fixtureDelta, int epoch)
-        {
-            if (fixtureDelta.Epoch < epoch)
-            {
-                _logger.Warn(
-                    $"Unexpected fixture delta Epoch={fixtureDelta.Epoch} when current={epoch} for {fixtureDelta}");
-                return false;
-            }
-
-            if (fixtureDelta.Epoch == epoch)
-                return true;
-
-            // Cases for fixtureDelta.Epoch > _currentEpoch
-            _logger.Info(
-                $"Epoch changed for {fixtureDelta} from={epoch} to={fixtureDelta.Epoch}");
-
-            //the epoch change reason can contain multiple reasons
-            if (fixtureDelta.IsStartTimeChanged && fixtureDelta.LastEpochChangeReason.Length == 1)
-            {
-                _logger.Info($"{fixtureDelta} has had its start time changed");
-                return true;
-            }
-
-            return false;
         }
 
         #endregion

@@ -116,6 +116,7 @@
     <Compile Include="MarketsFilterTests.cs" />
     <Compile Include="ModelTests.cs" />
     <Compile Include="RegressionTests.cs" />
+    <Compile Include="StreamHealthCheckActorTests.cs" />
     <Compile Include="StreamListenerActorTests.cs" />
     <Compile Include="StreamListenerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

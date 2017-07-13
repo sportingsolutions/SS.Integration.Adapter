@@ -16,6 +16,7 @@
 using System.Collections.Generic;
 using Ninject.Modules;
 using Ninject;
+using Ninject.Parameters;
 using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Diagnostics;
 using SS.Integration.Adapter.Diagnostics.Model;
@@ -34,12 +35,12 @@ namespace SS.Integration.Adapter.WindowsService
             Bind<ISettings>().To<Settings>().InSingletonScope();
             Bind<IReconnectStrategy>().To<DefaultReconnectStrategy>().InSingletonScope();
             Bind<IServiceFacade>().To<UdapiServiceFacade>();
+            Bind<IStreamValidation>().To<StreamValidation>().InSingletonScope()
+                .WithConstructorArgument("settings", Kernel.Get<ISettings>());
+            Bind<IFixtureValidation>().To<FixtureValidation>().InSingletonScope();
 
             var supervisorStateManager = new SupervisorStateManager(Kernel.Get<ISettings>());
             Bind<IObjectProvider<Dictionary<string, FixtureOverview>>>().ToConstant(supervisorStateManager.StateProvider);
-
-            Bind<IStreamListenerManager>().To<StreamListenerManager>().When(req => Kernel.Get<ISettings>().UseSupervisor == false).InSingletonScope();
-            Bind<IStreamListenerManager, ISupervisor>().To<Supervisor>().When(req => Kernel.Get<ISettings>().UseSupervisor).InSingletonScope();
         }
     }
 }
