@@ -62,9 +62,10 @@ namespace SS.Integration.Adapter
         public bool IsSnapshotNeeded(IResourceFacade resourceFacade, FixtureState state)
         {
             _logger.Debug(
-                $"{resourceFacade} has stored sequence={state?.Sequence}; resource sequence={resourceFacade.Content.Sequence}");
+                $"{resourceFacade} has stored sequence={state?.Sequence}; resource sequence={resourceFacade?.Content?.Sequence}");
 
-            return state == null || resourceFacade.Content.Sequence != state.Sequence;
+            return state == null ||
+                   resourceFacade?.Content != null && resourceFacade.Content.Sequence != state.Sequence;
         }
 
         #endregion

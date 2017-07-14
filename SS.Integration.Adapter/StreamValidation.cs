@@ -74,7 +74,7 @@ namespace SS.Integration.Adapter
                 return true;
             }
 
-            if (resource.MatchStatus == MatchStatus.Setup && !_settings.AllowFixtureStreamingInSetupMode)
+            if (resource.Content.MatchStatus == (int)MatchStatus.Setup && !_settings.AllowFixtureStreamingInSetupMode)
             {
                 _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Fixture is in setup state\"");
                 return true;
