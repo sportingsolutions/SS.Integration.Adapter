@@ -5,20 +5,35 @@ using SS.Integration.Adapter.Model;
 
 namespace SS.Integration.Adapter.Actors
 {
+    // This actor main responsibility is logging how long did it take to process snapshots / stream updates with how many markets 
+    // any errors should be also counted and logged by fixture
     public class StreamStatsActor : ReceiveActor
     {
-        private ILog _logger = LogManager.GetLogger(typeof(StreamStatsActor));
+        #region Constants
 
+        public const string ActorName = nameof(StreamStatsActor);
+
+        #endregion
+
+        #region Attributes
+
+        private ILog _logger = LogManager.GetLogger(typeof(StreamStatsActor));
         private StartUpdateStatsMsg _startMessage;
-        // This actor main responsibility is logging how long did it take to process stream update with how many markets 
-        // Snapshots same as above
-        // any errors should be also counted and logged by fixture
+        private static int _streamingFixturesCount;
+
+        #endregion
+
+        #region Constructors
 
         public StreamStatsActor()
         {
             Receive<StartUpdateStatsMsg>(x => StartLogging(x));
             Receive<FinishedProcessingUpdateStatsMsg>(x => FinishedProcessing(x));
         }
+
+        #endregion
+
+        #region Message Handlers
 
         private void FinishedProcessing(FinishedProcessingUpdateStatsMsg finishedProcessingUpdateStatsMsg)
         {
@@ -33,6 +48,8 @@ namespace SS.Integration.Adapter.Actors
         {
             _startMessage = startUpdateStatsMsg;
         }
+
+        #endregion
     }
 
     public class StartUpdateStatsMsg
