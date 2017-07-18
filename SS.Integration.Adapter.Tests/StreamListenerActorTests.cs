@@ -57,7 +57,6 @@ namespace SS.Integration.Adapter.Tests
 
             FootabllSportMock = new Mock<IFeature>();
             ServiceMock = new Mock<IServiceFacade>();
-            EventStateMock = new Mock<IEventState>();
             StateManagerMock = new Mock<IStateManager>();
             StateProvider = new Mock<IStateProvider>();
             SuspensionManager = new Mock<ISuspensionManager>();
@@ -106,7 +105,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -159,7 +157,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -219,7 +216,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -289,7 +285,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -360,7 +355,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -415,7 +409,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -473,7 +466,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -540,7 +532,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -633,7 +624,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -728,7 +718,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -816,7 +805,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -907,7 +895,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -1007,7 +994,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -1089,7 +1075,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -1175,7 +1160,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -1286,7 +1270,6 @@ namespace SS.Integration.Adapter.Tests
                 new StreamListenerActor(
                     resourceFacadeMock.Object,
                     PluginMock.Object,
-                    EventStateMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
                     StreamValidationMock.Object,
@@ -1435,7 +1418,6 @@ namespace SS.Integration.Adapter.Tests
                             SettingsMock.Object,
                             PluginMock.Object,
                             StateManagerMock.Object,
-                            EventStateMock.Object,
                             StreamValidationMock.Object,
                             FixtureValidationMock.Object)),
                     StreamListenerManagerActor.ActorName);
@@ -1536,7 +1518,6 @@ namespace SS.Integration.Adapter.Tests
                             SettingsMock.Object,
                             PluginMock.Object,
                             StateManagerMock.Object,
-                            EventStateMock.Object,
                             StreamValidationMock.Object,
                             FixtureValidationMock.Object)),
                     StreamListenerManagerActor.ActorName);

@@ -26,7 +26,6 @@ namespace SS.Integration.Adapter.Tests
         protected Mock<ISettings> SettingsMock;
         protected Mock<IAdapterPlugin> PluginMock;
         protected Mock<IServiceFacade> ServiceMock;
-        protected Mock<IEventState> EventStateMock;
         protected Mock<IStateManager> StateManagerMock;
         protected Mock<IStateProvider> StateProvider;
         protected Mock<ISuspensionManager> SuspensionManager;
@@ -87,27 +86,10 @@ namespace SS.Integration.Adapter.Tests
                 storedFixtureState.Epoch = (int)storedData.Epoch;
                 storedFixtureState.Sequence = (int)storedData.Sequence;
                 storedFixtureState.MatchStatus = (MatchStatus)storedData.MatchStatus;
-                EventStateMock.Setup(o => o.GetFixtureState(It.Is<string>(id => id.Equals(snapshotVar.Id))))
-                    .Returns(storedFixtureState);
             }
-            EventStateMock.Setup(o =>
-                o.UpdateFixtureState(
-                    It.IsAny<string>(),
-                    It.IsAny<string>(),
-                    It.IsAny<int>(),
-                    It.IsAny<MatchStatus>(),
-                    It.IsAny<int>())).Callback<string, string, int, MatchStatus, int>(
-                (sportParam, fixtureId, sequence, matchStatus, epoch) =>
-                {
-                    storedFixtureState.Sport = sportParam;
-                    storedFixtureState.Id = fixtureId;
-                    storedFixtureState.Sequence = sequence;
-                    storedFixtureState.MatchStatus = matchStatus;
-                    storedFixtureState.Epoch = epoch;
-                });
         }
 
-        protected IActorRef GetChildActorRef(IActorRef anchorRef,string name)
+        protected IActorRef GetChildActorRef(IActorRef anchorRef, string name)
         {
             return Sys.ActorSelection(anchorRef, name).ResolveOne(TimeSpan.FromSeconds(5)).Result;
         }

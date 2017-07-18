@@ -22,7 +22,6 @@ namespace SS.Integration.Adapter.Actors
         private readonly ISettings _settings;
         private readonly IActorContext _streamListenerManagerActorContext;
         private readonly IAdapterPlugin _adapterPlugin;
-        private readonly IEventState _eventState;
         private readonly IStateManager _stateManager;
         private readonly IStreamValidation _streamValidation;
         private readonly IFixtureValidation _fixtureValidation;
@@ -42,7 +41,6 @@ namespace SS.Integration.Adapter.Actors
             ISettings settings,
             IActorContext streamListenerManagerActorContext,
             IAdapterPlugin adapterPlugin,
-            IEventState eventState,
             IStateManager stateManager,
             IStreamValidation streamValidation,
             IFixtureValidation fixtureValidation)
@@ -52,7 +50,6 @@ namespace SS.Integration.Adapter.Actors
                 streamListenerManagerActorContext ??
                 throw new ArgumentNullException(nameof(streamListenerManagerActorContext));
             _adapterPlugin = adapterPlugin ?? throw new ArgumentNullException(nameof(adapterPlugin));
-            _eventState = eventState ?? throw new ArgumentNullException(nameof(eventState));
             _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
             _streamValidation = streamValidation ?? throw new ArgumentNullException(nameof(streamValidation));
             _fixtureValidation = fixtureValidation ?? throw new ArgumentNullException(nameof(fixtureValidation));
@@ -118,7 +115,6 @@ namespace SS.Integration.Adapter.Actors
                             new StreamListenerActor(
                                 msg.Resource,
                                 _adapterPlugin,
-                                _eventState,
                                 _stateManager,
                                 _settings,
                                 _streamValidation,

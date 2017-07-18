@@ -23,7 +23,6 @@ namespace SS.Integration.Adapter.Actors
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerManagerActor).ToString());
         private readonly ISettings _settings;
-        private readonly IEventState _eventState;
         private readonly IActorRef _streamListenerBuilderActorRef;
         private bool _shouldSendProcessSportsMessage;
 
@@ -35,7 +34,6 @@ namespace SS.Integration.Adapter.Actors
             ISettings settings,
             IAdapterPlugin adapterPlugin,
             IStateManager stateManager,
-            IEventState eventState,
             IStreamValidation streamValidation,
             IFixtureValidation fixtureValidation)
         {
@@ -44,7 +42,6 @@ namespace SS.Integration.Adapter.Actors
                 throw new ArgumentNullException(nameof(adapterPlugin));
             if (stateManager == null)
                 throw new ArgumentNullException(nameof(stateManager));
-            _eventState = eventState ?? throw new ArgumentNullException(nameof(eventState));
 
             _shouldSendProcessSportsMessage = true;
 
@@ -54,7 +51,6 @@ namespace SS.Integration.Adapter.Actors
                             settings,
                             Context,
                             adapterPlugin,
-                            eventState,
                             stateManager,
                             streamValidation,
                             fixtureValidation)),

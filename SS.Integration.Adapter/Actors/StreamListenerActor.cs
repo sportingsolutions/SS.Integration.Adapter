@@ -36,7 +36,6 @@ namespace SS.Integration.Adapter.Actors
         private readonly IFixtureValidation _fixtureValidation;
         private readonly IResourceFacade _resource;
         private readonly IAdapterPlugin _platformConnector;
-        private readonly IEventState _eventState;
         private readonly IStatsHandle _stats;
         private readonly IStateManager _stateManager;
         private readonly IMarketRulesManager _marketsRuleManager;
@@ -64,7 +63,6 @@ namespace SS.Integration.Adapter.Actors
         public StreamListenerActor(
             IResourceFacade resource,
             IAdapterPlugin platformConnector,
-            IEventState eventState,
             IStateManager stateManager,
             ISettings settings,
             IStreamValidation streamValidation,
@@ -74,7 +72,6 @@ namespace SS.Integration.Adapter.Actors
             {
                 _resource = resource ?? throw new ArgumentNullException(nameof(resource));
                 _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
-                _eventState = eventState ?? throw new ArgumentNullException(nameof(eventState));
                 _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
                 _marketsRuleManager = _stateManager.CreateNewMarketRuleManager(resource.Id);
                 _stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
@@ -128,7 +125,9 @@ namespace SS.Integration.Adapter.Actors
                 var streamConnectedMsg = new StreamConnectedMsg { FixtureId = _resource.Id };
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
 
-                FixtureState fixtureState = _eventState.GetFixtureState(_resource.Id);
+                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+                var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _resource.Id };
+                var fixtureState = fixtureStateActor.Ask<FixtureState>(getFixtureStateMsg).Result;
 
                 if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
                 {
@@ -279,7 +278,10 @@ namespace SS.Integration.Adapter.Actors
         {
             try
             {
-                var fixtureState = _eventState.GetFixtureState(_fixtureId);
+                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+                var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _resource.Id };
+                var fixtureState = fixtureStateActor.Ask<FixtureState>(getFixtureStateMsg).Result;
+
                 if (_streamValidation.ShouldSuspendOnDisconnection(fixtureState, _fixtureStartTime))
                 {
                     SuspendFixture(SuspensionReason.DISCONNECT_EVENT);
@@ -321,7 +323,9 @@ namespace SS.Integration.Adapter.Actors
                 Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
                 Receive<StreamUpdateMsg>(a => Stash.Stash());
 
-                var fixtureState = _eventState.GetFixtureState(_resource.Id);
+                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+                var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _resource.Id };
+                var fixtureState = fixtureStateActor.Ask<FixtureState>(getFixtureStateMsg).Result;
 
                 _currentEpoch = fixtureState?.Epoch ?? -1;
                 _currentSequence = _resource.Content.Sequence;
@@ -572,9 +576,18 @@ namespace SS.Integration.Adapter.Actors
 
             var status = (MatchStatus)Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus);
 
-            //reset event state
+            //reset fixture state
             _marketsRuleManager.OnFixtureUnPublished();
-            _eventState.UpdateFixtureState(_resource.Sport, fixtureDelta.Id, -1, status, _currentEpoch);
+            var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+            var updateFixtureStateMsg = new UpdateFixtureStateMsg
+            {
+                FixtureId = fixtureDelta.Id,
+                Sport = _resource.Sport,
+                Status = status,
+                Sequence = -1,
+                Epoch = _currentEpoch
+            };
+            fixtureStateActor.Tell(updateFixtureStateMsg);
         }
 
         private void ProcessMatchOver()
@@ -585,6 +598,8 @@ namespace SS.Integration.Adapter.Actors
             {
                 SuspendAndReprocessSnapshot(true);
                 _stateManager.ClearState(_resource.Id);
+                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+                fixtureStateActor.Tell(new RemoveFixtureStateMsg { FixtureId = _resource.Id });
             }
             catch (Exception ex)
             {
@@ -613,7 +628,16 @@ namespace SS.Integration.Adapter.Actors
 
             var status = (MatchStatus)Enum.Parse(typeof(MatchStatus), snapshot.MatchStatus);
 
-            _eventState.UpdateFixtureState(_resource.Sport, _resource.Id, snapshot.Sequence, status, snapshot.Epoch);
+            var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+            var updateFixtureStateMsg = new UpdateFixtureStateMsg
+            {
+                FixtureId = _resource.Id,
+                Sport = _resource.Sport,
+                Status = status,
+                Sequence = snapshot.Sequence,
+                Epoch = snapshot.Epoch
+            };
+            fixtureStateActor.Tell(updateFixtureStateMsg);
 
             if (isSnapshot)
             {

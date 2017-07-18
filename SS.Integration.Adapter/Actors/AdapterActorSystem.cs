@@ -29,7 +29,13 @@ namespace SS.Integration.Adapter.Actors
         {
             _actorSystem = ActorSystem.Create("AdapterSystem");
 
-            IEventState eventState = EventState.Create(new FileStoreProvider(settings.StateProviderPath), settings);
+            var fileStoreProvider = new FileStoreProvider(settings.StateProviderPath);
+            ActorSystem.ActorOf(
+                Props.Create(() =>
+                    new FixtureStateActor(
+                        settings,
+                        fileStoreProvider)),
+                FixtureStateActor.ActorName);
 
             ActorSystem.ActorOf(
                 Props.Create(() =>
@@ -37,7 +43,6 @@ namespace SS.Integration.Adapter.Actors
                         settings,
                         adapterPlugin,
                         stateManager,
-                        eventState,
                         streamValidation,
                         fixtureValidation)),
                 StreamListenerManagerActor.ActorName);

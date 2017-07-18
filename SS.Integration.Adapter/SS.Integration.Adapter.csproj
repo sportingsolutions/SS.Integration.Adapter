@@ -82,7 +82,10 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Actors\Messages\RemoveFixtureStateMsg.cs" />
+    <Compile Include="Actors\Messages\UpdateFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\ProcessResourceMsg.cs" />
+    <Compile Include="Actors\Messages\GetFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\ProcessSportsMessage.cs" />
     <Compile Include="Actors\Messages\StartStreamingNotRespondingMsg.cs" />
     <Compile Include="Actors\Messages\ConnectToStreamServerMsg.cs" />
@@ -97,6 +100,7 @@
     <Compile Include="Actors\Messages\StreamListenerCreationCompletedMsg.cs" />
     <Compile Include="Actors\Messages\StreamListenerCreationFailedMsg.cs" />
     <Compile Include="Actors\Messages\StreamUpdateMsg.cs" />
+    <Compile Include="Actors\FixtureStateActor.cs" />
     <Compile Include="Actors\StatsActor.cs" />
     <Compile Include="Actors\SportProcessorRouterActor.cs" />
     <Compile Include="Actors\StreamHealthCheckActor.cs" />
