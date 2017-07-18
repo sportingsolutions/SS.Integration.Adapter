@@ -93,13 +93,10 @@ namespace SS.Integration.Adapter.Actors
         {
             try
             {
-                lock (this)
-                {
-                    _logger.Debug($"Writing State to file, with {_fixturesStates.Count} fixtures");
-                    var output = JsonConvert.SerializeObject(_fixturesStates, Formatting.Indented);
-                    _storeProvider.Write(_pathFileName, output);
-                    _logger.DebugFormat("State persisted successfully");
-                }
+                _logger.Debug($"Writing State to file, with {_fixturesStates.Count} fixtures");
+                var output = JsonConvert.SerializeObject(_fixturesStates, Formatting.Indented);
+                _storeProvider.Write(_pathFileName, output);
+                _logger.DebugFormat("State persisted successfully");
             }
             catch (Exception ex)
             {
@@ -160,7 +157,7 @@ namespace SS.Integration.Adapter.Actors
         #region Private messages
 
         private class WriteStateToFileMsg
-        {   
+        {
         }
 
         #endregion

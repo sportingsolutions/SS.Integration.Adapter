@@ -53,13 +53,14 @@ namespace SS.Integration.Adapter.Tests
             SettingsMock.SetupGet(a => a.StreamSafetyThreshold).Returns(3);
             SettingsMock.SetupGet(a => a.FixtureCreationConcurrency).Returns(3);
             SettingsMock.SetupGet(a => a.FixtureCheckerFrequency).Returns(10000);
-            SettingsMock.SetupGet(a => a.EventStateFilePath).Returns(string.Empty);
+            SettingsMock.SetupGet(a => a.EventStateFilePath).Returns(GetType().Assembly.Location);
 
             FootabllSportMock = new Mock<IFeature>();
             ServiceMock = new Mock<IServiceFacade>();
             StateManagerMock = new Mock<IStateManager>();
-            StateProvider = new Mock<IStateProvider>();
-            SuspensionManager = new Mock<ISuspensionManager>();
+            StateProviderMock = new Mock<IStateProvider>();
+            StoreProviderMock = new Mock<IStoreProvider>();
+            SuspensionManagerMock = new Mock<ISuspensionManager>();
             StreamValidationMock = new Mock<IStreamValidation>();
             FixtureValidationMock = new Mock<IFixtureValidation>();
         }
@@ -122,7 +123,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
@@ -174,10 +175,10 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
@@ -233,10 +234,10 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Never);
@@ -302,10 +303,10 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Never);
@@ -372,7 +373,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
@@ -426,7 +427,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
                     Assert.AreEqual(StreamListenerState.Initialized, actor.UnderlyingActor.State);
@@ -483,7 +484,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
@@ -560,10 +561,10 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
@@ -653,10 +654,10 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
@@ -746,10 +747,10 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
@@ -833,10 +834,10 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
@@ -926,10 +927,10 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Never);
@@ -1026,14 +1027,14 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.ProcessFixtureDeletion(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.FIXTURE_DELETED),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
                         Times.Never);
@@ -1102,18 +1103,18 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Exactly(2));
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.FIXTURE_ERRORED),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
                         Times.Never);
@@ -1170,7 +1171,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
@@ -1201,18 +1202,18 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Exactly(2));
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.FIXTURE_ERRORED),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
                         Times.Never);
@@ -1280,7 +1281,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
@@ -1313,18 +1314,18 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Exactly(2));
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.FIXTURE_ERRORED),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
                         Times.Never);
@@ -1361,18 +1362,18 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Exactly(2));
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Exactly(2));
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.FIXTURE_ERRORED),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
                         Times.Never);
@@ -1450,18 +1451,18 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Exactly(2));
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.FIXTURE_ERRORED),
                         Times.Once);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
                         Times.Never);
@@ -1601,10 +1602,10 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.ProcessFixtureDeletion(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Exactly(2));
-                    SuspensionManager.Verify(a =>
+                    SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
                         Times.Once);

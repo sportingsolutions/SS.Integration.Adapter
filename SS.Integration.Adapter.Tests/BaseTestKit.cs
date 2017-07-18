@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Akka.Actor;
 using Akka.TestKit.NUnit;
 using Moq;
+using Newtonsoft.Json;
 using SportingSolutions.Udapi.Sdk.Interfaces;
+using SS.Integration.Adapter.Actors;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
@@ -27,8 +30,9 @@ namespace SS.Integration.Adapter.Tests
         protected Mock<IAdapterPlugin> PluginMock;
         protected Mock<IServiceFacade> ServiceMock;
         protected Mock<IStateManager> StateManagerMock;
-        protected Mock<IStateProvider> StateProvider;
-        protected Mock<ISuspensionManager> SuspensionManager;
+        protected Mock<IStateProvider> StateProviderMock;
+        protected Mock<IStoreProvider> StoreProviderMock;
+        protected Mock<ISuspensionManager> SuspensionManagerMock;
         protected Mock<IStreamValidation> StreamValidationMock;
         protected Mock<IFixtureValidation> FixtureValidationMock;
 
@@ -75,18 +79,28 @@ namespace SS.Integration.Adapter.Tests
                 .Returns(new Mock<IMarketRulesManager>().Object);
 
             StateManagerMock.SetupGet(o => o.StateProvider)
-                .Returns(StateProvider.Object);
-            StateProvider.SetupGet(o => o.SuspensionManager)
-                .Returns(SuspensionManager.Object);
+                .Returns(StateProviderMock.Object);
+            StateProviderMock.SetupGet(o => o.SuspensionManager)
+                .Returns(SuspensionManagerMock.Object);
 
-            var storedFixtureState = new FixtureState { Id = snapshot.Id };
+            var storedFixtureState = new FixtureState { Id = snapshot.Id, Sport = sport };
 
             if (storedData != null)
             {
                 storedFixtureState.Epoch = (int)storedData.Epoch;
                 storedFixtureState.Sequence = (int)storedData.Sequence;
                 storedFixtureState.MatchStatus = (MatchStatus)storedData.MatchStatus;
+                var dic = new Dictionary<string, FixtureState> { { storedFixtureState.Id, storedFixtureState } };
+                StoreProviderMock.Setup(o => o.Read(It.IsAny<string>()))
+                    .Returns(JsonConvert.SerializeObject(dic, Formatting.Indented));
             }
+
+            ActorOfAsTestActorRef<FixtureStateActor>(
+                Props.Create(() =>
+                    new FixtureStateActor(
+                        SettingsMock.Object,
+                        StoreProviderMock.Object)),
+                FixtureStateActor.ActorName);
         }
 
         protected IActorRef GetChildActorRef(IActorRef anchorRef, string name)
