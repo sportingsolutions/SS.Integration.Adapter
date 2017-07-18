@@ -79,7 +79,12 @@ namespace SS.Integration.Adapter.Interface
         /// Returns the path for
         /// the events' state storage file
         /// </summary>
-        string EventStateFilePath { get; }
+        string FixturesStateFilePath { get; }
+
+        /// <summary>
+        /// Returns the interval in miliseconds for how often to persist the fixtures state in the storage file
+        /// </summary>
+        int FixturesStateAutoStoreInterval { get; }
 
         /// <summary>
         /// Returns the path for the

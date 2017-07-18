@@ -51,16 +51,16 @@
 //        {
 //            _settings = new Mock<ISettings>();
 //            _settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
-//            _settings.Setup(x => x.EventStateFilePath).Returns(".");
+//            _settings.Setup(x => x.FixturesStateFilePath).Returns(".");
 //            _settings.Setup(x => x.ProcessingLockTimeOutInSecs).Returns(10);
-            
+
 //            _plugin = new Mock<IAdapterPlugin>();
 
 //            _resource = new Mock<IResourceFacade>();
 //            _resource.Setup(r => r.Sport).Returns("FantasyFootball");
 //            _resource.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, new EventArgs());
 //            _objectProvider = new Mock <IObjectProvider<Dictionary<string, FixtureOverview>>>();
-            
+
 //            var stateManager = new StateManager(new Mock<ISettings>().Object,_plugin.Object);
 
 //            _supervisor = new Supervisor(_settings.Object,_objectProvider.Object);
@@ -72,7 +72,7 @@
 
 //            _supervisor.Service = supervisorService.Object;
 //            _supervisor.Proxy = new Mock<ISupervisorProxy>().Object;
-            
+
 //            new SuspensionManager(stateManager, _plugin.Object);
 
 //        }
@@ -94,7 +94,7 @@
 //            _supervisor.ForceSnapshot(fixture.Id);
 //            _supervisor.ForceSnapshot(fixture.Id);
 
-            
+
 
 //            //inital snapshot + 2 forced snapshots = 3
 //            _resource.Verify(x => x.GetSnapshot(), Times.Exactly(3));
@@ -159,19 +159,19 @@
 
 //            _supervisor.CreateStreamListener(resourceOne.Object, _plugin.Object);
 //            _supervisor.CreateStreamListener(resourceTwo.Object, _plugin.Object);
-            
+
 //            _supervisor.GetSports().Should().NotBeEmpty();
 //            _supervisor.GetSports().Count().Should().Be(2);
 //            _supervisor.GetSportOverview("TestSport1").Should().NotBeNull();
 //            _supervisor.GetSportOverview("TestSport1").InPlay.Should().Be(1);
 //        }
-        
+
 
 //        [Test]
 //        public void GetDeltaOverviewTest()
 //        {
 //            var fixtureOneId = "fixtureOne";
-            
+
 //            _resource.Setup(x => x.Id).Returns(fixtureOneId);
 //            _resource.Setup(x => x.Content).Returns(new Summary());
 //            _resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);
@@ -186,7 +186,7 @@
 //            var fixtureOverviews = _supervisor.GetFixtures();
 //            fixtureOverviews.Should().NotBeNullOrEmpty();
 //            fixtureOverviews.Should().Contain(f => f.Id == fixtureOneId);
-            
+
 //            _supervisor.StartStreaming(fixtureOneId);
 
 //            var epoch = 1;
@@ -200,14 +200,14 @@
 //            };
 
 //            SendStreamUpdate(streamUpdate);
-            
+
 //            Thread.Sleep(1000);
 
 //            deltas.Should().NotBeEmpty();
 //            var sequenceTwoDeltas = deltas.Where(d => d.FeedUpdate != null && d.FeedUpdate.Sequence == 2).ToList();
 //            sequenceTwoDeltas.Should().NotBeNull();
 //            sequenceTwoDeltas.Count.Should().Be(2);
-            
+
 //            //FeedUpdate with IsProcessed in both states exists
 //            sequenceTwoDeltas.Any(d => d.FeedUpdate.IsProcessed).Should().BeTrue();
 //            sequenceTwoDeltas.Any(d => !d.FeedUpdate.IsProcessed).Should().BeTrue();
@@ -215,7 +215,7 @@
 //            //deltas are filtered by sequence = 2 and there was only stream update with that sequence
 //            sequenceTwoDeltas.All(d => !d.FeedUpdate.IsSnapshot).Should().BeTrue();
 //            sequenceTwoDeltas.All(d => d.FeedUpdate.Epoch == epoch).Should().BeTrue();
-            
+
 //            subscriber.Dispose();
 //        }
 
@@ -312,7 +312,7 @@
 //                //in order to generate error the resource is setup to return empty snapshot
 //                //the snapshot should be taken because epoch is changed
 //                SendStreamUpdate(streamUpdate);
-                
+
 //                deltas.Should().NotBeEmpty();
 //                deltas.FirstOrDefault(d => d.LastError != null).Should().NotBeNull();
 
@@ -372,7 +372,7 @@
 //        public void CheckErrorsAreTrackedTest()
 //        {
 //            var fixtureOneId = "fixtureOne";
-            
+
 //            _resource.Setup(x => x.Id).Returns(fixtureOneId);
 //            _resource.Setup(x => x.Content).Returns(new Summary());
 //            _resource.Setup(x => x.MatchStatus).Returns(MatchStatus.InRunning);

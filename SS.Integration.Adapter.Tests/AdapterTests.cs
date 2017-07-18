@@ -37,13 +37,13 @@
 //        {
 //            _state = new Mock<IStateManager>();
 //        }
-        
+
 //        [Category("Adapter")]
 //        [Test]
 //        public void ShouldStartAndStopNoSports()
 //        {
 //            var settings = new Mock<ISettings>();
-//            settings.Setup(x => x.EventStateFilePath).Returns(".");
+//            settings.Setup(x => x.FixturesStateFilePath).Returns(".");
 
 
 //            var service = new Mock<IServiceFacade>();
@@ -72,8 +72,8 @@
 //        public void AdapterGetVersionTest()
 //        {
 //            var settings = new Mock<ISettings>();
-//            settings.Setup(x => x.EventStateFilePath).Returns(".");
-            
+//            settings.Setup(x => x.FixturesStateFilePath).Returns(".");
+
 //            var service = new Mock<IServiceFacade>();
 //            service.Setup(x => x.IsConnected).Returns(true);
 //            var connector = new Mock<IAdapterPlugin>();
@@ -100,7 +100,7 @@
 //        public void ShouldStartAndStopWithFewSportsNoFixtures()
 //        {
 //            var settings = new Mock<ISettings>();
-//            settings.Setup(x => x.EventStateFilePath).Returns(".");
+//            settings.Setup(x => x.FixturesStateFilePath).Returns(".");
 //            var service = new Mock<IServiceFacade>();
 //            service.Setup(x => x.IsConnected).Returns(true);
 //            var connector = new Mock<IAdapterPlugin>();
@@ -128,7 +128,7 @@
 //        public void ShouldCreateListeners()
 //        {
 //            var settings = new Mock<ISettings>();
-//            settings.Setup(x => x.EventStateFilePath).Returns(".");
+//            settings.Setup(x => x.FixturesStateFilePath).Returns(".");
 //            var service = new Mock<IServiceFacade>();
 //            service.Setup(x => x.IsConnected).Returns(true);
 //            var connector = new Mock<IAdapterPlugin>();
@@ -160,7 +160,7 @@
 //                connector.Object);
 
 //            adapter.Start();
-            
+
 //            //adapter.ProcessSport("Football");
 //            //adapter.ProcessSport("Rugby");
 
@@ -169,7 +169,7 @@
 //            Thread.Yield();
 
 //            service.VerifyAll();
-            
+
 //            eventState.Verify(es => es.RemoveFixture(It.IsAny<string>()), Times.Never());
 //        }
 
@@ -187,8 +187,8 @@
 //            var service = new Mock<IServiceFacade>();
 //            var connector = new Mock<IAdapterPlugin>();
 //            var state = new Mock<IEventState>();
-            
-//            settings.Setup(x => x.EventStateFilePath).Returns(".");
+
+//            settings.Setup(x => x.FixturesStateFilePath).Returns(".");
 //            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
 //            settings.Setup(x => x.FixtureCreationConcurrency).Returns(1);
 //            settings.Setup(x => x.FixtureCheckerFrequency).Returns(500);
@@ -246,7 +246,7 @@
 //            var service = new Mock<IServiceFacade>();
 //            var connector = new Mock<IAdapterPlugin>();
 
-//            settings.Setup(x => x.EventStateFilePath).Returns(".");
+//            settings.Setup(x => x.FixturesStateFilePath).Returns(".");
 //            settings.Setup(x => x.MarketFiltersDirectory).Returns(".");
 //            settings.Setup(x => x.FixtureCreationConcurrency).Returns(1);
 //            settings.Setup(x => x.FixtureCheckerFrequency).Returns(500);
@@ -282,7 +282,7 @@
 //                        error = true;
 //                    }
 //                }
-                
+
 //            );
 
 //            Thread.Sleep(2000);
@@ -307,7 +307,7 @@
 //        public void DisposeStreamListenerSafeGuardTest()
 //        {
 //            var settings = new Mock<ISettings>();
-//            settings.Setup(x => x.EventStateFilePath).Returns(".");
+//            settings.Setup(x => x.FixturesStateFilePath).Returns(".");
 //            settings.Setup(x => x.FixtureCreationConcurrency).Returns(2);
 //            settings.Setup(x => x.FixtureCheckerFrequency).Returns(1200000); 
 
@@ -331,7 +331,7 @@
 
 //            service.Setup(x => x.GetResources("Football"))
 //                .Returns(() => new List<IResourceFacade> {fixtureOne.Object, fixtureTwo.Object});
-                
+
 //            Adapter adapter = new Adapter(settings.Object, service.Object, connector.Object);
 //            adapter.StateManager.ClearState("1");
 //            adapter.StateManager.ClearState("2");
@@ -352,7 +352,7 @@
 //            Thread.Sleep(500);
 
 //            created.Should().Be(1);
-            
+
 //        }
 
 //        //This is just a model test for SubParticipants
@@ -375,7 +375,7 @@
 //            {
 //                yield break;
 //            }
-                
+
 //            yield return "Football";
 
 //            if (howMany == ListOfSports.GiveMeFew)

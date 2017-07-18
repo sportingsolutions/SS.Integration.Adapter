@@ -87,16 +87,16 @@ namespace SS.Integration.Adapter.Model
 
         private static void SetFilePath(ISettings settings)
         {
-            if (Path.IsPathRooted(settings.EventStateFilePath))
+            if (Path.IsPathRooted(settings.FixturesStateFilePath))
             {
-                PathFileName = settings.EventStateFilePath;
+                PathFileName = settings.FixturesStateFilePath;
             }
             else
             {
                 var path = Assembly.GetExecutingAssembly().Location;
                 var fileInfo = new FileInfo(path);
                 var dir = fileInfo.DirectoryName;
-                PathFileName = Path.Combine(dir, settings.EventStateFilePath);
+                PathFileName = Path.Combine(dir, settings.FixturesStateFilePath);
             }
         }
 

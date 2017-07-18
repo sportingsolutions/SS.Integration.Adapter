@@ -53,7 +53,8 @@ namespace SS.Integration.Adapter.Tests
             SettingsMock.SetupGet(a => a.StreamSafetyThreshold).Returns(3);
             SettingsMock.SetupGet(a => a.FixtureCreationConcurrency).Returns(3);
             SettingsMock.SetupGet(a => a.FixtureCheckerFrequency).Returns(10000);
-            SettingsMock.SetupGet(a => a.EventStateFilePath).Returns(GetType().Assembly.Location);
+            SettingsMock.SetupGet(a => a.FixturesStateFilePath).Returns(GetType().Assembly.Location);
+            SettingsMock.SetupGet(a => a.FixturesStateAutoStoreInterval).Returns(int.MaxValue);
 
             FootabllSportMock = new Mock<IFeature>();
             ServiceMock = new Mock<IServiceFacade>();

@@ -57,7 +57,7 @@
 //        {
 //            var settings = new Mock<ISettings>();
 //            var service = new Mock<IServiceFacade>();
-            
+
 //            var plugin = new Mock<IAdapterPlugin>();
 //            var feature = new Mock<IFeature>();
 //            var resource = new Mock<IResourceFacade>();
@@ -68,7 +68,7 @@
 
 //            settings.Setup(x => x.FixtureCreationConcurrency).Returns(1);
 //            settings.Setup(x => x.FixtureCheckerFrequency).Returns(1000);
-//            settings.Setup(x => x.EventStateFilePath).Returns(".");
+//            settings.Setup(x => x.FixturesStateFilePath).Returns(".");
 //            settings.Setup(x => x.ProcessingLockTimeOutInSecs).Returns(10);
 //            settings.Setup(x => x.StreamSafetyThreshold).Returns(int.MaxValue);
 

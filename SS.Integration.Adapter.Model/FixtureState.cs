@@ -18,7 +18,7 @@ using SS.Integration.Adapter.Model.Enums;
 namespace SS.Integration.Adapter.Model
 {
     [Serializable]
-    public class FixtureState
+    public class FixtureState : IEquatable<FixtureState>
     {
         private int _epoch = -1;
         public string Id { get; set; }
@@ -26,5 +26,60 @@ namespace SS.Integration.Adapter.Model
         public int Epoch { get { return _epoch; } set { _epoch = value; } }
         public MatchStatus MatchStatus { get; set; }
         public string Sport { get; set; }
+
+        #region IEquatable
+
+        public bool Equals(FixtureState other)
+        {
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return
+                _epoch == other._epoch &&
+                string.Equals(Id, other.Id) &&
+                Sequence == other.Sequence &&
+                MatchStatus == other.MatchStatus &&
+                string.Equals(Sport, other.Sport);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+            {
+                return false;
+
+            }
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+            if (obj.GetType() != this.GetType())
+            {
+                return false;
+            }
+
+            return Equals((FixtureState)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = _epoch;
+                hashCode = (hashCode * 397) ^ (Id != null ? Id.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ Sequence;
+                hashCode = (hashCode * 397) ^ (int)MatchStatus;
+                hashCode = (hashCode * 397) ^ (Sport != null ? Sport.GetHashCode() : 0);
+                return hashCode;
+            }
+        }
+
+        #endregion
     }
 }

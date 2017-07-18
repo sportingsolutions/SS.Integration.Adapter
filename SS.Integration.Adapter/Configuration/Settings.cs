@@ -30,7 +30,8 @@ namespace SS.Integration.Adapter.Configuration
         private const int DEFAULT_MAX_RETRY_ATTEMPT_VALUE = 3;
         private const int DEFAULT_ECHO_INTERVAL_VALUE = 10000;
         private const int DEFAULT_ECHO_DELAY_VALUE = 3000;
-        private const string DEFAULT_EVENT_STATE_FILE_PATH_VALUE = @"C:\eventState.json";
+        private const string DEFAULT_FIXTURES_STATE_FILE_PATH_VALUE = @"C:\fixturesState.json";
+        private const int DEFAULT_FIXTURES_STATE_AUTO_STORE_INTERVAL_VALUE = 5000;
         private const string DEFAULT_MARKET_STATE_MANAGER_DIRECTORY = @"MarketsState";
         private const int DEFAULT_CACHE_EXPIRY_MINUTES_VALUE = 15;
         private const bool DEFAULT_ENABLE_DELTA_RULE = false;
@@ -73,8 +74,13 @@ namespace SS.Integration.Adapter.Configuration
             value = ConfigurationManager.AppSettings["echoDelay"];
             EchoDelay = string.IsNullOrEmpty(value) ? DEFAULT_ECHO_DELAY_VALUE : Convert.ToInt32(value);
 
-            value = ConfigurationManager.AppSettings["eventStateFilePath"];
-            EventStateFilePath = string.IsNullOrEmpty(value) ? DEFAULT_EVENT_STATE_FILE_PATH_VALUE : Convert.ToString(value);
+            value = ConfigurationManager.AppSettings["fixturesStateFilePath"];
+            FixturesStateFilePath = string.IsNullOrEmpty(value) ? DEFAULT_FIXTURES_STATE_FILE_PATH_VALUE : Convert.ToString(value);
+
+            value = ConfigurationManager.AppSettings["fixturesStateAutoStoreInterval"];
+            FixturesStateAutoStoreInterval = string.IsNullOrEmpty(value)
+                ? DEFAULT_FIXTURES_STATE_AUTO_STORE_INTERVAL_VALUE
+                : int.Parse(value);
 
             value = ConfigurationManager.AppSettings["marketFiltersDirectory"];
             MarketFiltersDirectory = string.IsNullOrEmpty(value) ? DEFAULT_MARKET_STATE_MANAGER_DIRECTORY : Convert.ToString(value);
@@ -167,8 +173,9 @@ namespace SS.Integration.Adapter.Configuration
 
         public int EchoDelay { get; private set; }
 
-        [Obsolete]
-        public string EventStateFilePath { get; private set; }
+        public string FixturesStateFilePath { get; private set; }
+
+        public int FixturesStateAutoStoreInterval { get; private set; }
 
         public bool DeltaRuleEnabled { get; private set; }
 

@@ -27,7 +27,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly ISettings _settings;
         private readonly IStoreProvider _storeProvider;
         private string _pathFileName;
-        private Dictionary<string, FixtureState> _fixturesStates;
+        private Dictionary<string, FixtureState> _fixturesState;
 
         #endregion
 
@@ -38,14 +38,14 @@ namespace SS.Integration.Adapter.Actors
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _storeProvider = storeProvider ?? throw new ArgumentNullException(nameof(storeProvider));
 
-            _fixturesStates = new Dictionary<string, FixtureState>();
+            _fixturesState = new Dictionary<string, FixtureState>();
 
             SetFilePath();
             LoadStateFile();
 
             Context.System.Scheduler.ScheduleTellRepeatedly(
-                5000,
-                5000,
+                _settings.FixturesStateAutoStoreInterval,
+                _settings.FixturesStateAutoStoreInterval,
                 Self,
                 new WriteStateToFileMsg(),
                 Self);
@@ -63,7 +63,7 @@ namespace SS.Integration.Adapter.Actors
         private void GetFixtureStateMsgHandler(GetFixtureStateMsg msg)
         {
             FixtureState fixtureState;
-            _fixturesStates.TryGetValue(msg.FixtureId, out fixtureState);
+            _fixturesState.TryGetValue(msg.FixtureId, out fixtureState);
             Sender.Tell(fixtureState, Self);
         }
 
@@ -72,7 +72,7 @@ namespace SS.Integration.Adapter.Actors
             _logger.Debug($"Updating state for Fixture fixtureId={msg.FixtureId} sequence={msg.Sequence}");
 
             FixtureState fixtureState;
-            if (!_fixturesStates.TryGetValue(msg.FixtureId, out fixtureState))
+            if (!_fixturesState.TryGetValue(msg.FixtureId, out fixtureState))
             {
                 fixtureState = new FixtureState { Id = msg.FixtureId, Sport = msg.Sport };
             }
@@ -81,20 +81,20 @@ namespace SS.Integration.Adapter.Actors
             fixtureState.MatchStatus = msg.Status;
             fixtureState.Epoch = msg.Epoch;
 
-            _fixturesStates[msg.FixtureId] = fixtureState;
+            _fixturesState[msg.FixtureId] = fixtureState;
         }
 
         private void RemoveFixtureStateMsgHandler(RemoveFixtureStateMsg msg)
         {
-            _fixturesStates.Remove(msg.FixtureId);
+            _fixturesState.Remove(msg.FixtureId);
         }
 
         private void WriteStateToFileMsgHandler(WriteStateToFileMsg msg)
         {
             try
             {
-                _logger.Debug($"Writing State to file, with {_fixturesStates.Count} fixtures");
-                var output = JsonConvert.SerializeObject(_fixturesStates, Formatting.Indented);
+                _logger.Debug($"Writing State to file, with {_fixturesState.Count} fixtures");
+                var output = JsonConvert.SerializeObject(_fixturesState, Formatting.Indented);
                 _storeProvider.Write(_pathFileName, output);
                 _logger.DebugFormat("State persisted successfully");
             }
@@ -110,16 +110,16 @@ namespace SS.Integration.Adapter.Actors
 
         private void SetFilePath()
         {
-            if (System.IO.Path.IsPathRooted(_settings.EventStateFilePath))
+            if (System.IO.Path.IsPathRooted(_settings.FixturesStateFilePath))
             {
-                _pathFileName = _settings.EventStateFilePath;
+                _pathFileName = _settings.FixturesStateFilePath;
             }
             else
             {
                 var path = Assembly.GetExecutingAssembly().Location;
                 var fileInfo = new FileInfo(path);
                 var dir = fileInfo.DirectoryName;
-                _pathFileName = System.IO.Path.Combine(dir, _settings.EventStateFilePath);
+                _pathFileName = System.IO.Path.Combine(dir, _settings.FixturesStateFilePath);
             }
         }
 
@@ -132,7 +132,7 @@ namespace SS.Integration.Adapter.Actors
                 var savedFixtureStates = File.Exists(_pathFileName) ? _storeProvider.Read(_pathFileName) : null;
                 if (!string.IsNullOrWhiteSpace(savedFixtureStates))
                 {
-                    _fixturesStates = (Dictionary<string, FixtureState>)
+                    _fixturesState = (Dictionary<string, FixtureState>)
                         JsonConvert.DeserializeObject(savedFixtureStates, typeof(Dictionary<string, FixtureState>));
                 }
             }
