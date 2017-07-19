@@ -82,7 +82,10 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Actors\Messages\UpdateStatsErrorMsg.cs" />
+    <Compile Include="Actors\Messages\UpdateStatsFinishMsg.cs" />
     <Compile Include="Actors\Messages\RemoveFixtureStateMsg.cs" />
+    <Compile Include="Actors\Messages\UpdateStatsStartMsg.cs" />
     <Compile Include="Actors\Messages\UpdateFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\ProcessResourceMsg.cs" />
     <Compile Include="Actors\Messages\GetFixtureStateMsg.cs" />
@@ -113,6 +116,8 @@
     <Compile Include="Actors\AdapterActorSystem.cs" />
     <Compile Include="Configuration\Settings.cs" />
     <Compile Include="Enums\StreamListenerState.cs" />
+    <Compile Include="Exceptions\ApiException.cs" />
+    <Compile Include="Exceptions\PluginException.cs" />
     <Compile Include="FixtureJsonHelper.cs" />
     <Compile Include="Actors\SportsProcessorActor.cs" />
     <Compile Include="Interface\IFixtureValidation.cs" />

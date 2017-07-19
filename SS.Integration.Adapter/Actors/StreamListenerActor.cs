@@ -6,14 +6,11 @@ using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Exceptions;
 using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Common.Extensions;
-using SS.Integration.Common.Stats;
-using SS.Integration.Common.Stats.Interface;
-using SS.Integration.Common.Stats.Keys;
 using System;
-using System.Diagnostics;
 using System.Linq;
 using SportingSolutions.Udapi.Sdk.Extensions;
 using SS.Integration.Adapter.Actors.Messages;
+using SS.Integration.Adapter.Exceptions;
 
 namespace SS.Integration.Adapter.Actors
 {
@@ -36,11 +33,11 @@ namespace SS.Integration.Adapter.Actors
         private readonly IFixtureValidation _fixtureValidation;
         private readonly IResourceFacade _resource;
         private readonly IAdapterPlugin _platformConnector;
-        private readonly IStatsHandle _stats;
         private readonly IStateManager _stateManager;
         private readonly IMarketRulesManager _marketsRuleManager;
         private readonly IActorRef _resourceActor;
         private readonly IActorRef _streamHealthCheckActor;
+        private readonly IActorRef _streamStatsActor;
 
         private readonly string _fixtureId;
         private int _currentEpoch;
@@ -74,7 +71,6 @@ namespace SS.Integration.Adapter.Actors
                 _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
                 _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
                 _marketsRuleManager = _stateManager.CreateNewMarketRuleManager(resource.Id);
-                _stats = StatsManager.Instance[string.Concat("adapter.core.sport.", resource.Sport)].GetHandle();
                 _settings = settings ?? throw new ArgumentNullException(nameof(settings));
                 _streamValidation = streamValidation ?? throw new ArgumentNullException(nameof(streamValidation));
                 _fixtureValidation = fixtureValidation ?? throw new ArgumentNullException(nameof(fixtureValidation));
@@ -85,6 +81,9 @@ namespace SS.Integration.Adapter.Actors
                 _streamHealthCheckActor = Context.ActorOf(
                     Props.Create(() => new StreamHealthCheckActor(_resource, _settings, _streamValidation)),
                     StreamHealthCheckActor.ActorName);
+                _streamStatsActor = Context.ActorOf(
+                    Props.Create(() => new StreamStatsActor()),
+                    StreamStatsActor.ActorName);
 
                 Initialize();
             }
@@ -154,8 +153,17 @@ namespace SS.Integration.Adapter.Actors
         {
             State = Enums.StreamListenerState.Disconnected;
 
+            var streamDisconnectedMessage = new StreamDisconnectedMsg
+            {
+                FixtureId = _fixtureId,
+                Sport = _resource.Sport
+            };
+
+            //tell Stream Stats actor that we got disconnected so it can monitor number of disconnections
+            _streamStatsActor.Tell(streamDisconnectedMessage);
+
             //tell Stream Listener Manager Actor that we got disconnected so it can kill and recreate this child actor
-            Context.Parent.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId, Sport = _resource.Sport });
+            Context.Parent.Tell(streamDisconnectedMessage);
         }
 
         //Error has occured, resource will try to recover by processing full snapshot
@@ -417,7 +425,16 @@ namespace SS.Integration.Adapter.Actors
 
             //unsuspends markets suspended by adapter
             _stateManager.StateProvider.SuspensionManager.Unsuspend(fixture.Id);
-            _platformConnector.UnSuspend(fixture);
+            try
+            {
+                _platformConnector.UnSuspend(fixture);
+            }
+            catch (Exception ex)
+            {
+                var pluginError = new PluginException($"Plugin UnSuspend fixture {fixture.Id} error occured", ex);
+                UpdateStatsError(pluginError);
+                throw pluginError;
+            }
         }
 
         private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false)
@@ -430,7 +447,18 @@ namespace SS.Integration.Adapter.Actors
         {
             _logger.Debug($"Getting snapshot for {_resource}");
 
-            var snapshotJson = _resource.GetSnapshot();
+            string snapshotJson = null;
+
+            try
+            {
+                snapshotJson = _resource.GetSnapshot();
+            }
+            catch (Exception ex)
+            {
+                var apiError = new ApiException($"GetSnapshot for {_resource.Id} failed", ex);
+                UpdateStatsError(apiError);
+                throw apiError;
+            }
 
             if (string.IsNullOrEmpty(snapshotJson))
                 throw new Exception($"Received empty snapshot for {_resource}");
@@ -445,7 +473,6 @@ namespace SS.Integration.Adapter.Actors
                 throw new Exception(
                     $"Received snapshot {snapshot} with sequence lower than currentSequence={_currentSequence}");
 
-            _stats.IncrementValue(AdapterCoreKeys.SNAPSHOT_COUNTER);
             _fixtureStartTime = snapshot.StartTime;
 
             return snapshot;
@@ -460,11 +487,16 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Info($"Processing {logString} for {snapshot}");
 
-            Stopwatch timer = new Stopwatch();
-            timer.Start();
-
             try
             {
+                _streamStatsActor.Tell(new UpdateStatsStartMsg
+                {
+                    Fixture = snapshot,
+                    Sequence = _currentSequence,
+                    IsSnapshot = isFullSnapshot,
+                    UpdateReceivedAt = DateTime.UtcNow
+                });
+
                 if (isFullSnapshot && !VerifySequenceOnSnapshot(snapshot))
                     return;
 
@@ -472,18 +504,43 @@ namespace SS.Integration.Adapter.Actors
                 snapshot.IsModified = true;
 
                 if (isFullSnapshot)
-                    _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
+                {
+                    try
+                    {
+                        _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
+                    }
+                    catch (Exception ex)
+                    {
+                        var pluginError = new PluginException($"Plugin ProcessSnapshot id {snapshot.Id} error occured", ex);
+                        UpdateStatsError(pluginError);
+                        throw pluginError;
+                    }
+                }
                 else
-                    _platformConnector.ProcessStreamUpdate(snapshot, hasEpochChanged);
+                {
+                    try
+                    {
+                        _platformConnector.ProcessStreamUpdate(snapshot, hasEpochChanged);
+                    }
+                    catch (Exception ex)
+                    {
+                        var pluginError = new PluginException($"Plugin ProcessStreamUpdate id {snapshot.Id} error occured", ex);
+                        UpdateStatsError(pluginError);
+                        throw pluginError;
+                    }
+                }
 
 
                 UpdateState(snapshot, isFullSnapshot);
+
+                _streamStatsActor.Tell(new UpdateStatsFinishMsg
+                {
+                    CompletedAt = DateTime.UtcNow
+                });
             }
             catch (FixtureIgnoredException)
             {
                 _logger.Warn($"{_resource} received a FixtureIgnoredException");
-
-                _stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
             }
             catch (AggregateException ex)
             {
@@ -495,25 +552,14 @@ namespace SS.Integration.Adapter.Actors
                 {
                     _logger.Error($"Error processing {logString} for {snapshot} ({++count}/{total})", e);
                 }
-
-                _stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
                 throw;
             }
             catch (Exception ex)
             {
                 _marketsRuleManager.RollbackChanges();
 
-                _stats.IncrementValue(AdapterCoreKeys.ERROR_COUNTER);
-
                 _logger.Error($"Error processing {logString} {snapshot}", ex);
                 throw;
-            }
-            finally
-            {
-                timer.Stop();
-                _stats.AddValue(
-                    isFullSnapshot ? AdapterCoreKeys.SNAPSHOT_PROCESSING_TIME : AdapterCoreKeys.UPDATE_PROCESSING_TIME,
-                    timer.ElapsedMilliseconds.ToString());
             }
 
             _logger.Info($"Finished processing {logString} for {snapshot}");
@@ -536,7 +582,17 @@ namespace SS.Integration.Adapter.Actors
                 {
                     _logger.Debug(
                         $"{_resource} has changed matchStatus={Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus)}");
-                    _platformConnector.ProcessMatchStatus(fixtureDelta);
+
+                    try
+                    {
+                        _platformConnector.ProcessMatchStatus(fixtureDelta);
+                    }
+                    catch (Exception ex)
+                    {
+                        var pluginError = new PluginException($"Plugin ProcessMatchStatus id {fixtureDelta.Id} error occured", ex);
+                        UpdateStatsError(pluginError);
+                        throw pluginError;
+                    }
                 }
 
                 if (fixtureDelta.IsMatchOver)
@@ -567,11 +623,21 @@ namespace SS.Integration.Adapter.Actors
             try
             {
                 SuspendFixture(SuspensionReason.FIXTURE_DELETED);
-                _platformConnector.ProcessFixtureDeletion(fixtureDelta);
+                try
+                {
+                    _platformConnector.ProcessFixtureDeletion(fixtureDelta);
+                }
+                catch (Exception ex)
+                {
+                    var pluginError = new PluginException($"Plugin ProcessFixtureDeletion id {fixtureDelta.Id} error occured", ex);
+                    UpdateStatsError(pluginError);
+                    throw pluginError;
+                }
             }
             catch (Exception e)
             {
                 _logger.Error($"An exception occured while trying to process fixture deletion for {_resource}", e);
+                throw;
             }
 
             var status = (MatchStatus)Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus);
@@ -619,7 +685,16 @@ namespace SS.Integration.Adapter.Actors
             _logger.Info($"Suspending fixtureId={_resource.Id} due reason={reason}");
 
             _stateManager.StateProvider.SuspensionManager.Suspend(_resource.Id, reason);
-            _platformConnector.Suspend(_resource.Id);
+            try
+            {
+                _platformConnector.Suspend(_resource.Id);
+            }
+            catch (Exception ex)
+            {
+                var pluginError = new PluginException($"Plugin Suspend fixture {_resource.Id} error occured", ex);
+                UpdateStatsError(pluginError);
+                throw pluginError;
+            }
         }
 
         private void UpdateState(Fixture snapshot, bool isSnapshot = false)
@@ -686,6 +761,15 @@ namespace SS.Integration.Adapter.Actors
 
                 erroredEx = ex;
             }
+        }
+
+        private void UpdateStatsError(Exception ex)
+        {
+            _streamStatsActor.Tell(new UpdateStatsErrorMsg
+            {
+                ErrorOccuredAt = DateTime.UtcNow,
+                Error = ex
+            });
         }
 
         #endregion
