@@ -103,31 +103,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AdapterTests.cs" />
-    <Compile Include="EventStateTests.cs" />
-    <Compile Include="FixtureManagerTest.cs" />
     <Compile Include="FixtureSamples.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>FixtureSamples.resx</DependentUpon>
     </Compile>
-    <Compile Include="GameState\FootballGameStateTest.cs" />
-    <Compile Include="GenericComparerHelper.cs" />
-    <Compile Include="MarketsFilterTests.cs" />
-    <Compile Include="ModelTests.cs" />
-    <Compile Include="RegressionTests.cs" />
     <Compile Include="FixtureValidationTests.cs" />
     <Compile Include="FixtureStateActorTests.cs" />
     <Compile Include="StreamValidationTests.cs" />
     <Compile Include="StreamHealthCheckActorTests.cs" />
     <Compile Include="StreamListenerActorTests.cs" />
-    <Compile Include="StreamListenerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SuspensionTests.cs" />
     <Compile Include="BaseTestKit.cs" />
-    <Compile Include="TestHelper.cs">
-      <SubType>Code</SubType>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -135,11 +122,6 @@
     <None Include="Data\football-matchover-snapshot-2" />
     <None Include="Data\football-setup-snapshot-2" />
     <None Include="Data\football-ready-snapshot-3" />
-    <None Include="Data\horseracing" />
-    <None Include="Data\rugbydata-snapshot-2" />
-    <None Include="Data\rugbydata-update-3" />
-    <None Include="Data\rugbydata-update-4" />
-    <None Include="Data\rugbydata-snapshot-4" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
@@ -168,9 +150,6 @@
       <SubType>Designer</SubType>
       <LastGenOutput>FixtureSamples.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Data\rugbydata-snapshot-withRemovedMarkets-5" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5">

@@ -111,7 +111,6 @@
     <Compile Include="FixtureOverviewTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SportOverviewTest.cs" />
-    <Compile Include="SupervisorTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

@@ -50,7 +50,6 @@
     <Compile Include="Interface\IFixtureOverview.cs" />
     <Compile Include="Interface\IFixtureOverviewDelta.cs" />
     <Compile Include="Interface\ISportOverview.cs" />
-    <Compile Include="Interface\ISupervisor.cs" />
     <Compile Include="ListenerOverview.cs" />
     <Compile Include="Service\Interface\ISupervisorStreamingService.cs" />
     <Compile Include="Service\Model\AdapterStatus.cs" />

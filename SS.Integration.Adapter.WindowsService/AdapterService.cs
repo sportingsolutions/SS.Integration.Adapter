@@ -36,7 +36,6 @@ namespace SS.Integration.Adapter.WindowsService
         private readonly ILog _logger = LogManager.GetLogger(typeof(AdapterService).ToString());
         private static Task _adapterWorkerThread;
         private Adapter _adapter;
-        private ISupervisor _supervisor;
         private int _fatalExceptionsCounter = 0;
         private bool _skipRestartOnFatalException;
 
@@ -87,7 +86,6 @@ namespace SS.Integration.Adapter.WindowsService
             _adapter.Stop();
             _adapterWorkerThread.Wait();
             _adapterWorkerThread.ContinueWith(task => { _logger.InfoFormat("Adapter successfully stopped"); Environment.Exit(0); });
-            _supervisor?.Dispose();
         }
 
         #endregion
@@ -132,31 +130,6 @@ namespace SS.Integration.Adapter.WindowsService
                     PlatformConnector,
                     streamValidation,
                     fixtureValidation);
-
-            if (settings.UseSupervisor)
-            {
-                // SS.Integration.Diagnostics.RestService uses Owin.HttpListeners.
-                // that assembly must be referenced in the startup project even if not
-                // directly used, so do not remove it from the list of references
-                _supervisor = iocContainer.Get<ISupervisor>();
-                if (_supervisor == null)
-                {
-                    _logger.Error("Cannot instantiate Supervisor as not suitable module was found");
-                }
-                else
-                {
-                    _logger.Info("Initializing adapter's supervisor");
-                    try
-                    {
-                        _supervisor.Initialise();
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.Error("An error occured during the initialization of the adapter's supervisor. The supervisor will not be available", e);
-                    }
-                }
-            }
-
 
             _adapter.Start();
 
