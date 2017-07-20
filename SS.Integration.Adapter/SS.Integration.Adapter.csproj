@@ -104,7 +104,6 @@
     <Compile Include="Actors\Messages\StreamListenerCreationFailedMsg.cs" />
     <Compile Include="Actors\Messages\StreamUpdateMsg.cs" />
     <Compile Include="Actors\FixtureStateActor.cs" />
-    <Compile Include="Actors\StatsActor.cs" />
     <Compile Include="Actors\SportProcessorRouterActor.cs" />
     <Compile Include="Actors\StreamHealthCheckActor.cs" />
     <Compile Include="Actors\ResourceActor.cs" />

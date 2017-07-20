@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using Akka.Actor;
 using log4net;
 using SS.Integration.Adapter.Actors.Messages;

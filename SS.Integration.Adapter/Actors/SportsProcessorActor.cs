@@ -44,7 +44,6 @@ namespace SS.Integration.Adapter.Actors
                 Self,
                 new ProcessSportsMessage(),
                 Self);
-            _statsActor = Context.ActorOf(Props.Create<StatsActor>(), StatsActor.ActorName);
         }
 
         #endregion
