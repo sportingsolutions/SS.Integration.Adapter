@@ -30,7 +30,7 @@ namespace SS.Integration.Adapter.Tests
 
         #endregion
 
-        #region Attributes
+        #region Private members
 
         private Mock<IResourceFacade> _resourceFacadeMock;
 

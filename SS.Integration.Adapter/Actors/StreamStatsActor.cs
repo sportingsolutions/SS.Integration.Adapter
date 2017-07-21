@@ -20,7 +20,7 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
-        #region Attributes
+        #region Private members
 
         private ILog _logger = LogManager.GetLogger(typeof(StreamStatsActor));
         private UpdateStatsStartMsg _startMessage;

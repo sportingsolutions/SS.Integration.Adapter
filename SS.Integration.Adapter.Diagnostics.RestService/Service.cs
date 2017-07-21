@@ -27,54 +27,49 @@ using SS.Integration.Adapter.Diagnostics.RestService.PushNotifications;
 
 namespace SS.Integration.Adapter.Diagnostics.RestService
 {
-    public class Service : ISupervisorService
+    // do not change this to use HttpSelfHostServer to self hosting asp.net web api 
+    // cause SignalR requires an OWIN host
+    // make sure Microsoft.Owin.Host.HttpListner is reference otherwise a run-time exception is raised.
+    public sealed class Service : ISupervisorService
     {
-        // do not change this to use HttpSelfHostServer to self hosting asp.net web api 
-        // cause SignalR requires an OWIN host
-        // make sure Microsoft.Owin.Host.HttpListner is reference otherwise a run-time exception is raised.
+        #region Private members
 
         private IDisposable _server;
         private readonly ILog _log = LogManager.GetLogger(typeof(Service));
 
-        public Service(ISupervisorProxy supervisor)
-            : this(supervisor, GetDefaultConfiguration())
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Global static access to this object instance
+        /// </summary>
+        internal static ISupervisorService Instance { get; private set; }
+
+        #endregion
+
+        #region Constructors
+
+        public Service(ISupervisorServiceConfiguration configuration, ISupervisorProxy proxy)
         {
+            Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            Proxy = proxy ?? throw new ArgumentNullException(nameof(proxy));
+
+            Instance = this;
         }
 
-        public Service(ISupervisorProxy supervisor, ISupervisorServiceConfiguration configuration)
-        {
-            if (supervisor == null)
-                throw new ArgumentNullException("supervisor");
+        #endregion
 
-            if (configuration == null)
-                throw new ArgumentNullException("configuration");
-            
-            Supervisor = supervisor;
-            ServiceConfiguration = configuration;
-            ServiceInstance = this;
-        }
+        #region Implementation of ISupervisorService
 
-        #region ISupervisorService
+        public ISupervisorProxy Proxy { get; private set; }
 
-        public ISupervisorProxy Supervisor { get; private set; }
-
-        public ISupervisorServiceConfiguration ServiceConfiguration { get; private set; }
-
-        public ISupervisorStreamingService StreamingService
-        {
-            get
-            {
-                if(ServiceConfiguration.UsePushNotifications)
-                    return SupervisorStreamingService.Instance;
-
-                return SupervisorNullStreamingService.Instance;
-            }
-        }
+        public ISupervisorServiceConfiguration Configuration { get; private set; }
 
         public void Start()
         {
-            _log.InfoFormat("Starting self-hosted web server on {0}", ServiceConfiguration.Url);
-            _server = WebApp.Start<ServiceStartUp>(ServiceConfiguration.Url);
+            _log.InfoFormat("Starting self-hosted web server on {0}", Configuration.Url);
+            _server = WebApp.Start<ServiceStartUp>(Configuration.Url);
         }
 
         public void Stop()
@@ -89,15 +84,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
 
         #endregion
 
-        internal static ISupervisorServiceConfiguration GetDefaultConfiguration()
-        {
-            return new ServiceConfiguration();
-        }
-
-        /// <summary>
-        /// Global static access to this object instance
-        /// </summary>
-        public static ISupervisorService ServiceInstance { get; private set; }
+        #region Private Sub Types
 
         /// <summary>
         /// Start up class required by OWIN
@@ -110,7 +97,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
             {
                 // configure the OWIN middlewares....pay attention that order matters
 
-                if (ServiceInstance.ServiceConfiguration.UsePushNotifications)
+                if (Instance.Configuration.UsePushNotifications)
                     UseSignalR(app);
 
                 UseFileServer(app);
@@ -121,7 +108,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
             {
                 // prepare the signalr middleware
                 app.UseCors(CorsOptions.AllowAll);
-                app.MapSignalR(ServiceInstance.ServiceConfiguration.PushNotificationsPath, new Microsoft.AspNet.SignalR.HubConfiguration
+                app.MapSignalR(Instance.Configuration.PushNotificationsPath, new Microsoft.AspNet.SignalR.HubConfiguration
                 {
                     EnableJavaScriptProxies = false,
                     EnableJSONP = false,
@@ -151,9 +138,9 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
                 // configure the static web server middleware
                 var options = new FileServerOptions
                 {
-                    FileSystem = new PhysicalFileSystem(GetRootDirectory(ServiceInstance.ServiceConfiguration.UIPath)),
+                    FileSystem = new PhysicalFileSystem(GetRootDirectory(Instance.Configuration.UIPath)),
                     EnableDirectoryBrowsing = true,
-                    RequestPath = new Microsoft.Owin.PathString(ServiceInstance.ServiceConfiguration.UIPath),
+                    RequestPath = new Microsoft.Owin.PathString(Instance.Configuration.UIPath),
                     EnableDefaultFiles = true
                 };
 
@@ -172,5 +159,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
                 return Path.Combine(currentDirectory, path);
             }
         }
+
+        #endregion
     }
 }

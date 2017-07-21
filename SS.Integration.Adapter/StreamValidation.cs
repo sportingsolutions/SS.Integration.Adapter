@@ -9,7 +9,7 @@ namespace SS.Integration.Adapter
 {
     public class StreamValidation : IStreamValidation
     {
-        #region Attributes
+        #region Private members
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamValidation).ToString());
         private readonly ISettings _settings;

@@ -28,7 +28,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
         [HttpGet]
         public HttpResponseMessage GetDetails(string fixtureId)
         {
-            var details = Service.ServiceInstance.Supervisor.GetFixtureDetail(fixtureId);
+            var details = Service.Instance.Proxy.GetFixtureDetail(fixtureId);
             if(details == null)
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
 
@@ -41,7 +41,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
         [HttpGet]
         public HttpResponseMessage GetHistory(string fixtureId)
         {
-            var history = Service.ServiceInstance.Supervisor.GetFixtureHistory(fixtureId);
+            var history = Service.Instance.Proxy.GetFixtureHistory(fixtureId);
             if (history == null)
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
 
@@ -57,7 +57,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
             if (string.IsNullOrEmpty(fixtureId))
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
 
-            if(Service.ServiceInstance.Supervisor.TakeSnapshot(fixtureId))
+            if(Service.Instance.Proxy.TakeSnapshot(fixtureId))
                 return new HttpResponseMessage(HttpStatusCode.OK);
 
             return new HttpResponseMessage(HttpStatusCode.InternalServerError);
@@ -70,7 +70,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
             if (string.IsNullOrEmpty(fixtureId))
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
 
-            if(Service.ServiceInstance.Supervisor.RestartListener(fixtureId))
+            if(Service.Instance.Proxy.RestartListener(fixtureId))
                 return new HttpResponseMessage(HttpStatusCode.OK);
 
             return new HttpResponseMessage(HttpStatusCode.InternalServerError);
@@ -83,7 +83,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
             if (string.IsNullOrEmpty(fixtureId))
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
 
-            if (Service.ServiceInstance.Supervisor.ClearState(fixtureId))
+            if (Service.Instance.Proxy.ClearState(fixtureId))
                 return new HttpResponseMessage(HttpStatusCode.OK);
 
             return new HttpResponseMessage(HttpStatusCode.InternalServerError);

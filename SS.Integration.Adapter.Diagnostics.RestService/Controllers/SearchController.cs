@@ -30,7 +30,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
             if (!string.IsNullOrEmpty(fixtureId))
             {
 
-                foreach (var fixture in Service.ServiceInstance.Supervisor.GetFixtures())
+                foreach (var fixture in Service.Instance.Proxy.GetFixtures())
                 {
                     if (string.Equals(fixtureId, fixture.Id))
                     {

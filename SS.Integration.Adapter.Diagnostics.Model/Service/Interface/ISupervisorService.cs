@@ -17,21 +17,15 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Service.Interface
     public interface ISupervisorService
     {
         /// <summary>
-        /// Gives access to th ISupervisorProxy, used
+        /// Gives access to the ISupervisorProxy, used
         /// to query the supervisor
         /// </summary>
-        ISupervisorProxy Supervisor { get; }
-        
-        /// <summary>
-        /// Returns a reference to the ISupervisorStreamingService
-        /// used to send push-notifications
-        /// </summary>
-        ISupervisorStreamingService StreamingService { get; }
+        ISupervisorProxy Proxy { get; }
 
         /// <summary>
         /// Returns the service configuration object
         /// </summary>
-        ISupervisorServiceConfiguration ServiceConfiguration { get; }
+        ISupervisorServiceConfiguration Configuration { get; }
 
         /// <summary>
         /// Starts the service

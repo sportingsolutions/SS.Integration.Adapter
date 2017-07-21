@@ -16,7 +16,7 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
-        #region Attributes
+        #region Private members
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerActor).ToString());
         private readonly IResourceFacade _resource;

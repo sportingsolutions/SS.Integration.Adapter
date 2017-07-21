@@ -31,7 +31,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
         [HttpGet]
         public HttpResponseMessage GetSports()
         {
-            var sports = Service.ServiceInstance.Supervisor.GetSports();
+            var sports = Service.Instance.Proxy.GetSports();
             var res = Request.CreateResponse(HttpStatusCode.OK, sports, UrlUtilities.JSON_MEDIA_TYPE);
             res.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true };
             return res;
@@ -41,7 +41,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
         [HttpGet]
         public HttpResponseMessage GetSport(string sportCode)
         {
-            var sport = Service.ServiceInstance.Supervisor.GetSportDetail(sportCode);
+            var sport = Service.Instance.Proxy.GetSportDetail(sportCode);
             if(sport == null)
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
 

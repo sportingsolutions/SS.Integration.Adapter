@@ -6,7 +6,7 @@ namespace SS.Integration.Adapter
 {
     public class FixtureValidation : IFixtureValidation
     {
-        #region Attributes
+        #region Private members
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(FixtureValidation).ToString());
 

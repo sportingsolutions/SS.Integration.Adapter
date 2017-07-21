@@ -31,10 +31,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.PushNotifications
             _hub = GlobalHost.ConnectionManager.GetHubContext<SupervisorStreamingHub>();
         }
 
-        public static SupervisorStreamingService Instance
-        {
-            get { return _instance ?? (_instance = new SupervisorStreamingService()); }
-        }
+        public static SupervisorStreamingService Instance => _instance ?? (_instance = new SupervisorStreamingService());
 
 
         public void OnSportUpdate(ISportDetails sport)

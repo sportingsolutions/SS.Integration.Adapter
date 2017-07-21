@@ -41,10 +41,10 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
         [HttpGet, HttpPost, HttpPut, HttpDelete, HttpHead, HttpOptions, AcceptVerbs("PATCH")]
         public HttpResponseMessage Handle404()
         {
-            if (Service.ServiceInstance.ServiceConfiguration.UseUIRedirect)
+            if (Service.Instance.Configuration.UseUIRedirect)
             {
 
-                if (Request.RequestUri.LocalPath.Contains(Service.ServiceInstance.ServiceConfiguration.UIPath))
+                if (Request.RequestUri.LocalPath.Contains(Service.Instance.Configuration.UIPath))
                 {
                     var response = Request.CreateResponse(HttpStatusCode.Redirect);
                     response.Headers.Location = BuildRedirectUrl(Request.RequestUri);
@@ -72,7 +72,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
             if (basepath.EndsWith("/"))
                 basepath = basepath.Substring(0, basepath.Length - 1);
 
-            basepath += Service.ServiceInstance.ServiceConfiguration.UIPath + DEFAULT_REDIRECT_PAGE;
+            basepath += Service.Instance.Configuration.UIPath + DEFAULT_REDIRECT_PAGE;
             basepath += "?path=" + uri.LocalPath;
             return new Uri(basepath);
         }

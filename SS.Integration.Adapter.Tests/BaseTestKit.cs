@@ -23,7 +23,7 @@ namespace SS.Integration.Adapter.Tests
 
         #endregion
 
-        #region Attributes
+        #region Private members
 
         protected Mock<IFeature> FootabllSportMock;
         protected Mock<ISettings> SettingsMock;

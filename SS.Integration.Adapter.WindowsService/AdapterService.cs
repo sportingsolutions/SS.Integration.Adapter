@@ -21,17 +21,18 @@ using System.Reflection;
 using System.ServiceProcess;
 using System.Threading.Tasks;
 using Ninject.Modules;
-using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Interface;
 using log4net;
 using Ninject;
+using SS.Integration.Adapter.Diagnostics;
+using SS.Integration.Adapter.Diagnostics.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.WindowsService
 {
     public partial class AdapterService : ServiceBase
     {
-        #region Attributes
+        #region Private members
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(AdapterService).ToString());
         private static Task _adapterWorkerThread;
@@ -117,8 +118,9 @@ namespace SS.Integration.Adapter.WindowsService
             var service = iocContainer.Get<IServiceFacade>();
             var streamValidation = iocContainer.Get<IStreamValidation>();
             var fixtureValidation = iocContainer.Get<IFixtureValidation>();
+            var objectProvider = iocContainer.Get<IObjectProvider<Dictionary<string, FixtureOverview>>>();
 
-            iocContainer.Settings.InjectNonPublic = true;
+             iocContainer.Settings.InjectNonPublic = true;
 
             //needed for Plugin properties since plugin is not instantiated by Ninject
             iocContainer.Inject(PlatformConnector);
@@ -132,6 +134,11 @@ namespace SS.Integration.Adapter.WindowsService
                     fixtureValidation);
 
             _adapter.Start();
+
+            if (settings.UseSupervisor)
+            {
+                SupervisorStartUp.Initialize(objectProvider);
+            }
 
             _logger.Info("Adapter has started");
         }

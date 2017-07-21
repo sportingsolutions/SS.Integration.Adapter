@@ -27,7 +27,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
         [HttpGet]
         public HttpResponseMessage GetDetails()
         {
-            var status = Service.ServiceInstance.Supervisor.GetAdapterStatus();
+            var status = Service.Instance.Proxy.GetAdapterStatus();
             var res = Request.CreateResponse(HttpStatusCode.OK, status, UrlUtilities.JSON_MEDIA_TYPE);
             res.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue  { NoCache = true };
             return res;
