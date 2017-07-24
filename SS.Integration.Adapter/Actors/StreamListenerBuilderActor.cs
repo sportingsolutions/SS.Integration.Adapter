@@ -25,6 +25,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly IStateManager _stateManager;
         private readonly IStreamValidation _streamValidation;
         private readonly IFixtureValidation _fixtureValidation;
+        private readonly IActorRef _supervisorActor;
         private static int _concurrentInitializations;
 
         #endregion
@@ -43,7 +44,8 @@ namespace SS.Integration.Adapter.Actors
             IAdapterPlugin adapterPlugin,
             IStateManager stateManager,
             IStreamValidation streamValidation,
-            IFixtureValidation fixtureValidation)
+            IFixtureValidation fixtureValidation,
+            IActorRef supervisorActor = null)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _streamListenerManagerActorContext =
@@ -53,6 +55,7 @@ namespace SS.Integration.Adapter.Actors
             _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
             _streamValidation = streamValidation ?? throw new ArgumentNullException(nameof(streamValidation));
             _fixtureValidation = fixtureValidation ?? throw new ArgumentNullException(nameof(fixtureValidation));
+            _supervisorActor = supervisorActor;
 
             Active();
         }
@@ -118,7 +121,8 @@ namespace SS.Integration.Adapter.Actors
                                 _stateManager,
                                 _settings,
                                 _streamValidation,
-                                _fixtureValidation)),
+                                _fixtureValidation,
+                                _supervisorActor)),
                         streamListenerActorName);
 
                     Context.Parent.Tell(new StreamListenerCreationCompletedMsg { Resource = msg.Resource });

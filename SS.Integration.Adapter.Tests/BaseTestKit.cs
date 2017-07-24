@@ -7,6 +7,9 @@ using Moq;
 using Newtonsoft.Json;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Actors;
+using SS.Integration.Adapter.Diagnostics.Actors;
+using SS.Integration.Adapter.Diagnostics.Model;
+using SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
@@ -35,6 +38,9 @@ namespace SS.Integration.Adapter.Tests
         protected Mock<ISuspensionManager> SuspensionManagerMock;
         protected Mock<IStreamValidation> StreamValidationMock;
         protected Mock<IFixtureValidation> FixtureValidationMock;
+        protected Mock<ISupervisorStreamingService> SupervisorStreamingServiceMock;
+        protected Mock<IObjectProvider<Dictionary<string, FixtureOverview>>> ObjectProviderMock;
+        protected IActorRef FixtureStateTestActor;
 
         #endregion
 
@@ -101,6 +107,13 @@ namespace SS.Integration.Adapter.Tests
                         SettingsMock.Object,
                         StoreProviderMock.Object)),
                 FixtureStateActor.ActorName);
+
+            FixtureStateTestActor = ActorOfAsTestActorRef<SupervisorActor>(
+                Props.Create(() =>
+                    new SupervisorActor(
+                        SupervisorStreamingServiceMock.Object,
+                        ObjectProviderMock.Object)),
+                SupervisorActor.ActorName);
         }
 
         protected IActorRef GetChildActorRef(IActorRef anchorRef, string name)

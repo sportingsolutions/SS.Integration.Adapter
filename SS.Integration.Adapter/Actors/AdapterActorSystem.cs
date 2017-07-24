@@ -10,6 +10,10 @@ namespace SS.Integration.Adapter.Actors
     {
         private static ActorSystem _actorSystem;
 
+        public static ActorSystem ActorSystem => _actorSystem;
+
+        public static IActorRef SupervisorActor { private get; set; }
+
         /// <summary>
         /// 
         /// </summary>
@@ -44,7 +48,8 @@ namespace SS.Integration.Adapter.Actors
                         adapterPlugin,
                         stateManager,
                         streamValidation,
-                        fixtureValidation)),
+                        fixtureValidation,
+                        SupervisorActor)),
                 StreamListenerManagerActor.ActorName);
 
             var sportProcessorRouterActor = ActorSystem.ActorOf(
@@ -66,7 +71,5 @@ namespace SS.Integration.Adapter.Actors
             _actorSystem?.Dispose();
             _actorSystem = null;
         }
-
-        public static ActorSystem ActorSystem => _actorSystem;
     }
 }

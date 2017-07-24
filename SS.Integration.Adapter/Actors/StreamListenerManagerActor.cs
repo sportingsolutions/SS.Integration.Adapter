@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using Akka.Actor;
-using Akka.Dispatch.SysMsg;
 using log4net;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
@@ -35,7 +33,8 @@ namespace SS.Integration.Adapter.Actors
             IAdapterPlugin adapterPlugin,
             IStateManager stateManager,
             IStreamValidation streamValidation,
-            IFixtureValidation fixtureValidation)
+            IFixtureValidation fixtureValidation,
+            IActorRef supervisorActor = null)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             if (adapterPlugin == null)
@@ -53,7 +52,8 @@ namespace SS.Integration.Adapter.Actors
                             adapterPlugin,
                             stateManager,
                             streamValidation,
-                            fixtureValidation)),
+                            fixtureValidation,
+                            supervisorActor)),
                     StreamListenerBuilderActor.ActorName);
 
             Receive<ProcessResourceMsg>(o => ProcessResourceMsgHandler(o));

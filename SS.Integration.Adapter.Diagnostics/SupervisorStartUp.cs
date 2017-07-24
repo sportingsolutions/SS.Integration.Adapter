@@ -43,6 +43,8 @@ namespace SS.Integration.Adapter.Diagnostics
                     Props.Create(() => new SupervisorActor(streamingService, objectProvider)),
                     SupervisorActor.ActorName);
 
+                AdapterActorSystem.SupervisorActor = actorRef;
+
                 //initialize supervisor proxy
                 var proxy = new SupervisorProxy(actorRef);
 

@@ -76,8 +76,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
         {
             _log.Info("Stopping self-hosted web server");
 
-            if (_server != null)
-                _server.Dispose();
+            _server?.Dispose();
 
             _log.Info("Self-hosted web server stopped");
         }
@@ -88,7 +87,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
 
         /// <summary>
         /// Start up class required by OWIN
-        /// ServiceStartUp.Configuration(IAppBuilder app) is calle directly by the OWIN runtime
+        /// ServiceStartUp.Configuration(IAppBuilder app) is called directly by the OWIN runtime
         /// </summary>
         private class ServiceStartUp
         {

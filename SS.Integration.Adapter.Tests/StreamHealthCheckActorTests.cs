@@ -27,6 +27,8 @@ using SS.Integration.Adapter.Model.Interfaces;
 using Akka.Routing;
 using FluentAssertions;
 using SportingSolutions.Udapi.Sdk.Interfaces;
+using SS.Integration.Adapter.Diagnostics.Model;
+using SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
 using SS.Integration.Adapter.Enums;
 
 namespace SS.Integration.Adapter.Tests
@@ -62,6 +64,8 @@ namespace SS.Integration.Adapter.Tests
             SuspensionManagerMock = new Mock<ISuspensionManager>();
             StreamValidationMock = new Mock<IStreamValidation>();
             FixtureValidationMock = new Mock<IFixtureValidation>();
+            SupervisorStreamingServiceMock = new Mock<ISupervisorStreamingService>();
+            ObjectProviderMock = new Mock<IObjectProvider<Dictionary<string, FixtureOverview>>>();
         }
 
         #endregion
@@ -114,7 +118,8 @@ namespace SS.Integration.Adapter.Tests
                             PluginMock.Object,
                             StateManagerMock.Object,
                             StreamValidationMock.Object,
-                            FixtureValidationMock.Object)),
+                            FixtureValidationMock.Object,
+                            FixtureStateTestActor)),
                     StreamListenerManagerActor.ActorName);
             var sportProcessorRouterActor =
                 ActorOfAsTestActorRef<SportProcessorRouterActor>(
@@ -249,7 +254,8 @@ namespace SS.Integration.Adapter.Tests
                             PluginMock.Object,
                             StateManagerMock.Object,
                             StreamValidationMock.Object,
-                            FixtureValidationMock.Object)),
+                            FixtureValidationMock.Object,
+                            FixtureStateTestActor)),
                     StreamListenerManagerActor.ActorName);
             var sportProcessorRouterActor =
                 ActorOfAsTestActorRef<SportProcessorRouterActor>(

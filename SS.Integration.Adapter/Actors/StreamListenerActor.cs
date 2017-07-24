@@ -10,6 +10,7 @@ using System;
 using System.Linq;
 using SportingSolutions.Udapi.Sdk.Extensions;
 using SS.Integration.Adapter.Actors.Messages;
+using SS.Integration.Adapter.Enums;
 using SS.Integration.Adapter.Exceptions;
 
 namespace SS.Integration.Adapter.Actors
@@ -38,18 +39,20 @@ namespace SS.Integration.Adapter.Actors
         private readonly IActorRef _resourceActor;
         private readonly IActorRef _streamHealthCheckActor;
         private readonly IActorRef _streamStatsActor;
+        private readonly IActorRef _supervisorActor;
 
         private readonly string _fixtureId;
         private int _currentEpoch;
         private int _currentSequence;
         private int _lastSequenceProcessedInSnapshot;
         private DateTime? _fixtureStartTime;
+        private bool _fixtureIsSuspended;
 
         #endregion
 
         #region Properties
 
-        internal Enums.StreamListenerState State { get; private set; }
+        internal StreamListenerState State { get; private set; }
 
         public IStash Stash { get; set; }
 
@@ -63,7 +66,8 @@ namespace SS.Integration.Adapter.Actors
             IStateManager stateManager,
             ISettings settings,
             IStreamValidation streamValidation,
-            IFixtureValidation fixtureValidation)
+            IFixtureValidation fixtureValidation,
+            IActorRef supervisorActor)
         {
             try
             {
@@ -84,6 +88,7 @@ namespace SS.Integration.Adapter.Actors
                 _streamStatsActor = Context.ActorOf(
                     Props.Create(() => new StreamStatsActor()),
                     StreamStatsActor.ActorName);
+                _supervisorActor = supervisorActor;
 
                 Initialize();
             }
@@ -102,7 +107,7 @@ namespace SS.Integration.Adapter.Actors
         //Initialised but not streaming yet - this can happen when you start fixture in Setup
         private void Initialized()
         {
-            State = Enums.StreamListenerState.Initialized;
+            State = StreamListenerState.Initialized;
 
             Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServer());
             Receive<StreamConnectedMsg>(a => Become(Streaming));
@@ -113,7 +118,7 @@ namespace SS.Integration.Adapter.Actors
         //Connected and streaming state - all messages should be processed
         private void Streaming()
         {
-            State = Enums.StreamListenerState.Streaming;
+            State = StreamListenerState.Streaming;
 
             try
             {
@@ -151,7 +156,7 @@ namespace SS.Integration.Adapter.Actors
         //Resource has been disconnected, quick reconnection will occur soon
         private void Disconnected()
         {
-            State = Enums.StreamListenerState.Disconnected;
+            State = StreamListenerState.Disconnected;
 
             var streamDisconnectedMessage = new StreamDisconnectedMsg
             {
@@ -170,7 +175,7 @@ namespace SS.Integration.Adapter.Actors
         private void Errored()
         {
             var prevState = State;
-            State = Enums.StreamListenerState.Errored;
+            State = StreamListenerState.Errored;
 
             SuspendFixture(SuspensionReason.SUSPENSION);
             Exception erroredEx;
@@ -190,7 +195,7 @@ namespace SS.Integration.Adapter.Actors
                         $"Failed Suspending Fixture {_resource} on Errored State - exception - {ex}");
                 }
 
-                if (prevState == Enums.StreamListenerState.Initializing)
+                if (prevState == StreamListenerState.Initializing)
                 {
                     Become(Stopped);
                 }
@@ -203,7 +208,7 @@ namespace SS.Integration.Adapter.Actors
         //No further messages should be accepted, resource has stopped streaming
         private void Stopped()
         {
-            State = Enums.StreamListenerState.Stopped;
+            State = StreamListenerState.Stopped;
 
             //tell Stream Listener Manager Actor that we stopped so it can kill this child actor
             Context.Parent.Tell(new StreamListenerStoppedMsg { FixtureId = _fixtureId });
@@ -325,7 +330,7 @@ namespace SS.Integration.Adapter.Actors
         {
             try
             {
-                State = Enums.StreamListenerState.Initializing;
+                State = StreamListenerState.Initializing;
 
                 Receive<StreamConnectedMsg>(a => Become(Streaming));
                 Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
@@ -338,6 +343,7 @@ namespace SS.Integration.Adapter.Actors
                 _currentEpoch = fixtureState?.Epoch ?? -1;
                 _currentSequence = _resource.Content.Sequence;
                 _lastSequenceProcessedInSnapshot = -1;
+                _fixtureIsSuspended = false;
 
                 if (!string.IsNullOrEmpty(_resource.Content?.StartTime))
                 {
@@ -428,6 +434,7 @@ namespace SS.Integration.Adapter.Actors
             try
             {
                 _platformConnector.UnSuspend(fixture);
+                _fixtureIsSuspended = false;
             }
             catch (Exception ex)
             {
@@ -531,7 +538,8 @@ namespace SS.Integration.Adapter.Actors
                 }
 
 
-                UpdateState(snapshot, isFullSnapshot);
+                UpdateFixtureState(snapshot, isFullSnapshot);
+                UpdateSupervisorState(snapshot, isFullSnapshot);
 
                 _streamStatsActor.Tell(new UpdateStatsFinishMsg
                 {
@@ -565,6 +573,32 @@ namespace SS.Integration.Adapter.Actors
             _logger.Info($"Finished processing {logString} for {snapshot}");
         }
 
+        private void UpdateSupervisorState(Fixture snapshot, bool isFullSnapshot)
+        {
+            MatchStatus matchStatus;
+            _supervisorActor?.Tell(new UpdateSupervisorStateMsg
+            {
+                Epoch = snapshot.Epoch,
+                CurrentSequence = snapshot.Sequence,
+                StartTime = snapshot.StartTime,
+                IsSnapshot = isFullSnapshot,
+                MatchStatus = Enum.TryParse(snapshot.MatchStatus, out matchStatus)
+                    ? (MatchStatus?)matchStatus
+                    : null,
+                Name = snapshot.FixtureName,
+                CompetitionId = snapshot.Tags.ContainsKey("SSLNCompetitionId")
+                    ? snapshot.Tags["SSLNCompetitionId"].ToString()
+                    : null,
+                CompetitionName = snapshot.Tags.ContainsKey("SSLNCompetitionName")
+                    ? snapshot.Tags["SSLNCompetitionName"].ToString()
+                    : null,
+                LastEpochChangeReason = snapshot.LastEpochChangeReason,
+                IsStreaming = State == StreamListenerState.Streaming,
+                IsErrored = State == StreamListenerState.Errored,
+                IsSuspended = _fixtureIsSuspended
+            });
+        }
+
         private void ProcessInvalidEpoch(Fixture fixtureDelta, bool hasEpochChanged)
         {
             _fixtureStartTime = fixtureDelta.StartTime ?? _fixtureStartTime;
@@ -572,6 +606,7 @@ namespace SS.Integration.Adapter.Actors
             if (fixtureDelta.IsDeleted)
             {
                 ProcessFixtureDelete(fixtureDelta);
+                UpdateSupervisorState(fixtureDelta, false);
                 StopStreaming();
                 return;
             }
@@ -688,6 +723,7 @@ namespace SS.Integration.Adapter.Actors
             try
             {
                 _platformConnector.Suspend(_resource.Id);
+                _fixtureIsSuspended = true;
             }
             catch (Exception ex)
             {
@@ -697,7 +733,7 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
-        private void UpdateState(Fixture snapshot, bool isSnapshot = false)
+        private void UpdateFixtureState(Fixture snapshot, bool isSnapshot = false)
         {
             _marketsRuleManager.CommitChanges();
 
@@ -729,7 +765,7 @@ namespace SS.Integration.Adapter.Actors
             Become(Stopped);
         }
 
-        private void RecoverFromErroredState(Enums.StreamListenerState prevState, out Exception erroredEx)
+        private void RecoverFromErroredState(StreamListenerState prevState, out Exception erroredEx)
         {
             erroredEx = null;
 
@@ -742,12 +778,12 @@ namespace SS.Integration.Adapter.Actors
 
                 switch (prevState)
                 {
-                    case Enums.StreamListenerState.Initializing:
+                    case StreamListenerState.Initializing:
                         {
                             Initialize();
                             break;
                         }
-                    case Enums.StreamListenerState.Streaming:
+                    case StreamListenerState.Streaming:
                         {
                             Become(Streaming);
                             break;

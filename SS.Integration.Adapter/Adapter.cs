@@ -42,12 +42,6 @@ namespace SS.Integration.Adapter
 
         #endregion
 
-        #region Properties
-
-        internal IStateManager StateManager => _stateManager;
-
-        #endregion
-
         #region Constructors
 
         public Adapter(

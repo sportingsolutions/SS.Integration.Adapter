@@ -127,6 +127,14 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SS.Integration.Adapter.Diagnostics.Model\SS.Integration.Adapter.Diagnostics.Model.csproj">
+      <Project>{b11dbc1f-95e5-44d3-8896-78482d84fb07}</Project>
+      <Name>SS.Integration.Adapter.Diagnostics.Model</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SS.Integration.Adapter.Diagnostics\SS.Integration.Adapter.Diagnostics.csproj">
+      <Project>{f12cc40d-b6bb-4142-bab0-af3a6e5a4eee}</Project>
+      <Name>SS.Integration.Adapter.Diagnostics</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SS.Integration.Adapter.MarketRules\SS.Integration.Adapter.MarketRules.csproj">
       <Project>{5cadd732-a519-4006-8370-52efc8aa97b8}</Project>
       <Name>SS.Integration.Adapter.MarketRules</Name>

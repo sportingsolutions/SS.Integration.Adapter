@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using log4net;
+using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Diagnostics.Model;
+using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 using ServiceModelInterface = SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
@@ -47,11 +49,17 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
                 : new Dictionary<string, FixtureOverview>();
 
             SetupSports();
+
+            Receive<UpdateSupervisorStateMsg>(msg => UpdateSupervisorStateMsgHandler(msg));
         }
 
         #endregion
 
         #region Message Handlers
+
+        private void UpdateSupervisorStateMsgHandler(UpdateSupervisorStateMsg msg)
+        {
+        }
 
         #endregion
 
@@ -120,7 +128,14 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
             _sportOverviews[sportOverview.Name] = sportOverview;
 
             _streamingService.OnSportUpdate(sportOverview.ToServiceModel());
+        }
 
+        private IFixtureOverview GetFixtureOverview(string fixtureId)
+        {
+            FixtureOverview fixtureOverview;
+            return _fixtures.TryGetValue(fixtureId, out fixtureOverview)
+                ? fixtureOverview
+                : _fixtures[fixtureId] = new FixtureOverview(fixtureId);
         }
 
         #endregion
