@@ -64,6 +64,11 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Actors\Messages\GetFixtureOverviewMsg.cs" />
+    <Compile Include="Actors\Messages\GetSportOverviewMsg.cs" />
+    <Compile Include="Actors\Messages\GetFixturesMsg.cs" />
+    <Compile Include="Actors\Messages\GetAdapterStatusMsg.cs" />
+    <Compile Include="Actors\Messages\GetSportsMsg.cs" />
     <Compile Include="SupervisorProxy.cs" />
     <Compile Include="SupervisorStartUp.cs" />
     <Compile Include="Actors\SupervisorActor.cs" />
@@ -98,9 +103,7 @@
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Actors\Messages\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

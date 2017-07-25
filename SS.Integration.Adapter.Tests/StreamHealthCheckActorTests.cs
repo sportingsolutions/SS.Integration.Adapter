@@ -119,7 +119,7 @@ namespace SS.Integration.Adapter.Tests
                             StateManagerMock.Object,
                             StreamValidationMock.Object,
                             FixtureValidationMock.Object,
-                            FixtureStateTestActor)),
+                            SupervisorActor)),
                     StreamListenerManagerActor.ActorName);
             var sportProcessorRouterActor =
                 ActorOfAsTestActorRef<SportProcessorRouterActor>(
@@ -255,7 +255,7 @@ namespace SS.Integration.Adapter.Tests
                             StateManagerMock.Object,
                             StreamValidationMock.Object,
                             FixtureValidationMock.Object,
-                            FixtureStateTestActor)),
+                            SupervisorActor)),
                     StreamListenerManagerActor.ActorName);
             var sportProcessorRouterActor =
                 ActorOfAsTestActorRef<SportProcessorRouterActor>(

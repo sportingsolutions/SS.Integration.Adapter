@@ -1,14 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Akka.Actor;
 using log4net;
 using SS.Integration.Adapter.Actors.Messages;
+using SS.Integration.Adapter.Diagnostics.Actors.Messages;
 using SS.Integration.Adapter.Diagnostics.Model;
-using SS.Integration.Adapter.Diagnostics.Model.Interface;
+using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
-using ServiceModelInterface = SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
+using ServiceInterface = SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
+using ServiceModelInterface = SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
+using ServiceModel = SS.Integration.Adapter.Diagnostics.Model.Service.Model;
 
 namespace SS.Integration.Adapter.Diagnostics.Actors
 {
@@ -24,17 +28,17 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
         #region Private members
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(SupervisorActor).ToString());
-        private readonly ServiceModelInterface.ISupervisorStreamingService _streamingService;
+        private readonly ServiceInterface.ISupervisorStreamingService _streamingService;
         private readonly IObjectProvider<Dictionary<string, FixtureOverview>> _objectProvider;
-        private readonly Dictionary<string, SportOverview> _sportOverviews;
-        private readonly Dictionary<string, FixtureOverview> _fixtures;
+        private readonly Dictionary<string, SportOverview> _sportsOverview;
+        private readonly Dictionary<string, FixtureOverview> _fixturesOverview;
 
         #endregion
 
         #region Constructors
 
         public SupervisorActor(
-            ServiceModelInterface.ISupervisorStreamingService streamingService,
+            ServiceInterface.ISupervisorStreamingService streamingService,
             IObjectProvider<Dictionary<string, FixtureOverview>> objectProvider)
         {
             _streamingService = streamingService ?? throw new ArgumentNullException(nameof(streamingService));
@@ -43,14 +47,27 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
             Dictionary<string, FixtureOverview> storedObject;
             TryLoadState(out storedObject);
 
-            _sportOverviews = new Dictionary<string, SportOverview>();
-            _fixtures = storedObject != null
+            _sportsOverview = new Dictionary<string, SportOverview>();
+            _fixturesOverview = storedObject != null
                 ? new Dictionary<string, FixtureOverview>(storedObject)
                 : new Dictionary<string, FixtureOverview>();
 
             SetupSports();
 
             Receive<UpdateSupervisorStateMsg>(msg => UpdateSupervisorStateMsgHandler(msg));
+            Receive<UpdateAdapterStatusMsg>(msg => UpdateAdapterStatusMsgHandler(msg));
+            Receive<GetAdapterStatusMsg>(msg => GetAdapterStatusMsgHandler(msg));
+            Receive<GetSportsMsg>(msg => GetSportsMsgHandler(msg));
+            Receive<GetSportOverviewMsg>(msg => GetSportOverviewMsgHandler(msg));
+            Receive<GetFixturesMsg>(msg => GetFixturesMsgHandler(msg));
+            Receive<GetFixtureOverviewMsg>(msg => GetFixtureOverviewMsgHandler(msg));
+
+            Context.System.Scheduler.ScheduleTellRepeatedly(
+                TimeSpan.FromSeconds(60),
+                TimeSpan.FromSeconds(60),
+                Self,
+                new UpdateAdapterStatusMsg(),
+                Self);
         }
 
         #endregion
@@ -59,6 +76,62 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
 
         private void UpdateSupervisorStateMsgHandler(UpdateSupervisorStateMsg msg)
         {
+            var fixtureOverview = GetFixtureOverview(msg.FixtureId);
+            ServiceModel.FixtureDetails details = fixtureOverview.ToServiceModel();
+            details.Id = msg.FixtureId;
+            details.IsDeleted = msg.IsDeleted;
+            details.IsOver = msg.IsOver;
+
+            _streamingService.OnFixtureUpdate(details);
+
+            if (msg.IsErrored.HasValue && msg.IsErrored.Value && msg.Exception != null)
+            {
+                var error = new ServiceModel.ProcessingEntryError
+                {
+                    Timestamp = DateTime.UtcNow,
+                    Message = msg.Exception.Message,
+                    FixtureId = msg.FixtureId,
+                    FixtureDescription = fixtureOverview.Name,
+                    Sequence = msg.CurrentSequence
+                };
+
+                _streamingService.OnError(error);
+            }
+
+            UpdateSportDetails(msg.Sport);
+        }
+
+        private void UpdateAdapterStatusMsgHandler(UpdateAdapterStatusMsg msg)
+        {
+            var status = GetAdapterStatus();
+            _streamingService.OnAdapterUpdate(status);
+        }
+
+        private void GetAdapterStatusMsgHandler(GetAdapterStatusMsg msg)
+        {
+            Sender.Tell(GetAdapterStatus());
+        }
+
+        private void GetSportsMsgHandler(GetSportsMsg msg)
+        {
+            Sender.Tell(_sportsOverview.Values);
+        }
+
+        private void GetSportOverviewMsgHandler(GetSportOverviewMsg msg)
+        {
+            Sender.Tell(msg.SportCode != null && _sportsOverview.ContainsKey(msg.SportCode)
+                ? _sportsOverview[msg.SportCode]
+                : null);
+        }
+
+        private void GetFixturesMsgHandler(GetFixturesMsg msg)
+        {
+            Sender.Tell(_fixturesOverview.Values);
+        }
+
+        private void GetFixtureOverviewMsgHandler(GetFixtureOverviewMsg msg)
+        {
+            Sender.Tell(GetFixtureOverview(msg.FixtureId));
         }
 
         #endregion
@@ -81,18 +154,17 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
 
         private void SetupSports()
         {
-            foreach (var sportGroup in _fixtures.Values.GroupBy(f => f.Sport))
+            foreach (var sportGroup in _fixturesOverview.Values.GroupBy(f => f.Sport))
             {
                 UpdateSportDetails(sportGroup.Key);
             }
-
         }
 
         private void UpdateSportDetails(string sportName)
         {
             var sportOverview = new SportOverview { Name = sportName };
 
-            var fixturesForSport = _fixtures.Values.Where(f =>
+            var fixturesForSport = _fixturesOverview.Values.Where(f =>
                     f.Sport == sportOverview.Name
                     && (f.ListenerOverview.IsDeleted.HasValue && !f.ListenerOverview.IsDeleted.Value || !f.ListenerOverview.IsDeleted.HasValue))
                 .ToList();
@@ -119,23 +191,46 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
                     : 0;
             }
 
-            if (_sportOverviews.ContainsKey(sportOverview.Name) &&
-                _sportOverviews[sportOverview.Name].Equals(sportOverview))
+            if (_sportsOverview.ContainsKey(sportOverview.Name) &&
+                _sportsOverview[sportOverview.Name].Equals(sportOverview))
             {
                 return;
             }
 
-            _sportOverviews[sportOverview.Name] = sportOverview;
+            _sportsOverview[sportOverview.Name] = sportOverview;
 
             _streamingService.OnSportUpdate(sportOverview.ToServiceModel());
         }
 
-        private IFixtureOverview GetFixtureOverview(string fixtureId)
+        private FixtureOverview GetFixtureOverview(string fixtureId)
         {
             FixtureOverview fixtureOverview;
-            return _fixtures.TryGetValue(fixtureId, out fixtureOverview)
+            return _fixturesOverview.TryGetValue(fixtureId, out fixtureOverview)
                 ? fixtureOverview
-                : _fixtures[fixtureId] = new FixtureOverview(fixtureId);
+                : _fixturesOverview[fixtureId] = new FixtureOverview(fixtureId);
+        }
+
+        private ServiceModelInterface.IAdapterStatus GetAdapterStatus()
+        {
+            var adapterVersionInfo = AdapterVersionInfo.GetAdapterVersionInfo();
+
+            return new ServiceModel.AdapterStatus
+            {
+                AdapterVersion = adapterVersionInfo.AdapterVersion,
+                PluginName = adapterVersionInfo.PluginName,
+                PluginVersion = adapterVersionInfo.PluginVersion,
+                UdapiSDKVersion = adapterVersionInfo.UdapiSDKVersion,
+                MemoryUsage = GC.GetTotalMemory(false).ToString(),
+                RunningThreads = Process.GetCurrentProcess().Threads.Count.ToString()
+            };
+        }
+
+        #endregion
+
+        #region Private messages
+
+        private class UpdateAdapterStatusMsg
+        {   
         }
 
         #endregion

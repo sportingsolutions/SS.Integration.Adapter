@@ -114,7 +114,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             //
             //Assert
@@ -167,7 +167,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             //
             //Assert
@@ -227,7 +227,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             //
             //Assert
@@ -297,7 +297,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             //
             //Assert
@@ -368,7 +368,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             //
             //Assert
@@ -423,7 +423,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             //
             //Assert
@@ -481,7 +481,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             //
             //Assert
@@ -548,7 +548,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
 
@@ -641,7 +641,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             resourceFacadeMock.Object.Content.Sequence = update.Sequence;
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
@@ -736,7 +736,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
 
@@ -824,7 +824,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
 
@@ -915,7 +915,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
 
@@ -1015,7 +1015,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
 
@@ -1097,7 +1097,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
             actor.Tell(new StreamUpdateMsg { Data = "This is a JSON message that will throw error on parsing" });
 
             //
@@ -1183,7 +1183,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             AwaitAssert(() =>
                 {
@@ -1294,7 +1294,7 @@ namespace SS.Integration.Adapter.Tests
                     SettingsMock.Object,
                     StreamValidationMock.Object,
                     FixtureValidationMock.Object,
-                    FixtureStateTestActor));
+                    SupervisorActor));
 
             AwaitAssert(() =>
                 {
@@ -1441,7 +1441,7 @@ namespace SS.Integration.Adapter.Tests
                             StateManagerMock.Object,
                             StreamValidationMock.Object,
                             FixtureValidationMock.Object,
-                            FixtureStateTestActor)),
+                            SupervisorActor)),
                     StreamListenerManagerActor.ActorName);
             var sportProcessorRouterActor =
                 ActorOfAsTestActorRef<SportProcessorRouterActor>(
@@ -1542,7 +1542,7 @@ namespace SS.Integration.Adapter.Tests
                             StateManagerMock.Object,
                             StreamValidationMock.Object,
                             FixtureValidationMock.Object,
-                            FixtureStateTestActor)),
+                            SupervisorActor)),
                     StreamListenerManagerActor.ActorName);
             var sportProcessorRouterActor =
                 ActorOfAsTestActorRef<SportProcessorRouterActor>(

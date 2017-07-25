@@ -47,6 +47,7 @@ namespace SS.Integration.Adapter.Actors
         private int _lastSequenceProcessedInSnapshot;
         private DateTime? _fixtureStartTime;
         private bool _fixtureIsSuspended;
+        private Exception _erroredException;
 
         #endregion
 
@@ -96,6 +97,7 @@ namespace SS.Integration.Adapter.Actors
             {
                 _logger.Error(
                     $"Stream Listener instantiation failed for resource {_resource} - exception - {ex}");
+                _erroredException = ex;
                 Become(Errored);
             }
         }
@@ -149,6 +151,7 @@ namespace SS.Integration.Adapter.Actors
             {
                 _logger.Error(
                     $"Failed moving to Streaming State for resource {_resource} - exception - {ex}");
+                _erroredException = ex;
                 Become(Errored);
             }
         }
@@ -277,12 +280,14 @@ namespace SS.Integration.Adapter.Actors
                     _logger.Error($"Error processing update for {_resource} {innerEx} ({++count}/{total})");
                 }
 
+                _erroredException = ex;
                 Become(Errored);
             }
             catch (Exception ex)
             {
                 _logger.Error($"Error processing update {_resource} - exception - {ex}");
 
+                _erroredException = ex;
                 Become(Errored);
             }
         }
@@ -306,6 +311,7 @@ namespace SS.Integration.Adapter.Actors
             {
                 _logger.Error($"Error processing disconnection for {_resource} - exception - {ex}");
 
+                _erroredException = ex;
                 Become(Errored);
             }
         }
@@ -389,6 +395,7 @@ namespace SS.Integration.Adapter.Actors
             {
                 _logger.Error($"Error on Initialize resource {_resource} - exception - {ex}");
 
+                _erroredException = ex;
                 Become(Errored);
             }
         }
@@ -578,6 +585,8 @@ namespace SS.Integration.Adapter.Actors
             MatchStatus matchStatus;
             _supervisorActor?.Tell(new UpdateSupervisorStateMsg
             {
+                FixtureId = snapshot.Id,
+                Sport = _resource.Sport,
                 Epoch = snapshot.Epoch,
                 CurrentSequence = snapshot.Sequence,
                 StartTime = snapshot.StartTime,
@@ -594,8 +603,9 @@ namespace SS.Integration.Adapter.Actors
                     : null,
                 LastEpochChangeReason = snapshot.LastEpochChangeReason,
                 IsStreaming = State == StreamListenerState.Streaming,
+                IsSuspended = _fixtureIsSuspended,
                 IsErrored = State == StreamListenerState.Errored,
-                IsSuspended = _fixtureIsSuspended
+                Exception = _erroredException
             });
         }
 
@@ -789,6 +799,8 @@ namespace SS.Integration.Adapter.Actors
                             break;
                         }
                 }
+
+                _erroredException = null;
             }
             catch (Exception ex)
             {

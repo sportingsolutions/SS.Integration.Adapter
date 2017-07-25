@@ -5,6 +5,10 @@ namespace SS.Integration.Adapter.Actors.Messages
 {
     public class UpdateSupervisorStateMsg
     {
+        public string FixtureId { get; set; }
+
+        public string Sport { get; set; }
+
         public int Epoch { get; set; }
 
         public int CurrentSequence { get; set; }
@@ -32,5 +36,7 @@ namespace SS.Integration.Adapter.Actors.Messages
         public bool? IsSuspended { get; set; }
 
         public bool IsOver => MatchStatus.HasValue && MatchStatus.Value == Model.Enums.MatchStatus.MatchOver;
+
+        public Exception Exception { get; set; }
     }
 }

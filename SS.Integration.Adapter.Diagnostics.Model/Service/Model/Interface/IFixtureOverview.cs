@@ -22,7 +22,8 @@ namespace SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface
         Ready = 1,
         PreMatch = 2,
         Running = 3,
-        Over = 4
+        Over = 4,
+        Deleted = 5
     }
 
     public interface IFixtureOverview

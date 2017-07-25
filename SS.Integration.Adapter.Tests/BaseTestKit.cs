@@ -40,7 +40,7 @@ namespace SS.Integration.Adapter.Tests
         protected Mock<IFixtureValidation> FixtureValidationMock;
         protected Mock<ISupervisorStreamingService> SupervisorStreamingServiceMock;
         protected Mock<IObjectProvider<Dictionary<string, FixtureOverview>>> ObjectProviderMock;
-        protected IActorRef FixtureStateTestActor;
+        protected IActorRef SupervisorActor;
 
         #endregion
 
@@ -108,12 +108,12 @@ namespace SS.Integration.Adapter.Tests
                         StoreProviderMock.Object)),
                 FixtureStateActor.ActorName);
 
-            FixtureStateTestActor = ActorOfAsTestActorRef<SupervisorActor>(
+            SupervisorActor = ActorOfAsTestActorRef<SupervisorActor>(
                 Props.Create(() =>
                     new SupervisorActor(
                         SupervisorStreamingServiceMock.Object,
                         ObjectProviderMock.Object)),
-                SupervisorActor.ActorName);
+                Diagnostics.Actors.SupervisorActor.ActorName);
         }
 
         protected IActorRef GetChildActorRef(IActorRef anchorRef, string name)
