@@ -1,6 +1,6 @@
 ﻿namespace SS.Integration.Adapter.Actors.Messages
 {
-    public class StreamListenerStoppedMsg
+    public class RestartStreamListenerMsg
     {
         public string FixtureId { get; set; }
     }

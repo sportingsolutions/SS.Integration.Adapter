@@ -1,6 +1,6 @@
 ﻿namespace SS.Integration.Adapter.Actors.Messages
 {
-    internal class ProcessSportsMessage
+    internal class ProcessSportsMsg
     {
     }
 }

@@ -17,6 +17,9 @@ namespace SS.Integration.Adapter.Diagnostics
         #region Private members
 
         private static readonly ILog Logger = LogManager.GetLogger(typeof(SupervisorStartUp).ToString());
+        private static ISupervisorService _service;
+        private static ISupervisorProxy _proxy;
+        private static IActorRef _supervisorActor;
 
         #endregion
 
@@ -39,18 +42,16 @@ namespace SS.Integration.Adapter.Diagnostics
                     : SupervisorNullStreamingService.Instance;
 
                 //initialize supervisor actor
-                var actorRef = AdapterActorSystem.ActorSystem.ActorOf(
+                _supervisorActor = AdapterActorSystem.ActorSystem.ActorOf(
                     Props.Create(() => new SupervisorActor(streamingService, objectProvider)),
                     SupervisorActor.ActorName);
 
-                AdapterActorSystem.SupervisorActor = actorRef;
-
                 //initialize supervisor proxy
-                var proxy = new SupervisorProxy(actorRef);
+                _proxy = new SupervisorProxy(_supervisorActor);
 
                 //initialize and start supervisor service
-                var service = new Service(serviceConfiguration, proxy);
-                service.Start();
+                _service = new Service(serviceConfiguration, _proxy);
+                _service.Start();
             }
             catch (Exception e)
             {
@@ -58,6 +59,13 @@ namespace SS.Integration.Adapter.Diagnostics
                     "An error occured during the initialization of the adapter's supervisor.";
                 Logger.Error(errMsg, e);
             }
+        }
+
+        public static void Dispose()
+        {
+            AdapterActorSystem.ActorSystem?.Stop(_supervisorActor);
+            _service.Stop();
+            _proxy.Dispose();
         }
 
         #endregion

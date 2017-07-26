@@ -36,13 +36,13 @@ namespace SS.Integration.Adapter.Actors
             _serviceFacade = serviceFacade ?? throw new ArgumentNullException(nameof(serviceFacade));
             _sportProcessorRouterActor = sportProcessorRouterActor ?? throw new ArgumentNullException(nameof(sportProcessorRouterActor));
 
-            Receive<ProcessSportsMessage>(o => ProcessSports());
+            Receive<ProcessSportsMsg>(o => ProcessSports());
 
             Context.System.Scheduler.ScheduleTellRepeatedly(
                 TimeSpan.Zero,
                 TimeSpan.FromMilliseconds(settings.FixtureCheckerFrequency),
                 Self,
-                new ProcessSportsMessage(),
+                new ProcessSportsMsg(),
                 Self);
         }
 

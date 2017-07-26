@@ -68,6 +68,7 @@
     <Compile Include="Actors\Messages\GetSportOverviewMsg.cs" />
     <Compile Include="Actors\Messages\GetFixturesMsg.cs" />
     <Compile Include="Actors\Messages\GetAdapterStatusMsg.cs" />
+    <Compile Include="Actors\Messages\TakeSnapshotMsg.cs" />
     <Compile Include="Actors\Messages\GetSportsMsg.cs" />
     <Compile Include="SupervisorProxy.cs" />
     <Compile Include="SupervisorStartUp.cs" />

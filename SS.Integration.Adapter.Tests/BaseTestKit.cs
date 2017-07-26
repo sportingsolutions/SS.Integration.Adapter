@@ -107,13 +107,6 @@ namespace SS.Integration.Adapter.Tests
                         SettingsMock.Object,
                         StoreProviderMock.Object)),
                 FixtureStateActor.ActorName);
-
-            SupervisorActor = ActorOfAsTestActorRef<SupervisorActor>(
-                Props.Create(() =>
-                    new SupervisorActor(
-                        SupervisorStreamingServiceMock.Object,
-                        ObjectProviderMock.Object)),
-                Diagnostics.Actors.SupervisorActor.ActorName);
         }
 
         protected IActorRef GetChildActorRef(IActorRef anchorRef, string name)

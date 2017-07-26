@@ -33,8 +33,7 @@ namespace SS.Integration.Adapter.Actors
             IAdapterPlugin adapterPlugin,
             IStateManager stateManager,
             IStreamValidation streamValidation,
-            IFixtureValidation fixtureValidation,
-            IActorRef supervisorActor = null)
+            IFixtureValidation fixtureValidation)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             if (adapterPlugin == null)
@@ -52,8 +51,7 @@ namespace SS.Integration.Adapter.Actors
                             adapterPlugin,
                             stateManager,
                             streamValidation,
-                            fixtureValidation,
-                            supervisorActor)),
+                            fixtureValidation)),
                     StreamListenerBuilderActor.ActorName);
 
             Receive<ProcessResourceMsg>(o => ProcessResourceMsgHandler(o));
@@ -65,6 +63,9 @@ namespace SS.Integration.Adapter.Actors
             Receive<StreamListenerCreationFailedMsg>(o => StreamListenerCreationFailedMsgHandler(o));
             Receive<Terminated>(o => TerminatedHandler(o));
             Receive<ResetSendProcessSportsMsg>(o => ResetSendProcessSportsMsgHandler(o));
+            Receive<RetrieveAndProcessSnapshotMsg>(o => RetrieveAndProcessSnapshotMsgHandler(o));
+            Receive<RestartStreamListenerMsg>(o => RestartStreamListenerMsgHandler(o));
+            Receive<ClearFixtureStateMsg>(o => ClearFixtureStateMsgHandler(o));
         }
 
         #endregion
@@ -116,11 +117,18 @@ namespace SS.Integration.Adapter.Actors
         {
             Context.Unwatch(t.ActorRef);
 
+            //TODO: remove this
+            /*var actorPath = t.ActorRef.Path.ToString();
+            string fixtureId = actorPath.Substring(actorPath.LastIndexOf('-') + 1);
+
+            ActorSelection supervisorActor = Context.System.ActorSelection("/user/SupervisorActor");
+            supervisorActor.Tell(new StreamListenerStoppedMsg { FixtureId = fixtureId });*/
+
             if (!_shouldSendProcessSportsMessage)
                 return;
 
             var sportsProcessorActor = Context.System.ActorSelection(SportsProcessorActor.Path);
-            sportsProcessorActor.Tell(new ProcessSportsMessage());
+            sportsProcessorActor.Tell(new ProcessSportsMsg());
 
             //avoid sending ProcessSportsMsg too many times when disconnection occurs
             Context.System.Scheduler.ScheduleTellOnce(
@@ -136,6 +144,24 @@ namespace SS.Integration.Adapter.Actors
             _shouldSendProcessSportsMessage = true;
         }
 
+        private void RetrieveAndProcessSnapshotMsgHandler(RetrieveAndProcessSnapshotMsg msg)
+        {
+            IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.FixtureId));
+            streamListenerActor.Tell(msg);
+        }
+
+        private void RestartStreamListenerMsgHandler(RestartStreamListenerMsg msg)
+        {
+            _shouldSendProcessSportsMessage = true;
+            IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.FixtureId));
+            streamListenerActor.Tell(new ResourceStopStreamingMsg());
+        }
+
+        private void ClearFixtureStateMsgHandler(ClearFixtureStateMsg msg)
+        {
+            IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.FixtureId));
+            streamListenerActor.Tell(msg);
+        }
 
         #endregion
 

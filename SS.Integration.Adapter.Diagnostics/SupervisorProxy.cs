@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
+using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Diagnostics.Actors.Messages;
 using SS.Integration.Adapter.Diagnostics.Model;
 using SS.Integration.Adapter.Model.Enums;
@@ -61,7 +62,7 @@ namespace SS.Integration.Adapter.Diagnostics
                 .Where(f => f.Sport.Equals(sportCode) &&
                             !(f.ListenerOverview.IsDeleted.GetValueOrDefault() ||
                               f.ListenerOverview.MatchStatus.HasValue &&
-                              (int) f.ListenerOverview.MatchStatus.Value >= (int) MatchStatus.MatchOverUnConfirmed));
+                              (int)f.ListenerOverview.MatchStatus.Value >= (int)MatchStatus.MatchOverUnConfirmed));
 
             foreach (var fixture in sportFixtures)
             {
@@ -142,22 +143,43 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public bool TakeSnapshot(string fixtureId)
         {
-            throw new NotImplementedException();
+            var takeSnapshotMsg = new TakeSnapshotMsg
+            {
+                FixtureId = fixtureId
+            };
+            _supervisorActor.Tell(takeSnapshotMsg);
+
+            return true;
         }
 
         public bool RestartListener(string fixtureId)
         {
-            throw new NotImplementedException();
+            var restartStreamListenerMsg = new RestartStreamListenerMsg
+            {
+                FixtureId = fixtureId
+            };
+            _supervisorActor.Tell(restartStreamListenerMsg);
+
+            return true;
         }
 
         public bool ClearState(string fixtureId)
         {
-            throw new NotImplementedException();
+            var clearFixtureStateMsg = new ClearFixtureStateMsg
+            {
+                FixtureId = fixtureId
+            };
+            _supervisorActor.Tell(clearFixtureStateMsg);
+
+            return true;
         }
+
+        #endregion
+
+        #region Imlementation of IDisposable
 
         public void Dispose()
         {
-            throw new NotImplementedException();
         }
 
         #endregion

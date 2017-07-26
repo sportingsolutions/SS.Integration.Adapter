@@ -9,10 +9,12 @@ namespace SS.Integration.Adapter.Actors
     public static class AdapterActorSystem
     {
         private static ActorSystem _actorSystem;
+        private static IActorRef _sportsProcessorActor;
+        private static IActorRef _sportProcessorRouterActor;
+        private static IActorRef _streamListenerManagerActor;
+        private static IActorRef _fixtureStateActor;
 
         public static ActorSystem ActorSystem => _actorSystem;
-
-        public static IActorRef SupervisorActor { private get; set; }
 
         /// <summary>
         /// 
@@ -34,40 +36,43 @@ namespace SS.Integration.Adapter.Actors
             _actorSystem = ActorSystem.Create("AdapterSystem");
 
             var fileStoreProvider = new FileStoreProvider(settings.StateProviderPath);
-            ActorSystem.ActorOf(
+            _fixtureStateActor = ActorSystem.ActorOf(
                 Props.Create(() =>
                     new FixtureStateActor(
                         settings,
                         fileStoreProvider)),
                 FixtureStateActor.ActorName);
 
-            ActorSystem.ActorOf(
+            _streamListenerManagerActor = ActorSystem.ActorOf(
                 Props.Create(() =>
                     new StreamListenerManagerActor(
                         settings,
                         adapterPlugin,
                         stateManager,
                         streamValidation,
-                        fixtureValidation,
-                        SupervisorActor)),
+                        fixtureValidation)),
                 StreamListenerManagerActor.ActorName);
 
-            var sportProcessorRouterActor = ActorSystem.ActorOf(
+            _sportProcessorRouterActor = ActorSystem.ActorOf(
                 Props.Create(() => new SportProcessorRouterActor(udApiService))
                     .WithRouter(new SmallestMailboxPool(settings.FixtureCreationConcurrency)),
                 SportProcessorRouterActor.ActorName);
 
-            ActorSystem.ActorOf(
+            _sportsProcessorActor = ActorSystem.ActorOf(
                 Props.Create(() =>
                     new SportsProcessorActor(
                         settings,
                         udApiService,
-                        sportProcessorRouterActor)),
+                        _sportProcessorRouterActor)),
                 SportsProcessorActor.ActorName);
         }
 
         public static void Dispose()
         {
+            _actorSystem?.Stop(_sportsProcessorActor);
+            _actorSystem?.Stop(_sportProcessorRouterActor);
+            _actorSystem?.Stop(_streamListenerManagerActor);
+            _actorSystem?.Stop(_fixtureStateActor);
             _actorSystem?.Dispose();
             _actorSystem = null;
         }

@@ -39,7 +39,6 @@ namespace SS.Integration.Adapter.Actors
         private readonly IActorRef _resourceActor;
         private readonly IActorRef _streamHealthCheckActor;
         private readonly IActorRef _streamStatsActor;
-        private readonly IActorRef _supervisorActor;
 
         private readonly string _fixtureId;
         private int _currentEpoch;
@@ -67,8 +66,7 @@ namespace SS.Integration.Adapter.Actors
             IStateManager stateManager,
             ISettings settings,
             IStreamValidation streamValidation,
-            IFixtureValidation fixtureValidation,
-            IActorRef supervisorActor)
+            IFixtureValidation fixtureValidation)
         {
             try
             {
@@ -89,7 +87,6 @@ namespace SS.Integration.Adapter.Actors
                 _streamStatsActor = Context.ActorOf(
                     Props.Create(() => new StreamStatsActor()),
                     StreamStatsActor.ActorName);
-                _supervisorActor = supervisorActor;
 
                 Initialize();
             }
@@ -115,6 +112,10 @@ namespace SS.Integration.Adapter.Actors
             Receive<StreamConnectedMsg>(a => Become(Streaming));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
             Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
+            Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot());
+            Receive<ClearFixtureStateMsg>(a => ClearState(true));
+
+            RetrieveAndProcessSnapshot();
         }
 
         //Connected and streaming state - all messages should be processed
@@ -124,9 +125,12 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
+                Receive<ResourceStopStreamingMsg>(a => StopStreaming());
                 Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
                 Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
                 Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
+                Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot());
+                Receive<ClearFixtureStateMsg>(a => ClearState(true));
 
                 var streamConnectedMsg = new StreamConnectedMsg { FixtureId = _resource.Id };
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
@@ -204,8 +208,11 @@ namespace SS.Integration.Adapter.Actors
                 }
             }
 
+            Receive<ResourceStopStreamingMsg>(a => StopStreaming());
             Receive<StreamUpdateMsg>(a => RecoverFromErroredState(prevState, out erroredEx));
             Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
+            Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot());
+            Receive<ClearFixtureStateMsg>(a => ClearState(true));
         }
 
         //No further messages should be accepted, resource has stopped streaming
@@ -328,6 +335,14 @@ namespace SS.Integration.Adapter.Actors
             return string.Concat(ActorName, "-for-", resourceId);
         }
 
+        public static string GetPath(string resourceId)
+        {
+            if (string.IsNullOrWhiteSpace(resourceId))
+                throw new ArgumentNullException(nameof(resourceId));
+
+            return string.Concat("/user/", GetName(resourceId));
+        }
+
         #endregion
 
         #region Private methods
@@ -341,6 +356,8 @@ namespace SS.Integration.Adapter.Actors
                 Receive<StreamConnectedMsg>(a => Become(Streaming));
                 Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
                 Receive<StreamUpdateMsg>(a => Stash.Stash());
+                Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot());
+                Receive<ClearFixtureStateMsg>(a => ClearState(true));
 
                 var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
                 var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _resource.Id };
@@ -378,15 +395,6 @@ namespace SS.Integration.Adapter.Actors
                     }
                     else
                     {
-                        if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
-                        {
-                            RetrieveAndProcessSnapshot();
-                        }
-                        else
-                        {
-                            UnsuspendFixture(fixtureState);
-                        }
-
                         Become(Initialized);
                     }
                 }
@@ -582,8 +590,9 @@ namespace SS.Integration.Adapter.Actors
 
         private void UpdateSupervisorState(Fixture snapshot, bool isFullSnapshot)
         {
+            ActorSelection supervisorActor = Context.System.ActorSelection("/user/SupervisorActor");
             MatchStatus matchStatus;
-            _supervisorActor?.Tell(new UpdateSupervisorStateMsg
+            supervisorActor.Tell(new UpdateSupervisorStateMsg
             {
                 FixtureId = snapshot.Id,
                 Sport = _resource.Sport,
@@ -708,15 +717,25 @@ namespace SS.Integration.Adapter.Actors
             try
             {
                 SuspendAndReprocessSnapshot(true);
-                _stateManager.ClearState(_resource.Id);
-                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                fixtureStateActor.Tell(new RemoveFixtureStateMsg { FixtureId = _resource.Id });
+                ClearState();
             }
             catch (Exception ex)
             {
                 _logger.Error($"An error occured while trying to process match over resource {_resource.Id} - exception - {ex}");
                 throw;
             }
+        }
+
+        private void ClearState(bool stopStreaming = false)
+        {
+            if (stopStreaming)
+            {
+                StopStreaming();
+            }
+
+            _stateManager.ClearState(_resource.Id);
+            var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+            fixtureStateActor.Tell(new RemoveFixtureStateMsg { FixtureId = _resource.Id });
         }
 
         private void SuspendAndReprocessSnapshot(bool hasEpochChanged = false)

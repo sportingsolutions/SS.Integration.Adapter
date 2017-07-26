@@ -37,6 +37,7 @@ namespace SS.Integration.Adapter.WindowsService
         private readonly ILog _logger = LogManager.GetLogger(typeof(AdapterService).ToString());
         private static Task _adapterWorkerThread;
         private Adapter _adapter;
+        private StandardKernel _iocContainer;
         private int _fatalExceptionsCounter = 0;
         private bool _skipRestartOnFatalException;
 
@@ -84,6 +85,7 @@ namespace SS.Integration.Adapter.WindowsService
         {
             _logger.Info("Requesting Adapter Stop");
 
+            SupervisorStartUp.Dispose();
             _adapter.Stop();
             _adapterWorkerThread.Wait();
             _adapterWorkerThread.ContinueWith(task => { _logger.InfoFormat("Adapter successfully stopped"); Environment.Exit(0); });
@@ -111,19 +113,17 @@ namespace SS.Integration.Adapter.WindowsService
                 modules.AddRange(PluginBootstrapper.BootstrapModules);
             }
 
-            StandardKernel iocContainer = new StandardKernel(modules.ToArray());
+            _iocContainer = new StandardKernel(modules.ToArray());
 
+            var settings = _iocContainer.Get<ISettings>();
+            var service = _iocContainer.Get<IServiceFacade>();
+            var streamValidation = _iocContainer.Get<IStreamValidation>();
+            var fixtureValidation = _iocContainer.Get<IFixtureValidation>();
 
-            var settings = iocContainer.Get<ISettings>();
-            var service = iocContainer.Get<IServiceFacade>();
-            var streamValidation = iocContainer.Get<IStreamValidation>();
-            var fixtureValidation = iocContainer.Get<IFixtureValidation>();
-            var objectProvider = iocContainer.Get<IObjectProvider<Dictionary<string, FixtureOverview>>>();
-
-             iocContainer.Settings.InjectNonPublic = true;
+            _iocContainer.Settings.InjectNonPublic = true;
 
             //needed for Plugin properties since plugin is not instantiated by Ninject
-            iocContainer.Inject(PlatformConnector);
+            _iocContainer.Inject(PlatformConnector);
 
             _adapter =
                 new Adapter(
@@ -134,13 +134,24 @@ namespace SS.Integration.Adapter.WindowsService
                     fixtureValidation);
 
             _adapter.Start();
+            InitializeSupervisor();
 
+            _logger.Info("Adapter has started");
+        }
+
+        private void InitializeSupervisor()
+        {
+            var settings = _iocContainer.Get<ISettings>();
+            var objectProvider = _iocContainer.Get<IObjectProvider<Dictionary<string, FixtureOverview>>>();
             if (settings.UseSupervisor)
             {
                 SupervisorStartUp.Initialize(objectProvider);
             }
+        }
 
-            _logger.Info("Adapter has started");
+        private void DisposeSupervisor()
+        {
+            SupervisorStartUp.Dispose();
         }
 
         private void RestartAdapter()
@@ -149,6 +160,8 @@ namespace SS.Integration.Adapter.WindowsService
                 return;
 
             _fatalExceptionsCounter++;
+
+            DisposeSupervisor();
             _adapter.Stop();
             int maxFailures = GetMaxFailures();
 
@@ -158,6 +171,7 @@ namespace SS.Integration.Adapter.WindowsService
             if (maxFailures > _fatalExceptionsCounter)
             {
                 _adapter.Start();
+                InitializeSupervisor();
             }
             else
             {
