@@ -36,6 +36,14 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
 
         #endregion
 
+        #region Properties
+
+        internal Dictionary<string, SportOverview> SportsOverview => _sportsOverview;
+
+        internal Dictionary<string, FixtureOverview> FixturesOverview => _fixturesOverview;
+
+        #endregion
+
         #region Constructors
 
         public SupervisorActor(
@@ -92,6 +100,7 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
             fixtureOverview.ListenerOverview.MatchStatus = msg.MatchStatus ?? fixtureOverview.ListenerOverview.MatchStatus;
             fixtureOverview.ListenerOverview.IsDeleted = msg.IsDeleted;
             fixtureOverview.ListenerOverview.IsStreaming = msg.IsStreaming;
+            fixtureOverview.ListenerOverview.IsSuspended = msg.IsSuspended;
             fixtureOverview.ListenerOverview.IsOver = msg.IsOver;
             fixtureOverview.ListenerOverview.IsErrored = msg.IsErrored;
 

@@ -65,8 +65,6 @@ namespace SS.Integration.Adapter.Tests
             SuspensionManagerMock = new Mock<ISuspensionManager>();
             StreamHealthCheckValidationMock = new Mock<IStreamHealthCheckValidation>();
             FixtureValidationMock = new Mock<IFixtureValidation>();
-            SupervisorStreamingServiceMock = new Mock<ISupervisorStreamingService>();
-            ObjectProviderMock = new Mock<IObjectProvider<Dictionary<string, FixtureOverview>>>();
         }
 
         #endregion

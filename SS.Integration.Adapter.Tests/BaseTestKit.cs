@@ -7,9 +7,6 @@ using Moq;
 using Newtonsoft.Json;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Actors;
-using SS.Integration.Adapter.Diagnostics.Actors;
-using SS.Integration.Adapter.Diagnostics.Model;
-using SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;
@@ -38,9 +35,6 @@ namespace SS.Integration.Adapter.Tests
         protected Mock<ISuspensionManager> SuspensionManagerMock;
         protected Mock<IStreamHealthCheckValidation> StreamHealthCheckValidationMock;
         protected Mock<IFixtureValidation> FixtureValidationMock;
-        protected Mock<ISupervisorStreamingService> SupervisorStreamingServiceMock;
-        protected Mock<IObjectProvider<Dictionary<string, FixtureOverview>>> ObjectProviderMock;
-        protected IActorRef SupervisorActor;
 
         #endregion
 
