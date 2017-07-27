@@ -36,7 +36,7 @@ namespace SS.Integration.Adapter.Tests
         protected Mock<IStateProvider> StateProviderMock;
         protected Mock<IStoreProvider> StoreProviderMock;
         protected Mock<ISuspensionManager> SuspensionManagerMock;
-        protected Mock<IStreamValidation> StreamValidationMock;
+        protected Mock<IStreamHealthCheckValidation> StreamHealthCheckValidationMock;
         protected Mock<IFixtureValidation> FixtureValidationMock;
         protected Mock<ISupervisorStreamingService> SupervisorStreamingServiceMock;
         protected Mock<IObjectProvider<Dictionary<string, FixtureOverview>>> ObjectProviderMock;

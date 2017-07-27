@@ -1,13 +1,33 @@
-﻿using System;
+﻿//Copyright 2017 Spin Services Limited
+
+//Licensed under the Apache License, Version 2.0 (the "License");
+//you may not use this file except in compliance with the License.
+//You may obtain a copy of the License at
+
+//    http://www.apache.org/licenses/LICENSE-2.0
+
+//Unless required by applicable law or agreed to in writing, software
+//distributed under the License is distributed on an "AS IS" BASIS,
+//WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//See the License for the specific language governing permissions and
+//limitations under the License.
+
+using System;
 using Akka.Actor;
 using log4net;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
-using SS.Integration.Adapter.Model;
-using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Actors
 {
+    /// <summary>
+    /// This class has the responsability to check for stream connection state 
+    /// by repeated self scheduled message at predetermined interval
+    /// - if the streaming server is not responding when trying to connect 
+    ///   then appropriate message is logged and stream listener actor is stopped after multiple retries
+    /// - if the stream listener got disconnected this class can re-establish the connection 
+    ///   when it gets the health check message from the stream listener manager
+    /// </summary>
     public class StreamHealthCheckActor : ReceiveActor
     {
         #region Constants
@@ -21,7 +41,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerActor).ToString());
         private readonly IResourceFacade _resource;
         private readonly ISettings _settings;
-        private readonly IStreamValidation _streamValidation;
+        private readonly IStreamHealthCheckValidation _streamHealthCheckValidation;
         private ICancelable _startStreamingNotResponding;
         private int _startStreamingNotRespondingWarnCount;
 
@@ -32,11 +52,11 @@ namespace SS.Integration.Adapter.Actors
         public StreamHealthCheckActor(
             IResourceFacade resource,
             ISettings settings,
-            IStreamValidation streamValidation)
+            IStreamHealthCheckValidation streamHealthCheckValidation)
         {
             _resource = resource ?? throw new ArgumentNullException(nameof(resource));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _streamValidation = streamValidation ?? throw new ArgumentNullException(nameof(streamValidation));
+            _streamHealthCheckValidation = streamHealthCheckValidation ?? throw new ArgumentNullException(nameof(streamHealthCheckValidation));
 
             Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServerMsgHandler(a));
             Receive<StreamConnectedMsg>(a => StreamConnectedMsgHandler(a));
@@ -69,7 +89,7 @@ namespace SS.Integration.Adapter.Actors
                     $"isMatchOver={msg.Resource.IsMatchOver}");
 
                 var streamIsValid =
-                    _streamValidation.ValidateStream(msg.Resource, msg.StreamingState, msg.CurrentSequence);
+                    _streamHealthCheckValidation.ValidateStream(msg.Resource, msg.StreamingState, msg.CurrentSequence);
 
                 if (!streamIsValid)
                 {
@@ -77,7 +97,7 @@ namespace SS.Integration.Adapter.Actors
                 }
 
                 var connectToStreamServer =
-                    _streamValidation.CanConnectToStreamServer(msg.Resource, msg.StreamingState);
+                    _streamHealthCheckValidation.CanConnectToStreamServer(msg.Resource, msg.StreamingState);
 
                 if (streamIsValid && connectToStreamServer)
                 {

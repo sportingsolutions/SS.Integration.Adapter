@@ -62,7 +62,7 @@ namespace SS.Integration.Adapter.Tests
             StateProviderMock = new Mock<IStateProvider>();
             StoreProviderMock = new Mock<IStoreProvider>();
             SuspensionManagerMock = new Mock<ISuspensionManager>();
-            StreamValidationMock = new Mock<IStreamValidation>();
+            StreamHealthCheckValidationMock = new Mock<IStreamHealthCheckValidation>();
             FixtureValidationMock = new Mock<IFixtureValidation>();
             SupervisorStreamingServiceMock = new Mock<ISupervisorStreamingService>();
             ObjectProviderMock = new Mock<IObjectProvider<Dictionary<string, FixtureOverview>>>();
@@ -95,7 +95,7 @@ namespace SS.Integration.Adapter.Tests
                 out resourceFacadeMock);
             ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
                 .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -117,7 +117,7 @@ namespace SS.Integration.Adapter.Tests
                             SettingsMock.Object,
                             PluginMock.Object,
                             StateManagerMock.Object,
-                            StreamValidationMock.Object,
+                            StreamHealthCheckValidationMock.Object,
                             FixtureValidationMock.Object)),
                     StreamListenerManagerActor.ActorName);
             var sportProcessorRouterActor =
@@ -153,13 +153,13 @@ namespace SS.Integration.Adapter.Tests
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
 
-            StreamValidationMock.Reset();
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Reset();
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
                 .Returns(true);
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.ValidateStream(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>(),
@@ -221,7 +221,7 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 7, Sequence = 1, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -252,7 +252,7 @@ namespace SS.Integration.Adapter.Tests
                             SettingsMock.Object,
                             PluginMock.Object,
                             StateManagerMock.Object,
-                            StreamValidationMock.Object,
+                            StreamHealthCheckValidationMock.Object,
                             FixtureValidationMock.Object)),
                     StreamListenerManagerActor.ActorName);
             var sportProcessorRouterActor =

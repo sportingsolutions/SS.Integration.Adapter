@@ -110,7 +110,7 @@
     </Compile>
     <Compile Include="FixtureValidationTests.cs" />
     <Compile Include="FixtureStateActorTests.cs" />
-    <Compile Include="StreamValidationTests.cs" />
+    <Compile Include="StreamHealthCheckValidationTests.cs" />
     <Compile Include="StreamHealthCheckActorTests.cs" />
     <Compile Include="StreamListenerActorTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

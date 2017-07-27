@@ -124,7 +124,7 @@
     <Compile Include="FixtureJsonHelper.cs" />
     <Compile Include="Actors\SportsProcessorActor.cs" />
     <Compile Include="Interface\IFixtureValidation.cs" />
-    <Compile Include="Interface\IStreamValidation.cs" />
+    <Compile Include="Interface\IStreamHealthCheckValidation.cs" />
     <Compile Include="Interface\IMarketRuleManager.cs" />
     <Compile Include="Interface\IReconnectStrategy.cs" />
     <Compile Include="Interface\IResourceFacade.cs" />
@@ -146,7 +146,7 @@
     <Compile Include="MarketRules\Model\SelectionState.cs" />
     <Compile Include="DefaultReconnectStrategy.cs" />
     <Compile Include="FixtureValidation.cs" />
-    <Compile Include="StreamValidation.cs" />
+    <Compile Include="StreamHealthCheckValidation.cs" />
     <Compile Include="SuspensionManager.cs" />
     <Compile Include="UdapiClient\UdapiResourceFacade.cs" />
     <Compile Include="UdapiClient\UdapiServiceFacade.cs" />

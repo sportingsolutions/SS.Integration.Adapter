@@ -1,4 +1,4 @@
-//Copyright 2014 Spin Services Limited
+//Copyright 2017 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ namespace SS.Integration.Adapter
         private readonly IStateManager _stateManager;
         private readonly IServiceFacade _udapiServiceFacade;
         private readonly IAdapterPlugin _platformConnector;
-        private readonly IStreamValidation _streamValidation;
+        private readonly IStreamHealthCheckValidation _streamHealthCheckValidation;
         private readonly IFixtureValidation _fixtureValidation;
 
         #endregion
@@ -48,13 +48,13 @@ namespace SS.Integration.Adapter
             ISettings settings,
             IServiceFacade udapiServiceFacade,
             IAdapterPlugin platformConnector,
-            IStreamValidation streamValidation,
+            IStreamHealthCheckValidation streamHealthCheckValidation,
             IFixtureValidation fixtureValidation)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _udapiServiceFacade = udapiServiceFacade ?? throw new ArgumentNullException(nameof(udapiServiceFacade));
             _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
-            _streamValidation = streamValidation ?? throw new ArgumentNullException(nameof(streamValidation));
+            _streamHealthCheckValidation = streamHealthCheckValidation ?? throw new ArgumentNullException(nameof(streamHealthCheckValidation));
             _fixtureValidation = fixtureValidation ?? throw new ArgumentNullException(nameof(fixtureValidation));
 
             _stateManager = new StateManager(settings, platformConnector);
@@ -106,7 +106,7 @@ namespace SS.Integration.Adapter
                     _udapiServiceFacade,
                     _platformConnector,
                     _stateManager,
-                    _streamValidation,
+                    _streamHealthCheckValidation,
                     _fixtureValidation);
 
                 _logger.InfoFormat("Adapter started");

@@ -23,11 +23,11 @@ using SS.Integration.Adapter.Model.Enums;
 namespace SS.Integration.Adapter.Tests
 {
     [TestFixture]
-    public class StreamValidationTests
+    public class StreamHealthCheckValidationTests
     {
         #region Constants
 
-        public const string STREAM_VALIDATION_CATEGORY = nameof(StreamValidation);
+        public const string STREAM_VALIDATION_CATEGORY = nameof(StreamHealthCheckValidation);
 
         #endregion
 
@@ -68,12 +68,12 @@ namespace SS.Integration.Adapter.Tests
             _resourceFacadeMock.SetupGet(o => o.Content).Returns(resourceSummary);
             int currentSequence = 2;
             _settings.SetupGet(s => s.StreamSafetyThreshold).Returns(5);
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool streamIsValid = streamValidation.ValidateStream(
+            bool streamIsValid = streamHealthCheckValidation.ValidateStream(
                 _resourceFacadeMock.Object,
                 It.IsAny<StreamListenerState>(),
                 currentSequence);
@@ -102,12 +102,12 @@ namespace SS.Integration.Adapter.Tests
             _resourceFacadeMock.SetupGet(o => o.Content).Returns(resourceSummary);
             int currentSequence = 1;
             _settings.SetupGet(s => s.StreamSafetyThreshold).Returns(3);
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool streamIsValid = streamValidation.ValidateStream(
+            bool streamIsValid = streamHealthCheckValidation.ValidateStream(
                 _resourceFacadeMock.Object,
                 It.IsNotIn(StreamListenerState.Streaming),
                 currentSequence);
@@ -137,12 +137,12 @@ namespace SS.Integration.Adapter.Tests
             _resourceFacadeMock.SetupGet(o => o.Content).Returns(resourceSummary);
             int currentSequence = 1;
             _settings.SetupGet(s => s.StreamSafetyThreshold).Returns(3);
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool streamIsValid = streamValidation.ValidateStream(
+            bool streamIsValid = streamHealthCheckValidation.ValidateStream(
                 _resourceFacadeMock.Object,
                 StreamListenerState.Streaming,
                 currentSequence);
@@ -173,12 +173,12 @@ namespace SS.Integration.Adapter.Tests
             int currentSequence = 1;
             _settings.SetupGet(s => s.StreamSafetyThreshold).Returns(3);
             _settings.SetupGet(s => s.AllowFixtureStreamingInSetupMode).Returns(false);
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool streamIsValid = streamValidation.ValidateStream(
+            bool streamIsValid = streamHealthCheckValidation.ValidateStream(
                 _resourceFacadeMock.Object,
                 StreamListenerState.Streaming,
                 currentSequence);
@@ -208,12 +208,12 @@ namespace SS.Integration.Adapter.Tests
             _resourceFacadeMock.SetupGet(o => o.Content).Returns(resourceSummary);
             int currentSequence = 1;
             _settings.SetupGet(s => s.StreamSafetyThreshold).Returns(3);
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool streamIsValid = streamValidation.ValidateStream(
+            bool streamIsValid = streamHealthCheckValidation.ValidateStream(
                 _resourceFacadeMock.Object,
                 StreamListenerState.Streaming,
                 currentSequence);
@@ -244,12 +244,12 @@ namespace SS.Integration.Adapter.Tests
             int currentSequence = 1;
             _settings.SetupGet(s => s.StreamSafetyThreshold).Returns(3);
             _settings.SetupGet(s => s.AllowFixtureStreamingInSetupMode).Returns(true);
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool streamIsValid = streamValidation.ValidateStream(
+            bool streamIsValid = streamHealthCheckValidation.ValidateStream(
                 _resourceFacadeMock.Object,
                 StreamListenerState.Streaming,
                 currentSequence);
@@ -283,12 +283,12 @@ namespace SS.Integration.Adapter.Tests
             _resourceFacadeMock.SetupGet(o => o.Content).Returns(resourceSummary);
             int currentSequence = 1;
             _settings.SetupGet(s => s.StreamSafetyThreshold).Returns(3);
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool streamIsValid = streamValidation.ValidateStream(
+            bool streamIsValid = streamHealthCheckValidation.ValidateStream(
                 _resourceFacadeMock.Object,
                 StreamListenerState.Streaming,
                 currentSequence);
@@ -313,12 +313,12 @@ namespace SS.Integration.Adapter.Tests
             //
             var resourceSummary = new Summary { MatchStatus = (int)It.IsNotIn(MatchStatus.Setup) };
             _resourceFacadeMock.SetupGet(o => o.Content).Returns(resourceSummary);
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool canConnectToStreamServer = streamValidation.CanConnectToStreamServer(
+            bool canConnectToStreamServer = streamHealthCheckValidation.CanConnectToStreamServer(
                 _resourceFacadeMock.Object,
                 It.IsNotIn(StreamListenerState.Streaming));
 
@@ -344,12 +344,12 @@ namespace SS.Integration.Adapter.Tests
             var resourceSummary = new Summary { MatchStatus = (int)MatchStatus.Setup };
             _resourceFacadeMock.SetupGet(o => o.Content).Returns(resourceSummary);
             _settings.SetupGet(o => o.AllowFixtureStreamingInSetupMode).Returns(true);
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool canConnectToStreamServer = streamValidation.CanConnectToStreamServer(
+            bool canConnectToStreamServer = streamHealthCheckValidation.CanConnectToStreamServer(
                 _resourceFacadeMock.Object,
                 It.IsNotIn(StreamListenerState.Streaming));
 
@@ -371,12 +371,12 @@ namespace SS.Integration.Adapter.Tests
             //Arrange
             //
             _resourceFacadeMock.SetupGet(o => o.Content).Returns(new Summary());
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool canConnectToStreamServer = streamValidation.CanConnectToStreamServer(
+            bool canConnectToStreamServer = streamHealthCheckValidation.CanConnectToStreamServer(
                 _resourceFacadeMock.Object,
                 StreamListenerState.Streaming);
 
@@ -402,12 +402,12 @@ namespace SS.Integration.Adapter.Tests
             var resourceSummary = new Summary { MatchStatus = (int)MatchStatus.Setup };
             _resourceFacadeMock.SetupGet(o => o.Content).Returns(resourceSummary);
             _settings.SetupGet(o => o.AllowFixtureStreamingInSetupMode).Returns(false);
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool canConnectToStreamServer = streamValidation.CanConnectToStreamServer(
+            bool canConnectToStreamServer = streamHealthCheckValidation.CanConnectToStreamServer(
                 _resourceFacadeMock.Object,
                 It.IsNotIn(StreamListenerState.Streaming));
 
@@ -428,12 +428,12 @@ namespace SS.Integration.Adapter.Tests
             //
             //Arrange
             //
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool shouldSuspendOnDisconnection = streamValidation.ShouldSuspendOnDisconnection(
+            bool shouldSuspendOnDisconnection = streamHealthCheckValidation.ShouldSuspendOnDisconnection(
                 null,
                 It.IsAny<DateTime?>());
 
@@ -456,12 +456,12 @@ namespace SS.Integration.Adapter.Tests
             //Arrange
             //
             var fixtureState = new FixtureState();
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool shouldSuspendOnDisconnection = streamValidation.ShouldSuspendOnDisconnection(
+            bool shouldSuspendOnDisconnection = streamHealthCheckValidation.ShouldSuspendOnDisconnection(
                 fixtureState, 
                 null);
 
@@ -486,12 +486,12 @@ namespace SS.Integration.Adapter.Tests
             //
             var fixtureState = new FixtureState();
             _settings.SetupGet(o => o.DisablePrematchSuspensionOnDisconnection).Returns(false);
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool shouldSuspendOnDisconnection = streamValidation.ShouldSuspendOnDisconnection(
+            bool shouldSuspendOnDisconnection = streamHealthCheckValidation.ShouldSuspendOnDisconnection(
                 fixtureState,
                 It.IsAny<DateTime>());
 
@@ -518,12 +518,12 @@ namespace SS.Integration.Adapter.Tests
             var fixtureState = new FixtureState();
             _settings.SetupGet(o => o.DisablePrematchSuspensionOnDisconnection).Returns(true);
             _settings.SetupGet(o => o.PreMatchSuspensionBeforeStartTimeInMins).Returns(10);
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool shouldSuspendOnDisconnection = streamValidation.ShouldSuspendOnDisconnection(
+            bool shouldSuspendOnDisconnection = streamHealthCheckValidation.ShouldSuspendOnDisconnection(
                 fixtureState,
                 DateTime.UtcNow.AddMinutes(5));
 
@@ -550,12 +550,12 @@ namespace SS.Integration.Adapter.Tests
             var fixtureState = new FixtureState();
             _settings.SetupGet(o => o.DisablePrematchSuspensionOnDisconnection).Returns(true);
             _settings.SetupGet(o => o.PreMatchSuspensionBeforeStartTimeInMins).Returns(5);
-            var streamValidation = new StreamValidation(_settings.Object);
+            var streamHealthCheckValidation = new StreamHealthCheckValidation(_settings.Object);
 
             //
             //Act
             //
-            bool shouldSuspendOnDisconnection = streamValidation.ShouldSuspendOnDisconnection(
+            bool shouldSuspendOnDisconnection = streamHealthCheckValidation.ShouldSuspendOnDisconnection(
                 fixtureState,
                 DateTime.UtcNow.AddMinutes(10));
 

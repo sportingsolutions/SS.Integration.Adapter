@@ -117,7 +117,7 @@ namespace SS.Integration.Adapter.WindowsService
 
             var settings = _iocContainer.Get<ISettings>();
             var service = _iocContainer.Get<IServiceFacade>();
-            var streamValidation = _iocContainer.Get<IStreamValidation>();
+            var streamHealthCheckValidation = _iocContainer.Get<IStreamHealthCheckValidation>();
             var fixtureValidation = _iocContainer.Get<IFixtureValidation>();
 
             _iocContainer.Settings.InjectNonPublic = true;
@@ -130,7 +130,7 @@ namespace SS.Integration.Adapter.WindowsService
                     settings,
                     service,
                     PlatformConnector,
-                    streamValidation,
+                    streamHealthCheckValidation,
                     fixtureValidation);
 
             _adapter.Start();

@@ -63,7 +63,7 @@ namespace SS.Integration.Adapter.Tests
             StateProviderMock = new Mock<IStateProvider>();
             StoreProviderMock = new Mock<IStoreProvider>();
             SuspensionManagerMock = new Mock<ISuspensionManager>();
-            StreamValidationMock = new Mock<IStreamValidation>();
+            StreamHealthCheckValidationMock = new Mock<IStreamHealthCheckValidation>();
             FixtureValidationMock = new Mock<IFixtureValidation>();
             SupervisorStreamingServiceMock = new Mock<ISupervisorStreamingService>();
             ObjectProviderMock = new Mock<IObjectProvider<Dictionary<string, FixtureOverview>>>();
@@ -92,7 +92,7 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 7, Sequence = 1, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -112,7 +112,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             //
@@ -164,7 +164,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             //
@@ -223,7 +223,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             //
@@ -272,7 +272,7 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 7, Sequence = 1, MatchStatus = MatchStatus.Prematch },
                 out snapshot,
                 out resourceFacadeMock);
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -292,7 +292,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             //
@@ -342,7 +342,7 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 3, Sequence = 1, MatchStatus = MatchStatus.Ready },
                 out snapshot,
                 out resourceFacadeMock);
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -362,7 +362,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             //
@@ -416,7 +416,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             //
@@ -458,7 +458,7 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -473,7 +473,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             //
@@ -516,7 +516,7 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -539,7 +539,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
@@ -603,7 +603,7 @@ namespace SS.Integration.Adapter.Tests
                         .Returns(snapshotJson)
                         .Returns(snapshotJson.Replace(@"""Sequence"": 2,", @"""Sequence"": 4,"));
                 });
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -631,7 +631,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             resourceFacadeMock.Object.Content.Sequence = update.Sequence;
@@ -691,7 +691,7 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 3, Sequence = 2, MatchStatus = MatchStatus.Ready },
                 out snapshot,
                 out resourceFacadeMock);
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -725,7 +725,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
@@ -784,7 +784,7 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -812,7 +812,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
@@ -869,7 +869,7 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -902,7 +902,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
@@ -967,7 +967,7 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 3, Sequence = 2, MatchStatus = MatchStatus.Ready },
                 out snapshot,
                 out resourceFacadeMock);
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -1001,7 +1001,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
@@ -1067,7 +1067,7 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -1082,7 +1082,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
             actor.Tell(new StreamUpdateMsg { Data = "This is a JSON message that will throw error on parsing" });
 
@@ -1152,7 +1152,7 @@ namespace SS.Integration.Adapter.Tests
                     mockObj.SetupSequence(o => o.GetSnapshot())
                         .Throws<System.Net.WebException>();
                 });
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -1167,7 +1167,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             AwaitAssert(() =>
@@ -1254,7 +1254,7 @@ namespace SS.Integration.Adapter.Tests
                         .Returns(snapshotJson)
                         .Throws<System.Net.WebException>();
                 });
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
@@ -1277,7 +1277,7 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Object,
                     StateManagerMock.Object,
                     SettingsMock.Object,
-                    StreamValidationMock.Object,
+                    StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
             AwaitAssert(() =>
@@ -1423,7 +1423,7 @@ namespace SS.Integration.Adapter.Tests
                             SettingsMock.Object,
                             PluginMock.Object,
                             StateManagerMock.Object,
-                            StreamValidationMock.Object,
+                            StreamHealthCheckValidationMock.Object,
                             FixtureValidationMock.Object)),
                     StreamListenerManagerActor.ActorName);
             var sportProcessorRouterActor =
@@ -1505,12 +1505,12 @@ namespace SS.Integration.Adapter.Tests
             ServiceMock.Setup(o => o.GetSports()).Returns(new[] {FootabllSportMock.Object});
             ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
                 .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.CanConnectToStreamServer(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>()))
                 .Returns(true);
-            StreamValidationMock.Setup(a =>
+            StreamHealthCheckValidationMock.Setup(a =>
                     a.ShouldSuspendOnDisconnection(
                         It.IsAny<FixtureState>(),
                         It.IsAny<DateTime?>()))
@@ -1523,7 +1523,7 @@ namespace SS.Integration.Adapter.Tests
                             SettingsMock.Object,
                             PluginMock.Object,
                             StateManagerMock.Object,
-                            StreamValidationMock.Object,
+                            StreamHealthCheckValidationMock.Object,
                             FixtureValidationMock.Object)),
                     StreamListenerManagerActor.ActorName);
             var sportProcessorRouterActor =

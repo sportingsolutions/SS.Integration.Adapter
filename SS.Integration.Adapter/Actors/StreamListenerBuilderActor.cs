@@ -1,4 +1,18 @@
-﻿using System;
+﻿//Copyright 2017 Spin Services Limited
+
+//Licensed under the Apache License, Version 2.0 (the "License");
+//you may not use this file except in compliance with the License.
+//You may obtain a copy of the License at
+
+//    http://www.apache.org/licenses/LICENSE-2.0
+
+//Unless required by applicable law or agreed to in writing, software
+//distributed under the License is distributed on an "AS IS" BASIS,
+//WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//See the License for the specific language governing permissions and
+//limitations under the License.
+
+using System;
 using Akka.Actor;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
@@ -23,7 +37,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly IActorContext _streamListenerManagerActorContext;
         private readonly IAdapterPlugin _adapterPlugin;
         private readonly IStateManager _stateManager;
-        private readonly IStreamValidation _streamValidation;
+        private readonly IStreamHealthCheckValidation _streamHealthCheckValidation;
         private readonly IFixtureValidation _fixtureValidation;
         private static int _concurrentInitializations;
 
@@ -42,7 +56,7 @@ namespace SS.Integration.Adapter.Actors
             IActorContext streamListenerManagerActorContext,
             IAdapterPlugin adapterPlugin,
             IStateManager stateManager,
-            IStreamValidation streamValidation,
+            IStreamHealthCheckValidation streamHealthCheckValidation,
             IFixtureValidation fixtureValidation)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -51,7 +65,7 @@ namespace SS.Integration.Adapter.Actors
                 throw new ArgumentNullException(nameof(streamListenerManagerActorContext));
             _adapterPlugin = adapterPlugin ?? throw new ArgumentNullException(nameof(adapterPlugin));
             _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
-            _streamValidation = streamValidation ?? throw new ArgumentNullException(nameof(streamValidation));
+            _streamHealthCheckValidation = streamHealthCheckValidation ?? throw new ArgumentNullException(nameof(streamHealthCheckValidation));
             _fixtureValidation = fixtureValidation ?? throw new ArgumentNullException(nameof(fixtureValidation));
 
             Active();
@@ -117,7 +131,7 @@ namespace SS.Integration.Adapter.Actors
                                 _adapterPlugin,
                                 _stateManager,
                                 _settings,
-                                _streamValidation,
+                                _streamHealthCheckValidation,
                                 _fixtureValidation)),
                         streamListenerActorName);
 

@@ -1,4 +1,18 @@
-﻿using Akka.Actor;
+﻿//Copyright 2017 Spin Services Limited
+
+//Licensed under the Apache License, Version 2.0 (the "License");
+//you may not use this file except in compliance with the License.
+//You may obtain a copy of the License at
+
+//    http://www.apache.org/licenses/LICENSE-2.0
+
+//Unless required by applicable law or agreed to in writing, software
+//distributed under the License is distributed on an "AS IS" BASIS,
+//WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//See the License for the specific language governing permissions and
+//limitations under the License.
+
+using Akka.Actor;
 using log4net;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
@@ -30,7 +44,7 @@ namespace SS.Integration.Adapter.Actors
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerActor).ToString());
         private readonly ISettings _settings;
-        private readonly IStreamValidation _streamValidation;
+        private readonly IStreamHealthCheckValidation _streamHealthCheckValidation;
         private readonly IFixtureValidation _fixtureValidation;
         private readonly IResourceFacade _resource;
         private readonly IAdapterPlugin _platformConnector;
@@ -65,7 +79,7 @@ namespace SS.Integration.Adapter.Actors
             IAdapterPlugin platformConnector,
             IStateManager stateManager,
             ISettings settings,
-            IStreamValidation streamValidation,
+            IStreamHealthCheckValidation streamHealthCheckValidation,
             IFixtureValidation fixtureValidation)
         {
             try
@@ -75,14 +89,14 @@ namespace SS.Integration.Adapter.Actors
                 _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
                 _marketsRuleManager = _stateManager.CreateNewMarketRuleManager(resource.Id);
                 _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-                _streamValidation = streamValidation ?? throw new ArgumentNullException(nameof(streamValidation));
+                _streamHealthCheckValidation = streamHealthCheckValidation ?? throw new ArgumentNullException(nameof(streamHealthCheckValidation));
                 _fixtureValidation = fixtureValidation ?? throw new ArgumentNullException(nameof(fixtureValidation));
                 _fixtureId = _resource.Id;
                 _resourceActor = Context.ActorOf(
                     Props.Create(() => new ResourceActor(Self, _resource)),
                     ResourceActor.ActorName);
                 _streamHealthCheckActor = Context.ActorOf(
-                    Props.Create(() => new StreamHealthCheckActor(_resource, _settings, _streamValidation)),
+                    Props.Create(() => new StreamHealthCheckActor(_resource, _settings, _streamHealthCheckValidation)),
                     StreamHealthCheckActor.ActorName);
                 _streamStatsActor = Context.ActorOf(
                     Props.Create(() => new StreamStatsActor()),
@@ -307,7 +321,7 @@ namespace SS.Integration.Adapter.Actors
                 var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _resource.Id };
                 var fixtureState = fixtureStateActor.Ask<FixtureState>(getFixtureStateMsg).Result;
 
-                if (_streamValidation.ShouldSuspendOnDisconnection(fixtureState, _fixtureStartTime))
+                if (_streamHealthCheckValidation.ShouldSuspendOnDisconnection(fixtureState, _fixtureStartTime))
                 {
                     SuspendFixture(SuspensionReason.DISCONNECT_EVENT);
                 }
@@ -389,7 +403,7 @@ namespace SS.Integration.Adapter.Actors
                 else
                 {
                     //either connect to stream server and go to Streaming State, or go to Initialized State
-                    if (_streamValidation.CanConnectToStreamServer(_resource, State))
+                    if (_streamHealthCheckValidation.CanConnectToStreamServer(_resource, State))
                     {
                         ConnectToStreamServer();
                     }

@@ -4,7 +4,7 @@ using SS.Integration.Adapter.Model;
 
 namespace SS.Integration.Adapter.Interface
 {
-    public interface IStreamValidation
+    public interface IStreamHealthCheckValidation
     {
         bool ValidateStream(IResourceFacade resource, StreamListenerState state, int sequence);
 

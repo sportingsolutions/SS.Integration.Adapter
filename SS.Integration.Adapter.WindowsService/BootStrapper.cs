@@ -35,7 +35,7 @@ namespace SS.Integration.Adapter.WindowsService
             Bind<ISettings>().To<Settings>().InSingletonScope();
             Bind<IReconnectStrategy>().To<DefaultReconnectStrategy>().InSingletonScope();
             Bind<IServiceFacade>().To<UdapiServiceFacade>();
-            Bind<IStreamValidation>().To<StreamValidation>().InSingletonScope()
+            Bind<IStreamHealthCheckValidation>().To<StreamHealthCheckValidation>().InSingletonScope()
                 .WithConstructorArgument("settings", Kernel.Get<ISettings>());
             Bind<IFixtureValidation>().To<FixtureValidation>().InSingletonScope();
 
