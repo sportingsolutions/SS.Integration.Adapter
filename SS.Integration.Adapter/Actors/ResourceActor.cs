@@ -61,13 +61,13 @@ namespace SS.Integration.Adapter.Actors
 
         private void Resource_StreamConnected(object sender, EventArgs e)
         {
-            _logger.Info("Resource Stream Connected");
+            _logger.Info($"Resource {_resource.Id} Stream Connected");
             _streamListenerActor.Tell(new StreamConnectedMsg { FixtureId = _fixtureId });
         }
 
         private void Resource_StreamDisconnected(object sender, EventArgs e)
         {
-            _logger.Info("Resource Stream Disconnected");
+            _logger.Info($"Resource {_resource.Id} Stream Disconnected");
             _streamListenerActor.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId });
         }
 
