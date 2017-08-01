@@ -21,6 +21,7 @@ using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Adapter.Diagnostics.Actors;
+using SS.Integration.Adapter.Diagnostics.Actors.Messages;
 using SS.Integration.Adapter.Diagnostics.Model;
 using ServiceInterface = SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
 using ServiceModelInterface = SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
@@ -58,10 +59,7 @@ namespace SS.Integration.Adapter.Tests
         #region Test Methods
 
         /// <summary>
-        /// This test ensures we move to Streaming State after processing health check message.
-        /// Also Snapshot processing is done twice 
-        /// - first snapshot processing is done on initialization due to different sequence numbers between stored and current
-        /// - second snapshot processing is done after we process the health check message due to match status changed
+        /// This test ensures we update the supervisor state after the snapshot is processed.
         /// </summary>
         [Test]
         [Category(SUPERVISOR_ACTOR_CATEGORY)]
@@ -166,6 +164,154 @@ namespace SS.Integration.Adapter.Tests
                                 s.InSetup.Equals(sportOverview.InSetup) &&
                                 s.Total.Equals(sportOverview.Total))),
                         Times.Once);
+                    ObjectProviderMock.Verify(a =>
+                            a.SetObject(
+                                null,
+                                It.Is<Dictionary<string, FixtureOverview>>(d =>
+                                    d.Equals(supervisorActor.FixturesOverview))),
+                        Times.Once);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        /// <summary>
+        /// This test ensures we remove the fixture overview from internal supervisor dictionary 
+        /// after the stream listener for that fixture has been stopped.
+        /// Also the state should be persisted after the removal operation.
+        /// </summary>
+        [Test]
+        [Category(SUPERVISOR_ACTOR_CATEGORY)]
+        public void RemoveFixtureOverviewFromSupervisorStateWhenStreamListenerHasBeenStopped()
+        {
+            //
+            //Arrange
+            //
+            string fixture1Id = "fixture1Id";
+            string fixture2Id = "fixture2Id";
+            var streamListenerStoppedMsg = new StreamListenerStoppedMsg
+            {
+                FixtureId = "fixture1Id"
+            };
+            var supervisorActorRef =
+                ActorOfAsTestActorRef<SupervisorActor>(
+                    Props.Create(() =>
+                        new SupervisorActor(
+                            SupervisorStreamingServiceMock.Object,
+                            ObjectProviderMock.Object)),
+                    SupervisorActor.ActorName);
+            var supervisorActor = supervisorActorRef.UnderlyingActor;
+            supervisorActor.FixturesOverview.Add(fixture1Id, new FixtureOverview(fixture1Id));
+            supervisorActor.FixturesOverview.Add(fixture2Id, new FixtureOverview(fixture2Id));
+
+            //
+            //Act
+            //
+            supervisorActorRef.Tell(streamListenerStoppedMsg);
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    Assert.AreEqual(1, supervisorActor.FixturesOverview.Count);
+                    ObjectProviderMock.Verify(a =>
+                            a.SetObject(
+                                null,
+                                It.Is<Dictionary<string, FixtureOverview>>(d =>
+                                    d.Equals(supervisorActor.FixturesOverview))),
+                        Times.Once);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        /// <summary>
+        /// This test ensures we return the correct fixture overview object when calling GetFixtureOverview
+        /// </summary>
+        [Test]
+        [Category(SUPERVISOR_ACTOR_CATEGORY)]
+        public void GetFixtureOverviewReturnsCorrectObject()
+        {
+            //
+            //Arrange
+            //
+            string fixture1Id = "fixture1Id";
+            string fixture2Id = "fixture2Id";
+            var getFixtureOverviewMsg = new GetFixtureOverviewMsg
+            {
+                FixtureId = "fixture1Id"
+            };
+            var supervisorActorRef =
+                ActorOfAsTestActorRef<SupervisorActor>(
+                    Props.Create(() =>
+                        new SupervisorActor(
+                            SupervisorStreamingServiceMock.Object,
+                            ObjectProviderMock.Object)),
+                    SupervisorActor.ActorName);
+            var supervisorActor = supervisorActorRef.UnderlyingActor;
+            supervisorActor.FixturesOverview.Add(fixture1Id, new FixtureOverview(fixture1Id));
+            supervisorActor.FixturesOverview.Add(fixture2Id, new FixtureOverview(fixture2Id));
+
+            //
+            //Act
+            //
+            var fixture1Overview = supervisorActorRef.Ask<FixtureOverview>(getFixtureOverviewMsg).Result;
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    Assert.AreEqual(2, supervisorActor.FixturesOverview.Count);
+                    Assert.IsNotNull(fixture1Overview);
+                    Assert.AreEqual(fixture1Id, fixture1Overview.Id);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        /// <summary>
+        /// This test ensures we return new object when calling GetFixtureOverview for a fixture that is not in the Dictionary
+        /// </summary>
+        [Test]
+        [Category(SUPERVISOR_ACTOR_CATEGORY)]
+        public void GetFixtureOverviewReturnsNewObject()
+        {
+            //
+            //Arrange
+            //
+            string fixture1Id = "fixture1Id";
+            string fixture2Id = "fixture2Id";
+            string fixture3Id = "fixture3Id";
+            var getFixtureOverviewMsg = new GetFixtureOverviewMsg
+            {
+                FixtureId = fixture3Id
+            };
+            var supervisorActorRef =
+                ActorOfAsTestActorRef<SupervisorActor>(
+                    Props.Create(() =>
+                        new SupervisorActor(
+                            SupervisorStreamingServiceMock.Object,
+                            ObjectProviderMock.Object)),
+                    SupervisorActor.ActorName);
+            var supervisorActor = supervisorActorRef.UnderlyingActor;
+            supervisorActor.FixturesOverview.Add(fixture1Id, new FixtureOverview(fixture1Id));
+            supervisorActor.FixturesOverview.Add(fixture2Id, new FixtureOverview(fixture2Id));
+
+            //
+            //Act
+            //
+            var fixture3Overview = supervisorActorRef.Ask<FixtureOverview>(getFixtureOverviewMsg).Result;
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    Assert.AreEqual(3, supervisorActor.FixturesOverview.Count);
+                    Assert.IsNotNull(fixture3Overview);
+                    Assert.AreEqual(fixture3Id, fixture3Overview.Id);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
