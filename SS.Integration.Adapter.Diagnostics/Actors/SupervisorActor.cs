@@ -89,6 +89,8 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
 
         private void UpdateSupervisorStateMsgHandler(UpdateSupervisorStateMsg msg)
         {
+            _logger.Info($"Updating supervisor state for {msg.FixtureId}");
+
             var fixtureOverview = GetFixtureOverview(msg.FixtureId);
             fixtureOverview.TimeStamp = DateTime.UtcNow;
             fixtureOverview.Sport = msg.Sport;
@@ -137,6 +139,8 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
 
         private void UpdateAdapterStatusMsgHandler(UpdateAdapterStatusMsg msg)
         {
+            _logger.Info($"Updating adapter status for supervisor stats");
+
             var status = GetAdapterStatus();
             _streamingService.OnAdapterUpdate(status);
         }

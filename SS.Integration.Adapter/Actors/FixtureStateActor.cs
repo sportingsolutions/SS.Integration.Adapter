@@ -111,10 +111,8 @@ namespace SS.Integration.Adapter.Actors
         {
             try
             {
-                _logger.Debug($"Writing State to file, with {_fixturesState.Count} fixtures");
                 var output = JsonConvert.SerializeObject(_fixturesState, Formatting.Indented);
                 _storeProvider.Write(_pathFileName, output);
-                _logger.DebugFormat("State persisted successfully");
             }
             catch (Exception ex)
             {

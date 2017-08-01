@@ -122,6 +122,8 @@ namespace SS.Integration.Adapter.Actors
         {
             State = StreamListenerState.Initialized;
 
+            _logger.Info($"Stream listener for {_resource.Id} moved to Initialized State");
+
             Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServer());
             Receive<StreamConnectedMsg>(a => Become(Streaming));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
@@ -136,6 +138,8 @@ namespace SS.Integration.Adapter.Actors
         private void Streaming()
         {
             State = StreamListenerState.Streaming;
+
+            _logger.Info($"Stream listener for {_resource.Id} moved to Streaming State");
 
             try
             {
@@ -179,6 +183,8 @@ namespace SS.Integration.Adapter.Actors
         {
             State = StreamListenerState.Disconnected;
 
+            _logger.Info($"Stream listener for {_resource.Id} moved to Disconnected State");
+
             var streamDisconnectedMessage = new StreamDisconnectedMsg
             {
                 FixtureId = _fixtureId,
@@ -197,6 +203,8 @@ namespace SS.Integration.Adapter.Actors
         {
             var prevState = State;
             State = StreamListenerState.Errored;
+
+            _logger.Info($"Stream listener for {_resource.Id} moved to Errored State");
 
             SuspendFixture(SuspensionReason.SUSPENSION);
             Exception erroredEx;
@@ -234,6 +242,8 @@ namespace SS.Integration.Adapter.Actors
         {
             State = StreamListenerState.Stopped;
 
+            _logger.Info($"Stream listener for {_resource.Id} moved to Stopped State");
+
             //tell Stream Listener Manager Actor that we stopped so it can kill this child actor
             Context.Parent.Tell(new StreamListenerStoppedMsg { FixtureId = _fixtureId });
         }
@@ -246,6 +256,9 @@ namespace SS.Integration.Adapter.Actors
         {
             msg.StreamingState = State;
             msg.CurrentSequence = _currentSequence;
+
+            _logger.Info(
+                $"{_resource.Id} Stream health check message arrived - State = {State}; CurrentSequence = {_currentSequence}");
 
             _streamHealthCheckActor.Tell(msg);
         }
@@ -317,6 +330,8 @@ namespace SS.Integration.Adapter.Actors
         {
             try
             {
+                _logger.Warn($"Stream got disconnected for {_resource}");
+
                 var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
                 var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _resource.Id };
                 var fixtureState = fixtureStateActor.Ask<FixtureState>(getFixtureStateMsg).Result;
@@ -363,6 +378,8 @@ namespace SS.Integration.Adapter.Actors
 
         private void Initialize()
         {
+            _logger.Info($"Initializing stream listener for {_resource.Id}");
+
             try
             {
                 State = StreamListenerState.Initializing;

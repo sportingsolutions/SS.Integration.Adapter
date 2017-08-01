@@ -96,7 +96,6 @@ namespace SS.Integration.Adapter.Actors
             }
             else if (resources.Count == 0)
             {
-                _logger.Debug($"There are currently no fixtures for sport={sport} in UDAPI");
                 valid = false;
             }
 

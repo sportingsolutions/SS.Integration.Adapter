@@ -131,6 +131,8 @@ namespace SS.Integration.Adapter.Actors
         {
             Context.Unwatch(t.ActorRef);
 
+            _logger.Info($"{t.ActorRef.Path.Name} got terminated");
+
             if (!_shouldSendProcessSportsMessage)
                 return;
 
@@ -159,6 +161,8 @@ namespace SS.Integration.Adapter.Actors
 
         private void RestartStreamListenerMsgHandler(RestartStreamListenerMsg msg)
         {
+            _logger.Info($"Restarting {Context.Self.Path.Name}");
+
             _shouldSendProcessSportsMessage = true;
             IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.FixtureId));
             streamListenerActor.Tell(new ResourceStopStreamingMsg());
