@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Moq;
 using NUnit.Framework;
@@ -312,6 +313,135 @@ namespace SS.Integration.Adapter.Tests
                     Assert.AreEqual(3, supervisorActor.FixturesOverview.Count);
                     Assert.IsNotNull(fixture3Overview);
                     Assert.AreEqual(fixture3Id, fixture3Overview.Id);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        /// <summary>
+        /// This test ensures we return list of sports for all the fixtures overview objects
+        /// </summary>
+        [Test]
+        [Category(SUPERVISOR_ACTOR_CATEGORY)]
+        public void GetSportsReturnsListOfSports()
+        {
+            //
+            //Arrange
+            //
+            string sport1 = "sport1";
+            string sport2 = "sport2";
+            string sport3 = "sport3";
+            var supervisorActorRef =
+                ActorOfAsTestActorRef<SupervisorActor>(
+                    Props.Create(() =>
+                        new SupervisorActor(
+                            SupervisorStreamingServiceMock.Object,
+                            ObjectProviderMock.Object)),
+                    SupervisorActor.ActorName);
+            var supervisorActor = supervisorActorRef.UnderlyingActor;
+            supervisorActor.SportsOverview.Add(sport1, new SportOverview { Name = sport1 });
+            supervisorActor.SportsOverview.Add(sport2, new SportOverview { Name = sport2 });
+            supervisorActor.SportsOverview.Add(sport3, new SportOverview { Name = sport3 });
+
+            //
+            //Act
+            //
+            var sports = supervisorActorRef.Ask<Dictionary<string, SportOverview>.ValueCollection>(new GetSportsMsg()).Result;
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    Assert.AreEqual(3, sports.Count);
+                    Assert.AreEqual(1, sports.Count(s => s.Name.Equals(sport1)));
+                    Assert.AreEqual(1, sports.Count(s => s.Name.Equals(sport2)));
+                    Assert.AreEqual(1, sports.Count(s => s.Name.Equals(sport3)));
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        /// <summary>
+        /// This test ensures we return the sport overview object when calling GetSportsOverview
+        /// </summary>
+        [Test]
+        [Category(SUPERVISOR_ACTOR_CATEGORY)]
+        public void GetSportOverviewReturnsCorrectObject()
+        {
+            //
+            //Arrange
+            //
+            string sport1 = "sport1";
+            string sport2 = "sport2";
+            string sport3 = "sport3";
+            var supervisorActorRef =
+                ActorOfAsTestActorRef<SupervisorActor>(
+                    Props.Create(() =>
+                        new SupervisorActor(
+                            SupervisorStreamingServiceMock.Object,
+                            ObjectProviderMock.Object)),
+                    SupervisorActor.ActorName);
+            var supervisorActor = supervisorActorRef.UnderlyingActor;
+            supervisorActor.SportsOverview.Add(sport1, new SportOverview { Name = sport1 });
+            supervisorActor.SportsOverview.Add(sport2, new SportOverview { Name = sport2 });
+            supervisorActor.SportsOverview.Add(sport3, new SportOverview { Name = sport3 });
+
+            //
+            //Act
+            //
+            var sport = supervisorActorRef
+                .Ask<SportOverview>(new GetSportOverviewMsg { SportCode = sport2 })
+                .Result;
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    Assert.AreEqual(sport2, sport.Name);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        /// <summary>
+        /// This test ensures we return null when sport overview not found
+        /// </summary>
+        [Test]
+        [Category(SUPERVISOR_ACTOR_CATEGORY)]
+        public void GetSportOverviewReturnsNull()
+        {
+            //
+            //Arrange
+            //
+            string sport1 = "sport1";
+            string sport2 = "sport2";
+            string sport3 = "sport3";
+            var supervisorActorRef =
+                ActorOfAsTestActorRef<SupervisorActor>(
+                    Props.Create(() =>
+                        new SupervisorActor(
+                            SupervisorStreamingServiceMock.Object,
+                            ObjectProviderMock.Object)),
+                    SupervisorActor.ActorName);
+            var supervisorActor = supervisorActorRef.UnderlyingActor;
+            supervisorActor.SportsOverview.Add(sport1, new SportOverview { Name = sport1 });
+            supervisorActor.SportsOverview.Add(sport2, new SportOverview { Name = sport2 });
+
+            //
+            //Act
+            //
+            var sport = supervisorActorRef
+                .Ask<SportOverview>(new GetSportOverviewMsg { SportCode = sport3 })
+                .Result;
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    Assert.IsNull(sport);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
