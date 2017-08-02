@@ -272,8 +272,6 @@ namespace SS.Integration.Adapter.Actors
 
                 _logger.Info($"{fixtureDelta} stream update arrived");
 
-                _currentSequence = fixtureDelta.Sequence;
-
                 if (!_fixtureValidation.IsSequenceValid(fixtureDelta, _currentSequence))
                 {
                     _logger.Warn($"Update for {fixtureDelta} will not be processed because sequence is not valid");
@@ -293,7 +291,6 @@ namespace SS.Integration.Adapter.Actors
                 }
 
                 bool hasEpochChanged = fixtureDelta.Epoch != _currentEpoch;
-                _currentEpoch = fixtureDelta.Epoch;
 
                 if (_fixtureValidation.IsEpochValid(fixtureDelta, _currentEpoch))
                 {
@@ -304,6 +301,9 @@ namespace SS.Integration.Adapter.Actors
                 {
                     ProcessInvalidEpoch(fixtureDelta, hasEpochChanged);
                 }
+
+                _currentSequence = fixtureDelta.Sequence;
+                _currentEpoch = fixtureDelta.Epoch;
             }
             catch (AggregateException ex)
             {
@@ -816,6 +816,7 @@ namespace SS.Integration.Adapter.Actors
             }
 
             _currentSequence = snapshot.Sequence;
+            _currentEpoch = snapshot.Epoch;
         }
 
         private void StopStreaming()

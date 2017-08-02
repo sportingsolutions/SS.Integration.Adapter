@@ -115,10 +115,10 @@ namespace SS.Integration.Adapter.Actors
             var minutes = (int)Math.Ceiling((DateTime.UtcNow - _adapterStartDate).TotalMinutes);
 
             _logger.Info($"{updateOrSnapshot} for {_startMessage.Fixture}, took processingTime={timeTaken.TotalSeconds} seconds at sequence={_startMessage.Sequence}");
-            _logger.Info($"Snapshots processed: {_snapshotsCount}");
-            _logger.Info($"Stream updates processed: {_streamUpdatesCount}");
-            _logger.Info($"Snapshots per minute: {_snapshotsCount / minutes}");
-            _logger.Info($"Stream updates per minute: {_streamUpdatesCount / minutes}");
+            _logger.Info($"{_startMessage.Fixture} -> Snapshots processed: {_snapshotsCount}");
+            _logger.Info($"{_startMessage.Fixture} -> Stream updates processed: {_streamUpdatesCount}");
+            _logger.Info($"{_startMessage.Fixture} -> Snapshots per minute: {_snapshotsCount / minutes}");
+            _logger.Info($"{_startMessage.Fixture} -> Stream updates per minute: {_streamUpdatesCount / minutes}");
         }
 
         private void StreamDisconnectedMsgHandler(StreamDisconnectedMsg msg)
