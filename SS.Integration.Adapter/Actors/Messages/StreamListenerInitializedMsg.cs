@@ -12,10 +12,12 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using SS.Integration.Adapter.Interface;
+
 namespace SS.Integration.Adapter.Actors.Messages
 {
-    internal class StreamListenerCreationCompletedMsg
+    internal class StreamListenerInitializedMsg
     {
-        public string FixtureId { get; set; }
+        public IResourceFacade Resource { get; set; }
     }
 }

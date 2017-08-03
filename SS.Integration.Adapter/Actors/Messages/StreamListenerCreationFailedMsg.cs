@@ -19,7 +19,7 @@ namespace SS.Integration.Adapter.Actors.Messages
 {
     internal class StreamListenerCreationFailedMsg
     {
-        public IResourceFacade Resource { get; set; }
+        public string FixtureId { get; set; }
 
         public Exception Exception { get; set; }
     }

@@ -14,7 +14,9 @@
 
 using System;
 using Akka.Actor;
+using log4net;
 using SS.Integration.Adapter.Actors.Messages;
+using SS.Integration.Adapter.Enums;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model.Interfaces;
 
@@ -33,6 +35,7 @@ namespace SS.Integration.Adapter.Actors
 
         #region Private members
 
+        private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerBuilderActor));
         private readonly ISettings _settings;
         private readonly IActorContext _streamListenerManagerActorContext;
         private readonly IAdapterPlugin _adapterPlugin;
@@ -44,6 +47,8 @@ namespace SS.Integration.Adapter.Actors
         #endregion
 
         #region Properties
+
+        internal StreamListenerBuilderState State { get; private set; }
 
         public IStash Stash { get; set; }
 
@@ -78,74 +83,96 @@ namespace SS.Integration.Adapter.Actors
         //In the active state StreamListeners can be created on demand
         private void Active()
         {
+            State = StreamListenerBuilderState.Active;
+
+            _logger.Warn("Moved to Active State");
+
             Receive<CreateStreamListenerMsg>(o => CreateStreamListenerMsgHandler(o));
             Receive<BuildStreamListenerActorMsg>(o => BuildStreamListenerActorMsgHandler(o));
+            Receive<StreamListenerCreationCompletedMsg>(o => StreamListenerCreationCompletedMsgHandler(o));
+            Receive<StreamListenerCreationFailedMsg>(o => StreamListenerCreationFailedMsgHandler(o));
         }
 
         //In the busy state the maximum concurrency has been already used and creation needs to be postponed until later
         private void Busy()
         {
-            //Stash messages until CreationCompleted/Failed message is received
-            Receive<CreateStreamListenerMsg>(o =>
-            {
-                if (_concurrentInitializations > _settings.FixtureCreationConcurrency)
-                {
-                    Stash.Stash();
-                }
-                else
-                {
-                    Become(Active);
-                    Stash.Unstash();
-                }
-            });
+            State = StreamListenerBuilderState.Busy;
+
+            _logger.Warn(
+                $"Moved to Busy State - fixture creation concurency limit of {_settings.FixtureCreationConcurrency} has been reached");
+
+            Receive<CreateStreamListenerMsg>(o => { Stash.Stash(); });
+            Receive<BuildStreamListenerActorMsg>(o => BuildStreamListenerActorMsgHandler(o));
+            Receive<StreamListenerCreationCompletedMsg>(o => StreamListenerCreationCompletedMsgHandler(o));
+            Receive<StreamListenerCreationFailedMsg>(o => StreamListenerCreationFailedMsgHandler(o));
         }
 
         #endregion
 
-        #region Private methods
+        #region Message Handlers
 
         private void CreateStreamListenerMsgHandler(CreateStreamListenerMsg msg)
         {
-            _concurrentInitializations++;
-
-            if (_concurrentInitializations > _settings.FixtureCreationConcurrency)
+            if (_concurrentInitializations + 1 > _settings.FixtureCreationConcurrency)
             {
                 Become(Busy);
+                Self.Tell(msg);
             }
             else
             {
+                _concurrentInitializations++;
                 Self.Tell(new BuildStreamListenerActorMsg { Resource = msg.Resource });
             }
         }
 
         private void BuildStreamListenerActorMsgHandler(BuildStreamListenerActorMsg msg)
         {
-            try
+            var streamListenerActorName = StreamListenerActor.GetName(msg.Resource.Id);
+            if (_streamListenerManagerActorContext.Child(streamListenerActorName).IsNobody())
             {
-                var streamListenerActorName = StreamListenerActor.GetName(msg.Resource.Id);
-                if (_streamListenerManagerActorContext.Child(streamListenerActorName).IsNobody())
-                {
-                    _streamListenerManagerActorContext.ActorOf(Props.Create(() =>
-                            new StreamListenerActor(
-                                msg.Resource,
-                                _adapterPlugin,
-                                _stateManager,
-                                _settings,
-                                _streamHealthCheckValidation,
-                                _fixtureValidation)),
-                        streamListenerActorName);
+                _logger.Debug($"Building Stream Listener Instance for {msg.Resource}");
 
-                    Context.Parent.Tell(new StreamListenerCreationCompletedMsg { Resource = msg.Resource });
-                }
+                _streamListenerManagerActorContext.ActorOf(Props.Create(() =>
+                        new StreamListenerActor(
+                            msg.Resource,
+                            _adapterPlugin,
+                            _stateManager,
+                            _settings,
+                            _streamHealthCheckValidation,
+                            _fixtureValidation)),
+                    streamListenerActorName);
             }
-            catch (Exception ex)
+        }
+
+        private void StreamListenerCreationCompletedMsgHandler(StreamListenerCreationCompletedMsg msg)
+        {
+            _logger.Debug($"Stream Listener Creation Completed for Fixture with fixtureId={msg.FixtureId}");
+
+            CheckStateUpdate();
+        }
+
+        private void StreamListenerCreationFailedMsgHandler(StreamListenerCreationFailedMsg msg)
+        {
+            _logger.Debug($"Stream Listener Creation Failed for Fixture with fixtureId={msg.FixtureId}");
+
+            CheckStateUpdate();
+        }
+
+        #endregion
+
+        #region Private methods
+
+        private void CheckStateUpdate()
+        {
+            _concurrentInitializations--;
+
+            if (State != StreamListenerBuilderState.Active &&
+                _concurrentInitializations < _settings.FixtureCreationConcurrency)
             {
-                Context.Parent.Tell(new StreamListenerCreationFailedMsg { Resource = msg.Resource, Exception = ex });
+                Become(Active);
             }
-            finally
-            {
-                _concurrentInitializations--;
-            }
+
+            Stash.Unstash();
         }
 
         #endregion

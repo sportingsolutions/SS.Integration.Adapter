@@ -79,7 +79,7 @@ namespace SS.Integration.Adapter.Actors
                 _resource.Content.MatchStatus = msg.Resource.Content.MatchStatus;
 
                 _logger.Debug(
-                    $"Listener state for resource {msg.Resource} has " +
+                    $"Listener state for {msg.Resource} has " +
                     $"sequence={msg.Resource.Content.Sequence} " +
                     $"processedSequence={msg.CurrentSequence} " +
                     (msg.Resource.Content.Sequence > msg.CurrentSequence
@@ -93,7 +93,7 @@ namespace SS.Integration.Adapter.Actors
 
                 if (!streamIsValid)
                 {
-                    _logger.Warn($"Detected invalid stream for resource {msg.Resource}");
+                    _logger.Warn($"Detected invalid stream for {msg.Resource}");
                 }
 
                 var connectToStreamServer =
@@ -106,7 +106,7 @@ namespace SS.Integration.Adapter.Actors
             }
             catch (Exception ex)
             {
-                _logger.Error($"Error occured on Stream Health Check for resource {_resource} - exception - {ex}");
+                _logger.Error($"Error occured on Stream Health Check for {_resource} - exception - {ex}");
                 throw;
             }
         }

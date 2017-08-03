@@ -61,6 +61,9 @@ namespace SS.Integration.Adapter.Actors
         private DateTime? _fixtureStartTime;
         private bool _fixtureIsSuspended;
         private Exception _erroredException;
+        //this field helps track the Stream Listener Actor Initialization 
+        //so it can notify the Stream Listener Manager when actor creation failed
+        private bool _isInitializing;
 
         #endregion
 
@@ -84,6 +87,8 @@ namespace SS.Integration.Adapter.Actors
         {
             try
             {
+                _isInitializing = true;
+
                 _resource = resource ?? throw new ArgumentNullException(nameof(resource));
                 _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
                 _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
@@ -107,7 +112,7 @@ namespace SS.Integration.Adapter.Actors
             catch (Exception ex)
             {
                 _logger.Error(
-                    $"Stream Listener instantiation failed for resource {_resource} - exception - {ex}");
+                    $"Stream Listener instantiation failed for {_resource} - exception - {ex}");
                 _erroredException = ex;
                 Become(Errored);
             }
@@ -122,7 +127,7 @@ namespace SS.Integration.Adapter.Actors
         {
             State = StreamListenerState.Initialized;
 
-            _logger.Info($"Stream listener for {_resource.Id} moved to Initialized State");
+            _logger.Info($"Stream listener for {_resource} moved to Initialized State");
 
             Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServer());
             Receive<StreamConnectedMsg>(a => Become(Streaming));
@@ -131,7 +136,19 @@ namespace SS.Integration.Adapter.Actors
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot());
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
 
-            RetrieveAndProcessSnapshot();
+            try
+            {
+                RetrieveAndProcessSnapshot();
+                Context.Parent.Tell(new StreamListenerInitializedMsg { Resource = _resource });
+                _isInitializing = false;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(
+                    $"Stream Listener for {_resource} failed on Initialized State when RetrieveAndProcessSnapshot - exception - {ex}");
+                _erroredException = ex;
+                Become(Errored);
+            }
         }
 
         //Connected and streaming state - all messages should be processed
@@ -139,7 +156,7 @@ namespace SS.Integration.Adapter.Actors
         {
             State = StreamListenerState.Streaming;
 
-            _logger.Info($"Stream listener for {_resource.Id} moved to Streaming State");
+            _logger.Info($"Stream listener for {_resource} moved to Streaming State");
 
             try
             {
@@ -168,11 +185,12 @@ namespace SS.Integration.Adapter.Actors
 
                 Stash.UnstashAll();
                 Context.Parent.Tell(streamConnectedMsg);
+                _isInitializing = false;
             }
             catch (Exception ex)
             {
                 _logger.Error(
-                    $"Failed moving to Streaming State for resource {_resource} - exception - {ex}");
+                    $"Failed moving to Streaming State for {_resource} - exception - {ex}");
                 _erroredException = ex;
                 Become(Errored);
             }
@@ -183,7 +201,7 @@ namespace SS.Integration.Adapter.Actors
         {
             State = StreamListenerState.Disconnected;
 
-            _logger.Info($"Stream listener for {_resource.Id} moved to Disconnected State");
+            _logger.Info($"Stream listener for {_resource} moved to Disconnected State");
 
             var streamDisconnectedMessage = new StreamDisconnectedMsg
             {
@@ -204,7 +222,7 @@ namespace SS.Integration.Adapter.Actors
             var prevState = State;
             State = StreamListenerState.Errored;
 
-            _logger.Info($"Stream listener for {_resource.Id} moved to Errored State");
+            _logger.Info($"Stream listener for {_resource} moved to Errored State");
 
             SuspendFixture(SuspensionReason.SUSPENSION);
             Exception erroredEx;
@@ -222,6 +240,19 @@ namespace SS.Integration.Adapter.Actors
                 {
                     _logger.Error(
                         $"Failed Suspending Fixture {_resource} on Errored State - exception - {ex}");
+                }
+                finally
+                {
+                    if (_isInitializing)
+                    {
+                        Context.Parent.Tell(
+                            new StreamListenerCreationFailedMsg
+                            {
+                                FixtureId = _resource.Id,
+                                Exception = erroredEx
+                            });
+                        _isInitializing = false;
+                    }
                 }
 
                 if (prevState == StreamListenerState.Initializing)
@@ -242,7 +273,7 @@ namespace SS.Integration.Adapter.Actors
         {
             State = StreamListenerState.Stopped;
 
-            _logger.Info($"Stream listener for {_resource.Id} moved to Stopped State");
+            _logger.Info($"Stream listener for {_resource} moved to Stopped State");
 
             //tell Stream Listener Manager Actor that we stopped so it can kill this child actor
             Context.Parent.Tell(new StreamListenerStoppedMsg { FixtureId = _fixtureId });
@@ -258,7 +289,7 @@ namespace SS.Integration.Adapter.Actors
             msg.CurrentSequence = _currentSequence;
 
             _logger.Info(
-                $"{_resource.Id} Stream health check message arrived - State = {State}; CurrentSequence = {_currentSequence}");
+                $"{_resource} Stream health check message arrived - State = {State}; CurrentSequence = {_currentSequence}");
 
             _streamHealthCheckActor.Tell(msg);
         }
@@ -378,7 +409,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void Initialize()
         {
-            _logger.Info($"Initializing stream listener for {_resource.Id}");
+            _logger.Info($"Initializing stream listener for {_resource}");
 
             try
             {
@@ -508,7 +539,7 @@ namespace SS.Integration.Adapter.Actors
             }
             catch (Exception ex)
             {
-                var apiError = new ApiException($"GetSnapshot for {_resource.Id} failed", ex);
+                var apiError = new ApiException($"GetSnapshot for {_resource} failed", ex);
                 UpdateStatsError(apiError);
                 throw apiError;
             }
@@ -752,7 +783,7 @@ namespace SS.Integration.Adapter.Actors
             }
             catch (Exception ex)
             {
-                _logger.Error($"An error occured while trying to process match over resource {_resource.Id} - exception - {ex}");
+                _logger.Error($"An error occured while trying to process match over resource {_resource} - exception - {ex}");
                 throw;
             }
         }
@@ -777,7 +808,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void SuspendFixture(SuspensionReason reason)
         {
-            _logger.Info($"Suspending fixtureId={_resource.Id} due reason={reason}");
+            _logger.Info($"Suspending fixtureId={_resource} due reason={reason}");
 
             _stateManager.StateProvider.SuspensionManager.Suspend(_resource.Id, reason);
             try
@@ -787,7 +818,7 @@ namespace SS.Integration.Adapter.Actors
             }
             catch (Exception ex)
             {
-                var pluginError = new PluginException($"Plugin Suspend fixture {_resource.Id} error occured", ex);
+                var pluginError = new PluginException($"Plugin Suspend fixture {_resource} error occured", ex);
                 UpdateStatsError(pluginError);
                 throw pluginError;
             }

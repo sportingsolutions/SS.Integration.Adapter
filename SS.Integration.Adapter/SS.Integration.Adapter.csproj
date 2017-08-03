@@ -85,6 +85,7 @@
     <Compile Include="Actors\Messages\ClearFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\RestartStreamListenerMsg.cs" />
     <Compile Include="Actors\Messages\RetrieveAndProcessSnapshotMsg.cs" />
+    <Compile Include="Actors\Messages\StreamListenerCreationCompletedMsg.cs" />
     <Compile Include="Actors\Messages\UpdateStatsErrorMsg.cs" />
     <Compile Include="Actors\Messages\UpdateStatsFinishMsg.cs" />
     <Compile Include="Actors\Messages\RemoveFixtureStateMsg.cs" />
@@ -103,7 +104,7 @@
     <Compile Include="Actors\Messages\StreamListenerStoppedMsg.cs" />
     <Compile Include="Actors\Messages\StreamConnectedMsg.cs" />
     <Compile Include="Actors\Messages\StreamDisconnectedMsg.cs" />
-    <Compile Include="Actors\Messages\StreamListenerCreationCompletedMsg.cs" />
+    <Compile Include="Actors\Messages\StreamListenerInitializedMsg.cs" />
     <Compile Include="Actors\Messages\StreamListenerCreationFailedMsg.cs" />
     <Compile Include="Actors\Messages\StreamUpdateMsg.cs" />
     <Compile Include="Actors\FixtureStateActor.cs" />
@@ -118,6 +119,7 @@
     <Compile Include="Adapter.cs" />
     <Compile Include="Actors\AdapterActorSystem.cs" />
     <Compile Include="Configuration\Settings.cs" />
+    <Compile Include="Enums\StreamListenerBuilderState.cs" />
     <Compile Include="Enums\StreamListenerState.cs" />
     <Compile Include="Exceptions\ApiException.cs" />
     <Compile Include="Exceptions\PluginException.cs" />
