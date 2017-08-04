@@ -14,7 +14,7 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Tests
 {
-    public class BaseTestKit : TestKit
+    public class AdapterTestKit : TestKit
     {
         #region Constants
 

@@ -34,6 +34,16 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
+        #region Properties
+
+        internal static int SnapshotsCount => _snapshotsCount;
+        internal static int StreamUpdatesCount => _streamUpdatesCount;
+        internal static Dictionary<string, int> ErrorsCount => _errorsCount;
+        internal static int DisconnectionsCount => _disconnectionsCount;
+        internal static DateTime LastDisconnectedDate => _lastDisconnectedDate;
+
+        #endregion
+
         #region Private members
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamStatsActor));

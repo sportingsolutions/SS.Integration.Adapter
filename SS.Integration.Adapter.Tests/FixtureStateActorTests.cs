@@ -29,7 +29,7 @@ using Newtonsoft.Json;
 namespace SS.Integration.Adapter.Tests
 {
     [TestFixture]
-    public class FixtureStateActorTests : BaseTestKit
+    public class FixtureStateActorTests : AdapterTestKit
     {
         #region Constants
 

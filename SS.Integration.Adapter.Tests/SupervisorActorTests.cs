@@ -26,12 +26,11 @@ using SS.Integration.Adapter.Diagnostics.Actors.Messages;
 using SS.Integration.Adapter.Diagnostics.Model;
 using ServiceInterface = SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
 using ServiceModelInterface = SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
-using ServiceModel = SS.Integration.Adapter.Diagnostics.Model.Service.Model;
 
 namespace SS.Integration.Adapter.Tests
 {
     [TestFixture]
-    public class SupervisorActorTests : BaseTestKit
+    public class SupervisorActorTests : AdapterTestKit
     {
         #region Constants
 

@@ -34,7 +34,7 @@ using SS.Integration.Adapter.Enums;
 namespace SS.Integration.Adapter.Tests
 {
     [TestFixture]
-    public class StreamHealthCheckActorTests : BaseTestKit
+    public class StreamHealthCheckActorTests : AdapterTestKit
     {
         #region Constants
 

@@ -112,12 +112,14 @@
     <Compile Include="FixtureValidationTests.cs" />
     <Compile Include="FixtureStateActorTests.cs" />
     <Compile Include="SportOverviewTest.cs" />
+    <Compile Include="StreamStatsActorTests.cs" />
+    <Compile Include="StreamListenerBuilderActorTests.cs" />
     <Compile Include="SupervisorActorTests.cs" />
     <Compile Include="StreamHealthCheckValidationTests.cs" />
     <Compile Include="StreamHealthCheckActorTests.cs" />
     <Compile Include="StreamListenerActorTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="BaseTestKit.cs" />
+    <Compile Include="AdapterTestKit.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
