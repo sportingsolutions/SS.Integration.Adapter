@@ -89,20 +89,19 @@ namespace SS.Integration.Adapter.Tests
             streamStatsActorRef.Tell(updateStatsStartMsg);
             Task.Delay(TimeSpan.FromMilliseconds(500));
             streamStatsActorRef.Tell(updateStatsFinishMsg);
-            Task.Delay(TimeSpan.FromMilliseconds(500));
 
             //
             //Assert
             //
             AwaitAssert(() =>
                 {
-                    Assert.AreEqual(2, StreamStatsActor.SnapshotsCount);
-                    Assert.AreEqual(0, StreamStatsActor.StreamUpdatesCount);
-                    Assert.AreEqual(0, StreamStatsActor.DisconnectionsCount);
-                    Assert.AreEqual(0, StreamStatsActor.ErrorsCount[StreamStatsActor.PluginExceptionType]);
-                    Assert.AreEqual(0, StreamStatsActor.ErrorsCount[StreamStatsActor.ApiExceptionType]);
-                    Assert.AreEqual(0, StreamStatsActor.ErrorsCount[StreamStatsActor.GenericExceptionType]);
-                    Assert.AreEqual(DateTime.MinValue, StreamStatsActor.LastDisconnectedDate);
+                    Assert.AreEqual(2, streamStatsActorRef.UnderlyingActor.SnapshotsCount);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.StreamUpdatesCount);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.DisconnectionsCount);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.ErrorsCount[StreamStatsActor.PluginExceptionType]);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.ErrorsCount[StreamStatsActor.ApiExceptionType]);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.ErrorsCount[StreamStatsActor.GenericExceptionType]);
+                    Assert.AreEqual(DateTime.MinValue, streamStatsActorRef.UnderlyingActor.LastDisconnectedDate);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
@@ -153,20 +152,19 @@ namespace SS.Integration.Adapter.Tests
             streamStatsActorRef.Tell(updateStatsStartMsg);
             Task.Delay(TimeSpan.FromMilliseconds(500));
             streamStatsActorRef.Tell(updateStatsFinishMsg);
-            Task.Delay(TimeSpan.FromMilliseconds(500));
 
             //
             //Assert
             //
             AwaitAssert(() =>
                 {
-                    Assert.AreEqual(0, StreamStatsActor.SnapshotsCount);
-                    Assert.AreEqual(2, StreamStatsActor.StreamUpdatesCount);
-                    Assert.AreEqual(0, StreamStatsActor.DisconnectionsCount);
-                    Assert.AreEqual(0, StreamStatsActor.ErrorsCount[StreamStatsActor.PluginExceptionType]);
-                    Assert.AreEqual(0, StreamStatsActor.ErrorsCount[StreamStatsActor.ApiExceptionType]);
-                    Assert.AreEqual(0, StreamStatsActor.ErrorsCount[StreamStatsActor.GenericExceptionType]);
-                    Assert.AreEqual(DateTime.MinValue, StreamStatsActor.LastDisconnectedDate);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.SnapshotsCount);
+                    Assert.AreEqual(2, streamStatsActorRef.UnderlyingActor.StreamUpdatesCount);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.DisconnectionsCount);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.ErrorsCount[StreamStatsActor.PluginExceptionType]);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.ErrorsCount[StreamStatsActor.ApiExceptionType]);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.ErrorsCount[StreamStatsActor.GenericExceptionType]);
+                    Assert.AreEqual(DateTime.MinValue, streamStatsActorRef.UnderlyingActor.LastDisconnectedDate);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
@@ -186,21 +184,6 @@ namespace SS.Integration.Adapter.Tests
                 ActorOfAsTestActorRef<StreamStatsActor>(
                     Props.Create(() => new StreamStatsActor()),
                     StreamStatsActor.ActorName);
-            var dateNow = DateTime.UtcNow;
-            var updateStatsStartMsg =
-                new UpdateStatsStartMsg
-                {
-                    UpdateReceivedAt = dateNow,
-                    Sequence = 1,
-                    IsSnapshot = false,
-                    Fixture = new Fixture
-                    {
-                        Id = "Fixture1Id",
-                        Sequence = 1,
-                        Epoch = 1,
-                        MatchStatus = MatchStatus.Prematch.ToString()
-                    }
-                };
             var streamDisconnectedMsg = new StreamDisconnectedMsg();
 
             //
@@ -209,20 +192,19 @@ namespace SS.Integration.Adapter.Tests
             streamStatsActorRef.Tell(streamDisconnectedMsg);
             Task.Delay(TimeSpan.FromMilliseconds(500));
             streamStatsActorRef.Tell(streamDisconnectedMsg);
-            Task.Delay(TimeSpan.FromMilliseconds(500));
 
             //
             //Assert
             //
             AwaitAssert(() =>
                 {
-                    Assert.AreEqual(0, StreamStatsActor.SnapshotsCount);
-                    Assert.AreEqual(0, StreamStatsActor.StreamUpdatesCount);
-                    Assert.AreEqual(2, StreamStatsActor.DisconnectionsCount);
-                    Assert.AreEqual(0, StreamStatsActor.ErrorsCount[StreamStatsActor.PluginExceptionType]);
-                    Assert.AreEqual(0, StreamStatsActor.ErrorsCount[StreamStatsActor.ApiExceptionType]);
-                    Assert.AreEqual(0, StreamStatsActor.ErrorsCount[StreamStatsActor.GenericExceptionType]);
-                    Assert.Less((DateTime.UtcNow - StreamStatsActor.LastDisconnectedDate).TotalSeconds, 1);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.SnapshotsCount);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.StreamUpdatesCount);
+                    Assert.AreEqual(2, streamStatsActorRef.UnderlyingActor.DisconnectionsCount);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.ErrorsCount[StreamStatsActor.PluginExceptionType]);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.ErrorsCount[StreamStatsActor.ApiExceptionType]);
+                    Assert.AreEqual(0, streamStatsActorRef.UnderlyingActor.ErrorsCount[StreamStatsActor.GenericExceptionType]);
+                    Assert.Less((DateTime.UtcNow - streamStatsActorRef.UnderlyingActor.LastDisconnectedDate).TotalSeconds, 5);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));

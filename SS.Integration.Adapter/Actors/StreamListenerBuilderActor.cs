@@ -42,7 +42,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly IStateManager _stateManager;
         private readonly IStreamHealthCheckValidation _streamHealthCheckValidation;
         private readonly IFixtureValidation _fixtureValidation;
-        private static int _concurrentInitializations;
+        private int _concurrentInitializations;
 
         #endregion
 

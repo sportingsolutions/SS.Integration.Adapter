@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using Akka.Actor;
+using Akka.Event;
 using log4net;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Exceptions;
@@ -36,11 +37,11 @@ namespace SS.Integration.Adapter.Actors
 
         #region Properties
 
-        internal static int SnapshotsCount => _snapshotsCount;
-        internal static int StreamUpdatesCount => _streamUpdatesCount;
-        internal static Dictionary<string, int> ErrorsCount => _errorsCount;
-        internal static int DisconnectionsCount => _disconnectionsCount;
-        internal static DateTime LastDisconnectedDate => _lastDisconnectedDate;
+        internal int SnapshotsCount => _snapshotsCount;
+        internal int StreamUpdatesCount => _streamUpdatesCount;
+        internal Dictionary<string, int> ErrorsCount => _errorsCount;
+        internal int DisconnectionsCount => _disconnectionsCount;
+        internal DateTime LastDisconnectedDate => _lastDisconnectedDate;
 
         #endregion
 
@@ -48,12 +49,12 @@ namespace SS.Integration.Adapter.Actors
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamStatsActor));
         private UpdateStatsStartMsg _startMessage;
-        private static int _snapshotsCount;
-        private static int _streamUpdatesCount;
-        private static Dictionary<string, int> _errorsCount;
-        private static DateTime _lastDisconnectedDate;
-        private static int _disconnectionsCount;
-        private static readonly DateTime _adapterStartDate = DateTime.UtcNow;
+        private int _snapshotsCount;
+        private int _streamUpdatesCount;
+        private readonly Dictionary<string, int> _errorsCount;
+        private DateTime _lastDisconnectedDate;
+        private int _disconnectionsCount;
+        private readonly DateTime _adapterStartDate = DateTime.UtcNow;
 
         #endregion
 
@@ -98,7 +99,7 @@ namespace SS.Integration.Adapter.Actors
             _logger.Error(
                 $"Error occured at {msg.ErrorOccuredAt} for {_startMessage.Fixture.Id} sequence {_startMessage.Sequence} - {msg.Error}");
 
-            var minutes = (int)Math.Ceiling((DateTime.UtcNow - _adapterStartDate).TotalMinutes);
+            var minutes = (int)Math.Ceiling((DateTime.UtcNow - _adapterStartDate.AddMilliseconds(-1)).TotalMinutes);
 
             _logger.Warn($"Number of API errors: {_errorsCount[ApiExceptionType]}");
             _logger.Warn($"Number of Plugin errors: {_errorsCount[PluginExceptionType]}");
@@ -117,12 +118,12 @@ namespace SS.Integration.Adapter.Actors
             {
                 _streamUpdatesCount++;
             }
-
+            
             var timeTaken = msg.CompletedAt - _startMessage.UpdateReceivedAt;
 
             var updateOrSnapshot = _startMessage.IsSnapshot ? "Snapshot" : "Update";
 
-            var minutes = (int)Math.Ceiling((DateTime.UtcNow - _adapterStartDate).TotalMinutes);
+            var minutes = (int)Math.Ceiling((DateTime.UtcNow - _adapterStartDate.AddMilliseconds(-1)).TotalMinutes);
 
             _logger.Info($"{updateOrSnapshot} for {_startMessage.Fixture}, took processingTime={timeTaken.TotalSeconds} seconds at sequence={_startMessage.Sequence}");
             _logger.Info($"{_startMessage.Fixture} -> Snapshots processed: {_snapshotsCount}");
@@ -136,7 +137,7 @@ namespace SS.Integration.Adapter.Actors
             _disconnectionsCount++;
             _lastDisconnectedDate = DateTime.UtcNow;
 
-            var days = (DateTime.UtcNow - _adapterStartDate).TotalDays;
+            var days = (DateTime.UtcNow - _adapterStartDate.AddMilliseconds(-1)).TotalDays;
             var weeks = days > 7 ? (int)(days / 7) : 1;
 
             _logger.Info($"Stream got disconnected at {_lastDisconnectedDate}");
