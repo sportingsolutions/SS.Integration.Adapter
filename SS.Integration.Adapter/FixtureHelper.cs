@@ -19,8 +19,10 @@ using SS.Integration.Common;
 
 namespace SS.Integration.Adapter
 {
-    public class FixtureJsonHelper
+    public static class FixtureHelper
     {
+        #region Public methods
+
         public static Fixture GetFromJson(string content)
         {
             return JsonConvert.DeserializeObject<Fixture>(content, FixtureDateTimeJsonConverter.Instance);
@@ -30,5 +32,14 @@ namespace SS.Integration.Adapter
         {
             return JsonConvert.SerializeObject(fixture);
         }
+
+        public static Fixture GetFixtureDelta(StreamMessage streamMessage)
+        {
+            return JsonConvert.DeserializeObject<Fixture>(
+                streamMessage.Content.ToString(),
+                FixtureDateTimeJsonConverter.Instance);
+        }
+
+        #endregion
     }
 }

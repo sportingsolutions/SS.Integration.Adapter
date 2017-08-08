@@ -23,7 +23,7 @@ namespace SS.Integration.Adapter.Tests
 
         #endregion
 
-        #region Private members
+        #region Fields
 
         protected Mock<IFeature> FootabllSportMock;
         protected Mock<ISettings> SettingsMock;
@@ -54,7 +54,7 @@ namespace SS.Integration.Adapter.Tests
             FootabllSportMock.SetupGet(o => o.Name).Returns("Football");
 
             var snapshotJson = System.Text.Encoding.UTF8.GetString(fixtureData);
-            snapshot = FixtureJsonHelper.GetFromJson(snapshotJson);
+            snapshot = FixtureHelper.GetFromJson(snapshotJson);
             var snapshotVar = snapshot;
             resourceFacadeMock.Setup(o => o.Id).Returns(snapshot.Id);
             resourceFacadeMock.Setup(o => o.Sport).Returns(sport);

@@ -26,7 +26,7 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
 
         #endregion
 
-        #region Private members
+        #region Fields
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(SupervisorActor).ToString());
         private readonly ServiceInterface.ISupervisorStreamingService _streamingService;

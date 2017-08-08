@@ -22,14 +22,24 @@ namespace SS.Integration.Adapter
 {
     public class DefaultReconnectStrategy : IReconnectStrategy
     {
+        #region Fields
+
         private readonly ILog _logger = LogManager.GetLogger(typeof(Adapter).ToString());
         private readonly ISettings _settings;
         private Action<bool> _initialiseSession;
+
+        #endregion
+
+        #region Constructors
 
         public DefaultReconnectStrategy(ISettings settings)
         {
             _settings = settings;
         }
+
+        #endregion
+
+        #region Implementation of IReconnectStrategy
 
         public void SetSessionInitialiser(Action<bool> sessionInitialiser)
         {
@@ -88,5 +98,7 @@ namespace SS.Integration.Adapter
                 }
             }
         }
+
+        #endregion
     }
 }

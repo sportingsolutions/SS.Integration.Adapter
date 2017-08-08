@@ -27,7 +27,7 @@ namespace SS.Integration.Adapter
     /// </summary>
     public class StreamHealthCheckValidation : IStreamHealthCheckValidation
     {
-        #region Private members
+        #region Fields
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamHealthCheckValidation).ToString());
         private readonly ISettings _settings;

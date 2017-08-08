@@ -32,7 +32,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
     // make sure Microsoft.Owin.Host.HttpListner is reference otherwise a run-time exception is raised.
     public sealed class Service : ISupervisorService
     {
-        #region Private members
+        #region Fields
 
         private IDisposable _server;
         private readonly ILog _log = LogManager.GetLogger(typeof(Service));

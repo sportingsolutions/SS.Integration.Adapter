@@ -14,7 +14,7 @@ namespace SS.Integration.Adapter.Diagnostics
 {
     public static class SupervisorStartUp
     {
-        #region Private members
+        #region Fields
 
         private static readonly ILog Logger = LogManager.GetLogger(typeof(SupervisorStartUp).ToString());
         private static ISupervisorService _service;

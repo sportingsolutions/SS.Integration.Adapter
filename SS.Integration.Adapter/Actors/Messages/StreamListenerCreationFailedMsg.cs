@@ -13,7 +13,6 @@
 //limitations under the License.
 
 using System;
-using SS.Integration.Adapter.Interface;
 
 namespace SS.Integration.Adapter.Actors.Messages
 {

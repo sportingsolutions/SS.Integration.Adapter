@@ -31,7 +31,7 @@ namespace SS.Integration.Adapter.Tests
 
         #endregion
 
-        #region Private members
+        #region Fields
 
         private Mock<ISettings> _settings;
         private Mock<IResourceFacade> _resourceFacadeMock;

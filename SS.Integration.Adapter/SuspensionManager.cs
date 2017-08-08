@@ -23,12 +23,11 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter
 {
-    
-    public class SuspensionManager : ISuspensionManager
+    internal class SuspensionManager : ISuspensionManager
     {
+        #region Fields
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(SuspensionManager));
-
         private Action<IMarketStateCollection> _default;
         private Action<IMarketStateCollection> _disconnected;
         private Action<IMarketStateCollection> _fixtureDeleted;
@@ -36,6 +35,10 @@ namespace SS.Integration.Adapter
         private Action<IMarketStateCollection> _error;
         private readonly IStateProvider _stateProvider;
         private readonly IAdapterPlugin _plugin;
+
+        #endregion
+
+        #region Constructors
 
         internal SuspensionManager(IStateProvider stateProvider, IAdapterPlugin plugin)
         {
@@ -57,48 +60,27 @@ namespace SS.Integration.Adapter
             _fixtureDeleted = SuspendFixtureAndSetMatchStatusDeleted;
         }
 
+        #endregion
 
-        public Action<IMarketStateCollection> DoNothingStrategy
-        {
-            get;
-            private set;
-        }
+        #region Properties
 
-        public Action<IMarketStateCollection> SuspendFixtureStrategy
-        {
-            get;
-            private set;
-        }
+        public Action<IMarketStateCollection> DoNothingStrategy { get; private set; }
 
-        public Action<IMarketStateCollection> SuspendFixtureIfInPlayStrategy
-        {
-            get;
-            private set;
-        }
+        public Action<IMarketStateCollection> SuspendFixtureStrategy { get; private set; }
 
-        public Action<IMarketStateCollection> SuspendAllMarketsStrategy
-        {
-            get;
-            private set;
-        }
+        public Action<IMarketStateCollection> SuspendFixtureIfInPlayStrategy { get; private set; }
 
-        public Action<IMarketStateCollection> SuspendInPlayMarketsStrategy
-        {
-            get;
-            private set;
-        }
+        public Action<IMarketStateCollection> SuspendAllMarketsStrategy { get; private set; }
 
-        public Action<IMarketStateCollection> SuspendAllMarketsAndSetMatchStatusDeleted
-        {
-            get;
-            private set;
-        }
+        public Action<IMarketStateCollection> SuspendInPlayMarketsStrategy { get; private set; }
 
-        public Action<IMarketStateCollection> SuspendFixtureAndSetMatchStatusDeleted
-        {
-            get;
-            private set;
-        }
+        public Action<IMarketStateCollection> SuspendAllMarketsAndSetMatchStatusDeleted { get; private set; }
+
+        public Action<IMarketStateCollection> SuspendFixtureAndSetMatchStatusDeleted { get; private set; }
+
+        #endregion
+
+        #region Public methods
 
         public void RegisterAction(Action<IMarketStateCollection> action, SuspensionReason reason)
         {
@@ -162,10 +144,36 @@ namespace SS.Integration.Adapter
             }
             catch (Exception e)
             {
-                _logger.Error(string.Format("An error occured while performing suspend action on fixtureId={0}", fixtureId), e);
+                _logger.Error($"An error occured while performing suspend action on fixtureId={fixtureId}", e);
             }
         }
-        
+
+        public void Unsuspend(string fixtureId)
+        {
+            IMarketStateCollection state = _stateProvider.GetMarketsState(fixtureId);
+            List<IMarketState> marketStates;
+
+            if (state == null)
+            {
+                _logger.WarnFormat("State is not present for fixtureId={0} - can't unsuspend", fixtureId);
+                return;
+            }
+
+            var fixture = GetUnsuspendedFixture(state, out marketStates);
+
+            if (fixture.Markets.Any())
+            {
+                _logger.InfoFormat("Unsuspending previously suspended markets in {0}", fixture);
+                _plugin.ProcessStreamUpdate(fixture);
+            }
+
+            ((IUpdatableMarketStateCollection)state).OnMarketsForcedUnsuspension(marketStates);
+        }
+
+        #endregion
+
+        #region Private methods
+
         private void BuildDefaultStrategies()
         {
             DoNothingStrategy = x => { };
@@ -175,22 +183,22 @@ namespace SS.Integration.Adapter
             SuspendFixtureIfInPlayStrategy = x => { if (x.FixtureStatus == MatchStatus.InRunning) _plugin.Suspend(x.FixtureId); };
 
             SuspendAllMarketsStrategy = x =>
-                {
-                    IEnumerable<IMarketState> includedMarketStates;
-                    var fixture = GetFixtureWithSuspendedMarkets(x, out includedMarketStates);
+            {
+                IEnumerable<IMarketState> includedMarketStates;
+                var fixture = GetFixtureWithSuspendedMarkets(x, out includedMarketStates);
 
-                    _logger.DebugFormat("Sending suspension command through the plugin for fixtureId={0}", x.FixtureId);
+                _logger.DebugFormat("Sending suspension command through the plugin for fixtureId={0}", x.FixtureId);
 
-                    _plugin.ProcessStreamUpdate(fixture);
+                _plugin.ProcessStreamUpdate(fixture);
 
-                    _logger.InfoFormat("Marking markets for fixtureId={0} as suspended", x.FixtureId);
-                    ((IUpdatableMarketStateCollection)x).OnMarketsForcedSuspension(includedMarketStates);
-                };
+                _logger.InfoFormat("Marking markets for fixtureId={0} as suspended", x.FixtureId);
+                ((IUpdatableMarketStateCollection)x).OnMarketsForcedSuspension(includedMarketStates);
+            };
 
             SuspendAllMarketsAndSetMatchStatusDeleted = x =>
             {
                 IEnumerable<IMarketState> includedMarketStates;
-                
+
                 var fixture = GetFixtureWithSuspendedMarkets(x, out includedMarketStates);
                 fixture.MatchStatus = ((int)MatchStatus.Deleted).ToString();
 
@@ -210,7 +218,7 @@ namespace SS.Integration.Adapter
                     Sequence = x.FixtureSequence
                 };
 
-                
+
                 _logger.DebugFormat("Sending suspension command through the plugin for fixtureId={0} and setting its MatchStatus as deleted", x.FixtureId);
                 _plugin.ProcessStreamUpdate(fixture);
 
@@ -218,73 +226,51 @@ namespace SS.Integration.Adapter
             };
 
             SuspendInPlayMarketsStrategy = x =>
+            {
+                List<IMarketState> includedMarketStates = new List<IMarketState>();
+
+                var fixture = new Fixture
                 {
-                    List<IMarketState> includedMarketStates = new List<IMarketState>();
+                    Id = x.FixtureId,
+                    MatchStatus = ((int)x.FixtureStatus).ToString(),
+                    Sequence = x.FixtureSequence
+                };
 
-                    var fixture = new Fixture
+                foreach (var mkt_id in x.Markets)
+                {
+
+                    // we take a conservative approach here.
+                    // If, for any reason, the traded_in_play
+                    // is not present, we assume it is. Better
+                    // to suspend more markets, than less
+                    IMarketState state = x[mkt_id];
+                    if (state.HasTag("traded_in_play") &&
+                        string.Equals(state.GetTagValue("traded_in_play"), "false", StringComparison.OrdinalIgnoreCase))
                     {
-                        Id = x.FixtureId,
-                        MatchStatus = ((int)x.FixtureStatus).ToString(),
-                        Sequence = x.FixtureSequence
-                    };
-
-                    foreach (var mkt_id in x.Markets)
-                    {
-
-                        // we take a conservative approach here.
-                        // If, for any reason, the traded_in_play
-                        // is not present, we assume it is. Better
-                        // to suspend more markets, than less
-                        IMarketState state = x[mkt_id];
-                        if (state.HasTag("traded_in_play") && 
-                            string.Equals(state.GetTagValue("traded_in_play"), "false", StringComparison.OrdinalIgnoreCase))
-                        {
-                            _logger.DebugFormat("marketId={0} of fixtureId={1} will not be suspended as it is not traded in play", mkt_id, fixture.Id);
-                            continue;
-                        }
-
-                        if (!state.HasBeenActive)
-                        {
-                            _logger.DebugFormat("marketId={0} of fixtureId={1} will not be suspended as it has not been active before", mkt_id, fixture.Id);
-                            continue;
-                        }
-                        
-                        includedMarketStates.Add(state);
-                        fixture.Markets.Add(CreateMarket(x[mkt_id]));
+                        _logger.DebugFormat("marketId={0} of fixtureId={1} will not be suspended as it is not traded in play", mkt_id, fixture.Id);
+                        continue;
                     }
 
+                    if (!state.HasBeenActive)
+                    {
+                        _logger.DebugFormat("marketId={0} of fixtureId={1} will not be suspended as it has not been active before", mkt_id, fixture.Id);
+                        continue;
+                    }
 
-                    _logger.DebugFormat("Sending suspension command through the plugin for in-play markets of fixtureId={0}", x.FixtureId);
-                    _plugin.ProcessStreamUpdate(fixture);
+                    includedMarketStates.Add(state);
+                    fixture.Markets.Add(CreateMarket(x[mkt_id]));
+                }
 
-                    _logger.InfoFormat("Marking markets for fixtureId={0} as suspended", x.FixtureId);
-                    ((IUpdatableMarketStateCollection)x).OnMarketsForcedSuspension(includedMarketStates);
-                };
-        }
 
-        public void Unsuspend(string fixtureId)
-        {
-            IMarketStateCollection state = _stateProvider.GetMarketsState(fixtureId);
-            List<IMarketState> marketStates;
-
-            if (state == null)
-            {
-                _logger.WarnFormat("State is not present for fixtureId={0} - can't unsuspend", fixtureId);
-                return;
-            }
-            
-            var fixture = GetUnsuspendedFixture(state,out marketStates);
-
-            if (fixture.Markets.Any())
-            {
-                _logger.InfoFormat("Unsuspending previously suspended markets in {0}", fixture);
+                _logger.DebugFormat("Sending suspension command through the plugin for in-play markets of fixtureId={0}", x.FixtureId);
                 _plugin.ProcessStreamUpdate(fixture);
-            }
 
-            ((IUpdatableMarketStateCollection)state).OnMarketsForcedUnsuspension(marketStates);
+                _logger.InfoFormat("Marking markets for fixtureId={0} as suspended", x.FixtureId);
+                ((IUpdatableMarketStateCollection)x).OnMarketsForcedSuspension(includedMarketStates);
+            };
         }
 
-        private Fixture GetUnsuspendedFixture(IMarketStateCollection state,out List<IMarketState> marketStates)
+        private Fixture GetUnsuspendedFixture(IMarketStateCollection state, out List<IMarketState> marketStates)
         {
             marketStates = new List<IMarketState>();
 
@@ -298,7 +284,7 @@ namespace SS.Integration.Adapter
             foreach (var mkt_id in state.Markets)
             {
                 var marketState = state[mkt_id];
-                if(marketState == null)
+                if (marketState == null)
                     continue;
 
                 marketStates.Add(marketState);
@@ -312,7 +298,7 @@ namespace SS.Integration.Adapter
 
             return fixture;
         }
-    
+
         private static Fixture GetFixtureWithSuspendedMarkets(IMarketStateCollection state, out IEnumerable<IMarketState> includedMarketStates)
         {
             includedMarketStates = new List<IMarketState>();
@@ -320,7 +306,7 @@ namespace SS.Integration.Adapter
             var fixture = new Fixture
             {
                 Id = state.FixtureId,
-                MatchStatus = ((int) state.FixtureStatus).ToString(),
+                MatchStatus = ((int)state.FixtureStatus).ToString(),
                 Sequence = state.FixtureSequence
             };
 
@@ -333,9 +319,7 @@ namespace SS.Integration.Adapter
             return fixture;
         }
 
-        
-
-        private static Market CreateMarket(IMarketState marketState,bool isSuspended = true)
+        private static Market CreateMarket(IMarketState marketState, bool isSuspended = true)
         {
             var market = new Market(marketState.Id) { IsSuspended = isSuspended };
             foreach (var seln in marketState.Selections)
@@ -343,5 +327,7 @@ namespace SS.Integration.Adapter
 
             return market;
         }
+
+        #endregion
     }
 }

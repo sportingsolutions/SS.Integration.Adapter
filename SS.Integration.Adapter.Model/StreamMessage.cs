@@ -12,19 +12,11 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using Newtonsoft.Json;
-using SS.Integration.Common;
-
-namespace SS.Integration.Adapter
+namespace SS.Integration.Adapter.Model
 {
     public class StreamMessage
     {
         public string Relation { get; set; }
         public object Content { get; set; }
-
-        public T GetContent<T>()
-        {
-            return JsonConvert.DeserializeObject<T>(Content.ToString(), FixtureDateTimeJsonConverter.Instance);
-        }
     }
 }

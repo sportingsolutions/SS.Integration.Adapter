@@ -25,11 +25,15 @@ namespace SS.Integration.Adapter.Actors
     /// </summary>
     public static class AdapterActorSystem
     {
+        #region Fields
+
         private static ActorSystem _actorSystem;
         private static IActorRef _sportsProcessorActor;
         private static IActorRef _sportProcessorRouterActor;
         private static IActorRef _streamListenerManagerActor;
         private static IActorRef _fixtureStateActor;
+
+        #endregion
 
         public static ActorSystem ActorSystem => _actorSystem;
 

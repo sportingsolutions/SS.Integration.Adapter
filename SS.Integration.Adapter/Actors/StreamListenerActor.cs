@@ -40,7 +40,7 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
-        #region Private members
+        #region Fields
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerActor).ToString());
         private readonly ISettings _settings;
@@ -298,8 +298,8 @@ namespace SS.Integration.Adapter.Actors
         {
             try
             {
-                var deltaMessage = msg.Data.FromJson<StreamMessage>();
-                var fixtureDelta = deltaMessage.GetContent<Fixture>();
+                var streamMessage = msg.Data.FromJson<StreamMessage>();
+                var fixtureDelta = FixtureHelper.GetFixtureDelta(streamMessage);
 
                 _logger.Info($"{fixtureDelta} stream update arrived");
 
@@ -548,7 +548,7 @@ namespace SS.Integration.Adapter.Actors
             if (string.IsNullOrEmpty(snapshotJson))
                 throw new Exception($"Received empty snapshot for {_resource}");
 
-            var snapshot = FixtureJsonHelper.GetFromJson(snapshotJson);
+            var snapshot = FixtureHelper.GetFromJson(snapshotJson);
             if (snapshot == null || snapshot != null && snapshot.Id.IsNullOrWhiteSpace())
                 throw new Exception($"Received a snapshot that resulted in an empty snapshot object {_resource}"
                                     + Environment.NewLine +

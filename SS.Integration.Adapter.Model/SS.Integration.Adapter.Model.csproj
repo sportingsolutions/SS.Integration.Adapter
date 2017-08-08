@@ -86,6 +86,7 @@
     <Compile Include="SelectionStatus.cs" />
     <Compile Include="Sports.cs" />
     <Compile Include="StateProviderProxy.cs" />
+    <Compile Include="StreamMessage.cs" />
     <Compile Include="Summary.cs" />
   </ItemGroup>
   <ItemGroup>

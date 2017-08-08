@@ -14,7 +14,7 @@ namespace SS.Integration.Adapter.Diagnostics
 {
     public class SupervisorProxy : ServiceInterface.ISupervisorProxy
     {
-        #region Private members
+        #region Fields
 
         private readonly IActorRef _supervisorActor;
 

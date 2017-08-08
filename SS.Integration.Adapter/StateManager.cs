@@ -27,14 +27,24 @@ namespace SS.Integration.Adapter
 {
     public class StateManager : IStoredObjectProvider, IStateManager, IStateProvider
     {
+        #region Constants
+
         private const string PLUGIN_STORE_PREFIX = "plugin_";
-        private static readonly ILog _logger = LogManager.GetLogger(typeof(StateManager));
+
+        #endregion
+
+        #region Fields
+
+        private static readonly ILog Logger = LogManager.GetLogger(typeof(StateManager));
 
         private readonly IObjectProvider<IUpdatableMarketStateCollection> _persistanceLayer;
         private readonly IObjectProvider<IPluginFixtureState> _pluginPersistanceLayer;
         private readonly ConcurrentDictionary<string, MarketRulesManager> _rulesManagers;
-        private readonly HashSet<IMarketRule> _Rules;
+        private readonly HashSet<IMarketRule> _rules;
 
+        #endregion
+
+        #region Constructors
 
         public StateManager(ISettings settings, IAdapterPlugin plugin)
         {
@@ -48,41 +58,43 @@ namespace SS.Integration.Adapter
             _pluginPersistanceLayer = new CachedObjectStoreWithPersistance<IPluginFixtureState>(
                 new BinaryStoreProvider<IPluginFixtureState>(settings.MarketFiltersDirectory, "PluginStore-{0}.bin"),
                 "MarketFilters", settings.CacheExpiryInMins * 60);
-            
+
             _rulesManagers = new ConcurrentDictionary<string, MarketRulesManager>();
-            
-            Plugin = plugin;
+
             SuspensionManager = new SuspensionManager(this, plugin);
 
-            _Rules = new HashSet<IMarketRule>
+            _rules = new HashSet<IMarketRule>
             {
                 VoidUnSettledMarket.Instance,
                 DeletedMarketsRule.Instance,
                 InactiveMarketsFilteringRule.Instance
             };
-            
+
             if (settings.DeltaRuleEnabled)
             {
-                _Rules.Add(DeltaRule.Instance);
+                _rules.Add(DeltaRule.Instance);
             }
 
-            foreach (var rule in _Rules)
+            foreach (var rule in _rules)
             {
-                _logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
+                Logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
             }
-
         }
+
+        #endregion
+
+        #region Internal methods
 
         internal void OverwriteRuleList(IEnumerable<IMarketRule> rules)
         {
             if (rules != null)
             {
-                _Rules.Clear();
-                _Rules.UnionWith(rules);
+                _rules.Clear();
+                _rules.UnionWith(rules);
 
-                foreach (var rule in _Rules)
+                foreach (var rule in _rules)
                 {
-                    _logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
+                    Logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
                 }
             }
         }
@@ -94,28 +106,17 @@ namespace SS.Integration.Adapter
 
             foreach (var rule in rules)
             {
-                if (_Rules.Add(rule))
-                {
-                    _logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
-                }
-                else
-                {
-                    _logger.DebugFormat("Rule {0} already loaded", rule.Name);
-                }
+                Logger.Debug(_rules.Add(rule)
+                    ? $"Rule {rule.Name} correctly loaded"
+                    : $"Rule {rule.Name} already loaded");
             }
         }
 
-        internal IEnumerable<IMarketRule> LoadedRules
-        {
-            get
-            {
-                return _Rules;
-            }
-        }
+        internal IEnumerable<IMarketRule> LoadedRules => _rules;
 
-        private IAdapterPlugin Plugin { get; set; }
+        #endregion
 
-        #region IStoredObjectProvider
+        #region Implementation of IStoredObjectProvider
 
         public IUpdatableMarketStateCollection GetObject(string fixtureId)
         {
@@ -134,7 +135,7 @@ namespace SS.Integration.Adapter
 
         #endregion
 
-        #region IStateProvider
+        #region Implementation of IStateProvider
 
         IMarketStateCollection IStateProvider.GetMarketsState(string fixtureId)
         {
@@ -181,7 +182,7 @@ namespace SS.Integration.Adapter
 
         #endregion
 
-        #region IStateManager
+        #region Implementation of IStateManager
 
         public IMarketRulesManager CreateNewMarketRuleManager(string fixtureId)
         {
@@ -191,7 +192,7 @@ namespace SS.Integration.Adapter
             if (_rulesManagers.ContainsKey(fixtureId))
                 return _rulesManagers[fixtureId];
 
-            var rule_manager = new MarketRulesManager(fixtureId, this, _Rules);
+            var rule_manager = new MarketRulesManager(fixtureId, this, _rules);
             _rulesManagers[fixtureId] = rule_manager;
 
             return rule_manager;
@@ -202,7 +203,7 @@ namespace SS.Integration.Adapter
             if (string.IsNullOrEmpty(fixtureId))
                 return;
 
-            _logger.DebugFormat("Clearing data state for fixtureId={0}", fixtureId);
+            Logger.DebugFormat("Clearing data state for fixtureId={0}", fixtureId);
 
             if (_rulesManagers.ContainsKey(fixtureId))
             {
@@ -216,6 +217,5 @@ namespace SS.Integration.Adapter
         public IStateProvider StateProvider { get { return this; } }
 
         #endregion
-
     }
 }

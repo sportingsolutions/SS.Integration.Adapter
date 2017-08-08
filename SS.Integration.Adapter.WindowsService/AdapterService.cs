@@ -32,7 +32,7 @@ namespace SS.Integration.Adapter.WindowsService
 {
     public partial class AdapterService : ServiceBase
     {
-        #region Private members
+        #region Fields
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(AdapterService).ToString());
         private static Task _adapterWorkerThread;

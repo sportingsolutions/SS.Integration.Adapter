@@ -29,7 +29,7 @@ namespace SS.Integration.Adapter
 {
     public class Adapter
     {
-        #region Private members
+        #region Fields
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(Adapter).ToString());
         private readonly IStatsHandle _stats;

@@ -31,7 +31,7 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
-        #region Private members
+        #region Fields
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerManagerActor).ToString());
         private readonly ISettings _settings;
