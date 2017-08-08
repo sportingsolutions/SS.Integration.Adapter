@@ -49,6 +49,7 @@ namespace SS.Integration.Adapter.Tests
             SettingsMock.SetupGet(a => a.FixturesStateAutoStoreInterval).Returns(int.MaxValue);
 
             StateManagerMock = new Mock<IStateManager>();
+            MarketRulesManagerMock = new Mock<IMarketRulesManager>();
             StreamHealthCheckValidationMock = new Mock<IStreamHealthCheckValidation>();
             FixtureValidationMock = new Mock<IFixtureValidation>();
         }

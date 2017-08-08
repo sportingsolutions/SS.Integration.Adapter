@@ -133,7 +133,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<StreamConnectedMsg>(a => Become(Streaming));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
             Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
-            Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot());
+            Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
 
             try
@@ -164,7 +164,7 @@ namespace SS.Integration.Adapter.Actors
                 Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
                 Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
                 Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
-                Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot());
+                Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
                 Receive<ClearFixtureStateMsg>(a => ClearState(true));
 
                 var streamConnectedMsg = new StreamConnectedMsg { FixtureId = _resource.Id };
@@ -264,7 +264,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<ResourceStopStreamingMsg>(a => StopStreaming());
             Receive<StreamUpdateMsg>(a => RecoverFromErroredState(prevState, out erroredEx));
             Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
-            Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot());
+            Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
         }
 
@@ -418,7 +418,7 @@ namespace SS.Integration.Adapter.Actors
                 Receive<StreamConnectedMsg>(a => Become(Streaming));
                 Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
                 Receive<StreamUpdateMsg>(a => Stash.Stash());
-                Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot());
+                Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
                 Receive<ClearFixtureStateMsg>(a => ClearState(true));
 
                 var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
@@ -515,16 +515,17 @@ namespace SS.Integration.Adapter.Actors
             }
             catch (Exception ex)
             {
-                var pluginError = new PluginException($"Plugin UnSuspend fixture {fixture.Id} error occured", ex);
+                var pluginError = new PluginException($"Plugin UnSuspend {fixture} error occured", ex);
                 UpdateStatsError(pluginError);
                 throw pluginError;
             }
         }
 
-        private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false)
+        private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false, bool skipMarketRules = false)
         {
             var snapshot = RetrieveSnapshot();
-            ProcessSnapshot(snapshot, true, hasEpochChanged);
+            var shouldSkipProcessingMarketRules = skipMarketRules || _settings.SkipRulesOnError && _erroredException != null;
+            ProcessSnapshot(snapshot, true, hasEpochChanged, shouldSkipProcessingMarketRules);
         }
 
         private Fixture RetrieveSnapshot()
@@ -562,7 +563,7 @@ namespace SS.Integration.Adapter.Actors
             return snapshot;
         }
 
-        private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged)
+        private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool skipMarketRules = false)
         {
             var logString = isFullSnapshot ? "snapshot" : "stream update";
 
@@ -573,19 +574,27 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
+                if (isFullSnapshot && !VerifySequenceOnSnapshot(snapshot))
+                    return;
+
                 _streamStatsActor.Tell(new UpdateStatsStartMsg
                 {
                     Fixture = snapshot,
-                    Sequence = _currentSequence,
+                    Sequence = snapshot.Sequence,
                     IsSnapshot = isFullSnapshot,
                     UpdateReceivedAt = DateTime.UtcNow
                 });
 
-                if (isFullSnapshot && !VerifySequenceOnSnapshot(snapshot))
-                    return;
+                if (!skipMarketRules)
+                {
+                    _marketsRuleManager.ApplyRules(snapshot);
 
-                _marketsRuleManager.ApplyRules(snapshot);
-                snapshot.IsModified = true;
+                    snapshot.IsModified = true;
+                }
+                else
+                {
+                    _marketsRuleManager.ApplyRules(snapshot, true);
+                }
 
                 if (isFullSnapshot)
                 {
@@ -595,7 +604,7 @@ namespace SS.Integration.Adapter.Actors
                     }
                     catch (Exception ex)
                     {
-                        var pluginError = new PluginException($"Plugin ProcessSnapshot id {snapshot.Id} error occured", ex);
+                        var pluginError = new PluginException($"Plugin ProcessSnapshot {snapshot} error occured", ex);
                         UpdateStatsError(pluginError);
                         throw pluginError;
                     }
@@ -608,7 +617,7 @@ namespace SS.Integration.Adapter.Actors
                     }
                     catch (Exception ex)
                     {
-                        var pluginError = new PluginException($"Plugin ProcessStreamUpdate id {snapshot.Id} error occured", ex);
+                        var pluginError = new PluginException($"Plugin ProcessStreamUpdate {snapshot} error occured", ex);
                         UpdateStatsError(pluginError);
                         throw pluginError;
                     }
@@ -705,7 +714,7 @@ namespace SS.Integration.Adapter.Actors
                     }
                     catch (Exception ex)
                     {
-                        var pluginError = new PluginException($"Plugin ProcessMatchStatus id {fixtureDelta.Id} error occured", ex);
+                        var pluginError = new PluginException($"Plugin ProcessMatchStatus {fixtureDelta} error occured", ex);
                         UpdateStatsError(pluginError);
                         throw pluginError;
                     }
@@ -745,7 +754,7 @@ namespace SS.Integration.Adapter.Actors
                 }
                 catch (Exception ex)
                 {
-                    var pluginError = new PluginException($"Plugin ProcessFixtureDeletion id {fixtureDelta.Id} error occured", ex);
+                    var pluginError = new PluginException($"Plugin ProcessFixtureDeletion {fixtureDelta} error occured", ex);
                     UpdateStatsError(pluginError);
                     throw pluginError;
                 }

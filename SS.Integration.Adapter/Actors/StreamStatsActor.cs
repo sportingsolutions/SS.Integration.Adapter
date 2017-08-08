@@ -97,7 +97,7 @@ namespace SS.Integration.Adapter.Actors
             }
 
             _logger.Error(
-                $"Error occured at {msg.ErrorOccuredAt} for {_startMessage.Fixture.Id} sequence {_startMessage.Sequence} - {msg.Error}");
+                $"Error occured at {msg.ErrorOccuredAt} for {_startMessage.Fixture} sequence {_startMessage.Sequence} - {msg.Error}");
 
             var minutes = (int)Math.Ceiling((DateTime.UtcNow - _adapterStartDate.AddMilliseconds(-1)).TotalMinutes);
 

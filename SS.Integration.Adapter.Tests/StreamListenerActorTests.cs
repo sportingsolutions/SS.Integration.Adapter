@@ -60,6 +60,7 @@ namespace SS.Integration.Adapter.Tests
             FootabllSportMock = new Mock<IFeature>();
             ServiceMock = new Mock<IServiceFacade>();
             StateManagerMock = new Mock<IStateManager>();
+            MarketRulesManagerMock = new Mock<IMarketRulesManager>();
             StateProviderMock = new Mock<IStateProvider>();
             StoreProviderMock = new Mock<IStoreProvider>();
             SuspensionManagerMock = new Mock<ISuspensionManager>();
@@ -128,6 +129,18 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -187,6 +200,18 @@ namespace SS.Integration.Adapter.Tests
                     StateManagerMock.Verify(a =>
                             a.ClearState(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
                     Assert.AreEqual(StreamListenerState.Stopped, actor.UnderlyingActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -245,6 +270,18 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     StateManagerMock.Verify(a =>
                             a.ClearState(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Stopped, actor.UnderlyingActor.State);
                 },
@@ -315,6 +352,18 @@ namespace SS.Integration.Adapter.Tests
                     StateManagerMock.Verify(a =>
                             a.ClearState(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -378,6 +427,18 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -431,6 +492,18 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Initialized, actor.UnderlyingActor.State);
                 },
@@ -489,6 +562,18 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -570,6 +655,18 @@ namespace SS.Integration.Adapter.Tests
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -663,6 +760,18 @@ namespace SS.Integration.Adapter.Tests
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Exactly(2));
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Exactly(2));
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -756,6 +865,18 @@ namespace SS.Integration.Adapter.Tests
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Exactly(2));
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Exactly(2));
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -843,6 +964,18 @@ namespace SS.Integration.Adapter.Tests
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -935,6 +1068,18 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
@@ -1040,6 +1185,21 @@ namespace SS.Integration.Adapter.Tests
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
                         Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.OnFixtureUnPublished(),
+                        Times.Once);
                     Assert.AreEqual(StreamListenerState.Stopped, actor.UnderlyingActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -1120,6 +1280,18 @@ namespace SS.Integration.Adapter.Tests
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
                         Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -1176,6 +1348,18 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -1218,6 +1402,18 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Errored, actor.UnderlyingActor.State);
                 },
@@ -1286,6 +1482,18 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -1330,6 +1538,18 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Errored, actor.UnderlyingActor.State);
                 },
@@ -1378,6 +1598,18 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
@@ -1468,7 +1700,18 @@ namespace SS.Integration.Adapter.Tests
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
                         Times.Never);
-
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
                     Assert.Throws<AggregateException>(() =>
                     {
                         Sys.ActorSelection(
@@ -1476,6 +1719,194 @@ namespace SS.Integration.Adapter.Tests
                                 StreamListenerActor.GetName(resourceFacadeMock.Object.Id))
                             .ResolveOne(TimeSpan.FromSeconds(5)).Wait();
                     }).InnerException.Should().BeOfType<ActorNotFoundException>();
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        /// <summary>
+        /// This test ensures that we don't process the market rules when processing snapshot on-demand
+        /// </summary>
+        [Test]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
+        public void OnProcessSnapshotSkipMarketRulesWhenRetrieveAndProcessSnapshotRequested()
+        {
+            //
+            //Arrange
+            //
+            Fixture snapshot;
+            Mock<IResourceFacade> resourceFacadeMock;
+            SetupCommonMockObjects(
+                /*sport*/FootabllSportMock.Object.Name,
+                /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
+                /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
+                out snapshot,
+                out resourceFacadeMock);
+            StreamHealthCheckValidationMock.Setup(a =>
+                    a.CanConnectToStreamServer(
+                        It.IsAny<IResourceFacade>(),
+                        It.IsAny<StreamListenerState>()))
+                .Returns(true);
+
+            //
+            //Act
+            //
+            var actor = ActorOfAsTestActorRef(() =>
+                new StreamListenerActor(
+                    resourceFacadeMock.Object,
+                    PluginMock.Object,
+                    StateManagerMock.Object,
+                    SettingsMock.Object,
+                    StreamHealthCheckValidationMock.Object,
+                    FixtureValidationMock.Object));
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Never);
+                    PluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Never);
+                    PluginMock.Verify(a =>
+                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    SuspensionManagerMock.Verify(a =>
+                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
+                    Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+
+            //
+            //Act
+            //
+            actor.Tell(new RetrieveAndProcessSnapshotMsg { FixtureId = resourceFacadeMock.Object.Id });
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                    PluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Once);
+                    PluginMock.Verify(a =>
+                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    SuspensionManagerMock.Verify(a =>
+                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
+                    Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        /// <summary>
+        /// This test ensures that we don't process the market rules when processing snapshot on-demand
+        /// </summary>
+        [Test]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
+        public void OnProcessSnapshotSkipMarketRulesWhenErrored()
+        {
+            //
+            //Arrange
+            //
+            Fixture snapshot;
+            Mock<IResourceFacade> resourceFacadeMock;
+            SetupCommonMockObjects(
+                /*sport*/FootabllSportMock.Object.Name,
+                /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
+                /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
+                out snapshot,
+                out resourceFacadeMock);
+            StreamHealthCheckValidationMock.Setup(a =>
+                    a.CanConnectToStreamServer(
+                        It.IsAny<IResourceFacade>(),
+                        It.IsAny<StreamListenerState>()))
+                .Returns(true);
+            FixtureValidationMock.SetupSequence(o =>
+                    o.IsSnapshotNeeded(
+                        It.IsAny<IResourceFacade>(),
+                        It.IsAny<FixtureState>()))
+                .Throws(new Exception())
+                .Returns(false);
+            SettingsMock.SetupGet(o => o.SkipRulesOnError).Returns(true);
+
+            //
+            //Act
+            //
+            var actor = ActorOfAsTestActorRef(() =>
+                new StreamListenerActor(
+                    resourceFacadeMock.Object,
+                    PluginMock.Object,
+                    StateManagerMock.Object,
+                    SettingsMock.Object,
+                    StreamHealthCheckValidationMock.Object,
+                    FixtureValidationMock.Object));
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                    PluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Once);
+                    PluginMock.Verify(a =>
+                            a.UnSuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    SuspensionManagerMock.Verify(a =>
+                            a.Unsuspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
+                    Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
@@ -1500,7 +1931,7 @@ namespace SS.Integration.Adapter.Tests
                 out snapshot,
                 out resourceFacadeMock);
 
-            ServiceMock.Setup(o => o.GetSports()).Returns(new[] {FootabllSportMock.Object});
+            ServiceMock.Setup(o => o.GetSports()).Returns(new[] { FootabllSportMock.Object });
             ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
                 .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
             StreamHealthCheckValidationMock.Setup(a =>
@@ -1611,6 +2042,18 @@ namespace SS.Integration.Adapter.Tests
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
                         Times.Once);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.CommitChanges(),
+                        Times.Never);
+                    MarketRulesManagerMock.Verify(a =>
+                            a.RollbackChanges(),
+                        Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),

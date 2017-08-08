@@ -33,6 +33,7 @@ namespace SS.Integration.Adapter.Tests
         protected Mock<IStateProvider> StateProviderMock;
         protected Mock<IStoreProvider> StoreProviderMock;
         protected Mock<ISuspensionManager> SuspensionManagerMock;
+        protected Mock<IMarketRulesManager> MarketRulesManagerMock;
         protected Mock<IStreamHealthCheckValidation> StreamHealthCheckValidationMock;
         protected Mock<IFixtureValidation> FixtureValidationMock;
 
@@ -76,7 +77,7 @@ namespace SS.Integration.Adapter.Tests
             resourceFacadeMock.Setup(r => r.StartStreaming()).Raises(r => r.StreamConnected += null, EventArgs.Empty);
             resourceFacadeMock.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);
             StateManagerMock.Setup(o => o.CreateNewMarketRuleManager(It.Is<string>(id => id.Equals(snapshotVar.Id))))
-                .Returns(new Mock<IMarketRulesManager>().Object);
+                .Returns(MarketRulesManagerMock.Object);
 
             StateManagerMock.SetupGet(o => o.StateProvider)
                 .Returns(StateProviderMock.Object);

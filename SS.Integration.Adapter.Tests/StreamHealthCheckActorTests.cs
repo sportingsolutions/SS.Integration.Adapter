@@ -59,6 +59,7 @@ namespace SS.Integration.Adapter.Tests
             FootabllSportMock = new Mock<IFeature>();
             ServiceMock = new Mock<IServiceFacade>();
             StateManagerMock = new Mock<IStateManager>();
+            MarketRulesManagerMock = new Mock<IMarketRulesManager>();
             StateProviderMock = new Mock<IStateProvider>();
             StoreProviderMock = new Mock<IStoreProvider>();
             SuspensionManagerMock = new Mock<ISuspensionManager>();
