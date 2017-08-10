@@ -171,7 +171,7 @@ namespace SS.Integration.Adapter.Actors
 
             _shouldSendProcessSportsMessage = true;
             IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.FixtureId));
-            streamListenerActor.Tell(new ResourceStopStreamingMsg());
+            streamListenerActor.Tell(new StopStreamingMsg());
         }
 
         private void ClearFixtureStateMsgHandler(ClearFixtureStateMsg msg)

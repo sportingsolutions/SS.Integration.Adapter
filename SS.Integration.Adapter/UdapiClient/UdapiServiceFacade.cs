@@ -79,7 +79,7 @@ namespace SS.Integration.Adapter.UdapiClient
 
         public IEnumerable<IFeature> GetSports()
         {
-            return _service == null ? null : _service.GetFeatures();
+            return _service?.GetFeatures();
         }
 
         public List<IResourceFacade> GetResources(string featureName)
@@ -154,6 +154,11 @@ namespace SS.Integration.Adapter.UdapiClient
                     if (_service == null)
                     {
                         _logger.Fatal("Udapi Service proxy could not be created");
+                    }
+                    else
+                    {
+                        _service.IsServiceCacheEnabled = _settings.IsSdkServiceCacheEnabled;
+                        _service.ServiceCacheInvalidationInterval = _settings.FixtureCheckerFrequency / 1000;
                     }
 
                     IsConnected = true;

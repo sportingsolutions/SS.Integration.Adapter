@@ -83,6 +83,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Actors\Messages\ClearFixtureStateMsg.cs" />
+    <Compile Include="Actors\Messages\SuspendAndReprocessSnapshotMsg.cs" />
     <Compile Include="Actors\Messages\RestartStreamListenerMsg.cs" />
     <Compile Include="Actors\Messages\RetrieveAndProcessSnapshotMsg.cs" />
     <Compile Include="Actors\Messages\StreamListenerCreationCompletedMsg.cs" />
@@ -98,8 +99,8 @@
     <Compile Include="Actors\Messages\ConnectToStreamServerMsg.cs" />
     <Compile Include="Actors\Messages\CreateStreamListenerMsg.cs" />
     <Compile Include="Actors\Messages\ProcessSportMsg.cs" />
-    <Compile Include="Actors\Messages\ResourceStartStreamingMsg.cs" />
-    <Compile Include="Actors\Messages\ResourceStopStreamingMsg.cs" />
+    <Compile Include="Actors\Messages\StartStreamingMsg.cs" />
+    <Compile Include="Actors\Messages\StopStreamingMsg.cs" />
     <Compile Include="Actors\Messages\StreamHealthCheckMsg.cs" />
     <Compile Include="Actors\Messages\StreamListenerStoppedMsg.cs" />
     <Compile Include="Actors\Messages\StreamConnectedMsg.cs" />

@@ -134,6 +134,9 @@ namespace SS.Integration.Adapter.Configuration
             value = ConfigurationManager.AppSettings["allowFixtureStreamingInSetupMode"];
             AllowFixtureStreamingInSetupMode = !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
 
+            value = ConfigurationManager.AppSettings["isSdkServiceCacheEnabled"];
+            IsSdkServiceCacheEnabled = !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
+
             LogAll();
         }
 
@@ -195,6 +198,7 @@ namespace SS.Integration.Adapter.Configuration
         public int StartStreamingTimeoutInSeconds { get; private set; }
         public int StartStreamingAttempts { get; private set; }
         public bool AllowFixtureStreamingInSetupMode { get; }
+        public bool IsSdkServiceCacheEnabled { get; }
         public bool SkipRulesOnError { get; private set; }
         public int StreamSafetyThreshold { get; private set; }
 

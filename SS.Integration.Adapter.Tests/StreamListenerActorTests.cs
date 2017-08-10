@@ -1996,7 +1996,7 @@ namespace SS.Integration.Adapter.Tests
             //Wait 1 second and force Stream Disconnection
             Task.Delay(1000).Wait();
             resourceActorRef.Tell(
-                new ResourceStopStreamingMsg(),
+                new StopStreamingMsg(),
                 streamListenerManagerActor);
 
             //

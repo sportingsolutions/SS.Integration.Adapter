@@ -187,5 +187,10 @@ namespace SS.Integration.Adapter.Interface
         /// This flag tells wether the fixture is allowed to start streaming when IsFixtureSetup is true
         /// </summary>
         bool AllowFixtureStreamingInSetupMode { get; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        bool IsSdkServiceCacheEnabled { get; }
     }
 }

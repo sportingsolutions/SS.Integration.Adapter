@@ -130,8 +130,10 @@ namespace SS.Integration.Adapter.Actors
             _logger.Info($"Stream listener for {_resource} moved to Initialized State");
 
             Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServer());
+            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
             Receive<StreamConnectedMsg>(a => Become(Streaming));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
+            Receive<StopStreamingMsg>(a => StopStreaming());
             Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
@@ -158,15 +160,16 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Info($"Stream listener for {_resource} moved to Streaming State");
 
+            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
+            Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
+            Receive<StopStreamingMsg>(a => StopStreaming());
+            Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
+            Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
+            Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
+            Receive<ClearFixtureStateMsg>(a => ClearState(true));
+
             try
             {
-                Receive<ResourceStopStreamingMsg>(a => StopStreaming());
-                Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
-                Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
-                Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
-                Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
-                Receive<ClearFixtureStateMsg>(a => ClearState(true));
-
                 var streamConnectedMsg = new StreamConnectedMsg { FixtureId = _resource.Id };
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
 
@@ -261,7 +264,8 @@ namespace SS.Integration.Adapter.Actors
                 }
             }
 
-            Receive<ResourceStopStreamingMsg>(a => StopStreaming());
+            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
+            Receive<StopStreamingMsg>(a => StopStreaming());
             Receive<StreamUpdateMsg>(a => RecoverFromErroredState(prevState, out erroredEx));
             Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
@@ -475,7 +479,7 @@ namespace SS.Integration.Adapter.Actors
             _logger.Debug($"Starting streaming for {_resource} - resource has sequence={_resource.Content.Sequence}");
 
             _streamHealthCheckActor.Tell(new ConnectToStreamServerMsg());
-            _resourceActor.Tell(new ResourceStartStreamingMsg());
+            _resourceActor.Tell(new StartStreamingMsg());
 
             _logger.Debug($"Started streaming for {_resource} - resource has sequence={_resource.Content.Sequence}");
         }
@@ -861,7 +865,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void StopStreaming()
         {
-            _resourceActor.Tell(new ResourceStopStreamingMsg());
+            _resourceActor.Tell(new StopStreamingMsg());
 
             Become(Stopped);
         }

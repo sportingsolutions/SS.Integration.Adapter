@@ -44,6 +44,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly IStreamHealthCheckValidation _streamHealthCheckValidation;
         private ICancelable _startStreamingNotResponding;
         private int _startStreamingNotRespondingWarnCount;
+        private bool _streamInvalidDetected;
 
         #endregion
 
@@ -90,16 +91,29 @@ namespace SS.Integration.Adapter.Actors
 
                 var streamIsValid =
                     _streamHealthCheckValidation.ValidateStream(msg.Resource, msg.StreamingState, msg.CurrentSequence);
+                var connectToStreamServer =
+                    _streamHealthCheckValidation.CanConnectToStreamServer(msg.Resource, msg.StreamingState);
 
                 if (!streamIsValid)
                 {
                     _logger.Warn($"Detected invalid stream for {msg.Resource}");
+
+                    if (_streamInvalidDetected)
+                    {
+                        Context.Parent.Tell(new StopStreamingMsg());
+                    }
+                    else
+                    {
+                        _streamInvalidDetected = true;
+                        Context.Parent.Tell(new SuspendAndReprocessSnapshotMsg());
+                    }
+                }
+                else
+                {
+                    _streamInvalidDetected = false;
                 }
 
-                var connectToStreamServer =
-                    _streamHealthCheckValidation.CanConnectToStreamServer(msg.Resource, msg.StreamingState);
-
-                if (streamIsValid && connectToStreamServer)
+                if (connectToStreamServer)
                 {
                     Context.Parent.Tell(new ConnectToStreamServerMsg());
                 }

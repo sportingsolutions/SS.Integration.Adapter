@@ -38,6 +38,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly IResourceFacade _resource;
         private readonly string _fixtureId;
         private readonly IActorRef _streamListenerActor;
+        private bool _isStreamConnected;
 
         #endregion
 
@@ -49,8 +50,8 @@ namespace SS.Integration.Adapter.Actors
             _resource = resource ?? throw new ArgumentNullException(nameof(resource));
             _fixtureId = _resource.Id;
 
-            Receive<ResourceStartStreamingMsg>(o => ResourceStartStreamingMsgHandler(o));
-            Receive<ResourceStopStreamingMsg>(o => ResourceStopStreamingMsgHandler(o));
+            Receive<StartStreamingMsg>(o => StartStreamingMsgHandler(o));
+            Receive<StopStreamingMsg>(o => StopStreamingMsgHandler(o));
 
             Initialize();
         }
@@ -61,12 +62,14 @@ namespace SS.Integration.Adapter.Actors
 
         private void Resource_StreamConnected(object sender, EventArgs e)
         {
+            _isStreamConnected = true;
             _logger.Info($"{_resource} Stream Connected");
             _streamListenerActor.Tell(new StreamConnectedMsg { FixtureId = _fixtureId });
         }
 
         private void Resource_StreamDisconnected(object sender, EventArgs e)
         {
+            _isStreamConnected = false;
             _logger.Info($"{_resource} Stream Disconnected");
             _streamListenerActor.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId });
         }
@@ -96,17 +99,24 @@ namespace SS.Integration.Adapter.Actors
             _streamListenerActor.Tell(new StreamUpdateMsg { Data = e.Update });
         }
 
-        private void ResourceStartStreamingMsgHandler(ResourceStartStreamingMsg msg)
+        private void StartStreamingMsgHandler(StartStreamingMsg msg)
         {
-            _resource.StartStreaming();
+            if (!_isStreamConnected)
+            {
+                //StartStreaming will trigger Resource_StreamConnected
+                _resource.StartStreaming();
+            }
         }
 
-        private void ResourceStopStreamingMsgHandler(ResourceStopStreamingMsg msg)
+        private void StopStreamingMsgHandler(StopStreamingMsg msg)
         {
             _logger.Info("Resource will Stop Streaming");
 
-            //StopStreaming will trigger Resource_StreamDisconnected
-            _resource.StopStreaming();
+            if (_isStreamConnected)
+            {
+                //StopStreaming will trigger Resource_StreamDisconnected
+                _resource.StopStreaming();
+            }
         }
 
         #endregion

@@ -14,7 +14,7 @@
 
 namespace SS.Integration.Adapter.Actors.Messages
 {
-    internal class ResourceStopStreamingMsg
+    internal class StopStreamingMsg
     {
     }
 }
