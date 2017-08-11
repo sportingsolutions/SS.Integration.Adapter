@@ -12,9 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
 using SS.Integration.Adapter.Diagnostics.Model;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model.Interfaces;
