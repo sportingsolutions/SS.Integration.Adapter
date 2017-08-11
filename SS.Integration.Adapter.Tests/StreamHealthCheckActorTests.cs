@@ -27,8 +27,6 @@ using SS.Integration.Adapter.Model.Interfaces;
 using Akka.Routing;
 using FluentAssertions;
 using SportingSolutions.Udapi.Sdk.Interfaces;
-using SS.Integration.Adapter.Diagnostics.Model;
-using SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
 using SS.Integration.Adapter.Enums;
 
 namespace SS.Integration.Adapter.Tests
@@ -193,7 +191,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.Suspension),
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
                 },
@@ -291,15 +289,15 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.Suspension),
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.FIXTURE_ERRORED),
+                                SuspensionReason.FixtureErrored),
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.DISCONNECT_EVENT),
+                                SuspensionReason.DisconnectEvent),
                         Times.Never);
 
                     Assert.Throws<AggregateException>(() =>

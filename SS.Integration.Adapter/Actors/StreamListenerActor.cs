@@ -227,7 +227,7 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Info($"Stream listener for {_resource} moved to Errored State");
 
-            SuspendFixture(SuspensionReason.SUSPENSION);
+            SuspendFixture(SuspensionReason.Suspension);
             Exception erroredEx;
             RecoverFromErroredState(prevState, out erroredEx);
 
@@ -236,8 +236,8 @@ namespace SS.Integration.Adapter.Actors
                 try
                 {
                     _logger.Error(
-                        $"Suspending Fixture {_resource} with FIXTURE_ERRORED as Stream Listener failed to recover from Errored State - exception - {erroredEx}");
-                    SuspendFixture(SuspensionReason.FIXTURE_ERRORED);
+                        $"Suspending Fixture {_resource} with FixtureErrored as Stream Listener failed to recover from Errored State - exception - {erroredEx}");
+                    SuspendFixture(SuspensionReason.FixtureErrored);
                 }
                 catch (Exception ex)
                 {
@@ -373,7 +373,7 @@ namespace SS.Integration.Adapter.Actors
 
                 if (_streamHealthCheckValidation.ShouldSuspendOnDisconnection(fixtureState, _fixtureStartTime))
                 {
-                    SuspendFixture(SuspensionReason.DISCONNECT_EVENT);
+                    SuspendFixture(SuspensionReason.DisconnectEvent);
                 }
 
                 Become(Disconnected);
@@ -751,7 +751,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                SuspendFixture(SuspensionReason.FIXTURE_DELETED);
+                SuspendFixture(SuspensionReason.FixtureDeleted);
                 try
                 {
                     _platformConnector.ProcessFixtureDeletion(fixtureDelta);
@@ -815,7 +815,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void SuspendAndReprocessSnapshot(bool hasEpochChanged = false)
         {
-            SuspendFixture(SuspensionReason.SUSPENSION);
+            SuspendFixture(SuspensionReason.Suspension);
             RetrieveAndProcessSnapshot(hasEpochChanged);
         }
 
@@ -823,17 +823,15 @@ namespace SS.Integration.Adapter.Actors
         {
             _logger.Info($"Suspending fixtureId={_resource} due reason={reason}");
 
-            _stateManager.StateProvider.SuspensionManager.Suspend(_resource.Id, reason);
             try
             {
-                _platformConnector.Suspend(_resource.Id);
+                _stateManager.StateProvider.SuspensionManager.Suspend(_resource.Id, reason);
                 _fixtureIsSuspended = true;
             }
-            catch (Exception ex)
+            catch (PluginException ex)
             {
-                var pluginError = new PluginException($"Plugin Suspend fixture {_resource} error occured", ex);
-                UpdateStatsError(pluginError);
-                throw pluginError;
+                UpdateStatsError(ex);
+                throw;
             }
         }
 

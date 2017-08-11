@@ -13,38 +13,36 @@
 //limitations under the License.
 
 using System;
+using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Model.Interfaces
 {
-    public enum SuspensionReason
-    {
-        SUSPENSION,
-        DISCONNECT_EVENT,
-        FIXTURE_DELETED,
-        FIXTURE_DISPOSING,
-        FIXTURE_ERRORED
-    }
-
     public interface ISuspensionManager
     {
+        #region Properties
+
         Action<IMarketStateCollection> DoNothingStrategy { get; }
 
-        Action<IMarketStateCollection> SuspendFixtureStrategy { get; } 
+        Action<IMarketStateCollection> SuspendFixtureStrategy { get; }
 
         Action<IMarketStateCollection> SuspendFixtureIfInPlayStrategy { get; }
-        
+
         Action<IMarketStateCollection> SuspendAllMarketsStrategy { get; }
 
         Action<IMarketStateCollection> SuspendInPlayMarketsStrategy { get; }
 
         Action<IMarketStateCollection> SuspendAllMarketsAndSetMatchStatusDeleted { get; }
-        
+
         Action<IMarketStateCollection> SuspendFixtureAndSetMatchStatusDeleted { get; }
 
-        void RegisterAction(Action<IMarketStateCollection> action, SuspensionReason reason);
+        #endregion
+
+        #region Methods
 
         void Suspend(string fixtureId, SuspensionReason reason);
 
         void Unsuspend(string fixutreId);
+
+        #endregion
     }
 }
