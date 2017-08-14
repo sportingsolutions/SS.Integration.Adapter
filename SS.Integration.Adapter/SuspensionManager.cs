@@ -74,8 +74,10 @@ namespace SS.Integration.Adapter
 
         public Action<IMarketStateCollection> SuspendFixtureAndSetMatchStatusDeleted { get; private set; }
 
-        public void Suspend(string fixtureId, SuspensionReason reason = SuspensionReason.FixtureDisposing)
+        public void Suspend(Fixture fixture, SuspensionReason reason = SuspensionReason.FixtureDisposing)
         {
+            var fixtureId = fixture.Id;
+
             Action<IMarketStateCollection> action;
             switch (reason)
             {
@@ -117,33 +119,42 @@ namespace SS.Integration.Adapter
             }
         }
 
-        public void Unsuspend(string fixtureId)
+        public void Unsuspend(Fixture fixture)
         {
-            IMarketStateCollection state = _stateProvider.GetMarketsState(fixtureId);
+            IMarketStateCollection state = _stateProvider.GetMarketsState(fixture.Id);
             List<IMarketState> marketStates;
 
             if (state == null)
             {
-                _logger.WarnFormat("State is not present for fixtureId={0} - can't unsuspend", fixtureId);
+                _logger.WarnFormat($"State is not present for {fixture} - can't unsuspend");
                 return;
             }
 
-            var fixture = GetUnsuspendedFixture(state, out marketStates);
+            var unsuspendedFixture = GetUnsuspendedFixture(state, out marketStates);
 
-            if (fixture.Markets.Any())
+            if (unsuspendedFixture.Markets.Any())
             {
-                _logger.InfoFormat("Unsuspending previously suspended markets in {0}", fixture);
+                _logger.InfoFormat("Unsuspending previously suspended markets in {0}", unsuspendedFixture);
                 try
                 {
-                    _plugin.ProcessStreamUpdate(fixture);
+                    _plugin.ProcessStreamUpdate(unsuspendedFixture);
                 }
                 catch (Exception ex)
                 {
-                    throw new PluginException($"Plugin ProcessStreamUpdate Fixture with fixtureId={fixtureId} error occured", ex);
+                    throw new PluginException($"Plugin ProcessStreamUpdate {fixture} error occured", ex);
                 }
             }
 
             ((IUpdatableMarketStateCollection)state).OnMarketsForcedUnsuspension(marketStates);
+
+            try
+            {
+                _plugin.UnSuspend(fixture);
+            }
+            catch (Exception ex)
+            {
+                throw new PluginException($"Plugin UnSuspend {fixture} error occured", ex);
+            }
         }
 
         #endregion

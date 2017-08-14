@@ -170,11 +170,11 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                var streamConnectedMsg = new StreamConnectedMsg { FixtureId = _resource.Id };
+                var streamConnectedMsg = new StreamConnectedMsg { FixtureId = _fixtureId };
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
 
                 var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _resource.Id };
+                var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _fixtureId };
                 var fixtureState = fixtureStateActor.Ask<FixtureState>(getFixtureStateMsg).Result;
 
                 if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
@@ -251,7 +251,7 @@ namespace SS.Integration.Adapter.Actors
                         Context.Parent.Tell(
                             new StreamListenerCreationFailedMsg
                             {
-                                FixtureId = _resource.Id,
+                                FixtureId = _fixtureId,
                                 Exception = erroredEx
                             });
                         _isInitializing = false;
@@ -368,7 +368,7 @@ namespace SS.Integration.Adapter.Actors
                 _logger.Warn($"Stream got disconnected for {_resource}");
 
                 var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _resource.Id };
+                var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _fixtureId };
                 var fixtureState = fixtureStateActor.Ask<FixtureState>(getFixtureStateMsg).Result;
 
                 if (_streamHealthCheckValidation.ShouldSuspendOnDisconnection(fixtureState, _fixtureStartTime))
@@ -426,7 +426,7 @@ namespace SS.Integration.Adapter.Actors
                 Receive<ClearFixtureStateMsg>(a => ClearState(true));
 
                 var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _resource.Id };
+                var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _fixtureId };
                 var fixtureState = fixtureStateActor.Ask<FixtureState>(getFixtureStateMsg).Result;
 
                 _currentEpoch = fixtureState?.Epoch ?? -1;
@@ -500,7 +500,7 @@ namespace SS.Integration.Adapter.Actors
         {
             Fixture fixture = new Fixture
             {
-                Id = _resource.Id,
+                Id = _fixtureId,
                 Sequence = -1
             };
 
@@ -510,18 +510,15 @@ namespace SS.Integration.Adapter.Actors
                 fixture.MatchStatus = state.MatchStatus.ToString();
             }
 
-            //unsuspends markets suspended by adapter
-            _stateManager.StateProvider.SuspensionManager.Unsuspend(fixture.Id);
             try
             {
-                _platformConnector.UnSuspend(fixture);
+                _stateManager.StateProvider.SuspensionManager.Unsuspend(fixture);
                 _fixtureIsSuspended = false;
             }
-            catch (Exception ex)
+            catch (PluginException ex)
             {
-                var pluginError = new PluginException($"Plugin UnSuspend {fixture} error occured", ex);
-                UpdateStatsError(pluginError);
-                throw pluginError;
+                UpdateStatsError(ex);
+                throw;
             }
         }
 
@@ -808,9 +805,9 @@ namespace SS.Integration.Adapter.Actors
                 StopStreaming();
             }
 
-            _stateManager.ClearState(_resource.Id);
+            _stateManager.ClearState(_fixtureId);
             var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-            fixtureStateActor.Tell(new RemoveFixtureStateMsg { FixtureId = _resource.Id });
+            fixtureStateActor.Tell(new RemoveFixtureStateMsg { FixtureId = _fixtureId });
         }
 
         private void SuspendAndReprocessSnapshot(bool hasEpochChanged = false)
@@ -825,7 +822,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                _stateManager.StateProvider.SuspensionManager.Suspend(_resource.Id, reason);
+                _stateManager.StateProvider.SuspensionManager.Suspend(new Fixture { Id = _fixtureId }, reason);
                 _fixtureIsSuspended = true;
             }
             catch (PluginException ex)
@@ -844,7 +841,7 @@ namespace SS.Integration.Adapter.Actors
             var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
             var updateFixtureStateMsg = new UpdateFixtureStateMsg
             {
-                FixtureId = _resource.Id,
+                FixtureId = _fixtureId,
                 Sport = _resource.Sport,
                 Status = status,
                 Sequence = snapshot.Sequence,

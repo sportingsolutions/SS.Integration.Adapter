@@ -103,7 +103,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FixtureOverviewTest.cs" />
+    <Compile Include="SuspensionManagerTests.cs" />
+    <Compile Include="FixtureOverviewTests.cs" />
     <Compile Include="FixtureSamples.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -111,7 +112,7 @@
     </Compile>
     <Compile Include="FixtureValidationTests.cs" />
     <Compile Include="FixtureStateActorTests.cs" />
-    <Compile Include="SportOverviewTest.cs" />
+    <Compile Include="SportOverviewTests.cs" />
     <Compile Include="StreamStatsActorTests.cs" />
     <Compile Include="StreamListenerBuilderActorTests.cs" />
     <Compile Include="SupervisorActorTests.cs" />

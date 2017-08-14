@@ -20,7 +20,7 @@ using SS.Integration.Adapter.Diagnostics.Model;
 namespace SS.Integration.Adapter.Tests
 {
     [TestFixture]
-    public class FixtureOverviewTest
+    public class FixtureOverviewTests
     {
         [Test]
         public void GetDeltaTest()

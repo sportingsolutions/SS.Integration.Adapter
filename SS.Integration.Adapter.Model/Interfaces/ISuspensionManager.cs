@@ -39,9 +39,9 @@ namespace SS.Integration.Adapter.Model.Interfaces
 
         #region Methods
 
-        void Suspend(string fixtureId, SuspensionReason reason);
+        void Suspend(Fixture fixture, SuspensionReason reason);
 
-        void Unsuspend(string fixutreId);
+        void Unsuspend(Fixture fixture);
 
         #endregion
     }

@@ -19,7 +19,7 @@ using SS.Integration.Adapter.Diagnostics.Model;
 namespace SS.Integration.Adapter.Tests
 {
     [TestFixture]
-    public class SportOverviewTest
+    public class SportOverviewTests
     {
         [Test]
         public void EqualityTest()
