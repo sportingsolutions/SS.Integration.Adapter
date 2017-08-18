@@ -114,6 +114,7 @@ namespace SS.Integration.Adapter.Tests
                             SettingsMock.Object,
                             PluginMock.Object,
                             StateManagerMock.Object,
+                            SuspensionManagerMock.Object,
                             StreamHealthCheckValidationMock.Object,
                             FixtureValidationMock.Object)),
                     StreamListenerManagerActor.ActorName);
@@ -243,6 +244,7 @@ namespace SS.Integration.Adapter.Tests
                             SettingsMock.Object,
                             PluginMock.Object,
                             StateManagerMock.Object,
+                            SuspensionManagerMock.Object,
                             StreamHealthCheckValidationMock.Object,
                             FixtureValidationMock.Object)),
                     StreamListenerManagerActor.ActorName);

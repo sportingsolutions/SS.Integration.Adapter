@@ -40,6 +40,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly IActorContext _streamListenerManagerActorContext;
         private readonly IAdapterPlugin _adapterPlugin;
         private readonly IStateManager _stateManager;
+        private readonly ISuspensionManager _suspensionManager;
         private readonly IStreamHealthCheckValidation _streamHealthCheckValidation;
         private readonly IFixtureValidation _fixtureValidation;
         private int _concurrentInitializations;
@@ -56,11 +57,22 @@ namespace SS.Integration.Adapter.Actors
 
         #region Constructors
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="settings"></param>
+        /// <param name="streamListenerManagerActorContext"></param>
+        /// <param name="adapterPlugin"></param>
+        /// <param name="stateManager"></param>
+        /// <param name="suspensionManager"></param>
+        /// <param name="streamHealthCheckValidation"></param>
+        /// <param name="fixtureValidation"></param>
         public StreamListenerBuilderActor(
             ISettings settings,
             IActorContext streamListenerManagerActorContext,
             IAdapterPlugin adapterPlugin,
             IStateManager stateManager,
+            ISuspensionManager suspensionManager,
             IStreamHealthCheckValidation streamHealthCheckValidation,
             IFixtureValidation fixtureValidation)
         {
@@ -70,6 +82,7 @@ namespace SS.Integration.Adapter.Actors
                 throw new ArgumentNullException(nameof(streamListenerManagerActorContext));
             _adapterPlugin = adapterPlugin ?? throw new ArgumentNullException(nameof(adapterPlugin));
             _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
+            _suspensionManager = suspensionManager ?? throw new ArgumentNullException(nameof(suspensionManager));
             _streamHealthCheckValidation = streamHealthCheckValidation ?? throw new ArgumentNullException(nameof(streamHealthCheckValidation));
             _fixtureValidation = fixtureValidation ?? throw new ArgumentNullException(nameof(fixtureValidation));
 
@@ -134,10 +147,11 @@ namespace SS.Integration.Adapter.Actors
 
                 _streamListenerManagerActorContext.ActorOf(Props.Create(() =>
                         new StreamListenerActor(
-                            msg.Resource,
-                            _adapterPlugin,
-                            _stateManager,
                             _settings,
+                            _adapterPlugin,
+                            msg.Resource,
+                            _stateManager,
+                            _suspensionManager,
                             _streamHealthCheckValidation,
                             _fixtureValidation)),
                     streamListenerActorName);

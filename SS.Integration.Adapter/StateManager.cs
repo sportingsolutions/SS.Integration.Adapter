@@ -15,6 +15,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using log4net;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.MarketRules;
@@ -37,6 +39,7 @@ namespace SS.Integration.Adapter
 
         private static readonly ILog Logger = LogManager.GetLogger(typeof(StateManager));
 
+        private readonly ISettings _settings;
         private readonly IObjectProvider<IUpdatableMarketStateCollection> _persistanceLayer;
         private readonly IObjectProvider<IPluginFixtureState> _pluginPersistanceLayer;
         private readonly ConcurrentDictionary<string, MarketRulesManager> _rulesManagers;
@@ -46,22 +49,23 @@ namespace SS.Integration.Adapter
 
         #region Constructors
 
-        public StateManager(ISettings settings, IAdapterPlugin plugin)
+        public StateManager(ISettings settings)
         {
-            if (settings == null)
-                throw new ArgumentNullException("settings", "ISettings cannot be null");
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
             _persistanceLayer = new CachedObjectStoreWithPersistance<IUpdatableMarketStateCollection>(
-                new BinaryStoreProvider<IUpdatableMarketStateCollection>(settings.MarketFiltersDirectory, "FilteredMarkets-{0}.bin"),
-                "MarketFilters", settings.CacheExpiryInMins * 60);
+                new BinaryStoreProvider<IUpdatableMarketStateCollection>(
+                    Path.Combine(_settings.StateProviderPath, _settings.MarketFiltersDirectory),
+                    "FilteredMarkets-{0}.bin"),
+                "MarketFilters", _settings.CacheExpiryInMins * 60);
 
             _pluginPersistanceLayer = new CachedObjectStoreWithPersistance<IPluginFixtureState>(
-                new BinaryStoreProvider<IPluginFixtureState>(settings.MarketFiltersDirectory, "PluginStore-{0}.bin"),
-                "MarketFilters", settings.CacheExpiryInMins * 60);
+                new BinaryStoreProvider<IPluginFixtureState>(
+                    Path.Combine(_settings.StateProviderPath, _settings.MarketFiltersDirectory),
+                    "PluginStore-{0}.bin"),
+                "MarketFilters", _settings.CacheExpiryInMins * 60);
 
             _rulesManagers = new ConcurrentDictionary<string, MarketRulesManager>();
-
-            SuspensionManager = new SuspensionManager(this, plugin);
 
             _rules = new HashSet<IMarketRule>
             {
@@ -70,7 +74,7 @@ namespace SS.Integration.Adapter
                 InactiveMarketsFilteringRule.Instance
             };
 
-            if (settings.DeltaRuleEnabled)
+            if (_settings.DeltaRuleEnabled)
             {
                 _rules.Add(DeltaRule.Instance);
             }
@@ -80,39 +84,6 @@ namespace SS.Integration.Adapter
                 Logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
             }
         }
-
-        #endregion
-
-        #region Internal methods
-
-        internal void OverwriteRuleList(IEnumerable<IMarketRule> rules)
-        {
-            if (rules != null)
-            {
-                _rules.Clear();
-                _rules.UnionWith(rules);
-
-                foreach (var rule in _rules)
-                {
-                    Logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
-                }
-            }
-        }
-
-        internal void AddRules(IEnumerable<IMarketRule> rules)
-        {
-            if (rules == null)
-                return;
-
-            foreach (var rule in rules)
-            {
-                Logger.Debug(_rules.Add(rule)
-                    ? $"Rule {rule.Name} correctly loaded"
-                    : $"Rule {rule.Name} already loaded");
-            }
-        }
-
-        internal IEnumerable<IMarketRule> LoadedRules => _rules;
 
         #endregion
 
@@ -131,16 +102,17 @@ namespace SS.Integration.Adapter
         public void Remove(string fixtureId)
         {
             _persistanceLayer.Remove(fixtureId);
+            RemoveFixtureStateFile(fixtureId);
         }
 
         #endregion
 
         #region Implementation of IStateProvider
 
-        IMarketStateCollection IStateProvider.GetMarketsState(string fixtureId)
+        public IMarketStateCollection GetMarketsState(string fixtureId)
         {
             if (string.IsNullOrEmpty(fixtureId))
-                throw new ArgumentNullException("fixtureId", "fixtureId cannot be null");
+                throw new ArgumentNullException(nameof(fixtureId), "fixtureId cannot be null");
 
             return _rulesManagers.ContainsKey(fixtureId) ? _rulesManagers[fixtureId].CurrentState : null;
         }
@@ -178,11 +150,38 @@ namespace SS.Integration.Adapter
             _pluginPersistanceLayer.Remove(PLUGIN_STORE_PREFIX + fixtureId);
         }
 
-        public ISuspensionManager SuspensionManager { get; private set; }
-
         #endregion
 
         #region Implementation of IStateManager
+
+        public IEnumerable<IMarketRule> LoadedRules => _rules;
+
+        public void AddRules(IEnumerable<IMarketRule> rules)
+        {
+            if (rules == null)
+                return;
+
+            foreach (var rule in rules)
+            {
+                Logger.Debug(_rules.Add(rule)
+                    ? $"Rule {rule.Name} correctly loaded"
+                    : $"Rule {rule.Name} already loaded");
+            }
+        }
+
+        public void OverwriteRuleList(IEnumerable<IMarketRule> rules)
+        {
+            if (rules != null)
+            {
+                _rules.Clear();
+                _rules.UnionWith(rules);
+
+                foreach (var rule in _rules)
+                {
+                    Logger.DebugFormat("Rule {0} correctly loaded", rule.Name);
+                }
+            }
+        }
 
         public IMarketRulesManager CreateNewMarketRuleManager(string fixtureId)
         {
@@ -192,10 +191,10 @@ namespace SS.Integration.Adapter
             if (_rulesManagers.ContainsKey(fixtureId))
                 return _rulesManagers[fixtureId];
 
-            var rule_manager = new MarketRulesManager(fixtureId, this, _rules);
-            _rulesManagers[fixtureId] = rule_manager;
+            var ruleManager = new MarketRulesManager(fixtureId, this, _rules);
+            _rulesManagers[fixtureId] = ruleManager;
 
-            return rule_manager;
+            return ruleManager;
         }
 
         public void ClearState(string fixtureId)
@@ -212,9 +211,33 @@ namespace SS.Integration.Adapter
             }
 
             _persistanceLayer.Remove(fixtureId);
+            _pluginPersistanceLayer.Remove(fixtureId);
+            RemoveFixtureStateFile(fixtureId);
         }
 
-        public IStateProvider StateProvider { get { return this; } }
+        #endregion
+
+        #region Private methods
+
+        private void RemoveFixtureStateFile(string fixtureId)
+        {
+            var fixtureStateFilePath = GetFixtureStateFilePath(fixtureId);
+
+            if (File.Exists(fixtureStateFilePath))
+            {
+                File.Delete(fixtureStateFilePath);
+            }
+        }
+
+        private string GetFixtureStateFilePath(string fixtureId)
+        {
+            var stateProviderPath = Path.IsPathRooted(_settings.StateProviderPath)
+                ? _settings.StateProviderPath
+                : Path.Combine(
+                    Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                    _settings.StateProviderPath);
+            return Path.Combine(stateProviderPath, $"{fixtureId}.bin");
+        }
 
         #endregion
     }

@@ -24,7 +24,7 @@ namespace SS.Integration.Adapter.Actors
 {
     // This actor main responsibility is logging how long did it take to process snapshots / stream updates with how many markets 
     // any errors should be also counted and logged by fixture
-    public class StreamStatsActor : ReceiveActor
+    public class StreamStatsActor : ReceiveActor, ILogReceive
     {
         #region Constants
 
@@ -48,18 +48,21 @@ namespace SS.Integration.Adapter.Actors
         #region Fields
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamStatsActor));
-        private UpdateStatsStartMsg _startMessage;
+        private readonly Stack<UpdateStatsStartMsg> _startMessagesStack;
         private int _snapshotsCount;
         private int _streamUpdatesCount;
         private readonly Dictionary<string, int> _errorsCount;
         private DateTime _lastDisconnectedDate;
         private int _disconnectionsCount;
-        private readonly DateTime _adapterStartDate = DateTime.UtcNow;
+        private static readonly DateTime AdapterStartDate = DateTime.UtcNow;
 
         #endregion
 
         #region Constructors
 
+        /// <summary>
+        /// 
+        /// </summary>
         public StreamStatsActor()
         {
             _errorsCount = new Dictionary<string, int>
@@ -68,10 +71,16 @@ namespace SS.Integration.Adapter.Actors
                 {PluginExceptionType, 0},
                 {GenericExceptionType, 0}
             };
+            _startMessagesStack = new Stack<UpdateStatsStartMsg>();
 
+            //the order of the Receive messages is very important
+            //if there is a hierarcy of classes, then message classes need to be registered in top-down order
+            //e.g. if ChildClass inhertis from BaseClass, then register first ChildClass and after that BaseClass
+            Receive<UpdatePluginStatsStartMsg>(a => UpdateStatsStartMsgHandler(a));
+            Receive<UpdatePluginStatsFinishMsg>(a => UpdatePluginStatsFinishMsgHandler(a));
             Receive<UpdateStatsStartMsg>(a => UpdateStatsStartMsgHandler(a));
-            Receive<UpdateStatsErrorMsg>(a => UpdateStatsErrorMsgHandler(a));
             Receive<UpdateStatsFinishMsg>(a => UpdateStatsFinishMsgHandler(a));
+            Receive<UpdateStatsErrorMsg>(a => UpdateStatsErrorMsgHandler(a));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
         }
 
@@ -81,11 +90,14 @@ namespace SS.Integration.Adapter.Actors
 
         private void UpdateStatsStartMsgHandler(UpdateStatsStartMsg msg)
         {
-            _startMessage = msg;
+            _startMessagesStack.Push(msg);
         }
 
         private void UpdateStatsErrorMsgHandler(UpdateStatsErrorMsg msg)
         {
+            var startMessage = GetStartMessageObject<UpdateStatsStartMsg>();
+            _startMessagesStack.Clear();
+
             var errType = msg.Error.GetType().Name;
             if (_errorsCount.ContainsKey(errType))
             {
@@ -97,9 +109,9 @@ namespace SS.Integration.Adapter.Actors
             }
 
             _logger.Error(
-                $"Error occured at {msg.ErrorOccuredAt} for {_startMessage.Fixture} sequence {_startMessage.Sequence} - {msg.Error}");
+                $"Error occured at {msg.ErrorOccuredAt} for {startMessage.Fixture} sequence {startMessage.Sequence} - {msg.Error}");
 
-            var minutes = (int)Math.Ceiling((DateTime.UtcNow - _adapterStartDate.AddMilliseconds(-1)).TotalMinutes);
+            var minutes = (int)Math.Ceiling((DateTime.UtcNow - AdapterStartDate).TotalMinutes);
 
             _logger.Warn($"Number of API errors: {_errorsCount[ApiExceptionType]}");
             _logger.Warn($"Number of Plugin errors: {_errorsCount[PluginExceptionType]}");
@@ -108,9 +120,21 @@ namespace SS.Integration.Adapter.Actors
             _logger.Warn($"Number of Plugin errors per minute: {_errorsCount[PluginExceptionType] / minutes}");
         }
 
+        private void UpdatePluginStatsFinishMsgHandler(UpdatePluginStatsFinishMsg msg)
+        {
+            var startMessage = GetStartMessageObject<UpdatePluginStatsStartMsg>();
+            if (startMessage != null)
+            {
+                var timeTaken = msg.CompletedAt - startMessage.UpdateReceivedAt;
+                _logger.Info($"Plugin {startMessage.PluginMethod} for {startMessage.Fixture}, took processingTime={timeTaken.TotalSeconds} seconds at sequence={startMessage.Sequence}");
+            }
+        }
+
         private void UpdateStatsFinishMsgHandler(UpdateStatsFinishMsg msg)
         {
-            if (_startMessage.IsSnapshot)
+            var startMessage = GetStartMessageObject<UpdateStatsStartMsg>();
+
+            if (startMessage.IsSnapshot)
             {
                 _snapshotsCount++;
             }
@@ -118,18 +142,18 @@ namespace SS.Integration.Adapter.Actors
             {
                 _streamUpdatesCount++;
             }
-            
-            var timeTaken = msg.CompletedAt - _startMessage.UpdateReceivedAt;
 
-            var updateOrSnapshot = _startMessage.IsSnapshot ? "Snapshot" : "Update";
+            var timeTaken = msg.CompletedAt - startMessage.UpdateReceivedAt;
 
-            var minutes = (int)Math.Ceiling((DateTime.UtcNow - _adapterStartDate.AddMilliseconds(-1)).TotalMinutes);
+            var updateOrSnapshot = startMessage.IsSnapshot ? "Snapshot" : "Update";
 
-            _logger.Info($"{updateOrSnapshot} for {_startMessage.Fixture}, took processingTime={timeTaken.TotalSeconds} seconds at sequence={_startMessage.Sequence}");
-            _logger.Info($"{_startMessage.Fixture} -> Snapshots processed: {_snapshotsCount}");
-            _logger.Info($"{_startMessage.Fixture} -> Stream updates processed: {_streamUpdatesCount}");
-            _logger.Info($"{_startMessage.Fixture} -> Snapshots per minute: {_snapshotsCount / minutes}");
-            _logger.Info($"{_startMessage.Fixture} -> Stream updates per minute: {_streamUpdatesCount / minutes}");
+            var minutes = (int)Math.Ceiling((DateTime.UtcNow - AdapterStartDate).TotalMinutes);
+
+            _logger.Info($"{updateOrSnapshot} for {startMessage.Fixture}, took processingTime={timeTaken.TotalSeconds} seconds at sequence={startMessage.Sequence}");
+            _logger.Info($"{startMessage.Fixture} -> Snapshots processed: {_snapshotsCount}");
+            _logger.Info($"{startMessage.Fixture} -> Stream updates processed: {_streamUpdatesCount}");
+            _logger.Info($"{startMessage.Fixture} -> Snapshots per minute: {_snapshotsCount / minutes}");
+            _logger.Info($"{startMessage.Fixture} -> Stream updates per minute: {_streamUpdatesCount / minutes}");
         }
 
         private void StreamDisconnectedMsgHandler(StreamDisconnectedMsg msg)
@@ -137,11 +161,27 @@ namespace SS.Integration.Adapter.Actors
             _disconnectionsCount++;
             _lastDisconnectedDate = DateTime.UtcNow;
 
-            var days = (DateTime.UtcNow - _adapterStartDate.AddMilliseconds(-1)).TotalDays;
+            var days = (DateTime.UtcNow - AdapterStartDate).TotalDays;
             var weeks = days > 7 ? (int)(days / 7) : 1;
 
             _logger.Info($"Stream got disconnected at {_lastDisconnectedDate}");
             _logger.Info($"Detected {_disconnectionsCount / weeks} Stream disconnections / week");
+        }
+
+        #endregion
+
+        #region Private methods
+
+        private T GetStartMessageObject<T>() where T : UpdateStatsStartMsg
+        {
+            var startMessage = _startMessagesStack.Pop();
+            var startMessageCast = startMessage as T;
+            if (startMessageCast == null)
+            {
+                _logger.Warn($"startMessage wrong type detected - actual type is {startMessage.GetType().FullName}");
+            }
+
+            return startMessageCast;
         }
 
         #endregion

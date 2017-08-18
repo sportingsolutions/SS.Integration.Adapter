@@ -1,4 +1,4 @@
-﻿//Copyright 2014 Spin Services Limited
+﻿//Copyright 2017 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -12,24 +12,10 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using SS.Integration.Adapter.Model.Interfaces;
-
-namespace SS.Integration.Adapter.Model
+namespace SS.Integration.Adapter.Actors.Messages
 {
-    public class StateProviderProxy
+    internal class UpdatePluginStatsStartMsg : UpdateStatsStartMsg
     {
-
-        internal static void Init(IStateProvider provider)
-        {
-            if (provider == null)
-                return;
-
-            StateProvider = provider;
-        }
-
-        public static bool IsInitialized { get { return StateProvider != null; } }
-
-        public static IStateProvider StateProvider { get; private set; }
-
+        public string PluginMethod { get; set; }
     }
 }

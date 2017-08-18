@@ -22,9 +22,9 @@ namespace SS.Integration.Adapter.Model
     {
         protected readonly string _directory;
 
-        public FileStoreProvider(string directory = "FixturesStateFiles")
+        public FileStoreProvider(string directory)
         {
-            _directory = GetFullDirectoryPath(directory ?? "FixturesStateFiles");
+            _directory = GetFullDirectoryPath(directory);
             if (!Directory.Exists(_directory))
                 Directory.CreateDirectory(_directory);
         }

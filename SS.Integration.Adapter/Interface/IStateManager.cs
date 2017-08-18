@@ -12,16 +12,29 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System.Collections.Generic;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Interface
 {
     public interface IStateManager
     {
-        IStateProvider StateProvider { get; }
+        #region Properties
+
+        IEnumerable<IMarketRule> LoadedRules { get; }
+
+        #endregion
+
+        #region Methods
+
+        void AddRules(IEnumerable<IMarketRule> rules);
+
+        void OverwriteRuleList(IEnumerable<IMarketRule> rules);
 
         IMarketRulesManager CreateNewMarketRuleManager(string fixtureId);
 
         void ClearState(string fixtureId);
+
+        #endregion
     }
 }

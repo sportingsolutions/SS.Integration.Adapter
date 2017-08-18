@@ -14,7 +14,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using log4net;
 using SS.Integration.Adapter.Exceptions;
@@ -25,7 +24,7 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter
 {
-    internal class SuspensionManager : ISuspensionManager
+    public class SuspensionManager : ISuspensionManager
     {
         #region Fields
 
@@ -42,7 +41,7 @@ namespace SS.Integration.Adapter
 
         #region Constructors
 
-        internal SuspensionManager(IStateProvider stateProvider, IAdapterPlugin plugin)
+        public SuspensionManager(IStateProvider stateProvider, IAdapterPlugin plugin)
         {
             _stateProvider = stateProvider ?? throw new ArgumentNullException(nameof(stateProvider));
             _plugin = plugin ?? throw new AggregateException(nameof(plugin));

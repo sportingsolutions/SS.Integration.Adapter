@@ -50,6 +50,12 @@ namespace SS.Integration.Adapter.Actors
 
         #region Constructors
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="resource"></param>
+        /// <param name="settings"></param>
+        /// <param name="streamHealthCheckValidation"></param>
         public StreamHealthCheckActor(
             IResourceFacade resource,
             ISettings settings,

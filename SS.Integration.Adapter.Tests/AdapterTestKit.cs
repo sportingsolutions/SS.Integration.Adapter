@@ -79,11 +79,6 @@ namespace SS.Integration.Adapter.Tests
             StateManagerMock.Setup(o => o.CreateNewMarketRuleManager(It.Is<string>(id => id.Equals(snapshotVar.Id))))
                 .Returns(MarketRulesManagerMock.Object);
 
-            StateManagerMock.SetupGet(o => o.StateProvider)
-                .Returns(StateProviderMock.Object);
-            StateProviderMock.SetupGet(o => o.SuspensionManager)
-                .Returns(SuspensionManagerMock.Object);
-
             var storedFixtureState = new FixtureState { Id = snapshot.Id, Sport = sport };
 
             if (storedData != null)

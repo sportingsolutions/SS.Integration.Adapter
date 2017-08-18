@@ -13,6 +13,7 @@
 //limitations under the License.
 
 
+using System;
 using System.Collections.Generic;
 using Ninject.Modules;
 using Ninject;
@@ -29,12 +30,33 @@ namespace SS.Integration.Adapter.WindowsService
 {
     public class BootStrapper : NinjectModule
     {
+        #region Fields
+
+        private readonly IAdapterPlugin _platformConnector;
+
+        #endregion
+
+        #region Constructors
+
+        public BootStrapper(IAdapterPlugin platformConnector)
+        {
+            _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
+        }
+
+        #endregion
+
+        #region Public methods
 
         public override void Load()
         {
             Bind<ISettings>().To<Settings>().InSingletonScope();
             Bind<IReconnectStrategy>().To<DefaultReconnectStrategy>().InSingletonScope();
+            Bind<IStateManager, IStateProvider>().To<StateManager>().InSingletonScope()
+                .WithConstructorArgument("settings", Kernel.Get<ISettings>());
             Bind<IServiceFacade>().To<UdapiServiceFacade>();
+            Bind<ISuspensionManager>().To<SuspensionManager>().InSingletonScope()
+                .WithConstructorArgument("stateProvider", Kernel.Get<IStateProvider>())
+                .WithConstructorArgument("plugin", _platformConnector);
             Bind<IStreamHealthCheckValidation>().To<StreamHealthCheckValidation>().InSingletonScope()
                 .WithConstructorArgument("settings", Kernel.Get<ISettings>());
             Bind<IFixtureValidation>().To<FixtureValidation>().InSingletonScope();
@@ -42,5 +64,7 @@ namespace SS.Integration.Adapter.WindowsService
             var supervisorStateManager = new SupervisorStateManager(Kernel.Get<ISettings>());
             Bind<IObjectProvider<Dictionary<string, FixtureOverview>>>().ToConstant(supervisorStateManager.StateProvider);
         }
+
+        #endregion
     }
 }

@@ -105,7 +105,10 @@ namespace SS.Integration.Adapter.WindowsService
                 return;
             }
 
-            List<INinjectModule> modules = new List<INinjectModule> { new BootStrapper() };
+            List<INinjectModule> modules = new List<INinjectModule>
+            {
+                new BootStrapper(PlatformConnector)
+            };
 
             if (PluginBootstrapper != null)
             {
@@ -119,6 +122,8 @@ namespace SS.Integration.Adapter.WindowsService
             var service = _iocContainer.Get<IServiceFacade>();
             var streamHealthCheckValidation = _iocContainer.Get<IStreamHealthCheckValidation>();
             var fixtureValidation = _iocContainer.Get<IFixtureValidation>();
+            var stateManager = _iocContainer.Get<IStateManager>();
+            var suspensionManager = _iocContainer.Get<ISuspensionManager>();
 
             _iocContainer.Settings.InjectNonPublic = true;
 
@@ -130,6 +135,8 @@ namespace SS.Integration.Adapter.WindowsService
                     settings,
                     service,
                     PlatformConnector,
+                    stateManager,
+                    suspensionManager,
                     streamHealthCheckValidation,
                     fixtureValidation);
 

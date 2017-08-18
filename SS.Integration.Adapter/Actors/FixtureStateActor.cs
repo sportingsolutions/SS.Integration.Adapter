@@ -14,7 +14,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using Akka.Actor;
 using log4net;
@@ -51,6 +50,11 @@ namespace SS.Integration.Adapter.Actors
 
         #region Constructors
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="settings"></param>
+        /// <param name="storeProvider"></param>
         public FixtureStateActor(ISettings settings, IStoreProvider storeProvider)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -68,10 +72,18 @@ namespace SS.Integration.Adapter.Actors
                 new WriteStateToFileMsg(),
                 Self);
 
+            Context.System.Scheduler.ScheduleTellRepeatedly(
+                0,//run this the first time when adapter starts
+                604800000,//run this every week
+                Self,
+                new CleanupStateFilesMsg(), 
+                Self);
+
             Receive<GetFixtureStateMsg>(a => GetFixtureStateMsgHandler(a));
             Receive<UpdateFixtureStateMsg>(a => UpdateFixtureStateMsgHandler(a));
             Receive<RemoveFixtureStateMsg>(a => RemoveFixtureStateMsgHandler(a));
             Receive<WriteStateToFileMsg>(a => WriteStateToFileMsgHandler(a));
+            Receive<CleanupStateFilesMsg>(a => CleanupStateFilesMsgHandler(a));
         }
 
         #endregion
@@ -120,6 +132,32 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
+        private void CleanupStateFilesMsgHandler(CleanupStateFilesMsg msg)
+        {
+            _logger.Debug("Cleaning up state files");
+            var stateProviderPath = System.IO.Path.IsPathRooted(_settings.StateProviderPath)
+                ? _settings.StateProviderPath
+                : System.IO.Path.Combine(
+                    System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                    _settings.StateProviderPath);
+            var stateProviderDir = new System.IO.DirectoryInfo(stateProviderPath);
+            if (!stateProviderDir.Exists)
+            {
+                _logger.Debug($"Could not find stateProviderDir={stateProviderDir.FullName}");
+                return;
+            }
+
+            var binFiles = stateProviderDir.GetFiles("*.bin", System.IO.SearchOption.AllDirectories);
+            foreach (var binFile in binFiles)
+            {
+                if ((DateTime.UtcNow - binFile.LastWriteTimeUtc).TotalDays >= 7)
+                {
+                    _logger.Debug($"File {binFile.FullName} hasn't been updated in more than a week, going to remove it.");
+                    binFile.Delete();
+                }
+            }
+        }
+
         #endregion
 
         #region Private methods
@@ -130,12 +168,19 @@ namespace SS.Integration.Adapter.Actors
             {
                 _pathFileName = _settings.FixturesStateFilePath;
             }
+            else if (System.IO.Path.IsPathRooted(_settings.StateProviderPath))
+            {
+                _pathFileName = System.IO.Path.Combine(_settings.StateProviderPath, _settings.FixturesStateFilePath);
+            }
             else
             {
                 var path = Assembly.GetExecutingAssembly().Location;
-                var fileInfo = new FileInfo(path);
+                var fileInfo = new System.IO.FileInfo(path);
                 var dir = fileInfo.DirectoryName;
-                _pathFileName = System.IO.Path.Combine(dir, _settings.FixturesStateFilePath);
+                _pathFileName = System.IO.Path.Combine(
+                    dir,
+                    _settings.StateProviderPath,
+                    _settings.FixturesStateFilePath);
             }
         }
 
@@ -145,7 +190,7 @@ namespace SS.Integration.Adapter.Actors
             {
                 _logger.InfoFormat("Attempting to load file from filePath {0}", _pathFileName);
 
-                var savedFixtureStates = File.Exists(_pathFileName) ? _storeProvider.Read(_pathFileName) : null;
+                var savedFixtureStates = System.IO.File.Exists(_pathFileName) ? _storeProvider.Read(_pathFileName) : null;
                 if (!string.IsNullOrWhiteSpace(savedFixtureStates))
                 {
                     _fixturesState = (Dictionary<string, FixtureState>)
@@ -161,9 +206,9 @@ namespace SS.Integration.Adapter.Actors
 
         private void DeleteStateFile()
         {
-            if (File.Exists(_pathFileName))
+            if (System.IO.File.Exists(_pathFileName))
             {
-                File.Delete(_pathFileName);
+                System.IO.File.Delete(_pathFileName);
                 _logger.DebugFormat($"Deleted state file {_pathFileName}");
             }
         }
@@ -173,6 +218,10 @@ namespace SS.Integration.Adapter.Actors
         #region Private messages
 
         private class WriteStateToFileMsg
+        {
+        }
+
+        private class CleanupStateFilesMsg
         {
         }
 

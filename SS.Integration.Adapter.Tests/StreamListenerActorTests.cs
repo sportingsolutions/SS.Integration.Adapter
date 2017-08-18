@@ -105,10 +105,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -166,10 +167,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -234,10 +236,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -312,10 +315,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -391,10 +395,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -454,10 +459,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -520,10 +526,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -595,10 +602,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -693,10 +701,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -793,10 +802,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -886,10 +896,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -982,10 +993,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -1087,10 +1099,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -1177,10 +1190,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
             actor.Tell(new StreamUpdateMsg { Data = "This is a JSON message that will throw error on parsing" });
@@ -1268,10 +1282,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -1393,10 +1408,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -1564,6 +1580,7 @@ namespace SS.Integration.Adapter.Tests
                             SettingsMock.Object,
                             PluginMock.Object,
                             StateManagerMock.Object,
+                            SuspensionManagerMock.Object,
                             StreamHealthCheckValidationMock.Object,
                             FixtureValidationMock.Object)),
                     StreamListenerManagerActor.ActorName);
@@ -1658,10 +1675,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -1768,10 +1786,11 @@ namespace SS.Integration.Adapter.Tests
             //
             var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
-                    resourceFacadeMock.Object,
-                    PluginMock.Object,
-                    StateManagerMock.Object,
                     SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
@@ -1848,6 +1867,7 @@ namespace SS.Integration.Adapter.Tests
                             SettingsMock.Object,
                             PluginMock.Object,
                             StateManagerMock.Object,
+                            SuspensionManagerMock.Object,
                             StreamHealthCheckValidationMock.Object,
                             FixtureValidationMock.Object)),
                     StreamListenerManagerActor.ActorName);
@@ -1986,6 +2006,7 @@ namespace SS.Integration.Adapter.Tests
                             SettingsMock.Object,
                             PluginMock.Object,
                             StateManagerMock.Object,
+                            SuspensionManagerMock.Object,
                             StreamHealthCheckValidationMock.Object,
                             FixtureValidationMock.Object)),
                     StreamListenerManagerActor.ActorName);
@@ -2118,6 +2139,7 @@ namespace SS.Integration.Adapter.Tests
                             SettingsMock.Object,
                             PluginMock.Object,
                             StateManagerMock.Object,
+                            SuspensionManagerMock.Object,
                             StreamHealthCheckValidationMock.Object,
                             FixtureValidationMock.Object)),
                     StreamListenerManagerActor.ActorName);

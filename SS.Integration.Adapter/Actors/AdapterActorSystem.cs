@@ -44,6 +44,7 @@ namespace SS.Integration.Adapter.Actors
         /// <param name="udApiService"></param>
         /// <param name="adapterPlugin"></param>
         /// <param name="stateManager"></param>
+        /// <param name="suspensionManager"></param>
         /// <param name="streamHealthCheckValidation"></param>
         /// <param name="fixtureValidation"></param>
         public static void Init(
@@ -51,6 +52,7 @@ namespace SS.Integration.Adapter.Actors
             IServiceFacade udApiService,
             IAdapterPlugin adapterPlugin,
             IStateManager stateManager,
+            ISuspensionManager suspensionManager,
             IStreamHealthCheckValidation streamHealthCheckValidation,
             IFixtureValidation fixtureValidation)
         {
@@ -70,6 +72,7 @@ namespace SS.Integration.Adapter.Actors
                         settings,
                         adapterPlugin,
                         stateManager,
+                        suspensionManager,
                         streamHealthCheckValidation,
                         fixtureValidation)),
                 StreamListenerManagerActor.ActorName);

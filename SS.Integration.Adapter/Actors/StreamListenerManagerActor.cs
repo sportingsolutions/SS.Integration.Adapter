@@ -42,10 +42,20 @@ namespace SS.Integration.Adapter.Actors
 
         #region Constructors
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="settings"></param>
+        /// <param name="adapterPlugin"></param>
+        /// <param name="stateManager"></param>
+        /// <param name="suspensionManager"></param>
+        /// <param name="streamHealthCheckValidation"></param>
+        /// <param name="fixtureValidation"></param>
         public StreamListenerManagerActor(
             ISettings settings,
             IAdapterPlugin adapterPlugin,
             IStateManager stateManager,
+            ISuspensionManager suspensionManager,
             IStreamHealthCheckValidation streamHealthCheckValidation,
             IFixtureValidation fixtureValidation)
         {
@@ -54,6 +64,8 @@ namespace SS.Integration.Adapter.Actors
                 throw new ArgumentNullException(nameof(adapterPlugin));
             if (stateManager == null)
                 throw new ArgumentNullException(nameof(stateManager));
+            if (suspensionManager == null)
+                throw new ArgumentNullException(nameof(suspensionManager));
 
             _shouldSendProcessSportsMessage = true;
 
@@ -64,6 +76,7 @@ namespace SS.Integration.Adapter.Actors
                             Context,
                             adapterPlugin,
                             stateManager,
+                            suspensionManager,
                             streamHealthCheckValidation,
                             fixtureValidation)),
                     StreamListenerBuilderActor.ActorName);

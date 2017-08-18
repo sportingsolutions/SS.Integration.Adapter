@@ -44,6 +44,10 @@ namespace SS.Integration.Adapter.Actors
 
         #region Constructors
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="serviceFacade"></param>
         public SportProcessorRouterActor(IServiceFacade serviceFacade)
         {
             _serviceFacade = serviceFacade ?? throw new ArgumentNullException(nameof(serviceFacade));

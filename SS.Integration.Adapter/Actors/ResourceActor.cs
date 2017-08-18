@@ -44,6 +44,11 @@ namespace SS.Integration.Adapter.Actors
 
         #region Constructors
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="streamListenerActor"></param>
+        /// <param name="resource"></param>
         public ResourceActor(IActorRef streamListenerActor, IResourceFacade resource)
         {
             _streamListenerActor = streamListenerActor ?? throw new ArgumentNullException(nameof(streamListenerActor));

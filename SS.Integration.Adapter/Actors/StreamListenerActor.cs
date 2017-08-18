@@ -49,6 +49,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly IResourceFacade _resource;
         private readonly IAdapterPlugin _platformConnector;
         private readonly IStateManager _stateManager;
+        private readonly ISuspensionManager _suspensionManager;
         private readonly IMarketRulesManager _marketsRuleManager;
         private readonly IActorRef _resourceActor;
         private readonly IActorRef _streamHealthCheckActor;
@@ -77,11 +78,22 @@ namespace SS.Integration.Adapter.Actors
 
         #region Constructors
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="settings"></param>
+        /// <param name="platformConnector"></param>
+        /// <param name="resource"></param>
+        /// <param name="stateManager"></param>
+        /// <param name="suspensionManager"></param>
+        /// <param name="streamHealthCheckValidation"></param>
+        /// <param name="fixtureValidation"></param>
         public StreamListenerActor(
-            IResourceFacade resource,
-            IAdapterPlugin platformConnector,
-            IStateManager stateManager,
             ISettings settings,
+            IAdapterPlugin platformConnector,
+            IResourceFacade resource,
+            IStateManager stateManager,
+            ISuspensionManager suspensionManager,
             IStreamHealthCheckValidation streamHealthCheckValidation,
             IFixtureValidation fixtureValidation)
         {
@@ -89,11 +101,12 @@ namespace SS.Integration.Adapter.Actors
             {
                 _isInitializing = true;
 
-                _resource = resource ?? throw new ArgumentNullException(nameof(resource));
-                _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
-                _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
-                _marketsRuleManager = _stateManager.CreateNewMarketRuleManager(resource.Id);
                 _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+                _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
+                _resource = resource ?? throw new ArgumentNullException(nameof(resource));
+                _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
+                _suspensionManager = suspensionManager ?? throw new ArgumentNullException(nameof(suspensionManager));
+                _marketsRuleManager = _stateManager.CreateNewMarketRuleManager(resource.Id);
                 _streamHealthCheckValidation = streamHealthCheckValidation ?? throw new ArgumentNullException(nameof(streamHealthCheckValidation));
                 _fixtureValidation = fixtureValidation ?? throw new ArgumentNullException(nameof(fixtureValidation));
                 _fixtureId = _resource.Id;
@@ -439,14 +452,10 @@ namespace SS.Integration.Adapter.Actors
                     _fixtureStartTime = DateTime.Parse(_resource.Content.StartTime);
                 }
 
-                bool isMatchOver = _resource.MatchStatus == MatchStatus.MatchOver || _resource.IsMatchOver;
-                bool processMatchOver =
-                    isMatchOver && (fixtureState == null || fixtureState.MatchStatus != MatchStatus.MatchOver);
-
-                if (isMatchOver)
+                if (_resource.IsMatchOver)
                 {
                     _logger.Warn($"Listener will not start for {_resource} as the resource is marked as ended");
-                    if (processMatchOver)
+                    if (fixtureState != null && fixtureState.MatchStatus != MatchStatus.MatchOver)
                     {
                         ProcessMatchOver();
                     }
@@ -512,7 +521,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                _stateManager.StateProvider.SuspensionManager.Unsuspend(fixture);
+                _suspensionManager.Unsuspend(fixture);
                 _fixtureIsSuspended = false;
             }
             catch (PluginException ex)
@@ -601,7 +610,19 @@ namespace SS.Integration.Adapter.Actors
                 {
                     try
                     {
+                        _streamStatsActor.Tell(new UpdatePluginStatsStartMsg()
+                        {
+                            Fixture = snapshot,
+                            Sequence = snapshot.Sequence,
+                            IsSnapshot = true,
+                            UpdateReceivedAt = DateTime.UtcNow,
+                            PluginMethod = "ProcessSnapshot"
+                        });
                         _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
+                        _streamStatsActor.Tell(new UpdatePluginStatsFinishMsg
+                        {
+                            CompletedAt = DateTime.UtcNow
+                        });
                     }
                     catch (Exception ex)
                     {
@@ -614,7 +635,19 @@ namespace SS.Integration.Adapter.Actors
                 {
                     try
                     {
+                        _streamStatsActor.Tell(new UpdatePluginStatsStartMsg()
+                        {
+                            Fixture = snapshot,
+                            Sequence = snapshot.Sequence,
+                            IsSnapshot = false,
+                            UpdateReceivedAt = DateTime.UtcNow,
+                            PluginMethod = "ProcessStreamUpdate"
+                        });
                         _platformConnector.ProcessStreamUpdate(snapshot, hasEpochChanged);
+                        _streamStatsActor.Tell(new UpdatePluginStatsFinishMsg
+                        {
+                            CompletedAt = DateTime.UtcNow
+                        });
                     }
                     catch (Exception ex)
                     {
@@ -711,7 +744,19 @@ namespace SS.Integration.Adapter.Actors
 
                     try
                     {
+                        _streamStatsActor.Tell(new UpdatePluginStatsStartMsg()
+                        {
+                            Fixture = fixtureDelta,
+                            Sequence = fixtureDelta.Sequence,
+                            IsSnapshot = false,
+                            UpdateReceivedAt = DateTime.UtcNow,
+                            PluginMethod = "ProcessMatchStatus"
+                        });
                         _platformConnector.ProcessMatchStatus(fixtureDelta);
+                        _streamStatsActor.Tell(new UpdatePluginStatsFinishMsg
+                        {
+                            CompletedAt = DateTime.UtcNow
+                        });
                     }
                     catch (Exception ex)
                     {
@@ -746,16 +791,39 @@ namespace SS.Integration.Adapter.Actors
             _logger.Info(
                 $"{_resource} has been deleted from the GTP Fixture Factory. Suspending all markets and stopping the stream.");
 
+            Fixture fixtureDeleted = new Fixture
+            {
+                Id = _fixtureId,
+                FixtureName = fixtureDelta.FixtureName,
+                MatchStatus = ((int)MatchStatus.Deleted).ToString()
+            };
+
+            if (_marketsRuleManager.CurrentState != null)
+                fixtureDeleted.Sequence = _marketsRuleManager.CurrentState.FixtureSequence;
+
             try
             {
                 SuspendFixture(SuspensionReason.FixtureDeleted);
                 try
                 {
-                    _platformConnector.ProcessFixtureDeletion(fixtureDelta);
+                    _streamStatsActor.Tell(new UpdatePluginStatsStartMsg()
+                    {
+                        Fixture = fixtureDelta,
+                        Sequence = fixtureDelta.Sequence,
+                        IsSnapshot = false,
+                        UpdateReceivedAt = DateTime.UtcNow,
+                        PluginMethod = "ProcessFixtureDeletion"
+                    });
+
+                    _platformConnector.ProcessFixtureDeletion(fixtureDeleted);
+                    _streamStatsActor.Tell(new UpdatePluginStatsFinishMsg
+                    {
+                        CompletedAt = DateTime.UtcNow
+                    });
                 }
                 catch (Exception ex)
                 {
-                    var pluginError = new PluginException($"Plugin ProcessFixtureDeletion {fixtureDelta} error occured", ex);
+                    var pluginError = new PluginException($"Plugin ProcessFixtureDeletion {fixtureDeleted} error occured", ex);
                     UpdateStatsError(pluginError);
                     throw pluginError;
                 }
@@ -766,16 +834,14 @@ namespace SS.Integration.Adapter.Actors
                 throw;
             }
 
-            var status = (MatchStatus)Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus);
-
             //reset fixture state
             _marketsRuleManager.OnFixtureUnPublished();
             var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
             var updateFixtureStateMsg = new UpdateFixtureStateMsg
             {
-                FixtureId = fixtureDelta.Id,
+                FixtureId = _fixtureId,
                 Sport = _resource.Sport,
-                Status = status,
+                Status = MatchStatus.Deleted,
                 Sequence = -1,
                 Epoch = _currentEpoch
             };
@@ -822,7 +888,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                _stateManager.StateProvider.SuspensionManager.Suspend(new Fixture { Id = _fixtureId }, reason);
+                _suspensionManager.Suspend(new Fixture { Id = _fixtureId }, reason);
                 _fixtureIsSuspended = true;
             }
             catch (PluginException ex)

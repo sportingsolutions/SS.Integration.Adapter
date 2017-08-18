@@ -49,6 +49,7 @@ namespace SS.Integration.Adapter.Tests
             SettingsMock.SetupGet(a => a.FixturesStateAutoStoreInterval).Returns(int.MaxValue);
 
             StateManagerMock = new Mock<IStateManager>();
+            SuspensionManagerMock = new Mock<ISuspensionManager>();
             MarketRulesManagerMock = new Mock<IMarketRulesManager>();
             StreamHealthCheckValidationMock = new Mock<IStreamHealthCheckValidation>();
             FixtureValidationMock = new Mock<IFixtureValidation>();
@@ -84,6 +85,7 @@ namespace SS.Integration.Adapter.Tests
                             new Mock<IActorContext>().Object,
                             PluginMock.Object,
                             StateManagerMock.Object,
+                            SuspensionManagerMock.Object,
                             StreamHealthCheckValidationMock.Object,
                             FixtureValidationMock.Object)),
                     StreamListenerBuilderActor.ActorName);

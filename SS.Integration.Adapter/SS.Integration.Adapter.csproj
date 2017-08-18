@@ -48,13 +48,17 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Akka, Version=1.2.0.33, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Akka.1.2.0\lib\net45\Akka.dll</HintPath>
+    <Reference Include="Akka, Version=1.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Akka.1.3.0\lib\net45\Akka.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="log4net, Version=1.2.13.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
-      <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
+    <Reference Include="Akka.Logger.log4net, Version=1.2.9.7, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Akka.Logger.log4net.1.2.9\lib\net45\Akka.Logger.log4net.dll</HintPath>
       <Private>True</Private>
+    </Reference>
+    <Reference Include="log4net, Version=2.0.8.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\log4net.2.0.8\lib\net45-full\log4net.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -88,8 +92,10 @@
     <Compile Include="Actors\Messages\RetrieveAndProcessSnapshotMsg.cs" />
     <Compile Include="Actors\Messages\StreamListenerCreationCompletedMsg.cs" />
     <Compile Include="Actors\Messages\UpdateStatsErrorMsg.cs" />
+    <Compile Include="Actors\Messages\UpdatePluginStatsFinishMsg.cs" />
     <Compile Include="Actors\Messages\UpdateStatsFinishMsg.cs" />
     <Compile Include="Actors\Messages\RemoveFixtureStateMsg.cs" />
+    <Compile Include="Actors\Messages\UpdatePluginStatsStartMsg.cs" />
     <Compile Include="Actors\Messages\UpdateStatsStartMsg.cs" />
     <Compile Include="Actors\Messages\UpdateFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\ProcessResourceMsg.cs" />

@@ -1,4 +1,4 @@
-﻿//Copyright 2014 Spin Services Limited
+﻿//Copyright 2017 Spin Services Limited
 
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -12,18 +12,9 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-namespace SS.Integration.Adapter.Model.Interfaces
+namespace SS.Integration.Adapter.Actors.Messages
 {
-    public interface IStateProvider
+    internal class UpdatePluginStatsFinishMsg : UpdateStatsFinishMsg
     {
-        IMarketStateCollection GetMarketsState(string fixtureId);
-
-        T GetPluginFixtureState<T>(string fixtureId) where T : IPluginFixtureState;
-
-        IPluginFixtureState GetPluginFixtureState(string fixtureId);
-
-        void AddOrUpdatePluginFixtureState(IPluginFixtureState state);
-
-        void RemovePluginState(string fixtureId);
     }
 }

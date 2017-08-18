@@ -42,6 +42,12 @@ namespace SS.Integration.Adapter.Actors
 
         #region Constructors
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="settings"></param>
+        /// <param name="serviceFacade"></param>
+        /// <param name="sportProcessorRouterActor"></param>
         public SportsProcessorActor(
             ISettings settings,
             IServiceFacade serviceFacade,

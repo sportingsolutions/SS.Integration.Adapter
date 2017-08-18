@@ -23,12 +23,6 @@ namespace SS.Integration.Adapter.Model.ProcessState
     {
         private readonly string _pathFormatString;
 
-
-        public BinaryStoreProvider()
-        {
-
-        }
-
         public BinaryStoreProvider(string directory, string pathFormatString)
             : base(directory)
         {

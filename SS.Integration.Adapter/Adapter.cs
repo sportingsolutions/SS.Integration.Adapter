@@ -35,6 +35,7 @@ namespace SS.Integration.Adapter
         private readonly IStatsHandle _stats;
         private readonly ISettings _settings;
         private readonly IStateManager _stateManager;
+        private readonly ISuspensionManager _suspensionManager;
         private readonly IServiceFacade _udapiServiceFacade;
         private readonly IAdapterPlugin _platformConnector;
         private readonly IStreamHealthCheckValidation _streamHealthCheckValidation;
@@ -48,26 +49,24 @@ namespace SS.Integration.Adapter
             ISettings settings,
             IServiceFacade udapiServiceFacade,
             IAdapterPlugin platformConnector,
+            IStateManager stateManager,
+            ISuspensionManager suspensionManager,
             IStreamHealthCheckValidation streamHealthCheckValidation,
             IFixtureValidation fixtureValidation)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _udapiServiceFacade = udapiServiceFacade ?? throw new ArgumentNullException(nameof(udapiServiceFacade));
             _platformConnector = platformConnector ?? throw new ArgumentNullException(nameof(platformConnector));
+            _stateManager = stateManager ?? throw new ArgumentNullException(nameof(stateManager));
+            _suspensionManager = suspensionManager ?? throw new ArgumentNullException(nameof(suspensionManager));
             _streamHealthCheckValidation = streamHealthCheckValidation ?? throw new ArgumentNullException(nameof(streamHealthCheckValidation));
             _fixtureValidation = fixtureValidation ?? throw new ArgumentNullException(nameof(fixtureValidation));
-
-            _stateManager = new StateManager(settings, platformConnector);
-            StateProviderProxy.Init((IStateProvider)_stateManager);
 
             if (settings.StatsEnabled)
                 StatsManager.Configure();
 
-            // we just need the initialisation
-            new SuspensionManager((IStateProvider)_stateManager, _platformConnector);
-
             platformConnector.Initialise();
-            ((StateManager)_stateManager).AddRules(platformConnector.MarketRules);
+            stateManager.AddRules(platformConnector.MarketRules);
 
             ThreadPool.SetMinThreads(500, 500);
 
@@ -106,6 +105,7 @@ namespace SS.Integration.Adapter
                     _udapiServiceFacade,
                     _platformConnector,
                     _stateManager,
+                    _suspensionManager,
                     _streamHealthCheckValidation,
                     _fixtureValidation);
 

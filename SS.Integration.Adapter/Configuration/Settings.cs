@@ -30,7 +30,8 @@ namespace SS.Integration.Adapter.Configuration
         private const int DEFAULT_MAX_RETRY_ATTEMPT_VALUE = 3;
         private const int DEFAULT_ECHO_INTERVAL_VALUE = 10000;
         private const int DEFAULT_ECHO_DELAY_VALUE = 3000;
-        private const string DEFAULT_FIXTURES_STATE_FILE_PATH_VALUE = @"C:\fixturesState.json";
+        private const string DEFAULT_STATE_PROVIDER_DIRECTORY = @"FixturesStateFiles";
+        private const string DEFAULT_FIXTURES_STATE_FILE = @"fixturesState.json";
         private const int DEFAULT_FIXTURES_STATE_AUTO_STORE_INTERVAL_VALUE = 5000;
         private const string DEFAULT_MARKET_STATE_MANAGER_DIRECTORY = @"MarketsState";
         private const int DEFAULT_CACHE_EXPIRY_MINUTES_VALUE = 15;
@@ -74,8 +75,11 @@ namespace SS.Integration.Adapter.Configuration
             value = ConfigurationManager.AppSettings["echoDelay"];
             EchoDelay = string.IsNullOrEmpty(value) ? DEFAULT_ECHO_DELAY_VALUE : Convert.ToInt32(value);
 
+            value = ConfigurationManager.AppSettings["stateProviderPath"];
+            StateProviderPath = string.IsNullOrEmpty(value) ? DEFAULT_STATE_PROVIDER_DIRECTORY : Convert.ToString(value);
+
             value = ConfigurationManager.AppSettings["fixturesStateFilePath"];
-            FixturesStateFilePath = string.IsNullOrEmpty(value) ? DEFAULT_FIXTURES_STATE_FILE_PATH_VALUE : Convert.ToString(value);
+            FixturesStateFilePath = string.IsNullOrEmpty(value) ? DEFAULT_FIXTURES_STATE_FILE : Convert.ToString(value);
 
             value = ConfigurationManager.AppSettings["fixturesStateAutoStoreInterval"];
             FixturesStateAutoStoreInterval = string.IsNullOrEmpty(value)
