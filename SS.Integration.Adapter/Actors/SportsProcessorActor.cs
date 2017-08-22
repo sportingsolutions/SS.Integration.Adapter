@@ -76,10 +76,6 @@ namespace SS.Integration.Adapter.Actors
 
             foreach (var sport in sports)
             {
-                if (!string.Equals(sport.Name, "football", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
                 _sportProcessorRouterActor.Tell(new ProcessSportMsg {Sport = sport.Name});
             }
         }
