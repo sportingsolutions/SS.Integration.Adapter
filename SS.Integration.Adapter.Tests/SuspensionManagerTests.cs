@@ -19,7 +19,6 @@ using NUnit.Framework;
 using SS.Integration.Adapter.Exceptions;
 using SS.Integration.Adapter.MarketRules.Interfaces;
 using SS.Integration.Adapter.Model;
-using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Tests
@@ -102,11 +101,11 @@ namespace SS.Integration.Adapter.Tests
                     AdapterPluginMock.Object);
 
             //Act
-            suspensionManager.Suspend(fixture1, SuspensionReason.FixtureDisposing);
-            suspensionManager.Suspend(fixture1, SuspensionReason.Suspension);
-            suspensionManager.Suspend(fixture1, SuspensionReason.DisconnectEvent);
-            suspensionManager.Suspend(fixture1, SuspensionReason.FixtureErrored);
-            suspensionManager.Suspend(fixture1, SuspensionReason.FixtureDeleted);
+            suspensionManager.Suspend(fixture1, SuspensionReason.FIXTURE_DISPOSING);
+            suspensionManager.Suspend(fixture1, SuspensionReason.SUSPENSION);
+            suspensionManager.Suspend(fixture1, SuspensionReason.DISCONNECT_EVENT);
+            suspensionManager.Suspend(fixture1, SuspensionReason.FIXTURE_ERRORED);
+            suspensionManager.Suspend(fixture1, SuspensionReason.FIXTURE_DELETED);
 
             //Assert
             StateProviderMock.Verify(o =>

@@ -14,7 +14,6 @@
 
 using Moq;
 using NUnit.Framework;
-using SS.Integration.Adapter.Enums;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Enums;

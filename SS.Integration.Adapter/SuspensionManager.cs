@@ -29,11 +29,11 @@ namespace SS.Integration.Adapter
         #region Fields
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(SuspensionManager));
-        private readonly Action<IMarketStateCollection> _default;
-        private readonly Action<IMarketStateCollection> _disconnected;
-        private readonly Action<IMarketStateCollection> _fixtureDeleted;
-        private readonly Action<IMarketStateCollection> _disposing;
-        private readonly Action<IMarketStateCollection> _error;
+        private Action<IMarketStateCollection> _default;
+        private Action<IMarketStateCollection> _disconnected;
+        private Action<IMarketStateCollection> _fixtureDeleted;
+        private Action<IMarketStateCollection> _disposing;
+        private Action<IMarketStateCollection> _error;
         private readonly IStateProvider _stateProvider;
         private readonly IAdapterPlugin _plugin;
 
@@ -79,23 +79,48 @@ namespace SS.Integration.Adapter
 
         public Action<IMarketStateCollection> SuspendFixtureAndSetMatchStatusDeleted { get; private set; }
 
-        public void Suspend(Fixture fixture, SuspensionReason reason = SuspensionReason.FixtureDisposing)
+        public void RegisterAction(Action<IMarketStateCollection> action, SuspensionReason reason)
+        {
+            switch (reason)
+            {
+                case SuspensionReason.FIXTURE_DISPOSING:
+                    _disposing = action;
+                    break;
+                case SuspensionReason.DISCONNECT_EVENT:
+                    _disconnected = action;
+                    break;
+                case SuspensionReason.FIXTURE_DELETED:
+                    _fixtureDeleted = action;
+                    break;
+                case SuspensionReason.FIXTURE_ERRORED:
+                    _error = action;
+                    break;
+                case SuspensionReason.SUSPENSION:
+                    _default = action;
+                    break;
+            }
+
+            _logger.DebugFormat("Suspend action for reason={0} has a new custom strategy", reason);
+        }
+
+
+        public void Suspend(Fixture fixture, SuspensionReason reason = SuspensionReason.FIXTURE_DISPOSING)
         {
             var fixtureId = fixture.Id;
 
             Action<IMarketStateCollection> action;
             switch (reason)
             {
-                case SuspensionReason.FixtureDisposing:
+                case SuspensionReason.FIXTURE_DISPOSING:
                     action = _disposing;
                     break;
-                case SuspensionReason.DisconnectEvent:
+                case SuspensionReason.DISCONNECT_EVENT:
                     action = _disconnected;
                     break;
-                case SuspensionReason.FixtureDeleted:
+                case SuspensionReason.FIXTURE_DELETED:
                     action = _fixtureDeleted;
                     break;
-                case SuspensionReason.FixtureErrored:
+                case SuspensionReason.FIXTURE_ERRORED:
                     action = _error;
                     break;
                 default:

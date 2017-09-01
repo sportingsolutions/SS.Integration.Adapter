@@ -240,7 +240,7 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Info($"Stream listener for {_resource} moved to Errored State");
 
-            SuspendFixture(SuspensionReason.Suspension);
+            SuspendFixture(SuspensionReason.SUSPENSION);
             Exception erroredEx;
             RecoverFromErroredState(prevState, out erroredEx);
 
@@ -249,8 +249,8 @@ namespace SS.Integration.Adapter.Actors
                 try
                 {
                     _logger.Error(
-                        $"Suspending Fixture {_resource} with FixtureErrored as Stream Listener failed to recover from Errored State - exception - {erroredEx}");
-                    SuspendFixture(SuspensionReason.FixtureErrored);
+                        $"Suspending Fixture {_resource} with FIXTURE_ERRORED as Stream Listener failed to recover from Errored State - exception - {erroredEx}");
+                    SuspendFixture(SuspensionReason.FIXTURE_ERRORED);
                 }
                 catch (Exception ex)
                 {
@@ -386,7 +386,7 @@ namespace SS.Integration.Adapter.Actors
 
                 if (_streamHealthCheckValidation.ShouldSuspendOnDisconnection(fixtureState, _fixtureStartTime))
                 {
-                    SuspendFixture(SuspensionReason.DisconnectEvent);
+                    SuspendFixture(SuspensionReason.DISCONNECT_EVENT);
                 }
 
                 Become(Disconnected);
@@ -803,7 +803,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                SuspendFixture(SuspensionReason.FixtureDeleted);
+                SuspendFixture(SuspensionReason.FIXTURE_DELETED);
                 try
                 {
                     _streamStatsActor.Tell(new UpdatePluginStatsStartMsg()
@@ -878,7 +878,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void SuspendAndReprocessSnapshot(bool hasEpochChanged = false)
         {
-            SuspendFixture(SuspensionReason.Suspension);
+            SuspendFixture(SuspensionReason.SUSPENSION);
             RetrieveAndProcessSnapshot(hasEpochChanged);
         }
 

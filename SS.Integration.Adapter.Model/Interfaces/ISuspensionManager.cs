@@ -13,10 +13,18 @@
 //limitations under the License.
 
 using System;
-using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Model.Interfaces
 {
+    public enum SuspensionReason
+    {
+        SUSPENSION,
+        DISCONNECT_EVENT,
+        FIXTURE_DELETED,
+        FIXTURE_DISPOSING,
+        FIXTURE_ERRORED
+    }
+
     public interface ISuspensionManager
     {
         #region Properties
@@ -38,6 +46,8 @@ namespace SS.Integration.Adapter.Model.Interfaces
         #endregion
 
         #region Methods
+
+        void RegisterAction(Action<IMarketStateCollection> action, SuspensionReason reason);
 
         void Suspend(Fixture fixture, SuspensionReason reason);
 

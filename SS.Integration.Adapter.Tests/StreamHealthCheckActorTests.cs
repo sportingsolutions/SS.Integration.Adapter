@@ -186,7 +186,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.Suspension),
+                                SuspensionReason.SUSPENSION),
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
                 },
@@ -279,15 +279,15 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.Suspension),
+                                SuspensionReason.SUSPENSION),
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.FixtureErrored),
+                                SuspensionReason.FIXTURE_ERRORED),
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.DisconnectEvent),
+                                SuspensionReason.DISCONNECT_EVENT),
                         Times.Never);
 
                     Assert.Throws<AggregateException>(() =>

@@ -16,7 +16,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.Remoting.Contexts;
 using SS.Integration.Adapter.Diagnostics.Model.Interface;
 using SS.Integration.Adapter.Model.Enums;
 
