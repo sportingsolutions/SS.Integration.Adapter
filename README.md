@@ -121,11 +121,23 @@ The following is a list of available settings.
 - EchoDelay - The maximum amount of time in milliseconds that will be allowed for an echo message to arrive
 - FixtureCreationConcurrency - The maximum number of concurrent threads used to create fixtures
 - SuspendAllOnShutdown - Suspend all fixtures when the Adapter is shutdown correctly e.g. Stop as a windows service
-- EventStateFilePath - The path and filename of the eventstate file. This is used to store fixture sequence numbers so that the adapter can work out if it has missed updates.
-- MarketFilterState - The path to the folder that holds the MarketFilterState. This is where the current state of each market is held.
+- StateProviderPath - The path relative to Adapter Directory where all the state files are saved.
+- FixturesStateFilePath - The filename or file path relative to StateProviderPath or full rooted file path of the fixtures state file. This is used to store fixture sequence numbers so that the adapter can work out if it has missed updates.
+- FixturesStateAutoStoreInterval - The interval in milliseconds at which the fixtures state file is saved to disk from internal adapter's memory.
+- marketFiltersDirectory - The path relative to StateProviderPath for the directory that holds the MarketFilterState. This is where the current state of each market is held.
 - CacheExpiryInMins - The number of minutes that a markets state will be held in memory after being read. The timer is set back to this value and restarts the coutdown on each read.
 - StatsEnabled - This should be set to false. It may be used in future for statistics generation.
 - DeltaRuleEnabled - Set to true to turn on the delta rule. This will remove any markets and selections from a snapshot that have not changed since the last successfully processed sequence number
+- MaxUnhandledExceptions - The number of fatal exception that adapter should bypass and try to restart.
+- UseSupervisor - true/false to enable/disable Supervisor functionality.
+- SupervisorUrl - Url of the Supervisor UI.
+- SkipRulesOnError - Setting to skip processing market rules when processing snapshot errored.
+- StreamSafetyThreshold - Number of sequences that adapter is allowed to skip (miss processing) on stream validation
+- SkipRestartOnFatalException - Setting to skip restarting adapter when fatal errors occur. This setting invalidates MaxUnhandledExceptions setting.
+- PreMatchSuspensionBeforeStartTimeInMins - Number of minutes passed from match start time allowed to avoid suspension on stream disconnection.
+- DisablePrematchSuspensionOnDisconnection - true/false to Disable/Enable fixture suspension on stream disconnection.
+- StartStreamingTimeoutInSeconds - number of seconds to wait before logging warn message when trying to connect to the streaming server.
+- AllowFixtureStreamingInSetupMode - true/false to Enable/Disable fixture streaming when is in Setup mode.
 
 Adapter Market Rules
 ----------------------
