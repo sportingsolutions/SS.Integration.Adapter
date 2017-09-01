@@ -46,6 +46,12 @@ namespace SS.Integration.Adapter
             _stateProvider = stateProvider ?? throw new ArgumentNullException(nameof(stateProvider));
             _plugin = plugin ?? throw new AggregateException(nameof(plugin));
 
+            var stateManager = _stateProvider as StateManager;
+            if (stateManager != null)
+            {
+                stateManager.SuspensionManager = this;
+            }
+
             BuildDefaultStrategies();
 
             _disposing = SuspendFixtureStrategy;

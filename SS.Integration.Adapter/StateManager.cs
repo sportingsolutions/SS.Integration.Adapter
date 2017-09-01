@@ -109,6 +109,8 @@ namespace SS.Integration.Adapter
 
         #region Implementation of IStateProvider
 
+        public ISuspensionManager SuspensionManager { get; internal set; }
+
         public IMarketStateCollection GetMarketsState(string fixtureId)
         {
             if (string.IsNullOrEmpty(fixtureId))

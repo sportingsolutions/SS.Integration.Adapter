@@ -16,6 +16,14 @@ namespace SS.Integration.Adapter.Model.Interfaces
 {
     public interface IStateProvider
     {
+        #region Properties
+
+        ISuspensionManager SuspensionManager { get; }
+
+        #endregion
+
+        #region Methods
+
         IMarketStateCollection GetMarketsState(string fixtureId);
 
         T GetPluginFixtureState<T>(string fixtureId) where T : IPluginFixtureState;
@@ -25,5 +33,7 @@ namespace SS.Integration.Adapter.Model.Interfaces
         void AddOrUpdatePluginFixtureState(IPluginFixtureState state);
 
         void RemovePluginState(string fixtureId);
+
+        #endregion
     }
 }
