@@ -123,6 +123,7 @@ namespace SS.Integration.Adapter.WindowsService
             var streamHealthCheckValidation = _iocContainer.Get<IStreamHealthCheckValidation>();
             var fixtureValidation = _iocContainer.Get<IFixtureValidation>();
             var stateManager = _iocContainer.Get<IStateManager>();
+            var stateProvider = _iocContainer.Get<IStateProvider>();
             var suspensionManager = _iocContainer.Get<ISuspensionManager>();
 
             _iocContainer.Settings.InjectNonPublic = true;
@@ -136,6 +137,7 @@ namespace SS.Integration.Adapter.WindowsService
                     service,
                     PlatformConnector,
                     stateManager,
+                    stateProvider,
                     suspensionManager,
                     streamHealthCheckValidation,
                     fixtureValidation);

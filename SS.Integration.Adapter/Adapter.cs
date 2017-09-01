@@ -50,6 +50,7 @@ namespace SS.Integration.Adapter
             IServiceFacade udapiServiceFacade,
             IAdapterPlugin platformConnector,
             IStateManager stateManager,
+            IStateProvider stateProvider,
             ISuspensionManager suspensionManager,
             IStreamHealthCheckValidation streamHealthCheckValidation,
             IFixtureValidation fixtureValidation)
@@ -61,6 +62,8 @@ namespace SS.Integration.Adapter
             _suspensionManager = suspensionManager ?? throw new ArgumentNullException(nameof(suspensionManager));
             _streamHealthCheckValidation = streamHealthCheckValidation ?? throw new ArgumentNullException(nameof(streamHealthCheckValidation));
             _fixtureValidation = fixtureValidation ?? throw new ArgumentNullException(nameof(fixtureValidation));
+
+            StateProviderProxy.Init(stateProvider);
 
             if (settings.StatsEnabled)
                 StatsManager.Configure();
