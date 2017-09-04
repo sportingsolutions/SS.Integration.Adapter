@@ -149,15 +149,6 @@ namespace SS.Integration.Adapter.Interface
         int StreamSafetyThreshold { get; }
 
         /// <summary>
-        /// Indicates if the adapter should introduce
-        /// a delay before stop streaming for fixtures
-        /// that belong to a given sport
-        /// </summary>
-        /// <param name="sport"></param>
-        /// <returns></returns>
-        bool ShouldDelayStopStreaming(string sport);
-
-        /// <summary>
         /// This is litit for sttempt to start streaming
         /// </summary>
         int StartStreamingTimeoutInSeconds { get; }
