@@ -113,11 +113,11 @@ namespace SS.Integration.Adapter.Actors
 
             var minutes = (int)Math.Ceiling((DateTime.UtcNow - AdapterStartDate).TotalMinutes);
 
-            _logger.Warn($"Number of API errors: {_errorsCount[ApiExceptionType]}");
-            _logger.Warn($"Number of Plugin errors: {_errorsCount[PluginExceptionType]}");
-            _logger.Warn($"Number of Generic errors: {_errorsCount[GenericExceptionType]}");
-            _logger.Warn($"Number of API errors per minute: {_errorsCount[ApiExceptionType] / minutes}");
-            _logger.Warn($"Number of Plugin errors per minute: {_errorsCount[PluginExceptionType] / minutes}");
+            _logger.Warn($"Number of API_Errors={_errorsCount[ApiExceptionType]}");
+            _logger.Warn($"Number of Plugin_Errors={_errorsCount[PluginExceptionType]}");
+            _logger.Warn($"Number of Generic_Errors={_errorsCount[GenericExceptionType]}");
+            _logger.Warn($"Number of API_Errors_PerMinute={_errorsCount[ApiExceptionType] / minutes}");
+            _logger.Warn($"Number of Plugin_Errors_PerMinute={_errorsCount[PluginExceptionType] / minutes}");
         }
 
         private void UpdatePluginStatsFinishMsgHandler(UpdatePluginStatsFinishMsg msg)
@@ -150,10 +150,10 @@ namespace SS.Integration.Adapter.Actors
             var minutes = (int)Math.Ceiling((DateTime.UtcNow - AdapterStartDate).TotalMinutes);
 
             _logger.Info($"{updateOrSnapshot} for {startMessage.Fixture}, took processingTime={timeTaken.TotalSeconds} seconds at sequence={startMessage.Sequence}");
-            _logger.Info($"{startMessage.Fixture} -> Snapshots processed: {_snapshotsCount}");
-            _logger.Info($"{startMessage.Fixture} -> Stream updates processed: {_streamUpdatesCount}");
-            _logger.Info($"{startMessage.Fixture} -> Snapshots per minute: {_snapshotsCount / minutes}");
-            _logger.Info($"{startMessage.Fixture} -> Stream updates per minute: {_streamUpdatesCount / minutes}");
+            _logger.Info($"{startMessage.Fixture} -> Snapshots_Processed={_snapshotsCount}");
+            _logger.Info($"{startMessage.Fixture} -> StreamUpdates_Processed={_streamUpdatesCount}");
+            _logger.Info($"{startMessage.Fixture} -> Snapshots_PerMinute={_snapshotsCount / minutes}");
+            _logger.Info($"{startMessage.Fixture} -> StreamUpdates_PerMinute={_streamUpdatesCount / minutes}");
         }
 
         private void StreamDisconnectedMsgHandler(StreamDisconnectedMsg msg)
