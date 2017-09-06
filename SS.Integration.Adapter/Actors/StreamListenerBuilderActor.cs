@@ -103,6 +103,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<CreateStreamListenerMsg>(o => CreateStreamListenerMsgHandler(o));
             Receive<BuildStreamListenerActorMsg>(o => BuildStreamListenerActorMsgHandler(o));
             Receive<StreamListenerCreationCompletedMsg>(o => StreamListenerCreationCompletedMsgHandler(o));
+            Receive<StreamListenerCreationCancelledMsg>(o => StreamListenerCreationCancelledMsgHandler(o));
             Receive<StreamListenerCreationFailedMsg>(o => StreamListenerCreationFailedMsgHandler(o));
         }
 
@@ -117,6 +118,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<CreateStreamListenerMsg>(o => { Stash.Stash(); });
             Receive<BuildStreamListenerActorMsg>(o => BuildStreamListenerActorMsgHandler(o));
             Receive<StreamListenerCreationCompletedMsg>(o => StreamListenerCreationCompletedMsgHandler(o));
+            Receive<StreamListenerCreationCancelledMsg>(o => StreamListenerCreationCancelledMsgHandler(o));
             Receive<StreamListenerCreationFailedMsg>(o => StreamListenerCreationFailedMsgHandler(o));
         }
 
@@ -160,14 +162,22 @@ namespace SS.Integration.Adapter.Actors
 
         private void StreamListenerCreationCompletedMsgHandler(StreamListenerCreationCompletedMsg msg)
         {
-            _logger.Debug($"Stream Listener Creation Completed for Fixture with fixtureId={msg.FixtureId}");
+            _logger.Debug($"Stream Listener Creation Completed for Fixture with fixtureId={msg.FixtureId}; FixtureStatus={msg.FixtureStatus}");
+
+            CheckStateUpdate();
+        }
+
+        private void StreamListenerCreationCancelledMsgHandler(StreamListenerCreationCancelledMsg msg)
+        {
+            _logger.Debug(
+                $"Stream Listener Creation Cancelled for Fixture with fixtureId={msg.FixtureId}; FixtureStatus={msg.FixtureStatus}; StreamListenerCreationCancellationReason={msg.Reason}");
 
             CheckStateUpdate();
         }
 
         private void StreamListenerCreationFailedMsgHandler(StreamListenerCreationFailedMsg msg)
         {
-            _logger.Debug($"Stream Listener Creation Failed for Fixture with fixtureId={msg.FixtureId}");
+            _logger.Debug($"Stream Listener Creation Failed for Fixture with fixtureId={msg.FixtureId}; FixtureStatus={msg.FixtureStatus}");
 
             CheckStateUpdate();
         }

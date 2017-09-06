@@ -88,6 +88,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<StartStreamingNotRespondingMsg>(o => StopStreamListenerChildActor(o.FixtureId));
             Receive<StreamListenerInitializedMsg>(o => StreamListenerInitializedMsgHandler(o));
             Receive<StreamListenerCreationFailedMsg>(o => StreamListenerCreationFailedMsgHandler(o));
+            Receive<StreamListenerCreationCancelledMsg>(o => StreamListenerCreationCancelledMsgHandler(o));
             Receive<Terminated>(o => TerminatedHandler(o));
             Receive<ResetSendProcessSportsMsg>(o => ResetSendProcessSportsMsgHandler(o));
             Receive<RetrieveAndProcessSnapshotMsg>(o => RetrieveAndProcessSnapshotMsgHandler(o));
@@ -117,7 +118,19 @@ namespace SS.Integration.Adapter.Actors
             _logger.Info(
                 $"Stream Listener for {msg.Resource} has been Initialized");
 
-            _streamListenerBuilderActorRef.Tell(new StreamListenerCreationCompletedMsg { FixtureId = msg.Resource.Id });
+            _streamListenerBuilderActorRef.Tell(new StreamListenerCreationCompletedMsg
+            {
+                FixtureId = msg.Resource.Id,
+                FixtureStatus = msg.Resource.MatchStatus.ToString()
+            });
+        }
+
+        private void StreamListenerCreationCancelledMsgHandler(StreamListenerCreationCancelledMsg msg)
+        {
+            _logger.Info(
+                $"Stream Listener Initialization for {msg.FixtureId} has been cancelled");
+
+            _streamListenerBuilderActorRef.Tell(msg);
         }
 
         private void StreamListenerCreationFailedMsgHandler(StreamListenerCreationFailedMsg msg)
@@ -133,7 +146,11 @@ namespace SS.Integration.Adapter.Actors
             IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.FixtureId));
             Context.Watch(streamListenerActor);
 
-            _streamListenerBuilderActorRef.Tell(new StreamListenerCreationCompletedMsg { FixtureId = msg.FixtureId });
+            _streamListenerBuilderActorRef.Tell(new StreamListenerCreationCompletedMsg
+            {
+                FixtureId = msg.FixtureId,
+                FixtureStatus = msg.FixtureStatus
+            });
         }
 
         private void StreamDisconnectedMsgHandler(StreamDisconnectedMsg msg)

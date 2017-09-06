@@ -183,7 +183,12 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                var streamConnectedMsg = new StreamConnectedMsg { FixtureId = _fixtureId };
+                var streamConnectedMsg =
+                    new StreamConnectedMsg
+                    {
+                        FixtureId = _fixtureId,
+                        FixtureStatus = _resource.MatchStatus.ToString()
+                    };
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
 
                 var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
@@ -265,6 +270,7 @@ namespace SS.Integration.Adapter.Actors
                             new StreamListenerCreationFailedMsg
                             {
                                 FixtureId = _fixtureId,
+                                FixtureStatus = _resource.MatchStatus.ToString(),
                                 Exception = erroredEx
                             });
                         _isInitializing = false;
@@ -454,11 +460,21 @@ namespace SS.Integration.Adapter.Actors
 
                 if (_resource.IsMatchOver)
                 {
-                    _logger.Warn($"Listener will not start for {_resource} as the resource is marked as ended");
                     if (fixtureState != null && fixtureState.MatchStatus != MatchStatus.MatchOver)
                     {
                         ProcessMatchOver();
                     }
+
+                    _logger.Warn($"Stopping actor for {_resource} as the resource is marked as ended");
+
+                    Context.Parent.Tell(
+                        new StreamListenerCreationCancelledMsg
+                        {
+                            FixtureId = _resource.Id,
+                            FixtureStatus = _resource.MatchStatus.ToString(),
+                            Reason = "Match is over"
+                        });
+
                     Become(Stopped);
                 }
                 else

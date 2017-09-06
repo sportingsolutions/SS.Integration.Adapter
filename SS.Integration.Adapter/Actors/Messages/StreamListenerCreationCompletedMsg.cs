@@ -17,5 +17,7 @@ namespace SS.Integration.Adapter.Actors.Messages
     internal class StreamListenerCreationCompletedMsg
     {
         public string FixtureId { get; set; }
+
+        public string FixtureStatus { get; set; }
     }
 }

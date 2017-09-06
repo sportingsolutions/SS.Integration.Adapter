@@ -20,6 +20,8 @@ namespace SS.Integration.Adapter.Actors.Messages
     {
         public string FixtureId { get; set; }
 
+        public string FixtureStatus { get; set; }
+
         public Exception Exception { get; set; }
     }
 }

@@ -14,10 +14,12 @@
 
 namespace SS.Integration.Adapter.Actors.Messages
 {
-    internal class StreamConnectedMsg
+    internal class StreamListenerCreationCancelledMsg
     {
         public string FixtureId { get; set; }
 
         public string FixtureStatus { get; set; }
+
+        public string Reason { get; set; }
     }
 }

@@ -87,6 +87,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Actors\Messages\ClearFixtureStateMsg.cs" />
+    <Compile Include="Actors\Messages\StreamListenerCreationCancelledMsg.cs" />
     <Compile Include="Actors\Messages\SuspendAndReprocessSnapshotMsg.cs" />
     <Compile Include="Actors\Messages\RestartStreamListenerMsg.cs" />
     <Compile Include="Actors\Messages\RetrieveAndProcessSnapshotMsg.cs" />
