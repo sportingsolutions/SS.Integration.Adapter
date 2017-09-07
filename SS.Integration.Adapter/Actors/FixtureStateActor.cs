@@ -21,6 +21,7 @@ using Newtonsoft.Json;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
+using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Actors
@@ -76,9 +77,10 @@ namespace SS.Integration.Adapter.Actors
                 0,//run this the first time when adapter starts
                 604800000,//run this every week
                 Self,
-                new CleanupStateFilesMsg(), 
+                new CleanupStateFilesMsg(),
                 Self);
 
+            Receive<CheckFixtureStateMsg>(a => CheckFixtureStateMsgHandler(a));
             Receive<GetFixtureStateMsg>(a => GetFixtureStateMsgHandler(a));
             Receive<UpdateFixtureStateMsg>(a => UpdateFixtureStateMsgHandler(a));
             Receive<RemoveFixtureStateMsg>(a => RemoveFixtureStateMsgHandler(a));
@@ -89,6 +91,19 @@ namespace SS.Integration.Adapter.Actors
         #endregion
 
         #region Message handlers
+
+        private void CheckFixtureStateMsgHandler(CheckFixtureStateMsg msg)
+        {
+            FixtureState fixtureState;
+            _fixturesState.TryGetValue(msg.Resource.Id, out fixtureState);
+
+            if (fixtureState != null)
+            {
+                msg.IsMatchOver = fixtureState.MatchStatus == MatchStatus.MatchOver;
+            }
+
+            Sender.Tell(msg, Self);
+        }
 
         private void GetFixtureStateMsgHandler(GetFixtureStateMsg msg)
         {
@@ -116,7 +131,10 @@ namespace SS.Integration.Adapter.Actors
 
         private void RemoveFixtureStateMsgHandler(RemoveFixtureStateMsg msg)
         {
-            _fixturesState.Remove(msg.FixtureId);
+            if (_fixturesState.ContainsKey(msg.FixtureId))
+            {
+                _fixturesState.Remove(msg.FixtureId);
+            }
         }
 
         private void WriteStateToFileMsgHandler(WriteStateToFileMsg msg)

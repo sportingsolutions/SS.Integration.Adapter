@@ -18,6 +18,8 @@ using log4net;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Enums;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model;
+using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Actors
@@ -100,6 +102,7 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Warn("Moved to Active State");
 
+            Receive<CheckFixtureStateMsg>(o => CheckFixtureStateMsgHandler(o));
             Receive<CreateStreamListenerMsg>(o => CreateStreamListenerMsgHandler(o));
             Receive<BuildStreamListenerActorMsg>(o => BuildStreamListenerActorMsgHandler(o));
             Receive<StreamListenerCreationCompletedMsg>(o => StreamListenerCreationCompletedMsgHandler(o));
@@ -115,11 +118,20 @@ namespace SS.Integration.Adapter.Actors
             _logger.Warn(
                 $"Moved to Busy State - fixture creation concurency limit of {_settings.FixtureCreationConcurrency} has been reached");
 
+            Receive<CheckFixtureStateMsg>(o => CheckFixtureStateMsgHandler(o));
             Receive<CreateStreamListenerMsg>(o => { Stash.Stash(); });
             Receive<BuildStreamListenerActorMsg>(o => BuildStreamListenerActorMsgHandler(o));
             Receive<StreamListenerCreationCompletedMsg>(o => StreamListenerCreationCompletedMsgHandler(o));
             Receive<StreamListenerCreationCancelledMsg>(o => StreamListenerCreationCancelledMsgHandler(o));
             Receive<StreamListenerCreationFailedMsg>(o => StreamListenerCreationFailedMsgHandler(o));
+        }
+
+        private void CheckFixtureStateMsgHandler(CheckFixtureStateMsg msg)
+        {
+            if (!msg.IsMatchOver)
+            {
+                SendBuildStreamListenerActorSelfMessage(msg.Resource);
+            }
         }
 
         #endregion
@@ -135,8 +147,15 @@ namespace SS.Integration.Adapter.Actors
             }
             else
             {
-                _concurrentInitializations++;
-                Self.Tell(new BuildStreamListenerActorMsg { Resource = msg.Resource });
+                if (msg.Resource.MatchStatus != MatchStatus.MatchOver)//match is not over so stream listener instance will be created
+                {
+                    SendBuildStreamListenerActorSelfMessage(msg.Resource);
+                }
+                else//if match is already over then check fixture state in order to validate stream listener instance creation
+                {
+                    var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+                    fixtureStateActor.Tell(new CheckFixtureStateMsg { Resource = msg.Resource });
+                }
             }
         }
 
@@ -185,6 +204,12 @@ namespace SS.Integration.Adapter.Actors
         #endregion
 
         #region Private methods
+
+        private void SendBuildStreamListenerActorSelfMessage(IResourceFacade resource)
+        {
+            _concurrentInitializations++;
+            Self.Tell(new BuildStreamListenerActorMsg { Resource = resource });
+        }
 
         private void CheckStateUpdate()
         {
