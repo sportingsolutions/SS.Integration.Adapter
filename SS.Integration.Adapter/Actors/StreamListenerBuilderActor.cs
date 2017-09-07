@@ -53,6 +53,8 @@ namespace SS.Integration.Adapter.Actors
 
         internal StreamListenerBuilderState State { get; private set; }
 
+        internal int ConcurrentInitializations => _concurrentInitializations;
+
         public IStash Stash { get; set; }
 
         #endregion
@@ -126,14 +128,6 @@ namespace SS.Integration.Adapter.Actors
             Receive<StreamListenerCreationFailedMsg>(o => StreamListenerCreationFailedMsgHandler(o));
         }
 
-        private void CheckFixtureStateMsgHandler(CheckFixtureStateMsg msg)
-        {
-            if (!msg.IsMatchOver)
-            {
-                SendBuildStreamListenerActorSelfMessage(msg.Resource);
-            }
-        }
-
         #endregion
 
         #region Message Handlers
@@ -153,9 +147,23 @@ namespace SS.Integration.Adapter.Actors
                 }
                 else//if match is already over then check fixture state in order to validate stream listener instance creation
                 {
+                    _logger.Debug($"MatchOver detected for {msg.Resource} ; checking saved fixture state");
                     var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
                     fixtureStateActor.Tell(new CheckFixtureStateMsg { Resource = msg.Resource });
                 }
+            }
+        }
+
+        private void CheckFixtureStateMsgHandler(CheckFixtureStateMsg msg)
+        {
+            if (msg.ShouldProcessFixture)
+            {
+                _logger.Debug($"create StreamListenerActor instance for {msg.Resource} as saved fixture state is not MatchOver");
+                SendBuildStreamListenerActorSelfMessage(msg.Resource);
+            }
+            else
+            {
+                _logger.Debug($"skip creating StreamListenerActor Instance as there is no saved fixture state for {msg.Resource}");
             }
         }
 

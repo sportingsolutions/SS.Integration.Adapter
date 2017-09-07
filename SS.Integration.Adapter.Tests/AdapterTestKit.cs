@@ -78,6 +78,10 @@ namespace SS.Integration.Adapter.Tests
             resourceFacadeMock.Setup(r => r.StopStreaming()).Raises(r => r.StreamDisconnected += null, EventArgs.Empty);
             StateManagerMock.Setup(o => o.CreateNewMarketRuleManager(It.Is<string>(id => id.Equals(snapshotVar.Id))))
                 .Returns(MarketRulesManagerMock.Object);
+            if (snapshot.IsMatchOver)
+            {
+                resourceFacadeMock.SetupGet(o => o.IsMatchOver).Returns(true);
+            }
 
             var storedFixtureState = new FixtureState { Id = snapshot.Id, Sport = sport };
 

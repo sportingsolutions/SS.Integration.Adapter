@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model;
 
 namespace SS.Integration.Adapter.Actors.Messages
 {
@@ -20,6 +21,7 @@ namespace SS.Integration.Adapter.Actors.Messages
     {
         public IResourceFacade Resource { get; set; }
 
-        public bool IsMatchOver { get; set; }
+        //this flag tells the builder whether it should create the stream listener builder actor
+        public bool ShouldProcessFixture { get; set; }
     }
 }

@@ -22,6 +22,7 @@ using SS.Integration.Adapter.Actors;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Adapter.Enums;
+using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Tests
 {
@@ -60,8 +61,7 @@ namespace SS.Integration.Adapter.Tests
         #region Test Methods
 
         /// <summary>
-        /// This test ensures we don't create more than the pre-defined number of concurrent Stream Listener instances.
-        /// It includes
+        /// This test ensures we don't create more than the pre-defined number of concurrent StreamListenerActor instances.
         /// </summary>
         [Test]
         [Category(STREAM_LISTENER_BUILDER_ACTOR_CATEGORY)]
@@ -145,6 +145,71 @@ namespace SS.Integration.Adapter.Tests
                     Assert.AreEqual(
                         StreamListenerBuilderState.Active,
                         streamListenerBuilderActorRef.UnderlyingActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        /// <summary>
+        /// This test ensures we don't create StreamListenerActor instance when we have fixture with match over and no saved state for it.
+        /// </summary>
+        [Test]
+        [Category(STREAM_LISTENER_BUILDER_ACTOR_CATEGORY)]
+        public void TestSkipStreamListenerActorInstanceCreationWhenFixtureHasMatchOver()
+        {
+            //
+            //Arrange
+            //
+            SettingsMock.SetupGet(a => a.FixtureCreationConcurrency).Returns(10);
+            var resourceFacadeMock = new Mock<IResourceFacade>();
+            resourceFacadeMock.SetupGet(o => o.Id).Returns("Fixture1Id");
+            resourceFacadeMock.SetupGet(o => o.MatchStatus).Returns(MatchStatus.MatchOver);
+
+            //
+            //Act
+            //
+            var streamListenerBuilderActorRef =
+                ActorOfAsTestActorRef<StreamListenerBuilderActor>(
+                    Props.Create(() =>
+                        new StreamListenerBuilderActor(
+                            SettingsMock.Object,
+                            new Mock<IActorContext>().Object,
+                            PluginMock.Object,
+                            StateManagerMock.Object,
+                            SuspensionManagerMock.Object,
+                            StreamHealthCheckValidationMock.Object,
+                            FixtureValidationMock.Object)),
+                    StreamListenerBuilderActor.ActorName);
+
+            //
+            //Act
+            //
+            streamListenerBuilderActorRef.Tell(
+                new CreateStreamListenerMsg
+                {
+                    Resource = resourceFacadeMock.Object
+                });
+
+            Task.Delay(TimeSpan.FromMilliseconds(100));
+
+            streamListenerBuilderActorRef.Tell(
+                new CheckFixtureStateMsg
+                {
+                    Resource = resourceFacadeMock.Object,
+                    ShouldProcessFixture = false
+                });
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    Assert.AreEqual(
+                        StreamListenerBuilderState.Active,
+                        streamListenerBuilderActorRef.UnderlyingActor.State);
+                    Assert.AreEqual(
+                        0,
+                        streamListenerBuilderActorRef.UnderlyingActor.ConcurrentInitializations);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));

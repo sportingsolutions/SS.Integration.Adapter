@@ -96,11 +96,7 @@ namespace SS.Integration.Adapter.Actors
         {
             FixtureState fixtureState;
             _fixturesState.TryGetValue(msg.Resource.Id, out fixtureState);
-
-            if (fixtureState != null)
-            {
-                msg.IsMatchOver = fixtureState.MatchStatus == MatchStatus.MatchOver;
-            }
+            msg.ShouldProcessFixture = fixtureState == null || fixtureState.MatchStatus == MatchStatus.MatchOver;
 
             Sender.Tell(msg, Self);
         }
