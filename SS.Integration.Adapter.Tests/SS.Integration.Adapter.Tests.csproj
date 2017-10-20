@@ -127,6 +127,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <Content Include="Data\fixtureStates.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="Data\football-inplay-snapshot-2" />
     <None Include="Data\football-matchover-snapshot-2" />
     <None Include="Data\football-setup-snapshot-2" />

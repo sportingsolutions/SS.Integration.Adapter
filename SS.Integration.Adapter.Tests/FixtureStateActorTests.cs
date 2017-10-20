@@ -14,6 +14,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Moq;
@@ -42,8 +44,14 @@ namespace SS.Integration.Adapter.Tests
         [SetUp]
         public void SetupTest()
         {
+            SetupTestLogging();
+
             SettingsMock = new Mock<ISettings>();
-            SettingsMock.SetupGet(a => a.FixturesStateFilePath).Returns(GetType().Assembly.Location);
+            var fixtureStatesFilePath =
+                Path.Combine(
+                    new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName,
+                    "Data/fixtureStates.json");
+            SettingsMock.SetupGet(a => a.FixturesStateFilePath).Returns(fixtureStatesFilePath);
             SettingsMock.SetupGet(a => a.FixturesStateAutoStoreInterval).Returns(1000);
 
             StoreProviderMock = new Mock<IStoreProvider>();
