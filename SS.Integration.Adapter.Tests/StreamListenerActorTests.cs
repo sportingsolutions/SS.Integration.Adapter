@@ -46,6 +46,8 @@ namespace SS.Integration.Adapter.Tests
         [SetUp]
         public void SetupTest()
         {
+            SetupTestLogging();
+
             PluginMock = new Mock<IAdapterPlugin>();
 
             SettingsMock = new Mock<ISettings>();

@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using Akka.Actor;
 using Akka.TestKit.NUnit;
 using Moq;
 using Newtonsoft.Json;
+using NUnit.Framework;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Actors;
 using SS.Integration.Adapter.Interface;
@@ -25,6 +27,8 @@ namespace SS.Integration.Adapter.Tests
 
         #region Fields
 
+        private static bool _log4NetConfigured = false;
+
         protected Mock<IFeature> FootabllSportMock;
         protected Mock<ISettings> SettingsMock;
         protected Mock<IAdapterPlugin> PluginMock;
@@ -40,6 +44,21 @@ namespace SS.Integration.Adapter.Tests
         #endregion
 
         #region Protected methods
+
+        protected void SetupTestLogging()
+        {
+            if (!_log4NetConfigured)
+            {
+                var path = Assembly.GetExecutingAssembly().Location;
+                var fileInfo = new FileInfo(path);
+                var dir = fileInfo.DirectoryName;
+
+                log4net.ThreadContext.Properties["testName"] = TestContext.CurrentContext.Test.FullName;
+
+                log4net.Config.XmlConfigurator.ConfigureAndWatch(new FileInfo($"{dir}\\log4net.config"));
+                _log4NetConfigured = true;
+            }
+        }
 
         protected void SetupCommonMockObjects(
             string sport,
