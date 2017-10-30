@@ -29,7 +29,7 @@ namespace SS.Integration.Adapter.Actors
 
         public const string ActorName = nameof(SportsProcessorActor);
         public const string Path = "/user/" + ActorName;
-
+        private ICancelable processSportsMsgSchedule;
         #endregion
 
         #region Attribues
@@ -58,8 +58,8 @@ namespace SS.Integration.Adapter.Actors
 
             Receive<ProcessSportsMsg>(o => ProcessSports());
 
-            Context.System.Scheduler.ScheduleTellRepeatedly(
-                TimeSpan.Zero,
+            processSportsMsgSchedule = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(
+                TimeSpan.FromSeconds(10),
                 TimeSpan.FromMilliseconds(settings.FixtureCheckerFrequency),
                 Self,
                 new ProcessSportsMsg(),
@@ -69,6 +69,12 @@ namespace SS.Integration.Adapter.Actors
         #endregion
 
         #region Private methods
+
+        protected override void PreRestart(Exception reason, object message)
+        {
+            processSportsMsgSchedule.Cancel();
+            base.PreRestart(reason, message);
+        }
 
         private void ProcessSports()
         {
