@@ -158,7 +158,7 @@ namespace SS.Integration.Adapter.UdapiClient
                     else
                     {
                         _service.IsServiceCacheEnabled = _settings.IsSdkServiceCacheEnabled;
-                        _service.ServiceCacheInvalidationInterval = _settings.FixtureCheckerFrequency / 1000;
+                        _service.ServiceCacheInvalidationInterval = _settings.FixtureCheckerFrequency / 1000 - 2;
                     }
 
                     IsConnected = true;

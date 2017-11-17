@@ -163,7 +163,7 @@ namespace SS.Integration.Adapter.Actors
 
             if (_startStreamingNotRespondingWarnCount > _settings.StartStreamingAttempts)
             {
-                _startStreamingNotResponding.Cancel();
+                _startStreamingNotResponding?.Cancel();
                 var streamListenerManagerActor = Context.System.ActorSelection(StreamListenerManagerActor.Path);
                 streamListenerManagerActor.Tell(msg);
             }
