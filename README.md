@@ -153,6 +153,40 @@ pendingMarketFilteringRule.ExcludeMarketType("match_winner");
 MarketRules = marketRuleList;
 ```
 
+There are 3 default Market Rules implemented:
+
+- InactiveMarketsFilteringRule
+
+This rule removes markets from snapshots/updates if
+  1) the market is INACTIVE
+  2) the market was INACTIVE in the previous update/snapshot
+
+If there is a change in market's name or status the market will not be removed.
+
+- PendingMarketFilteringRule
+
+This rule removes from a snapshot/update all the markets that are not (and never were) active.
+Once a market becomes active for the first time, if the update is not a snapshot, the rules will add all the missing information to the market/selections (i.e. tags) 
+It is possible to configure the rule by sport and allow specific markets to be excluded from this rule.
+
+- DeletedMarketsRule
+
+This rule suspends the market if the fixture is deleted from the API.
+
+- VoidUnSettledMarket
+This rule is executed only if the match is over.
+Any call to this rule while the match is not over, will result in an empty set of intents.
+The purpose of this rule is to void any market that:
+
+  1) Has been active at least one 
+  2) Has been seen/processed by the plugin (or in other words, during the market life cycle, at least once it appeared on a snapshot/update passed down to the plugin)
+  3) Has not been settled or voided by the platform.
+
+The main use of this rule is during market re-definition.
+If a market definition changes when the fixture is already published, some of the markets could disapper from the snapshots/updates, cause not included in the new definition any more.
+At the end of the match, this rule will take care of voiding these markets.
+
+
 Modules
 ----------------------
 
