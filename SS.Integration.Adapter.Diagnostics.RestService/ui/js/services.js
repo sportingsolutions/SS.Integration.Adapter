@@ -20,7 +20,7 @@
 (function () {
 
     //get current url from the request
-    var url = "http://" + window.location.hostname;
+    var url = window.location.protocol + "//" + window.location.hostname;
     var port = window.location.port;
 
     /** @type {ssln.supervisor.config} */
@@ -118,7 +118,7 @@
      */
     services.constant('MyConfig', myConfig);
 
-    /** 
+    /**
      * This is the streaming service: it receives push notifications from the adapter's supervisor.
      *
      * A client can subscribe to three different types of notifications:
@@ -127,8 +127,8 @@
      * 2) fixture notifications - receives updates regarding a specific fixture: user fixtureSubscription(fixtureId).subscribe/unsubscribe
      * 3) adapter notifications - receives updates regarding the adapter internal state and possibile raised errors
      *
-     * Use the specific "subscribe" methods in order to {un}-subscribe. Internally, the service sends broadcast messages 
-     * (see MyConfig.pushNotifications.events) when a message is received from the server. 
+     * Use the specific "subscribe" methods in order to {un}-subscribe. Internally, the service sends broadcast messages
+     * (see MyConfig.pushNotifications.events) when a message is received from the server.
      *
      * To use the service, a client should 1) subscribe itself to the service and 2) register specific listeners on $rootScope
      * to receive the desired broadcasted message.
@@ -199,7 +199,7 @@
                     }
                 });
 
-                // execute all the calls that couldn't be execute before 
+                // execute all the calls that couldn't be execute before
                 $.each(callbacks, function (index, value) {
                     invoke(value.method, value.params, value.callback);
                 });
@@ -258,7 +258,7 @@
                     }
                 });
             }
-            
+
             return {
 
                 sportSubscription: function (sportCode) {
@@ -320,7 +320,7 @@
              */
             getStreamingService: function () { return Streaming; },
 
-            /** 
+            /**
              * Gets the adapter's details
              * @return {angular.$q.Promise}
              */
@@ -352,7 +352,7 @@
                 return deferred.promise;
             },
 
-            /** 
+            /**
              * Get the details associated to the given sport
              * @param {!string} sportCode
              * @return {angular.$q.Promise}
@@ -428,7 +428,7 @@
 
                 var deferred = $q.defer();
 
-                // WebAPI binding model is fairly idiot, 
+                // WebAPI binding model is fairly idiot,
                 // data must wrapped around double quote to be recognized
                 // as a string
                 $http.post(path, '"' + searchData + '"')
