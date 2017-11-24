@@ -150,7 +150,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
-            Receive<StreamListenerState>(a => Sender.Tell(State));
+            Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
 
             try
             {
@@ -181,7 +181,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
-            Receive<StreamListenerState>(a => Sender.Tell(State));
+            Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
 
             try
             {
@@ -194,8 +194,12 @@ namespace SS.Integration.Adapter.Actors
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
 
                 var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _fixtureId };
-                var fixtureState = fixtureStateActor.Ask<FixtureState>(getFixtureStateMsg).Result;
+                var fixtureState =
+                    fixtureStateActor
+                        .Ask<FixtureState>(
+                            new GetFixtureStateMsg {FixtureId = _fixtureId},
+                            TimeSpan.FromSeconds(10))
+                        .Result;
 
                 if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
                 {
@@ -226,7 +230,7 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Info($"Stream listener for {_resource} moved to Disconnected State");
 
-            Receive<StreamListenerState>(a => Sender.Tell(State));
+            Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
 
             var streamDisconnectedMessage = new StreamDisconnectedMsg
             {
@@ -293,7 +297,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
-            Receive<StreamListenerState>(a => Sender.Tell(State));
+            Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
         }
 
         //No further messages should be accepted, resource has stopped streaming
@@ -303,7 +307,7 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Info($"Stream listener for {_resource} moved to Stopped State");
 
-            Receive<StreamListenerState>(a => Sender.Tell(State));
+            Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
 
             //tell Stream Listener Manager Actor that we stopped so it can kill this child actor
             Context.Parent.Tell(new StreamListenerStoppedMsg { FixtureId = _fixtureId });
@@ -394,8 +398,12 @@ namespace SS.Integration.Adapter.Actors
                 _logger.Warn($"Stream got disconnected for {_resource}");
 
                 var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _fixtureId };
-                var fixtureState = fixtureStateActor.Ask<FixtureState>(getFixtureStateMsg).Result;
+                var fixtureState =
+                    fixtureStateActor
+                        .Ask<FixtureState>(
+                            new GetFixtureStateMsg {FixtureId = _fixtureId},
+                            TimeSpan.FromSeconds(10))
+                        .Result;
 
                 if (_streamHealthCheckValidation.ShouldSuspendOnDisconnection(fixtureState, _fixtureStartTime))
                 {
@@ -450,11 +458,15 @@ namespace SS.Integration.Adapter.Actors
                 Receive<StreamUpdateMsg>(a => Stash.Stash());
                 Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
                 Receive<ClearFixtureStateMsg>(a => ClearState(true));
-                Receive<StreamListenerState>(a => Sender.Tell(State));
+                Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
 
                 var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var getFixtureStateMsg = new GetFixtureStateMsg { FixtureId = _fixtureId };
-                var fixtureState = fixtureStateActor.Ask<FixtureState>(getFixtureStateMsg).Result;
+                var fixtureState =
+                    fixtureStateActor
+                        .Ask<FixtureState>(
+                            new GetFixtureStateMsg {FixtureId = _fixtureId},
+                            TimeSpan.FromSeconds(10))
+                        .Result;
 
                 _currentEpoch = fixtureState?.Epoch ?? -1;
                 _currentSequence = _resource.Content.Sequence;

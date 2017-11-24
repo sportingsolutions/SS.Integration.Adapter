@@ -49,8 +49,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly IFixtureValidation _fixtureValidation;
         //this field ensures throttling concurrent creation of stream listener actor instances
         private int _concurrentInitializations;
-        //this is used to ensure we don't get blocked in Busy state
-        //so we process self scheduled message at predefined interval to check/update the actor state and flags
+        //this is used to save fixture id of already created fixtures that haven't responded back
         private readonly HashSet<string> _fixtureIdSet = new HashSet<string>();
 
         #endregion
@@ -151,6 +150,8 @@ namespace SS.Integration.Adapter.Actors
 
         #region Message Handlers
 
+        //this is used to ensure we don't get blocked in Busy state
+        //so we process self scheduled message at predefined interval to check/update the actor state and flags
         private void CheckStreamListenerBuilderActorStateMsgHandler(CheckStreamListenerBuilderActorStateMsg msg)
         {
             List<string> fixtureIdList = _fixtureIdSet.ToList();
@@ -164,19 +165,31 @@ namespace SS.Integration.Adapter.Actors
                         $"CheckStreamListenerBuilderActorStateMsgHandler" +
                         $" - Stream Listener Instance for fixture with fixtureId={fixtureId} doesn't exist." +
                         $" - Going to remove it from the internal state.");
-                    _fixtureIdSet.Remove(fixtureId);
+                    RemoveFixtureFromSet(fixtureId);
                 }
                 else
                 {
-                    var streamListenerActorState = streamListenerActorRef
-                        .Ask<StreamListenerState>(TimeSpan.FromSeconds(10)).Result;
+                    StreamListenerState streamListenerActorState;
+                    try
+                    {
+                        streamListenerActorState = streamListenerActorRef
+                            .Ask<StreamListenerState>(
+                                new GetStreamListenerActorStateMsg(),
+                                TimeSpan.FromSeconds(10))
+                            .Result;
+                    }
+                    catch (Exception)
+                    {
+                        //if we haven't heard back from StreamListenerActor in 10s we assume it's in Errored State
+                        streamListenerActorState = StreamListenerState.Errored;
+                    }
                     if (streamListenerActorState != StreamListenerState.Initializing)
                     {
                         _logger.Warn(
                             $"CheckStreamListenerBuilderActorStateMsgHandler" +
                             $" - Stream Listener Instance for fixture with fixtureId={fixtureId} has already been created and has state={streamListenerActorState}." +
                             $" - Going to remove it from the internal state.");
-                        _fixtureIdSet.Remove(fixtureId);
+                        RemoveFixtureFromSet(fixtureId);
                     }
                     else
                     {
@@ -186,7 +199,6 @@ namespace SS.Integration.Adapter.Actors
                     }
                 }
             }
-            _concurrentInitializations = _fixtureIdSet.Count;
 
             CheckStateUpdate();
 
@@ -269,7 +281,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void StreamListenerCreationCompletedMsgHandler(StreamListenerCreationCompletedMsg msg)
         {
-            UpdateInternalData(msg.FixtureId);
+            RemoveFixtureFromSet(msg.FixtureId);
             CheckStateUpdate();
 
             _logger.Debug(
@@ -282,7 +294,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void StreamListenerCreationCancelledMsgHandler(StreamListenerCreationCancelledMsg msg)
         {
-            UpdateInternalData(msg.FixtureId);
+            RemoveFixtureFromSet(msg.FixtureId);
             CheckStateUpdate();
 
             _logger.Debug(
@@ -296,7 +308,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void StreamListenerCreationFailedMsgHandler(StreamListenerCreationFailedMsg msg)
         {
-            UpdateInternalData(msg.FixtureId);
+            RemoveFixtureFromSet(msg.FixtureId);
             CheckStateUpdate();
 
             _logger.Debug(
@@ -322,11 +334,12 @@ namespace SS.Integration.Adapter.Actors
             Self.Tell(new BuildStreamListenerActorMsg { Resource = resource });
         }
 
-        private void UpdateInternalData(string fixtureId)
+        private void RemoveFixtureFromSet(string fixtureId)
         {
-            _concurrentInitializations--;
             if (_fixtureIdSet.Contains(fixtureId))
                 _fixtureIdSet.Remove(fixtureId);
+            if (_concurrentInitializations > 0)
+                _concurrentInitializations--;
         }
 
         private void CheckStateUpdate()
@@ -349,6 +362,8 @@ namespace SS.Integration.Adapter.Actors
             public IResourceFacade Resource { get; set; }
         }
 
+        //this is used to ensure we don't get blocked in Busy state
+        //so we process self scheduled message at predefined interval to check/update the actor state and flags
         private class CheckStreamListenerBuilderActorStateMsg
         {   
         }
