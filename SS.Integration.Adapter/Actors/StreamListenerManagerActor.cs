@@ -102,13 +102,19 @@ namespace SS.Integration.Adapter.Actors
 
         private void ProcessResourceMsgHandler(ProcessResourceMsg msg)
         {
+            _logger.Info(
+                $"ProcessResourceMsgHandler for {msg.Resource}");
             IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.Resource.Id));
             if (streamListenerActor.IsNobody())
             {
+                _logger.Info(
+                    $"Stream listener for {msg.Resource} doesn't exist. Going to trigger creation.");
                 _streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = msg.Resource });
             }
             else
             {
+                _logger.Info(
+                    $"Stream listener for {msg.Resource} already exists. Going to trigger stream health check.");
                 streamListenerActor.Tell(new StreamHealthCheckMsg { Resource = msg.Resource });
             }
         }
