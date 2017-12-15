@@ -14,6 +14,7 @@
 
 using System;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -2168,6 +2169,47 @@ namespace SS.Integration.Adapter.Tests
 
             listener.Stop();
             listener.ShouldRaise("OnStop");
+        }
+
+        [Test]
+        public void RetrieveAndProcessSnapshotIfNeededShouldSetMatchStatusToNumericValue()
+        {
+            // Arrange
+            var sequenceNr = 10;
+            var matchStatus = MatchStatus.InRunning;
+
+            var resourceMock = new Mock<IResourceFacade>();
+            var platformConnectorMock = new Mock<IAdapterPlugin>();
+            var eventStateMock = new Mock<IEventState>();
+            var stateManagerMock = new Mock<IStateManager>();
+            resourceMock.Setup(x => x.Content).Returns(new Summary());
+
+            eventStateMock.Setup(x => x.GetFixtureState(It.IsAny<string>())).Returns(new FixtureState() { Sequence = sequenceNr, MatchStatus = matchStatus });
+
+            var testObj = new StreamListener(resourceMock.Object,platformConnectorMock.Object, eventStateMock.Object, stateManagerMock.Object, _settings.Object);
+            testObj.SequenceOnStreamingAvailable = sequenceNr;
+
+            // Setup so _stateManager.StateProvider.SuspensionManager.Unsuspend(fixture) calls a mock
+            var suspensionManagerMock = new Mock<ISuspensionManager>();
+            var stateProviderMock = new Mock<IStateProvider>();
+            stateProviderMock.Setup(x => x.SuspensionManager).Returns(() => suspensionManagerMock.Object);
+            stateManagerMock.Setup(x => x.StateProvider).Returns(() => stateProviderMock.Object);
+
+            // Setup so unsuspend on platformConnector saves the fixture it was called with. The thing we actually want for our test.
+            Fixture unSuspendCalledWithFixture = null;
+            platformConnectorMock.Setup(x => x.UnSuspend(It.IsAny<Fixture>())).Callback<Fixture>(fixture =>
+            {
+                unSuspendCalledWithFixture = fixture;
+            });
+
+            // Act
+            // using reflection invoke since method RetrieveAndProcessSnapshotIfNeeded is private
+            testObj.GetType().GetMethod("RetrieveAndProcessSnapshotIfNeeded", BindingFlags.NonPublic | BindingFlags.Instance)
+                ?.Invoke(testObj, new object[0]);
+
+            // Assert
+            unSuspendCalledWithFixture.Should().NotBeNull();
+            unSuspendCalledWithFixture.MatchStatus.Should().Be("40");
         }
     }
 }

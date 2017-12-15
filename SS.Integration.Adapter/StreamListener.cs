@@ -1060,7 +1060,7 @@ namespace SS.Integration.Adapter
             else
             {
                 if (state != null)
-                    fixture.MatchStatus = state.MatchStatus.ToString();
+                    fixture.MatchStatus = ((int)state.MatchStatus).ToString();
 
                 try
                 {
