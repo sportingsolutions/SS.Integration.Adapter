@@ -180,14 +180,21 @@ namespace SS.Integration.Adapter.Model
 
         public override string ToString()
         {
+            var fixtureSport = "";
             var format = "Fixture with fixtureId={0} sequence={1}";
-            if (this.FixtureName != null)
+            if (Tags != null && Tags.ContainsKey("Sport"))
             {
-                format += " fixtureName=\"{2}\"";
-                return string.Format(format, Id, Sequence, FixtureName);
+                fixtureSport += string.Format($" fixruteSport=\"{0}\"", (string)Tags["Sport"]);
             }
 
-            return string.Format(format, Id, Sequence);
+            if (this.FixtureName != null)
+            {
+                format += " fixtureName=\"{2}\""; 
+                return string.Format(format, Id, Sequence, FixtureName) + fixtureSport;
+            } 
+
+
+            return string.Format(format, Id, Sequence) + fixtureSport;
         }
 
         /// <summary>
