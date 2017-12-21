@@ -63,10 +63,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Concurent\ConcurentHasgSet.cs" />
     <Compile Include="Converters\FormattedJsonConverter.cs" />
     <Compile Include="Converters\ReflectionCsvSerializer.cs" />
     <Compile Include="Converters\ReflectionXmlSerializer.cs" />
     <Compile Include="Extensions\Anonymous.cs" />
+    <Compile Include="Extensions\CommonExtensions.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\IDictionaryExtension.cs" />
     <Compile Include="Extensions\IEnumerableExtensions.cs" />

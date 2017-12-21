@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace SS.Integration.Common.Extensions
 {
@@ -24,6 +25,55 @@ namespace SS.Integration.Common.Extensions
                 return default(TValue);
 
             return dictionary[key];
+        }
+
+        public static TValue ValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dic, TKey key)
+        {
+            TValue res;
+            if (dic.TryGetValue(key, out res))
+                return res;
+            return default(TValue);
+        }
+        public static bool ValueEquals<TKey, TValue>(this IDictionary<TKey, TValue> dic, TKey key1, TKey key2)
+        {
+
+            var v1 = dic.ValueOrDefault(key1);
+            var v2 = dic.ValueOrDefault(key2);
+            return v1 != null && v2 != null && v1.Equals(v2);
+        }
+        public static string StringOrDefault(this IDictionary<string, object> dic, string key)
+        {
+            return dic.ValueOrDefault(key)?.ToString();
+        }
+
+
+        public static void SetFromDictionary(this object target, IDictionary<string, object> dic, string propertyName, string key)
+        {
+            if (target == null)
+                return;
+
+            if (dic == null)
+                return;
+
+            if (dic.ContainsKey(key))
+            {
+                PropertyInfo property = target.GetType().GetProperty(propertyName);
+                if (property != null)
+                    property.SetValue(target, dic[key]);
+            }
+        }
+
+        public static void SetFromDictionary(this object target, Dictionary<string, object> dic, string propertyName)
+        {
+            target.SetFromDictionary(dic, propertyName, propertyName);
+        }
+
+        public static void SetFromDictionary(this Dictionary<string, object> dic, string key, ref string value)
+        {
+            if (dic.ContainsKey(key))
+            {
+                value = dic[key]?.ToString();
+            }
         }
     }
 }
