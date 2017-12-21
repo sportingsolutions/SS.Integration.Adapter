@@ -185,7 +185,7 @@ namespace SS.Integration.Adapter.Model
         /// <returns></returns>
         public string GetTagValue(string tagName)
         {
-            return HasTag(tagName) ? _Tags[tagName] : null;
+            return HasTag(tagName) ? _Tags[tagName]?.ToLower() : null;
         }
 
         /// <summary>

@@ -133,7 +133,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public string GetTagValue(string TagKey)
         {
-            return _tags.ContainsKey(TagKey) ? _tags[TagKey] : null;
+            return _tags.ContainsKey(TagKey) ? _tags[TagKey]?.ToLower() : null;
         }
 
         public int TagsCount

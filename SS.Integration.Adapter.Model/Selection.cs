@@ -145,7 +145,7 @@ namespace SS.Integration.Adapter.Model
 
         public string GetTagValue(string tagKey)
         {
-            return HasTag(tagKey) ? _Tags[tagKey] : null;
+            return HasTag(tagKey) ? _Tags[tagKey]?.ToLower() : null;
         }
 
         [IgnoreDataMember]
