@@ -631,16 +631,17 @@ namespace SS.Integration.Adapter.Actors
                     UpdateReceivedAt = DateTime.UtcNow
                 });
 
+                _logger.Info($"BeforeMarketRules MarketsCount={snapshot.Markets.Count} ActiveMarketsCount={snapshot.Markets.Count(_ => _.IsActive)} SelectionsCount={snapshot.Markets.SelectMany(_ => _.Selections).Count()}  {snapshot}");
                 if (!skipMarketRules)
                 {
                     _marketsRuleManager.ApplyRules(snapshot);
-
                     snapshot.IsModified = true;
                 }
                 else
                 {
                     _marketsRuleManager.ApplyRules(snapshot, true);
                 }
+                _logger.Info($"AfterMarketRules MarketsCount={snapshot.Markets.Count} ActiveMarketsCount={snapshot.Markets.Count(_ => _.IsActive)} SelectionsCount={snapshot.Markets.SelectMany(_ => _.Selections).Count()}  {snapshot}");
 
                 if (isFullSnapshot)
                 {
