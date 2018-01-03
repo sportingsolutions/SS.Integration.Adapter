@@ -184,7 +184,7 @@ namespace SS.Integration.Adapter.Model
             var format = "Fixture with fixtureId={0} sequence={1}";
             if (Tags != null && Tags.ContainsKey("Sport"))
             {
-                fixtureSport += string.Format($" fixtureSport=\"{0}\"", (string)Tags["Sport"]);
+                fixtureSport += string.Format($" fixtureSport={(string)Tags["Sport"]}");
             }
 
             if (this.FixtureName != null)
