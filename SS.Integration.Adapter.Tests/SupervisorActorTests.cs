@@ -18,12 +18,15 @@ using System.Linq;
 using Akka.Actor;
 using Moq;
 using NUnit.Framework;
+using SS.Integration.Adapter.Actors;
 using SS.Integration.Adapter.Actors.Messages;
+using SS.Integration.Adapter.Diagnostics;
 using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Adapter.Diagnostics.Actors;
 using SS.Integration.Adapter.Diagnostics.Actors.Messages;
 using SS.Integration.Adapter.Diagnostics.Model;
+using SS.Integration.Adapter.Interface;
 using ServiceInterface = SS.Integration.Adapter.Diagnostics.Model.Service.Interface;
 using ServiceModelInterface = SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
 
@@ -444,6 +447,69 @@ namespace SS.Integration.Adapter.Tests
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        /// <summary>
+        /// Ensure supervisor is safely disposed
+        /// </summary>
+        [Test]
+        [Category(SUPERVISOR_ACTOR_CATEGORY)]
+        public void SafeDisposeSupervisorIfDisabled()
+        {
+            //
+            //Arrange
+            //
+
+            //
+            //Act
+            //
+
+            //
+            //Assert
+            //
+            Assert.DoesNotThrow(SupervisorStartUp.Dispose);
+        }
+
+        /// <summary>
+        /// Ensure supervisor is safely disposed
+        /// </summary>
+        [Test]
+        [Category(SUPERVISOR_ACTOR_CATEGORY)]
+        public void SafeDisposeSupervisorIfEnabled()
+        {
+            //
+            //Arrange
+            //
+            var objectProviderMock = new Mock<IObjectProvider<Dictionary<string, FixtureOverview>>>();
+            var settingsMock = new Mock<ISettings>();
+            var udapiServiceFacadeMock = new Mock<IServiceFacade>();
+            var platformConnectorMock = new Mock<IAdapterPlugin>();
+            var stateManagerMock = new Mock<IStateManager>();
+            var suspensionManagerMock = new Mock<ISuspensionManager>();
+            var streamHealthCheckValidationMock = new Mock<IStreamHealthCheckValidation>();
+            var fixtureValidationMock = new Mock<IFixtureValidation>();
+
+            settingsMock.SetupGet(s => s.StateProviderPath).Returns(@"C:\Fake_Path");
+            settingsMock.SetupGet(s => s.FixturesStateFilePath).Returns(@"Fake_Path_Rel");
+            settingsMock.SetupGet(s => s.FixtureCheckerFrequency).Returns(60000);
+
+            //
+            //Act
+            //
+            AdapterActorSystem.Init(
+                settingsMock.Object,
+                udapiServiceFacadeMock.Object,
+                platformConnectorMock.Object,
+                stateManagerMock.Object,
+                suspensionManagerMock.Object,
+                streamHealthCheckValidationMock.Object,
+                fixtureValidationMock.Object);
+            SupervisorStartUp.Initialize(objectProviderMock.Object);
+
+            //
+            //Assert
+            //
+            Assert.DoesNotThrow(SupervisorStartUp.Dispose);
         }
 
         #endregion

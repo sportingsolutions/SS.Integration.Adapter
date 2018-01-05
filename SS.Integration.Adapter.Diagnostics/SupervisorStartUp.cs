@@ -63,9 +63,12 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public static void Dispose()
         {
-            AdapterActorSystem.ActorSystem?.Stop(_supervisorActor);
-            _service.Stop();
-            _proxy.Dispose();
+            if (_supervisorActor != null)
+            {
+                AdapterActorSystem.ActorSystem?.Stop(_supervisorActor);
+            }
+            _service?.Stop();
+            _proxy?.Dispose();
         }
 
         #endregion
