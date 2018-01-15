@@ -40,6 +40,8 @@ namespace SS.Integration.Adapter.Tests
         [SetUp]
         public void SetupTest()
         {
+            SetupTestLogging();
+
             PluginMock = new Mock<IAdapterPlugin>();
 
             SettingsMock = new Mock<ISettings>();
@@ -71,8 +73,16 @@ namespace SS.Integration.Adapter.Tests
             //Arrange
             //
             SettingsMock.SetupGet(a => a.FixtureCreationConcurrency).Returns(3);
-            var resourceFacadeMock = new Mock<IResourceFacade>();
-            resourceFacadeMock.SetupGet(o => o.Id).Returns("Fixture1Id");
+            var resource1FacadeMock = new Mock<IResourceFacade>();
+            var resource2FacadeMock = new Mock<IResourceFacade>();
+            var resource3FacadeMock = new Mock<IResourceFacade>();
+            var resource4FacadeMock = new Mock<IResourceFacade>();
+            var resource5FacadeMock = new Mock<IResourceFacade>();
+            resource1FacadeMock.Setup(o => o.Id).Returns("Fixture1Id");
+            resource2FacadeMock.Setup(o => o.Id).Returns("Fixture2Id");
+            resource3FacadeMock.Setup(o => o.Id).Returns("Fixture3Id");
+            resource4FacadeMock.Setup(o => o.Id).Returns("Fixture4Id");
+            resource5FacadeMock.Setup(o => o.Id).Returns("Fixture5Id");
 
             //
             //Act
@@ -105,15 +115,15 @@ namespace SS.Integration.Adapter.Tests
             //
             //Act
             //
-            streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = resourceFacadeMock.Object });
-            Task.Delay(TimeSpan.FromMilliseconds(100));
-            streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = resourceFacadeMock.Object });
-            Task.Delay(TimeSpan.FromMilliseconds(1000));
-            streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = resourceFacadeMock.Object });
-            Task.Delay(TimeSpan.FromMilliseconds(250));
-            streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = resourceFacadeMock.Object });
-            Task.Delay(TimeSpan.FromMilliseconds(100));
-            streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = resourceFacadeMock.Object });
+            streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = resource1FacadeMock.Object });
+            Task.Delay(TimeSpan.FromMilliseconds(50));
+            streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = resource2FacadeMock.Object });
+            Task.Delay(TimeSpan.FromMilliseconds(50));
+            streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = resource3FacadeMock.Object });
+            Task.Delay(TimeSpan.FromMilliseconds(50));
+            streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = resource4FacadeMock.Object });
+            Task.Delay(TimeSpan.FromMilliseconds(50));
+            streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = resource5FacadeMock.Object });
 
             //
             //Assert
@@ -130,12 +140,12 @@ namespace SS.Integration.Adapter.Tests
             //
             //Act
             //
-            Task.Delay(TimeSpan.FromMilliseconds(500));
-            streamListenerBuilderActorRef.Tell(new StreamListenerCreationCompletedMsg { FixtureId = resourceFacadeMock.Object.Id });
-            Task.Delay(TimeSpan.FromMilliseconds(1000));
-            streamListenerBuilderActorRef.Tell(new StreamListenerCreationCompletedMsg { FixtureId = resourceFacadeMock.Object.Id });
-            Task.Delay(TimeSpan.FromMilliseconds(100));
-            streamListenerBuilderActorRef.Tell(new StreamListenerCreationFailedMsg { FixtureId = resourceFacadeMock.Object.Id });
+            Task.Delay(TimeSpan.FromMilliseconds(50));
+            streamListenerBuilderActorRef.Tell(new StreamListenerCreationCompletedMsg { FixtureId = resource1FacadeMock.Object.Id });
+            Task.Delay(TimeSpan.FromMilliseconds(50));
+            streamListenerBuilderActorRef.Tell(new StreamListenerCreationCompletedMsg { FixtureId = resource2FacadeMock.Object.Id });
+            Task.Delay(TimeSpan.FromMilliseconds(50));
+            streamListenerBuilderActorRef.Tell(new StreamListenerCreationFailedMsg { FixtureId = resource4FacadeMock.Object.Id });
 
             //
             //Assert
@@ -209,7 +219,7 @@ namespace SS.Integration.Adapter.Tests
                         streamListenerBuilderActorRef.UnderlyingActor.State);
                     Assert.AreEqual(
                         0,
-                        streamListenerBuilderActorRef.UnderlyingActor.ConcurrentInitializations);
+                        streamListenerBuilderActorRef.UnderlyingActor.CreationInProgressFixtureIdSetCount);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));

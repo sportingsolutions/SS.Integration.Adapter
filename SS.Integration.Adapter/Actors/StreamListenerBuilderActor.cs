@@ -47,10 +47,8 @@ namespace SS.Integration.Adapter.Actors
         private readonly ISuspensionManager _suspensionManager;
         private readonly IStreamHealthCheckValidation _streamHealthCheckValidation;
         private readonly IFixtureValidation _fixtureValidation;
-        //this field ensures throttling concurrent creation of stream listener actor instances
-        private int _concurrentInitializations;
         //this is used to save fixture id of already created fixtures that haven't responded back
-        private readonly HashSet<string> _fixtureIdSet = new HashSet<string>();
+        private readonly HashSet<string> _creationInProgressFixtureIdSet = new HashSet<string>();
 
         #endregion
 
@@ -58,7 +56,7 @@ namespace SS.Integration.Adapter.Actors
 
         internal StreamListenerBuilderState State { get; private set; }
 
-        internal int ConcurrentInitializations => _concurrentInitializations;
+        internal int CreationInProgressFixtureIdSetCount => _creationInProgressFixtureIdSet.Count;
 
         public IStash Stash { get; set; }
 
@@ -116,15 +114,16 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Warn(
                 $"Moved to Active State" +
-                $" - _concurrentInitializations={_concurrentInitializations}");
+                $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
 
             Receive<CheckStreamListenerBuilderActorStateMsg>(o => CheckStreamListenerBuilderActorStateMsgHandler(o));
             Receive<CheckFixtureStateMsg>(o => CheckFixtureStateMsgHandler(o));
             Receive<CreateStreamListenerMsg>(o => CreateStreamListenerMsgHandler(o));
-            Receive<BuildStreamListenerActorMsg>(o => BuildStreamListenerActorMsgHandler(o));
             Receive<StreamListenerCreationCompletedMsg>(o => StreamListenerCreationCompletedMsgHandler(o));
             Receive<StreamListenerCreationCancelledMsg>(o => StreamListenerCreationCancelledMsgHandler(o));
             Receive<StreamListenerCreationFailedMsg>(o => StreamListenerCreationFailedMsgHandler(o));
+
+            Stash?.UnstashAll();
         }
 
         //In the busy state the maximum concurrency has been already used and creation needs to be postponed until later
@@ -134,13 +133,11 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Warn(
                 $"Moved to Busy State" +
-                $" - fixture creation concurency limit of {_settings.FixtureCreationConcurrency} has been reached" +
-                $" - _concurrentInitializations={_concurrentInitializations}");
+                $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
 
             Receive<CheckStreamListenerBuilderActorStateMsg>(o => CheckStreamListenerBuilderActorStateMsgHandler(o));
             Receive<CheckFixtureStateMsg>(o => { Stash.Stash(); });
             Receive<CreateStreamListenerMsg>(o => { Stash.Stash(); });
-            Receive<BuildStreamListenerActorMsg>(o => BuildStreamListenerActorMsgHandler(o));
             Receive<StreamListenerCreationCompletedMsg>(o => StreamListenerCreationCompletedMsgHandler(o));
             Receive<StreamListenerCreationCancelledMsg>(o => StreamListenerCreationCancelledMsgHandler(o));
             Receive<StreamListenerCreationFailedMsg>(o => StreamListenerCreationFailedMsgHandler(o));
@@ -154,88 +151,74 @@ namespace SS.Integration.Adapter.Actors
         //so we process self scheduled message at predefined interval to check/update the actor state and flags
         private void CheckStreamListenerBuilderActorStateMsgHandler(CheckStreamListenerBuilderActorStateMsg msg)
         {
-            List<string> fixtureIdList = _fixtureIdSet.ToList();
+            List<string> fixtureIdList = _creationInProgressFixtureIdSet.ToList();
             foreach (var fixtureId in fixtureIdList)
             {
                 var streamListenerActorName = StreamListenerActor.GetName(fixtureId);
                 var streamListenerActorRef = _streamListenerManagerActorContext.Child(streamListenerActorName);
                 if (streamListenerActorRef.IsNobody())
                 {
-                    _logger.Warn(
+                    _logger.Debug(
                         $"CheckStreamListenerBuilderActorStateMsgHandler" +
-                        $" - Stream Listener Instance for fixture with fixtureId={fixtureId} doesn't exist." +
-                        $" - Going to remove it from the internal state.");
+                        $" - fixtureId={fixtureId}" +
+                        $" - StreamListenerActor instance doesn't exist. Going to remove it from the internal state.");
                     RemoveFixtureFromSet(fixtureId);
                 }
                 else
                 {
-                    StreamListenerState streamListenerActorState;
+                    StreamListenerState? streamListenerActorState;
                     try
                     {
                         streamListenerActorState = streamListenerActorRef
                             .Ask<StreamListenerState>(
                                 new GetStreamListenerActorStateMsg(),
-                                TimeSpan.FromSeconds(10))
+                                TimeSpan.FromSeconds(30))
                             .Result;
                     }
                     catch (Exception)
                     {
-                        //if we haven't heard back from StreamListenerActor in 10s we assume it's in Errored State
-                        streamListenerActorState = StreamListenerState.Errored;
+                        //if we haven't heard back from StreamListenerActor then we can't identify it's state
+                        streamListenerActorState = null;
                     }
-                    if (streamListenerActorState != StreamListenerState.Initializing)
+
+                    if (streamListenerActorState.HasValue &&
+                        streamListenerActorState.Value != StreamListenerState.Initializing)
                     {
-                        _logger.Warn(
-                            $"CheckStreamListenerBuilderActorStateMsgHandler" +
-                            $" - Stream Listener Instance for fixture with fixtureId={fixtureId} has already been created and has state={streamListenerActorState}." +
-                            $" - Going to remove it from the internal state.");
                         RemoveFixtureFromSet(fixtureId);
                     }
-                    else
-                    {
-                        _logger.Warn(
-                            $"CheckStreamListenerBuilderActorStateMsgHandler" +
-                            $" - Stream Listener Instance for fixture with fixtureId={fixtureId} has already been created and is still in {streamListenerActorState} state");
-                    }
+
+                    _logger.Debug(
+                        $"CheckStreamListenerBuilderActorStateMsgHandler" +
+                        $" - fixtureId={fixtureId}" +
+                        $" - streamListenerActorState={streamListenerActorState?.ToString() ?? "null"}" +
+                        $" - StreamListenerActor instance has already been created");
                 }
             }
 
-            CheckStateUpdate();
+            CheckActiveState();
 
             _logger.Debug(
                 $"CheckStreamListenerBuilderActorStateMsgHandler completed" +
-                $" - _concurrentInitializations={_concurrentInitializations}" +
-                $" - _fixtureIdSet has {_fixtureIdSet.Count} items");
+                $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
         }
 
         private void CreateStreamListenerMsgHandler(CreateStreamListenerMsg msg)
         {
-            if (_concurrentInitializations + 1 > _settings.FixtureCreationConcurrency)
+            _logger.Info(
+                $"CreateStreamListenerMsgHandler - {msg.Resource}" +
+                $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
+
+            if (msg.Resource.MatchStatus != MatchStatus.MatchOver)
             {
-                _logger.Warn(
-                    $"CreateStreamListenerMsgHandler - {msg.Resource}"+
-                    $" - fixture creation concurency limit of {_settings.FixtureCreationConcurrency} has been reached" +
-                    $" - _concurrentInitializations={_concurrentInitializations}" +
-                    $" - Moving to Busy State");
-                Become(Busy);
-                Self.Tell(msg);
+                BuildStreamListenerActorInstance(msg, msg.Resource);
             }
-            else
+            else //if match is already over then check fixture state in order to validate stream listener instance creation
             {
-                if (msg.Resource.MatchStatus != MatchStatus.MatchOver)//match is not over so stream listener instance will be created
-                {
-                    _logger.Debug(
-                        $"CreateStreamListenerMsgHandler - {msg.Resource} with MatchStatus={msg.Resource.MatchStatus}" +
-                        $" - _concurrentInitializations={_concurrentInitializations}" +
-                        $" - Going to create the Stream Listener Actor Instance");
-                    SendBuildStreamListenerActorSelfMessage(msg.Resource);
-                }
-                else//if match is already over then check fixture state in order to validate stream listener instance creation
-                {
-                    _logger.Debug($"MatchOver detected for {msg.Resource} ; checking saved fixture state");
-                    var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                    fixtureStateActor.Tell(new CheckFixtureStateMsg { Resource = msg.Resource });
-                }
+                _logger.Debug(
+                    $"CreateStreamListenerMsgHandler - {msg.Resource} has MatchStatus=MatchOver" +
+                    $" - checking saved fixture state");
+                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+                fixtureStateActor.Tell(new CheckFixtureStateMsg { Resource = msg.Resource });
             }
         }
 
@@ -243,129 +226,133 @@ namespace SS.Integration.Adapter.Actors
         {
             if (msg.ShouldProcessFixture)
             {
-                _logger.Debug($"create StreamListenerActor instance for {msg.Resource} as saved fixture state is not MatchOver");
-                SendBuildStreamListenerActorSelfMessage(msg.Resource);
+                _logger.Debug(
+                    $"CheckFixtureStateMsgHandler - {msg.Resource}" +
+                    $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
+
+                BuildStreamListenerActorInstance(msg, msg.Resource);
             }
             else
             {
-                _logger.Debug($"skip creating StreamListenerActor Instance as there is no saved fixture state for {msg.Resource}");
-            }
-        }
-
-        private void BuildStreamListenerActorMsgHandler(BuildStreamListenerActorMsg msg)
-        {
-            var streamListenerActorName = StreamListenerActor.GetName(msg.Resource.Id);
-            if (_streamListenerManagerActorContext.Child(streamListenerActorName).IsNobody())
-            {
-                _logger.Debug($"Building Stream Listener Instance for {msg.Resource}");
-
-                _streamListenerManagerActorContext.ActorOf(Props.Create(() =>
-                        new StreamListenerActor(
-                            _settings,
-                            _adapterPlugin,
-                            msg.Resource,
-                            _stateManager,
-                            _suspensionManager,
-                            _streamHealthCheckValidation,
-                            _fixtureValidation)),
-                    streamListenerActorName);
-
-                if (!_fixtureIdSet.Contains(msg.Resource.Id))
-                    _fixtureIdSet.Add(msg.Resource.Id);
-            }
-            else
-            {
-                _logger.Warn($"Stream Listener Instance for {msg.Resource} not created as existing instance has been found");
+                _logger.Debug(
+                    $"CheckFixtureStateMsgHandler - {msg.Resource}" +
+                    $"skip creating StreamListenerActor instance as MatchStatus=MatchOver");
             }
         }
 
         private void StreamListenerCreationCompletedMsgHandler(StreamListenerCreationCompletedMsg msg)
         {
             RemoveFixtureFromSet(msg.FixtureId);
-            CheckStateUpdate();
+            CheckActiveState();
 
             _logger.Debug(
-                $"StreamListenerCreationCompletedMsgHandler" +
+                $"Stream Listener creation Completed" +
                 $" - fixtureId={msg.FixtureId}" +
                 $" - FixtureStatus={msg.FixtureStatus}" +
-                $" - _concurrentInitializations={_concurrentInitializations}" +
-                $" - _fixtureIdSet has {_fixtureIdSet.Count} items");
+                $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
         }
 
         private void StreamListenerCreationCancelledMsgHandler(StreamListenerCreationCancelledMsg msg)
         {
             RemoveFixtureFromSet(msg.FixtureId);
-            CheckStateUpdate();
+            CheckActiveState();
 
             _logger.Debug(
-                $"StreamListenerCreationCancelledMsgHandler" +
+                $"Stream Listener creation Cancelled" +
                 $" - fixtureId={msg.FixtureId}" +
                 $" - FixtureStatus={msg.FixtureStatus}" +
                 $" - StreamListenerCreationCancellationReason={msg.Reason}" +
-                $" - _concurrentInitializations={_concurrentInitializations}" +
-                $" - _fixtureIdSet has {_fixtureIdSet.Count} items");
+                $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
         }
 
         private void StreamListenerCreationFailedMsgHandler(StreamListenerCreationFailedMsg msg)
         {
             RemoveFixtureFromSet(msg.FixtureId);
-            CheckStateUpdate();
+            CheckActiveState();
 
             _logger.Debug(
-                $"StreamListenerCreationFailedMsgHandler" +
+                $"Stream Listener creation Failed" +
                 $" - fixtureId={msg.FixtureId}" +
-                $" - FixtureStatus={msg.FixtureStatus}"+
-                $" - _concurrentInitializations={_concurrentInitializations}" +
-                $" - _fixtureIdSet has {_fixtureIdSet.Count} items");
+                $" - FixtureStatus={msg.FixtureStatus}" +
+                $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
         }
 
         #endregion
 
         #region Private methods
 
-        private void SendBuildStreamListenerActorSelfMessage(IResourceFacade resource)
+        private void BuildStreamListenerActorInstance(object msg, IResourceFacade resource)
         {
-            _concurrentInitializations++;
+            var streamListenerActorName = StreamListenerActor.GetName(resource.Id);
+            if (_streamListenerManagerActorContext.Child(streamListenerActorName).IsNobody())
+            {
+                if (_creationInProgressFixtureIdSet.Count + 1 > _settings.FixtureCreationConcurrency)
+                {
+                    _logger.Warn(
+                        $"BuildStreamListenerActorInstance - {resource}" +
+                        $" - {msg.GetType().Name}" +
+                        $" - fixture creation concurrency limit of {_settings.FixtureCreationConcurrency} has been reached" +
+                        $" - Moving to Busy State" +
+                        $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
+                    Become(Busy);
+                    Self.Tell(msg);
+                }
+                else
+                {
+                    _logger.Debug(
+                        $"BuildStreamListenerActorInstance - {resource} with MatchStatus={resource.MatchStatus}" +
+                        $" - {msg.GetType().Name}" +
+                        $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items" +
+                        $" - Going to create the Stream Listener Actor Instance");
 
-            _logger.Debug(
-                $"SendBuildStreamListenerActorSelfMessage for {resource}" +
-                $" - _concurrentInitializations={_concurrentInitializations}");
+                    _streamListenerManagerActorContext.ActorOf(Props.Create(() =>
+                            new StreamListenerActor(
+                                _settings,
+                                _adapterPlugin,
+                                resource,
+                                _stateManager,
+                                _suspensionManager,
+                                _streamHealthCheckValidation,
+                                _fixtureValidation)),
+                        streamListenerActorName);
 
-            Self.Tell(new BuildStreamListenerActorMsg { Resource = resource });
+                    if (!_creationInProgressFixtureIdSet.Contains(resource.Id))
+                        _creationInProgressFixtureIdSet.Add(resource.Id);
+                }
+            }
+            else
+            {
+                _logger.Debug(
+                    $"BuildStreamListenerActorInstance - {resource}" +
+                    $" - {msg.GetType().Name}" +
+                    $" - StreamListenerActor instance not created as existing instance has been found");
+            }
         }
 
         private void RemoveFixtureFromSet(string fixtureId)
         {
-            if (_fixtureIdSet.Contains(fixtureId))
-                _fixtureIdSet.Remove(fixtureId);
-            if (_concurrentInitializations > 0)
-                _concurrentInitializations--;
+            if (_creationInProgressFixtureIdSet.Contains(fixtureId))
+                _creationInProgressFixtureIdSet.Remove(fixtureId);
         }
 
-        private void CheckStateUpdate()
+        private void CheckActiveState()
         {
+            //if current state is not Active and we have room for more processings then move to Active State
             if (State != StreamListenerBuilderState.Active &&
-                _concurrentInitializations < _settings.FixtureCreationConcurrency)
+                _creationInProgressFixtureIdSet.Count < _settings.FixtureCreationConcurrency)
             {
                 Become(Active);
             }
-
-            Stash.Unstash();
         }
 
         #endregion
 
         #region Private messages
 
-        private class BuildStreamListenerActorMsg
-        {
-            public IResourceFacade Resource { get; set; }
-        }
-
         //this is used to ensure we don't get blocked in Busy state
         //so we process self scheduled message at predefined interval to check/update the actor state and flags
         private class CheckStreamListenerBuilderActorStateMsg
-        {   
+        {
         }
 
         #endregion
