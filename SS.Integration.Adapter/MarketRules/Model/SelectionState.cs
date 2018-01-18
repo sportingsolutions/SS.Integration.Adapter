@@ -71,7 +71,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
 
         public string GetTagValue(string tagKey)
         {
-            return _tags.ContainsKey(tagKey) ? _tags[tagKey]?.ToLower() : null;
+            return _tags.ContainsKey(tagKey) ? _tags[tagKey] : null;
         }
 
         public int TagsCount
