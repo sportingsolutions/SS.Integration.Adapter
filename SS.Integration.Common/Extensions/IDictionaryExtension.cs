@@ -12,6 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -74,6 +75,24 @@ namespace SS.Integration.Common.Extensions
             {
                 value = dic[key]?.ToString();
             }
+        }
+
+        public static bool IsTagValueMatch(this Dictionary<string, object> dic, string key, string value, bool caseSensitive = false)
+        {
+            if (string.IsNullOrEmpty(key))
+                return false;
+
+            if (string.IsNullOrEmpty(value))
+                return false;
+
+            object tagValue = null;
+            if (dic.TryGetValue(key, out tagValue))
+            {
+                return tagValue.ToString().Equals(value,
+                    caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
+            }
+
+            return false;
         }
     }
 }
