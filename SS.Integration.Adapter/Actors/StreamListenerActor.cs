@@ -66,6 +66,8 @@ namespace SS.Integration.Adapter.Actors
         //so it can notify the Stream Listener Manager when actor creation failed
         private bool _isInitializing;
 
+        private StreamListenerState _previousState;
+
         #endregion
 
         #region Properties
@@ -119,6 +121,10 @@ namespace SS.Integration.Adapter.Actors
                 _streamStatsActor = Context.ActorOf(
                     Props.Create(() => new StreamStatsActor()),
                     StreamStatsActor.ActorName);
+                _previousState = StreamListenerState.Initializing;
+
+                var sportsProcessorActor = Context.System.ActorSelection(SportsProcessorActor.Path);
+                sportsProcessorActor.Tell(new NewStreamListenerActorMsg { Sport = _resource.Sport });
 
                 Initialize();
             }
@@ -141,6 +147,8 @@ namespace SS.Integration.Adapter.Actors
             State = StreamListenerState.Initialized;
 
             _logger.Info($"Stream listener for {_resource} moved to Initialized State");
+
+            OnStateChanged();
 
             Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServer());
             Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
@@ -174,6 +182,8 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Info($"Stream listener for {_resource} moved to Streaming State");
 
+            OnStateChanged();
+
             Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
             Receive<StopStreamingMsg>(a => StopStreaming());
@@ -197,7 +207,7 @@ namespace SS.Integration.Adapter.Actors
                 var fixtureState =
                     fixtureStateActor
                         .Ask<FixtureState>(
-                            new GetFixtureStateMsg {FixtureId = _fixtureId},
+                            new GetFixtureStateMsg { FixtureId = _fixtureId },
                             TimeSpan.FromSeconds(10))
                         .Result;
 
@@ -211,6 +221,7 @@ namespace SS.Integration.Adapter.Actors
                 }
 
                 Stash.UnstashAll();
+
                 Context.Parent.Tell(streamConnectedMsg);
                 _isInitializing = false;
             }
@@ -230,13 +241,11 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Info($"Stream listener for {_resource} moved to Disconnected State");
 
+            OnStateChanged();
+
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
 
-            var streamDisconnectedMessage = new StreamDisconnectedMsg
-            {
-                FixtureId = _fixtureId,
-                Sport = _resource.Sport
-            };
+            var streamDisconnectedMessage = new StreamDisconnectedMsg { FixtureId = _fixtureId };
 
             //tell Stream Stats actor that we got disconnected so it can monitor number of disconnections
             _streamStatsActor.Tell(streamDisconnectedMessage);
@@ -252,6 +261,8 @@ namespace SS.Integration.Adapter.Actors
             State = StreamListenerState.Errored;
 
             _logger.Info($"Stream listener for {_resource} moved to Errored State");
+
+            OnStateChanged();
 
             SuspendFixture(SuspensionReason.SUSPENSION);
             Exception erroredEx;
@@ -306,6 +317,8 @@ namespace SS.Integration.Adapter.Actors
             State = StreamListenerState.Stopped;
 
             _logger.Info($"Stream listener for {_resource} moved to Stopped State");
+
+            OnStateChanged();
 
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
 
@@ -401,7 +414,7 @@ namespace SS.Integration.Adapter.Actors
                 var fixtureState =
                     fixtureStateActor
                         .Ask<FixtureState>(
-                            new GetFixtureStateMsg {FixtureId = _fixtureId},
+                            new GetFixtureStateMsg { FixtureId = _fixtureId },
                             TimeSpan.FromSeconds(10))
                         .Result;
 
@@ -464,7 +477,7 @@ namespace SS.Integration.Adapter.Actors
                 var fixtureState =
                     fixtureStateActor
                         .Ask<FixtureState>(
-                            new GetFixtureStateMsg {FixtureId = _fixtureId},
+                            new GetFixtureStateMsg { FixtureId = _fixtureId },
                             TimeSpan.FromSeconds(10))
                         .Result;
 
@@ -1011,6 +1024,18 @@ namespace SS.Integration.Adapter.Actors
                 ErrorOccuredAt = DateTime.UtcNow,
                 Error = ex
             });
+        }
+
+        private void OnStateChanged()
+        {
+            var sportsProcessorActor = Context.System.ActorSelection(SportsProcessorActor.Path);
+            sportsProcessorActor.Tell(new StreamListenerActorStateChangedMsg
+            {
+                Sport = _resource.Sport,
+                PreviousState = _previousState,
+                NewState = State
+            });
+            _previousState = State;
         }
 
         #endregion

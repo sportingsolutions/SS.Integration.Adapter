@@ -12,10 +12,16 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using SS.Integration.Adapter.Enums;
+
 namespace SS.Integration.Adapter.Actors.Messages
 {
-    internal class StreamDisconnectedMsg
+    internal class StreamListenerActorStateChangedMsg
     {
-        public string FixtureId { get; set; }
+        public string Sport { get; set; }
+
+        public StreamListenerState PreviousState { get; set; }
+
+        public StreamListenerState NewState { get; set; }
     }
 }
