@@ -30,7 +30,7 @@ namespace SS.Integration.Adapter.Model
     [Serializable]
     public class Market
     {
-        private readonly Dictionary<string, string> _Tags;
+        private readonly Dictionary<string, string> _tags;
         protected List<Selection> _selections; 
 
 
@@ -42,7 +42,7 @@ namespace SS.Integration.Adapter.Model
 
         public Market()
         {
-            _Tags = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+            _tags = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
             _selections = new List<Selection> ();
         }
 
@@ -174,18 +174,18 @@ namespace SS.Integration.Adapter.Model
         /// <returns></returns>
         public bool HasTag(string tagKey)
         {
-            return !string.IsNullOrEmpty(tagKey) && _Tags.ContainsKey(tagKey);
+            return !string.IsNullOrEmpty(tagKey) && _tags.ContainsKey(tagKey);
         }
 
         /// <summary>
         /// Returns the value of the given tag.
         /// Null if the tag doesn't exist.
         /// </summary>
-        /// <param name="tagName"></param>
+        /// <param name="tagKey"></param>
         /// <returns></returns>
-        public string GetTagValue(string tagName)
+        public string GetTagValue(string tagKey)
         {
-            return HasTag(tagName) ? _Tags[tagName] : null;
+            return !string.IsNullOrEmpty(tagKey) && _tags.ContainsKey(tagKey.ToLower()) ? _tags[tagKey.ToLower()] : null;
         }
 
         /// <summary>
@@ -198,7 +198,7 @@ namespace SS.Integration.Adapter.Model
             if (string.IsNullOrEmpty(tagName))
                 return;
 
-            _Tags[tagName] = tagValue;
+            _tags[tagName] = tagValue;
         }
 
         /// <summary>
@@ -209,7 +209,7 @@ namespace SS.Integration.Adapter.Model
         {
             get
             {
-                return _Tags.Keys;
+                return _tags.Keys;
             }
         }
 
@@ -222,7 +222,7 @@ namespace SS.Integration.Adapter.Model
         {
             get
             {
-                return _Tags.Count;
+                return _tags.Count;
             }
         }
 
@@ -234,7 +234,7 @@ namespace SS.Integration.Adapter.Model
         {
             get
             {
-                return _Tags;
+                return _tags;
             }
         }
 
