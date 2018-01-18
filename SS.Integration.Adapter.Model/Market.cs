@@ -188,6 +188,11 @@ namespace SS.Integration.Adapter.Model
             return !string.IsNullOrEmpty(tagKey) && _tags.ContainsKey(tagKey.ToLower()) ? _tags[tagKey.ToLower()] : null;
         }
 
+        public bool IsTagValueMatch(string tagKey, string value, bool caseSensitive = false) =>
+            !string.IsNullOrEmpty(tagKey)
+            && !string.IsNullOrEmpty(value)
+            && value.Equals(GetTagValue(tagKey), caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
+
         /// <summary>
         /// Allows to add/update a tag
         /// </summary>

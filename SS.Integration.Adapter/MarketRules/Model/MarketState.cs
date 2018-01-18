@@ -136,6 +136,11 @@ namespace SS.Integration.Adapter.MarketRules.Model
             return !string.IsNullOrEmpty(tagKey) && _tags.ContainsKey(tagKey.ToLower()) ? _tags[tagKey.ToLower()] : null;
         }
 
+        public bool IsTagValueMatch(string tagKey, string value, bool caseSensitive = false) => 
+                !string.IsNullOrEmpty(tagKey)
+                && !string.IsNullOrEmpty(value)
+                && value.Equals(GetTagValue(tagKey), caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
+
         public int TagsCount
         {
             get { return _tags.Count; }

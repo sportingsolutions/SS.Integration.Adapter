@@ -228,6 +228,8 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// <returns></returns>
         string GetTagValue(string TagKey);
 
+        bool IsTagValueMatch(string tagKey, string value, bool caseSensitive = false);
+
         /// <summary>
         /// 
         ///     True if the given tag key exists
