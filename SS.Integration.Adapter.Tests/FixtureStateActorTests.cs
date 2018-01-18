@@ -47,10 +47,10 @@ namespace SS.Integration.Adapter.Tests
             SetupTestLogging();
 
             SettingsMock = new Mock<ISettings>();
-            var fixtureStatesFilePath =
-                Path.Combine(
-                    new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName,
-                    "Data/fixtureStates.json");
+            var fi = new  FileInfo("../../Data/fixtureStates.json");
+            var fixtureStatesFilePath = fi.FullName;
+            Assert.IsTrue(File.Exists(fixtureStatesFilePath));
+            
             SettingsMock.SetupGet(a => a.FixturesStateFilePath).Returns(fixtureStatesFilePath);
             SettingsMock.SetupGet(a => a.FixturesStateAutoStoreInterval).Returns(1000);
 
