@@ -66,8 +66,6 @@ namespace SS.Integration.Adapter.Actors
         //so it can notify the Stream Listener Manager when actor creation failed
         private bool _isInitializing;
 
-        private StreamListenerState _previousState;
-
         #endregion
 
         #region Properties
@@ -121,10 +119,8 @@ namespace SS.Integration.Adapter.Actors
                 _streamStatsActor = Context.ActorOf(
                     Props.Create(() => new StreamStatsActor()),
                     StreamStatsActor.ActorName);
-                _previousState = StreamListenerState.Initializing;
 
-                var sportsProcessorActor = Context.System.ActorSelection(SportsProcessorActor.Path);
-                sportsProcessorActor.Tell(new NewStreamListenerActorMsg { Sport = _resource.Sport });
+                Context.Parent.Tell(new NewStreamListenerActorMsg { FixtureId = _resource.Id, Sport = _resource.Sport });
 
                 Initialize();
             }
@@ -1028,14 +1024,12 @@ namespace SS.Integration.Adapter.Actors
 
         private void OnStateChanged()
         {
-            var sportsProcessorActor = Context.System.ActorSelection(SportsProcessorActor.Path);
-            sportsProcessorActor.Tell(new StreamListenerActorStateChangedMsg
+            Context.Parent.Tell(new StreamListenerActorStateChangedMsg
             {
+                FixtureId = _resource.Id,
                 Sport = _resource.Sport,
-                PreviousState = _previousState,
                 NewState = State
             });
-            _previousState = State;
         }
 
         #endregion

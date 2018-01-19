@@ -13,9 +13,12 @@
 //limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using log4net;
 using SS.Integration.Adapter.Actors.Messages;
+using SS.Integration.Adapter.Enums;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model.Interfaces;
 
@@ -37,6 +40,8 @@ namespace SS.Integration.Adapter.Actors
         private readonly ISettings _settings;
         private readonly IActorRef _streamListenerBuilderActorRef;
         private bool _shouldSendProcessSportsMessage;
+        private readonly Dictionary<string, Dictionary<string, StreamListenerState>> _streamListeners;
+        private readonly ICancelable _logPublishedFixturesCountsMsgSchedule;
 
         #endregion
 
@@ -81,6 +86,15 @@ namespace SS.Integration.Adapter.Actors
                             fixtureValidation)),
                     StreamListenerBuilderActor.ActorName);
 
+            _streamListeners = new Dictionary<string, Dictionary<string, StreamListenerState>>();
+
+            _logPublishedFixturesCountsMsgSchedule = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(
+                TimeSpan.FromSeconds(30),
+                TimeSpan.FromSeconds(30),
+                Self,
+                new LogPublishedFixturesCountsMsg(),
+                Self);
+
             Receive<ProcessResourceMsg>(o => ProcessResourceMsgHandler(o));
             Receive<StreamConnectedMsg>(o => StreamConnectedMsgHandler(o));
             Receive<StreamDisconnectedMsg>(o => StreamDisconnectedMsgHandler(o));
@@ -94,6 +108,9 @@ namespace SS.Integration.Adapter.Actors
             Receive<RetrieveAndProcessSnapshotMsg>(o => RetrieveAndProcessSnapshotMsgHandler(o));
             Receive<RestartStreamListenerMsg>(o => RestartStreamListenerMsgHandler(o));
             Receive<ClearFixtureStateMsg>(o => ClearFixtureStateMsgHandler(o));
+            Receive<NewStreamListenerActorMsg>(o => NewStreamListenerActorMsgHandler(o));
+            Receive<StreamListenerActorStateChangedMsg>(o => StreamListenerActorStateChangedMsgHandler(o));
+            Receive<LogPublishedFixturesCountsMsg>(o => LogPublishedFixturesCountsMsgHandler(o));
         }
 
         #endregion
@@ -216,6 +233,49 @@ namespace SS.Integration.Adapter.Actors
             streamListenerActor.Tell(msg);
         }
 
+        private void NewStreamListenerActorMsgHandler(NewStreamListenerActorMsg msg)
+        {
+            SetStreamListenerState(msg.Sport, msg.FixtureId, StreamListenerState.Initializing);
+        }
+
+        private void StreamListenerActorStateChangedMsgHandler(StreamListenerActorStateChangedMsg msg)
+        {
+            SetStreamListenerState(msg.Sport, msg.FixtureId, msg.NewState);
+        }
+
+        private void LogPublishedFixturesCountsMsgHandler(LogPublishedFixturesCountsMsg msg)
+        {
+            var publishedFixturesTotalCount = _streamListeners.Count > 0
+                ? _streamListeners.Keys.Select(sport => _streamListeners[sport].Count).Sum()
+                : 0;
+
+            _logger.Info($"PublishedFixturesTotalCount={publishedFixturesTotalCount}");
+
+            var streamListenerStates = Enum.GetValues(typeof(StreamListenerState)).Cast<StreamListenerState>();
+
+            if (publishedFixturesTotalCount > 0)
+            {
+                foreach (var state in streamListenerStates)
+                {
+                    var publishedFixturesPerStateCount = _streamListeners.Keys
+                        .Select(sport => _streamListeners[sport].Count(s => s.Value.Equals(state)))
+                        .Sum();
+
+                    _logger.Info(
+                        $"PublishedFixturesPerStateCount={publishedFixturesPerStateCount} having StreamListenerState={state}");
+
+                    foreach (var sport in _streamListeners.Keys)
+                    {
+                        var publishedFixturesPerStateForSportCount =
+                            _streamListeners[sport].Count(s => s.Value.Equals(state));
+
+                        _logger.Info(
+                            $"PublishedFixturesPerStateForSportCount={publishedFixturesPerStateForSportCount} having StreamListenerState={state} for Sport={sport}");
+                    }
+                }
+            }
+        }
+
         #endregion
 
         #region Private methods
@@ -229,11 +289,26 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
+        private void SetStreamListenerState(string sport, string fixtureId, StreamListenerState state)
+        {
+            if (!_streamListeners.ContainsKey(sport))
+                _streamListeners.Add(sport, new Dictionary<string, StreamListenerState>());
+
+            if (!_streamListeners[sport].ContainsKey(fixtureId))
+                _streamListeners[sport].Add(fixtureId, state);
+
+            _streamListeners[sport][fixtureId] = state;
+        }
+
         #endregion
 
         #region Private messages
 
         private class ResetSendProcessSportsMsg
+        {
+        }
+
+        private class LogPublishedFixturesCountsMsg
         {
         }
 

@@ -18,9 +18,9 @@ namespace SS.Integration.Adapter.Actors.Messages
 {
     internal class StreamListenerActorStateChangedMsg
     {
-        public string Sport { get; set; }
+        public string FixtureId { get; set; }
 
-        public StreamListenerState PreviousState { get; set; }
+        public string Sport { get; set; }
 
         public StreamListenerState NewState { get; set; }
     }

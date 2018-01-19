@@ -16,6 +16,8 @@ namespace SS.Integration.Adapter.Actors.Messages
 {
     internal class NewStreamListenerActorMsg
     {
+        public string FixtureId { get; set; }
+
         public string Sport { get; set; }
     }
 }
