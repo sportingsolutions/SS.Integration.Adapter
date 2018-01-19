@@ -104,21 +104,23 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Info($"PublishedFixturesTotalCount={publishedFixturesTotalCount}");
 
-            var streamListenerStates = Enum.GetValues(typeof(StreamListenerState)).Cast<StreamListenerState>();
-            foreach (var state in streamListenerStates)
+            if (publishedFixturesTotalCount > 0)
             {
-                var publishedFixturesPerStateTotalCount = FixtureStatsPerSport.Count > 0
-                    ? FixtureStatsPerSport.Keys
+                var streamListenerStates = Enum.GetValues(typeof(StreamListenerState)).Cast<StreamListenerState>();
+                foreach (var state in streamListenerStates)
+                {
+                    var publishedFixturesPerStateCount = FixtureStatsPerSport.Keys
                         .Select(sport => FixtureStatsPerSport[sport].FixtureStateCount[state])
-                        .Sum()
-                    : 0;
-                _logger.Info($"PublishedFixturesTotalCount={publishedFixturesPerStateTotalCount} having StreamListenerState={state}");
-            }
+                        .Sum();
+                    _logger.Info(
+                        $"PublishedFixturesPerStateCount={publishedFixturesPerStateCount} having StreamListenerState={state}");
+                }
 
-            foreach (var sport in FixtureStatsPerSport.Keys)
-            foreach (var state in FixtureStatsPerSport[sport].FixtureStateCount.Keys)
-                _logger.Info(
-                    $"PublishedFixturesCount={FixtureStatsPerSport[sport].FixtureStateCount[state]} having StreamListenerState={state} for Sport={sport}");
+                foreach (var sport in FixtureStatsPerSport.Keys)
+                foreach (var state in FixtureStatsPerSport[sport].FixtureStateCount.Keys)
+                    _logger.Info(
+                        $"PublishedFixturesPerStateForSportCount={FixtureStatsPerSport[sport].FixtureStateCount[state]} having StreamListenerState={state} for Sport={sport}");
+            }
         }
 
         private void NewStreamListenerActorMsgHandler(NewStreamListenerActorMsg msg)
