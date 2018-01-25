@@ -59,6 +59,7 @@ namespace SS.Integration.Adapter.Tests
             SettingsMock.SetupGet(a => a.FixturesStateAutoStoreInterval).Returns(int.MaxValue);
 
             FootabllSportMock = new Mock<IFeature>();
+            FootabllSportMock.SetupGet(o => o.Name).Returns("Football");
             ServiceMock = new Mock<IServiceFacade>();
             StateManagerMock = new Mock<IStateManager>();
             MarketRulesManagerMock = new Mock<IMarketRulesManager>();

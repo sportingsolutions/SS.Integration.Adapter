@@ -82,6 +82,7 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Actors\AdapterDeadletterMonitorActor.cs" />
     <Compile Include="Actors\Messages\ClearFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\CheckFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\GetStreamListenerActorStateMsg.cs" />
@@ -127,6 +128,7 @@
     <Compile Include="Adapter.cs" />
     <Compile Include="Actors\AdapterActorSystem.cs" />
     <Compile Include="Configuration\Settings.cs" />
+    <Compile Include="Configuration\UdapiConfiguration.cs" />
     <Compile Include="Enums\StreamListenerBuilderState.cs" />
     <Compile Include="Enums\StreamListenerState.cs" />
     <Compile Include="Exceptions\ApiException.cs" />

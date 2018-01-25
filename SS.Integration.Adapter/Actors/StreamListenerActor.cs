@@ -901,7 +901,6 @@ namespace SS.Integration.Adapter.Actors
             try
             {
                 SuspendAndReprocessSnapshot(true);
-                ClearState();
             }
             catch (Exception ex)
             {

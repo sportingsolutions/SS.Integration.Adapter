@@ -50,7 +50,8 @@ namespace SS.Integration.Adapter.Tests
             var fi = new  FileInfo("../../Data/fixtureStates.json");
             var fixtureStatesFilePath = fi.FullName;
             Assert.IsTrue(File.Exists(fixtureStatesFilePath));
-            
+
+            SettingsMock.SetupGet(a => a.StateProviderPath).Returns(GetType().Assembly.Location);
             SettingsMock.SetupGet(a => a.FixturesStateFilePath).Returns(fixtureStatesFilePath);
             SettingsMock.SetupGet(a => a.FixturesStateAutoStoreInterval).Returns(1000);
 
@@ -242,6 +243,138 @@ namespace SS.Integration.Adapter.Tests
                         It.Is<string>(path => path.Equals(SettingsMock.Object.FixturesStateFilePath)),
                         It.IsAny<string>()),
                 Times.AtLeast(2));
+        }
+
+        /// <summary>
+        /// This test ensures that CheckFixtureStateMsg sets ShouldProcessFixture to true when Match is not over in the state
+        /// </summary>
+        [Test]
+        [Category(FIXTURE_STATE_ACTOR_CATEGORY)]
+        public void GivenFixtureStateActorWhenMatchIsOverThenShouldProcessFixtureReturnsTrue()
+        {
+            //
+            //Arrange
+            //
+            var storedFixtureState = new FixtureState
+            {
+                Id = "id1",
+                Sport = "sport1",
+                Epoch = 1,
+                Sequence = 1,
+                MatchStatus = MatchStatus.InRunning
+            };
+            var fixtureStateActor = ActorOfAsTestActorRef<FixtureStateActor>(
+                Props.Create(() =>
+                    new FixtureStateActor(
+                        SettingsMock.Object,
+                        StoreProviderMock.Object)),
+                FixtureStateActor.ActorName);
+
+            //
+            //Act
+            //
+            //upsert the state
+            fixtureStateActor.Ask(
+                new UpdateFixtureStateMsg
+                {
+                    FixtureId = storedFixtureState.Id,
+                    Sport = storedFixtureState.Sport,
+                    Status = storedFixtureState.MatchStatus,
+                    Epoch = storedFixtureState.Epoch,
+                    Sequence = storedFixtureState.Sequence
+                });
+
+            //
+            //Assert
+            //
+            var fixtureState =
+                fixtureStateActor
+                    .Ask<FixtureState>(new GetFixtureStateMsg { FixtureId = storedFixtureState.Id })
+                    .Result;
+            Assert.AreEqual(storedFixtureState, fixtureState);
+
+            Mock<IResourceFacade> resourceMock = new Mock<IResourceFacade>();
+            resourceMock.SetupGet(o => o.Id).Returns(storedFixtureState.Id);
+            resourceMock.SetupGet(o => o.MatchStatus).Returns(MatchStatus.MatchOver);
+
+            //
+            //Act
+            //
+            var checkFixtureStateMsg =
+                fixtureStateActor
+                    .Ask<CheckFixtureStateMsg>(new CheckFixtureStateMsg { Resource = resourceMock.Object })
+                    .Result;
+
+            //
+            //Assert
+            //
+            Assert.IsTrue(checkFixtureStateMsg.ShouldProcessFixture);
+        }
+
+        /// <summary>
+        /// This test ensures that CheckFixtureStateMsg sets ShouldProcessFixture to false when Match is already over in the state
+        /// </summary>
+        [Test]
+        [Category(FIXTURE_STATE_ACTOR_CATEGORY)]
+        public void GivenFixtureStateActorWhenMatchIsOverThenShouldProcessFixtureReturnsFalse()
+        {
+            //
+            //Arrange
+            //
+            var storedFixtureState = new FixtureState
+            {
+                Id = "id1",
+                Sport = "sport1",
+                Epoch = 1,
+                Sequence = 1,
+                MatchStatus = MatchStatus.MatchOver
+            };
+            var fixtureStateActor = ActorOfAsTestActorRef<FixtureStateActor>(
+                Props.Create(() =>
+                    new FixtureStateActor(
+                        SettingsMock.Object,
+                        StoreProviderMock.Object)),
+                FixtureStateActor.ActorName);
+
+            //
+            //Act
+            //
+            //upsert the state
+            fixtureStateActor.Ask(
+                new UpdateFixtureStateMsg
+                {
+                    FixtureId = storedFixtureState.Id,
+                    Sport = storedFixtureState.Sport,
+                    Status = storedFixtureState.MatchStatus,
+                    Epoch = storedFixtureState.Epoch,
+                    Sequence = storedFixtureState.Sequence
+                });
+
+            //
+            //Assert
+            //
+            var fixtureState =
+                fixtureStateActor
+                    .Ask<FixtureState>(new GetFixtureStateMsg { FixtureId = storedFixtureState.Id })
+                    .Result;
+            Assert.AreEqual(storedFixtureState, fixtureState);
+
+            Mock<IResourceFacade> resourceMock = new Mock<IResourceFacade>();
+            resourceMock.SetupGet(o => o.Id).Returns(storedFixtureState.Id);
+            resourceMock.SetupGet(o => o.MatchStatus).Returns(MatchStatus.MatchOver);
+
+            //
+            //Act
+            //
+            var checkFixtureStateMsg =
+                fixtureStateActor
+                    .Ask<CheckFixtureStateMsg>(new CheckFixtureStateMsg { Resource = resourceMock.Object })
+                    .Result;
+
+            //
+            //Assert
+            //
+            Assert.IsFalse(checkFixtureStateMsg.ShouldProcessFixture);
         }
 
         #endregion

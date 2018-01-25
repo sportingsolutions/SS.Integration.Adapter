@@ -291,6 +291,17 @@ namespace SS.Integration.Adapter.Actors
 
         private void SetStreamListenerState(string sport, string fixtureId, StreamListenerState state)
         {
+            var invalidSport = string.IsNullOrWhiteSpace(sport);
+            var invalidFixtureId = string.IsNullOrWhiteSpace(fixtureId);
+            if (invalidSport || invalidFixtureId)
+            {
+                if (invalidSport)
+                    _logger.Warn("SetStreamListenerState has sport=null");
+                if (invalidFixtureId)
+                    _logger.Warn("SetStreamListenerState has fixtureId=null");
+                return;
+            }
+
             if (!_streamListeners.ContainsKey(sport))
                 _streamListeners.Add(sport, new Dictionary<string, StreamListenerState>());
 

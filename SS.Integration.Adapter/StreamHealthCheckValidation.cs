@@ -55,7 +55,7 @@ namespace SS.Integration.Adapter
         /// <returns></returns>
         public bool ValidateStream(IResourceFacade resource, StreamListenerState state, int sequence)
         {
-            if (resource.Content.Sequence - sequence <= _settings.StreamSafetyThreshold)
+            if (resource.Content.Sequence - sequence < _settings.StreamSafetyThreshold)
                 return true;
 
             if (ShouldIgnoreUnprocessedSequence(resource, state))
@@ -104,12 +104,6 @@ namespace SS.Integration.Adapter
             if (state != StreamListenerState.Streaming)
             {
                 _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Not Streaming\"");
-                return true;
-            }
-
-            if (resource.Content.MatchStatus == (int)MatchStatus.MatchOver)
-            {
-                _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Match Is Over\"");
                 return true;
             }
 

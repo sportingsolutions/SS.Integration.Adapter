@@ -119,7 +119,7 @@ namespace SS.Integration.Adapter.Tests
         }
 
         /// <summary>
-        /// This test ensures we correctly validate stream (return true - stream is valid) when having 
+        /// This test ensures we correctly validate stream (return false - stream is not valid) when having 
         /// - mock resource with sequence 5
         /// - current sequence (the one already processed) 1
         /// - stream safety threshold set to 3
@@ -128,7 +128,7 @@ namespace SS.Integration.Adapter.Tests
         /// </summary>
         [Test]
         [Category(STREAM_VALIDATION_CATEGORY)]
-        public void GivenFixtureWhenMatchOverThenValidateStreamReturnsTrue()
+        public void GivenFixtureWhenMatchOverThenValidateStreamReturnsFalse()
         {
             //
             //Arrange
@@ -150,7 +150,7 @@ namespace SS.Integration.Adapter.Tests
             //
             //Assert
             //
-            Assert.IsTrue(streamIsValid);
+            Assert.IsFalse(streamIsValid);
         }
 
         /// <summary>

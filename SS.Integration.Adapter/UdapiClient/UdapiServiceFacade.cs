@@ -109,14 +109,11 @@ namespace SS.Integration.Adapter.UdapiClient
 
             var feature = _service.GetFeature(featureName);
 
-            if (feature != null)
-            {
-                var udapiResource = feature.GetResource(resourceName);
+            var udapiResource = feature?.GetResource(resourceName);
 
-                if (udapiResource != null)
-                {
-                    resource = new UdapiResourceFacade(udapiResource, featureName, _reconnectStrategy, _settings.EchoDelay, _settings.EchoInterval);
-                }
+            if (udapiResource != null)
+            {
+                resource = new UdapiResourceFacade(udapiResource, featureName, _reconnectStrategy, _settings.EchoDelay, _settings.EchoInterval);
             }
 
             return resource;

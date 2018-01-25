@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using Akka.Actor;
+using Akka.Event;
 using Akka.Routing;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
@@ -89,6 +90,13 @@ namespace SS.Integration.Adapter.Actors
                         udApiService,
                         _sportProcessorRouterActor)),
                 SportsProcessorActor.ActorName);
+
+            // Setup an actor that will handle deadletter type messages
+            var deadletterWatchMonitorProps = Props.Create(() => new AdapterDeadletterMonitorActor());
+            var deadletterWatchActorRef = _actorSystem.ActorOf(deadletterWatchMonitorProps, "AdapterDeadletterMonitorActor");
+
+            // subscribe to the event stream for messages of type "DeadLetter"
+            _actorSystem.EventStream.Subscribe(deadletterWatchActorRef, typeof(DeadLetter));
         }
 
         public static void Dispose()
