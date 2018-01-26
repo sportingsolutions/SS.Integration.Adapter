@@ -170,6 +170,20 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
+        #region Protected methods
+
+        protected override void PreRestart(Exception reason, object message)
+        {
+            _logger.Error(
+                $"Actor restart reason exception={reason?.ToString() ?? "null"}." +
+                (message != null
+                    ? $" last processing messageType={message.GetType().Name}"
+                    : ""));
+            base.PreRestart(reason, message);
+        }
+
+        #endregion
+
         #region Private methods
 
         private T GetStartMessageObject<T>() where T : UpdateStatsStartMsg

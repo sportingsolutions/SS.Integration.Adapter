@@ -14,6 +14,7 @@
 
 using System;
 using Akka.Actor;
+using log4net;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
 
@@ -32,8 +33,9 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
-        #region Attribues
+        #region Fields
 
+        private readonly ILog _logger = LogManager.GetLogger(typeof(SportsProcessorActor).ToString());
         private readonly IServiceFacade _serviceFacade;
         private readonly IActorRef _sportProcessorRouterActor;
         private readonly ICancelable _processSportsMsgSchedule;
@@ -82,10 +84,15 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
-        #region Private methods
+        #region Protected methods
 
         protected override void PreRestart(Exception reason, object message)
         {
+            _logger.Error(
+                $"Actor restart reason exception={reason?.ToString() ?? "null"}." +
+                (message != null
+                    ? $" last processing messageType={message.GetType().Name}"
+                    : ""));
             _processSportsMsgSchedule.Cancel();
             base.PreRestart(reason, message);
         }
