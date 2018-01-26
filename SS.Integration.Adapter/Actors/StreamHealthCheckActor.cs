@@ -75,6 +75,15 @@ namespace SS.Integration.Adapter.Actors
 
         #region Message Handlers
 
+        #region  Override Methods
+
+        protected override void PreRestart(Exception reason, object message)
+        {
+            _logger.WarnFormat($"{ActorName} restartMessage=\"{message}\" {reason}");
+        }
+
+        #endregion 
+
         private void StreamHealthCheckMsgHandler(StreamHealthCheckMsg msg)
         {
             if (_resource == null || msg.Resource == null || msg.Resource.Id != _resource.Id)

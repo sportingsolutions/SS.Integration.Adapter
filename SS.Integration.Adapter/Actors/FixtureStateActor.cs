@@ -178,6 +178,7 @@ namespace SS.Integration.Adapter.Actors
 
         #region Private methods
 
+
         private void SetFilePath()
         {
             if (System.IO.Path.IsPathRooted(_settings.FixturesStateFilePath))
@@ -229,7 +230,18 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
+
+
         #endregion
+
+        #region  Override Methods
+
+        protected override void PreRestart(Exception reason, object message)
+        {
+            _logger.WarnFormat($"{ActorName} restartMessage=\"{message}\" {reason}");
+        }
+
+        #endregion 
 
         #region Private messages
 

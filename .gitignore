@@ -110,3 +110,4 @@ UpgradeLog*.XML
 
 # Visual Studio temp directory.
 .vs/
+SS.Integration.Adapter.WindowsService/App.config

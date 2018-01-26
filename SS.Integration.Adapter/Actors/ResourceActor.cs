@@ -90,6 +90,15 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
+        #region  Override Methods
+
+        protected override void PreRestart(Exception reason, object message)
+        {
+            _logger.WarnFormat($"{ActorName} restartMessage=\"{message}\" {reason}");
+        }
+
+        #endregion 
+
         #region Private methods
 
         private void Initialize()
@@ -123,6 +132,8 @@ namespace SS.Integration.Adapter.Actors
                 _resource.StopStreaming();
             }
         }
+
+        
 
         #endregion
     }
