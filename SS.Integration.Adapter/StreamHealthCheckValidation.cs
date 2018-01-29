@@ -107,12 +107,6 @@ namespace SS.Integration.Adapter
                 return true;
             }
 
-            if (resource.Content.MatchStatus == (int)MatchStatus.MatchOver)
-            {
-                _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Match Is Over\"");
-                return true;
-            }
-
             if (resource.Content.MatchStatus == (int)MatchStatus.Setup && !_settings.AllowFixtureStreamingInSetupMode)
             {
                 _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Fixture is in setup state\"");
