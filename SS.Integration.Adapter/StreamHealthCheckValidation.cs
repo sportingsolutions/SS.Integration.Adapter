@@ -55,7 +55,7 @@ namespace SS.Integration.Adapter
         /// <returns></returns>
         public bool ValidateStream(IResourceFacade resource, StreamListenerState state, int sequence)
         {
-            if (resource.Content.Sequence - sequence <= _settings.StreamSafetyThreshold)
+            if (resource.Content.Sequence - sequence < _settings.StreamSafetyThreshold)
                 return true;
 
             if (ShouldIgnoreUnprocessedSequence(resource, state))

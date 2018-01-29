@@ -104,27 +104,21 @@ namespace SS.Integration.Adapter.UdapiClient
 
         public void StartStreaming()
         {
-            StartStreaming(_echoInterval,_echoDelay);
-        }
-
-        public void StartStreaming(int echoInterval, int echoMaxDelay)
-        {
             try
             {
-                if (echoInterval == -1)
-                {
-                    _reconnectStrategy.ReconnectOnException(x => x.StartStreaming(), _udapiResource);
-                }
-                else
-                {
-                    _reconnectStrategy.ReconnectOnException(x => x.StartStreaming(echoInterval, echoMaxDelay), _udapiResource);    
-                }
+                _reconnectStrategy.ReconnectOnException(x => x.StartStreaming(), _udapiResource);
             }
             catch (Exception)
             {
                 _logger.ErrorFormat("{0} : {1} - Unable to start streaming from GTP-UDAPI after multiple attempts", _featureName, _udapiResource.Name);
                 throw;
             }
+        }
+
+        [Obsolete]
+        public void StartStreaming(int echoInterval, int echoMaxDelay)
+        {
+            StartStreaming();
         }
 
         public void PauseStreaming()

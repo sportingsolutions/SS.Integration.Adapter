@@ -96,7 +96,9 @@ namespace SS.Integration.Adapter.Actors
         {
             FixtureState fixtureState;
             _fixturesState.TryGetValue(msg.Resource.Id, out fixtureState);
-            msg.ShouldProcessFixture = fixtureState == null || fixtureState.MatchStatus == MatchStatus.MatchOver;
+            //if we don't have the fixture state stored then we should process it
+            //otherwise if the match is not over then it means we should process it
+            msg.ShouldProcessFixture = fixtureState == null || fixtureState.MatchStatus != MatchStatus.MatchOver;
 
             Sender.Tell(msg, Self);
         }
@@ -170,6 +172,20 @@ namespace SS.Integration.Adapter.Actors
                     binFile.Delete();
                 }
             }
+        }
+
+        #endregion
+
+        #region Protected methods
+
+        protected override void PreRestart(Exception reason, object message)
+        {
+            _logger.Error(
+                $"Actor restart reason exception={reason?.ToString() ?? "null"}." +
+                (message != null
+                    ? $" last processing messageType={message.GetType().Name}"
+                    : ""));
+            base.PreRestart(reason, message);
         }
 
         #endregion

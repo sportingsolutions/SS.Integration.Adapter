@@ -14,6 +14,7 @@
 
 using System;
 using Akka.Actor;
+using log4net;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
 
@@ -29,14 +30,15 @@ namespace SS.Integration.Adapter.Actors
 
         public const string ActorName = nameof(SportsProcessorActor);
         public const string Path = "/user/" + ActorName;
-        private readonly ICancelable _processSportsMsgSchedule;
+
         #endregion
 
-        #region Attribues
+        #region Fields
 
+        private readonly ILog _logger = LogManager.GetLogger(typeof(SportsProcessorActor).ToString());
         private readonly IServiceFacade _serviceFacade;
         private readonly IActorRef _sportProcessorRouterActor;
-        private readonly IActorRef _statsActor;
+        private readonly ICancelable _processSportsMsgSchedule;
 
         #endregion
 
@@ -56,7 +58,7 @@ namespace SS.Integration.Adapter.Actors
             _serviceFacade = serviceFacade ?? throw new ArgumentNullException(nameof(serviceFacade));
             _sportProcessorRouterActor = sportProcessorRouterActor ?? throw new ArgumentNullException(nameof(sportProcessorRouterActor));
 
-            Receive<ProcessSportsMsg>(o => ProcessSports());
+            Receive<ProcessSportsMsg>(o => ProcessSportsMsgHandler());
 
             _processSportsMsgSchedule = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(
                 TimeSpan.FromSeconds(10),
@@ -68,22 +70,31 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
-        #region Private methods
+        #region Message Handlers
 
-        protected override void PreRestart(Exception reason, object message)
-        {
-            _processSportsMsgSchedule.Cancel();
-            base.PreRestart(reason, message);
-        }
-
-        private void ProcessSports()
+        private void ProcessSportsMsgHandler()
         {
             var sports = _serviceFacade.GetSports();
 
             foreach (var sport in sports)
             {
-                _sportProcessorRouterActor.Tell(new ProcessSportMsg {Sport = sport.Name});
+                _sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = sport.Name });
             }
+        }
+
+        #endregion
+
+        #region Protected methods
+
+        protected override void PreRestart(Exception reason, object message)
+        {
+            _logger.Error(
+                $"Actor restart reason exception={reason?.ToString() ?? "null"}." +
+                (message != null
+                    ? $" last processing messageType={message.GetType().Name}"
+                    : ""));
+            _processSportsMsgSchedule.Cancel();
+            base.PreRestart(reason, message);
         }
 
         #endregion

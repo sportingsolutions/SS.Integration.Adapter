@@ -59,6 +59,7 @@ namespace SS.Integration.Adapter.Tests
             SettingsMock.SetupGet(a => a.FixturesStateAutoStoreInterval).Returns(int.MaxValue);
 
             FootabllSportMock = new Mock<IFeature>();
+            FootabllSportMock.SetupGet(o => o.Name).Returns("Football");
             ServiceMock = new Mock<IServiceFacade>();
             StateManagerMock = new Mock<IStateManager>();
             MarketRulesManagerMock = new Mock<IMarketRulesManager>();
@@ -151,7 +152,7 @@ namespace SS.Integration.Adapter.Tests
         /// </summary>
         [Test]
         [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
-        public void OnInitializationMoveToFinishedStateWhenResourceHasMatchOverStatus()
+        public void OnInitializationMoveToStoppedStateWhenResourceHasMatchOverStatus()
         {
             //
             //Arrange
@@ -196,7 +197,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Once);
                     StateManagerMock.Verify(a =>
                             a.ClearState(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Once);
+                        Times.Never);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
@@ -220,7 +221,7 @@ namespace SS.Integration.Adapter.Tests
         /// </summary>
         [Test]
         [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
-        public void OnInitializationMoveToFinishedStateWhenMatchOverWasAlreadyProcessed()
+        public void OnInitializationMoveToStoppedStateWhenMatchOverWasAlreadyProcessed()
         {
             //
             //Arrange

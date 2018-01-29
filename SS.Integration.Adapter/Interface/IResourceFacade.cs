@@ -86,11 +86,7 @@ namespace SS.Integration.Adapter.Interface
         /// </summary>
         void StartStreaming();
 
-        /// <summary>
-        /// Starts the streaming connection for this resource.
-        /// </summary>
-        /// <param name="echoInterval"></param>
-        /// <param name="echoMaxDelay"></param>
+        [Obsolete]
         void StartStreaming(int echoInterval, int echoMaxDelay);
 
         /// <summary>
