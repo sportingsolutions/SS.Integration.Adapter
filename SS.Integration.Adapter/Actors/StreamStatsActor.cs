@@ -149,6 +149,9 @@ namespace SS.Integration.Adapter.Actors
 
             var minutes = (int)Math.Ceiling((DateTime.UtcNow - AdapterStartDate).TotalMinutes);
 
+            if (minutes == 0)
+                return;
+
             _logger.Info($"{updateOrSnapshot} for {startMessage.Fixture}, took processingTime={timeTaken.TotalSeconds} seconds at sequence={startMessage.Sequence}");
             _logger.Info($"{startMessage.Fixture} -> Snapshots_Processed={_snapshotsCount}");
             _logger.Info($"{startMessage.Fixture} -> StreamUpdates_Processed={_streamUpdatesCount}");
