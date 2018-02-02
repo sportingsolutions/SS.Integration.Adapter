@@ -2135,6 +2135,7 @@ namespace SS.Integration.Adapter.Tests
                 .Returns(true)
                 .Returns(false);
 
+
             var streamListenerManagerActor =
                 ActorOfAsTestActorRef<StreamListenerManagerActor>(
                     Props.Create(() =>
@@ -2202,8 +2203,7 @@ namespace SS.Integration.Adapter.Tests
                     Assert.NotNull(streamListenerActorRef);
                     Assert.NotNull(streamListenerActor);
 
-                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
-                    resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Once);
+                    
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
                         Times.Exactly(2));
@@ -2240,8 +2240,10 @@ namespace SS.Integration.Adapter.Tests
                             a.RollbackChanges(),
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Initialized, streamListenerActor.State);
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
+                    resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Once);
                 },
-                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT+2000),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
