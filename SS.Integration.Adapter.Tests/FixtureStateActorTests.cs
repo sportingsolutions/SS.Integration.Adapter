@@ -47,10 +47,9 @@ namespace SS.Integration.Adapter.Tests
             SetupTestLogging();
 
             SettingsMock = new Mock<ISettings>();
-            var fixtureStatesFilePath =
-                Path.Combine(
-                    new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName,
-                    "Data/fixtureStates.json");
+            var fi = new FileInfo("../../Data/fixtureStates.json");
+            var fixtureStatesFilePath = fi.FullName;
+            SettingsMock.SetupGet(a => a.StateProviderPath).Returns(GetType().Assembly.Location);
             SettingsMock.SetupGet(a => a.FixturesStateFilePath).Returns(fixtureStatesFilePath);
             SettingsMock.SetupGet(a => a.FixturesStateAutoStoreInterval).Returns(1000);
 
@@ -122,6 +121,7 @@ namespace SS.Integration.Adapter.Tests
                 Sequence = 1,
                 MatchStatus = MatchStatus.Setup
             };
+            
             var fixtureStateActor = ActorOfAsTestActorRef<FixtureStateActor>(
                 Props.Create(() =>
                     new FixtureStateActor(
