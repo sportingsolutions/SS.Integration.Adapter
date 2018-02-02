@@ -2243,7 +2243,7 @@ namespace SS.Integration.Adapter.Tests
                     resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
                     resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Once);
                 },
-                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT+2000),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
