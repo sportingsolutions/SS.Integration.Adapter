@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SS.Integration.Adapter.Tests</RootNamespace>
     <AssemblyName>SS.Integration.Adapter.Tests</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
@@ -91,8 +91,8 @@
       <HintPath>..\packages\RestSharp.105.2.3\lib\net45\RestSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SportingSolutions.Udapi.Sdk, Version=2.0.6.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SportingSolutions.Udapi.Sdk.2.0.6\lib\net40\SportingSolutions.Udapi.Sdk.dll</HintPath>
+    <Reference Include="SportingSolutions.Udapi.Sdk, Version=2.0.18.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SportingSolutions.Udapi.Sdk.2.0.18\lib\net40\SportingSolutions.Udapi.Sdk.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Collections.Immutable, Version=1.2.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -126,7 +126,9 @@
     <Compile Include="AdapterTestKit.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
     <Content Include="Data\fixtureStates.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
