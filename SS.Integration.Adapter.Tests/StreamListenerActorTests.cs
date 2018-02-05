@@ -2241,7 +2241,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Initialized, streamListenerActor.State);
                 },
-                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT*3),
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT*2),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
