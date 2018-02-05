@@ -115,7 +115,7 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Object,
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
-
+            
             //
             //Assert
             //
@@ -2241,7 +2241,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Initialized, streamListenerActor.State);
                 },
-                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT*2),
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT+3000),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
