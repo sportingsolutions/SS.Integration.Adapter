@@ -278,8 +278,9 @@ namespace SS.Integration.Adapter.Specs
                 if (Convert.ToBoolean (row["Exists"]))
                 {
                     Market mkt = fixture.Markets.First(x => x.Id == mkt_name);
-                    var n = row["Name"];
-                    mkt.Name.Should().Be(n);
+                    var n = row["Name"].ToLower();
+                    
+                    mkt.Name.ToLower().Should().Be(n);
                 }
             }
         }
@@ -296,8 +297,8 @@ namespace SS.Integration.Adapter.Specs
                 var mkt_name = row["Market"];
                
                 Market mkt = fixture.Markets.First(x => x.Id == mkt_name);
-                var n = row["Name"];
-                mkt.Name.Should().Be(n);
+                var n = row["Name"].ToLower();
+                mkt.Name.ToLower().Should().Be(n);
 
                 var n_seln = Convert.ToInt32(row["NumberOfSelections"]);
                 mkt.Selections.Count().Should().Be(n_seln);
@@ -308,7 +309,7 @@ namespace SS.Integration.Adapter.Specs
 
                     foreach (var name in names.Split(','))
                     {
-                        mkt.Selections.FirstOrDefault(x => x.Name == name.Trim()).Should().NotBeNull();
+                        mkt.Selections.FirstOrDefault(x => x.Name.ToLower() == name.ToLower().Trim()).Should().NotBeNull();
                     }
                 }
             }
