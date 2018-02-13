@@ -2185,8 +2185,8 @@ namespace SS.Integration.Adapter.Tests
             //Wait 1 second and force Stream Health Check message
             Task.Delay(1000).Wait();
             streamListenerActorRef.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
-            Task.Delay(1000).Wait();
-            streamListenerActorRef.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
+            //Task.Delay(1000).Wait();
+            //streamListenerActorRef.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
 
             //
             //Assert
@@ -2241,7 +2241,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     Assert.AreEqual(StreamListenerState.Initialized, streamListenerActor.State);
                 },
-                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT+3000),
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
