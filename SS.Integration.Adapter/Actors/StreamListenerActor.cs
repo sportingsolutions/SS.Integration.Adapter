@@ -155,6 +155,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
+            Receive<SuspendMessage>(a => Suspend());
 
             try
             {
@@ -188,6 +189,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
+            Receive<SuspendMessage>(a => Suspend());
 
             try
             {
@@ -305,6 +307,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
+            Receive<SuspendMessage>(a => Suspend());
         }
 
         //No further messages should be accepted, resource has stopped streaming
@@ -939,6 +942,11 @@ namespace SS.Integration.Adapter.Actors
         {
             SuspendFixture(SuspensionReason.SUSPENSION);
             RetrieveAndProcessSnapshot(hasEpochChanged);
+        }
+
+        private void Suspend()
+        {
+            SuspendFixture(SuspensionReason.SUSPENSION);
         }
 
         private void SuspendFixture(SuspensionReason reason)

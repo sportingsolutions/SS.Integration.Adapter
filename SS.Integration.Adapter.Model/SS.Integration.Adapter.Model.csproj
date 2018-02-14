@@ -51,7 +51,6 @@
     <Compile Include="Enums\EpochChangeReasonEnum.cs" />
     <Compile Include="Enums\FixtureEventTypeEnum.cs" />
     <Compile Include="Enums\MatchStatusEnum.cs" />
-    <Compile Include="Exceptions\EchoControllerActorException.cs" />
     <Compile Include="Exceptions\FixtureIgnoredException.cs" />
     <Compile Include="Fixture.cs" />
     <Compile Include="FixtureState.cs" />

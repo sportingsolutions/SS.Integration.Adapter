@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SS.Integration.Adapter.Model.Exceptions
+namespace SS.Integration.Adapter.Actors.Messages
 {
-    public class EchoControllerActorException : Exception
+    public class SuspendMessage
     {
     }
 }

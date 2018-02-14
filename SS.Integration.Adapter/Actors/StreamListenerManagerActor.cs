@@ -17,6 +17,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using log4net;
+using SportingSolutions.Udapi.Sdk;
+using SportingSolutions.Udapi.Sdk.Events;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Enums;
 using SS.Integration.Adapter.Interface;
@@ -111,7 +113,12 @@ namespace SS.Integration.Adapter.Actors
             Receive<NewStreamListenerActorMsg>(o => NewStreamListenerActorMsgHandler(o));
             Receive<StreamListenerActorStateChangedMsg>(o => StreamListenerActorStateChangedMsgHandler(o));
             Receive<LogPublishedFixturesCountsMsg>(o => LogPublishedFixturesCountsMsgHandler(o));
+
+            SdkActorSystem.ErrorControllerActor.ErrorOcured += ErrorControllerActorOnErrorOcured;
+
         }
+
+        
 
         #endregion
 
@@ -293,6 +300,20 @@ namespace SS.Integration.Adapter.Actors
         #endregion
 
         #region Private methods
+
+        private void ErrorControllerActorOnErrorOcured(object sender, SdkErrorArgs sdkErrorArgs)
+        {
+            if (sdkErrorArgs.ShouldSuspend)
+                _logger.Warn($"SDK Error occured, all Fixtures will be suspended {sdkErrorArgs.ErrorMessage}");
+
+            var streamListeners = _streamListeners.Values.SelectMany(_ => _.Keys);
+
+            foreach (var sl in streamListeners)
+            {
+                IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(sl));
+                streamListenerActor.Tell(new SuspendMessage());
+            }
+        }
 
         private void StopStreamListenerChildActor(string fixtureId)
         {
