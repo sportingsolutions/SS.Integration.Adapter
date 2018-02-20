@@ -71,7 +71,8 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="SportingSolutions.Udapi.Sdk, Version=2.1.4.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SportingSolutions.Udapi.Sdk.2.1.4\lib\net40\SportingSolutions.Udapi.Sdk.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\SS.Integration.UnifiedDataAPIClient.DotNet\SportingSolutions.Udapi.Sdk\bin\Debug\SportingSolutions.Udapi.Sdk.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Collections.Immutable, Version=1.2.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -86,6 +87,7 @@
     <Compile Include="Actors\Messages\ClearFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\CheckFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\GetStreamListenerActorStateMsg.cs" />
+    <Compile Include="Actors\Messages\RegisterSdkErrorActorMessage.cs" />
     <Compile Include="Actors\Messages\StreamListenerActorStateChangedMsg.cs" />
     <Compile Include="Actors\Messages\NewStreamListenerActorMsg.cs" />
     <Compile Include="Actors\Messages\StreamListenerCreationCancelledMsg.cs" />

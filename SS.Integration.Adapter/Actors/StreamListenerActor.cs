@@ -22,6 +22,7 @@ using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Common.Extensions;
 using System;
 using System.Linq;
+using SportingSolutions.Udapi.Sdk;
 using SportingSolutions.Udapi.Sdk.Extensions;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Enums;
@@ -156,7 +157,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
             Receive<SuspendMessage>(a => Suspend());
-
+            
             try
             {
                 RetrieveAndProcessSnapshot();

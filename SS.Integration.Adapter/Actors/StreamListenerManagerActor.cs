@@ -19,13 +19,19 @@ using Akka.Actor;
 using log4net;
 using SportingSolutions.Udapi.Sdk;
 using SportingSolutions.Udapi.Sdk.Events;
+using SportingSolutions.Udapi.Sdk.Exceptions;
+using SportingSolutions.Udapi.Sdk.Model.Message;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Enums;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model.Interfaces;
+using SdkErrorMessage = SportingSolutions.Udapi.Sdk.Events.SdkErrorMessage;
 
 namespace SS.Integration.Adapter.Actors
 {
+    
+    
+    
     //This actor manages all StreamListeners 
     public class StreamListenerManagerActor : ReceiveActor
     {
@@ -113,12 +119,22 @@ namespace SS.Integration.Adapter.Actors
             Receive<NewStreamListenerActorMsg>(o => NewStreamListenerActorMsgHandler(o));
             Receive<StreamListenerActorStateChangedMsg>(o => StreamListenerActorStateChangedMsgHandler(o));
             Receive<LogPublishedFixturesCountsMsg>(o => LogPublishedFixturesCountsMsgHandler(o));
+            Receive<RegisterSdkErrorActorMessage>(a => RegisterSdkErrorActor());
+            Receive<SdkErrorMessage>(a => FaultControllerActorOnErrorOcured(a));
+            Receive<PathMessage>(a => { _logger.Info("PathMessage delivered"); });
 
-            SdkActorSystem.ErrorControllerActor.ErrorOcured += ErrorControllerActorOnErrorOcured;
+
+            Context.System.Scheduler.ScheduleTellRepeatedly(new TimeSpan(0, 1, 0), new TimeSpan(0, 1, 0),
+                Self, new RegisterSdkErrorActorMessage(), Self);
 
         }
 
-        
+        private void RegisterSdkErrorActor()
+        {
+            _logger.Info($"Sending registering message to FaultControllerActor");
+            if (SdkActorSystem.FaultControllerActorRef != null)
+                SdkActorSystem.FaultControllerActorRef.Tell(new PathMessage() { Path = Self.Path.Address.ToString()} , Self);
+        }
 
         #endregion
 
@@ -301,17 +317,19 @@ namespace SS.Integration.Adapter.Actors
 
         #region Private methods
 
-        private void ErrorControllerActorOnErrorOcured(object sender, SdkErrorArgs sdkErrorArgs)
+        private void FaultControllerActorOnErrorOcured(SdkErrorMessage sdkErrorArgs)
         {
             if (sdkErrorArgs.ShouldSuspend)
+            {
                 _logger.Warn($"SDK Error occured, all Fixtures will be suspended {sdkErrorArgs.ErrorMessage}");
 
-            var streamListeners = _streamListeners.Values.SelectMany(_ => _.Keys);
+                var streamListeners = _streamListeners.Values.SelectMany(_ => _.Keys);
 
-            foreach (var sl in streamListeners)
-            {
-                IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(sl));
-                streamListenerActor.Tell(new SuspendMessage());
+                foreach (var sl in streamListeners)
+                {
+                    IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(sl));
+                    streamListenerActor.Tell(new SuspendMessage());
+                }
             }
         }
 
