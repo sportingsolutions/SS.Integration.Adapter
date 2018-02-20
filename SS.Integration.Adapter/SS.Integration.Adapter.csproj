@@ -72,6 +72,8 @@
     </Reference>
     <Reference Include="SportingSolutions.Udapi.Sdk, Version=2.1.4.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\SportingSolutions.Udapi.Sdk.2.1.4\lib\net40\SportingSolutions.Udapi.Sdk.dll</HintPath>
+    <Reference Include="SportingSolutions.Udapi.Sdk, Version=2.1.7.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SportingSolutions.Udapi.Sdk.2.1.7\lib\net40\SportingSolutions.Udapi.Sdk.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Collections.Immutable, Version=1.2.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -82,10 +84,15 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Actors\AdapterDeadletterMonitorActor.cs" />
     <Compile Include="Actors\Messages\ClearFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\CheckFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\GetStreamListenerActorStateMsg.cs" />
+    <Compile Include="Actors\Messages\RegisterSdkErrorActorMessage.cs" />
+    <Compile Include="Actors\Messages\StreamListenerActorStateChangedMsg.cs" />
+    <Compile Include="Actors\Messages\NewStreamListenerActorMsg.cs" />
     <Compile Include="Actors\Messages\StreamListenerCreationCancelledMsg.cs" />
+    <Compile Include="Actors\Messages\SuspendMessage.cs" />
     <Compile Include="Actors\Messages\SuspendAndReprocessSnapshotMsg.cs" />
     <Compile Include="Actors\Messages\RestartStreamListenerMsg.cs" />
     <Compile Include="Actors\Messages\RetrieveAndProcessSnapshotMsg.cs" />
@@ -125,6 +132,7 @@
     <Compile Include="Adapter.cs" />
     <Compile Include="Actors\AdapterActorSystem.cs" />
     <Compile Include="Configuration\Settings.cs" />
+    <Compile Include="Configuration\UdapiConfiguration.cs" />
     <Compile Include="Enums\StreamListenerBuilderState.cs" />
     <Compile Include="Enums\StreamListenerState.cs" />
     <Compile Include="Exceptions\ApiException.cs" />

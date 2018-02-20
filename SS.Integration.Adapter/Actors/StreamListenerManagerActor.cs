@@ -13,14 +13,25 @@
 //limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using log4net;
+using SportingSolutions.Udapi.Sdk;
+using SportingSolutions.Udapi.Sdk.Events;
+using SportingSolutions.Udapi.Sdk.Exceptions;
+using SportingSolutions.Udapi.Sdk.Model.Message;
 using SS.Integration.Adapter.Actors.Messages;
+using SS.Integration.Adapter.Enums;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model.Interfaces;
+using SdkErrorMessage = SportingSolutions.Udapi.Sdk.Events.SdkErrorMessage;
 
 namespace SS.Integration.Adapter.Actors
 {
+    
+    
+    
     //This actor manages all StreamListeners 
     public class StreamListenerManagerActor : ReceiveActor
     {
@@ -37,6 +48,8 @@ namespace SS.Integration.Adapter.Actors
         private readonly ISettings _settings;
         private readonly IActorRef _streamListenerBuilderActorRef;
         private bool _shouldSendProcessSportsMessage;
+        private readonly Dictionary<string, Dictionary<string, StreamListenerState>> _streamListeners;
+        private readonly ICancelable _logPublishedFixturesCountsMsgSchedule;
 
         #endregion
 
@@ -81,6 +94,15 @@ namespace SS.Integration.Adapter.Actors
                             fixtureValidation)),
                     StreamListenerBuilderActor.ActorName);
 
+            _streamListeners = new Dictionary<string, Dictionary<string, StreamListenerState>>();
+
+            _logPublishedFixturesCountsMsgSchedule = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(
+                TimeSpan.FromSeconds(30),
+                TimeSpan.FromSeconds(30),
+                Self,
+                new LogPublishedFixturesCountsMsg(),
+                Self);
+
             Receive<ProcessResourceMsg>(o => ProcessResourceMsgHandler(o));
             Receive<StreamConnectedMsg>(o => StreamConnectedMsgHandler(o));
             Receive<StreamDisconnectedMsg>(o => StreamDisconnectedMsgHandler(o));
@@ -94,6 +116,24 @@ namespace SS.Integration.Adapter.Actors
             Receive<RetrieveAndProcessSnapshotMsg>(o => RetrieveAndProcessSnapshotMsgHandler(o));
             Receive<RestartStreamListenerMsg>(o => RestartStreamListenerMsgHandler(o));
             Receive<ClearFixtureStateMsg>(o => ClearFixtureStateMsgHandler(o));
+            Receive<NewStreamListenerActorMsg>(o => NewStreamListenerActorMsgHandler(o));
+            Receive<StreamListenerActorStateChangedMsg>(o => StreamListenerActorStateChangedMsgHandler(o));
+            Receive<LogPublishedFixturesCountsMsg>(o => LogPublishedFixturesCountsMsgHandler(o));
+            Receive<RegisterSdkErrorActorMessage>(a => RegisterSdkErrorActor());
+            Receive<SdkErrorMessage>(a => FaultControllerActorOnErrorOcured(a));
+            Receive<PathMessage>(a => { _logger.Info("PathMessage delivered"); });
+
+
+            Context.System.Scheduler.ScheduleTellRepeatedly(new TimeSpan(0, 1, 0), new TimeSpan(0, 1, 0),
+                Self, new RegisterSdkErrorActorMessage(), Self);
+
+        }
+
+        private void RegisterSdkErrorActor()
+        {
+            _logger.Info($"Sending registering message to FaultControllerActor");
+            if (SdkActorSystem.FaultControllerActorRef != null)
+                SdkActorSystem.FaultControllerActorRef.Tell(new PathMessage() { Path = Self.Path.Address.ToString()} , Self);
         }
 
         #endregion
@@ -216,9 +256,82 @@ namespace SS.Integration.Adapter.Actors
             streamListenerActor.Tell(msg);
         }
 
+        private void NewStreamListenerActorMsgHandler(NewStreamListenerActorMsg msg)
+        {
+            SetStreamListenerState(msg.Sport, msg.FixtureId, StreamListenerState.Initializing);
+        }
+
+        private void StreamListenerActorStateChangedMsgHandler(StreamListenerActorStateChangedMsg msg)
+        {
+            SetStreamListenerState(msg.Sport, msg.FixtureId, msg.NewState);
+        }
+
+        private void LogPublishedFixturesCountsMsgHandler(LogPublishedFixturesCountsMsg msg)
+        {
+            var publishedFixturesTotalCount = _streamListeners.Count > 0
+                ? _streamListeners.Keys.Select(sport => _streamListeners[sport].Count).Sum()
+                : 0;
+
+            _logger.Info($"PublishedFixturesTotalCount={publishedFixturesTotalCount}");
+
+            var streamListenerStates = Enum.GetValues(typeof(StreamListenerState)).Cast<StreamListenerState>();
+
+            if (publishedFixturesTotalCount > 0)
+            {
+                foreach (var state in streamListenerStates)
+                {
+                    var publishedFixturesPerStateCount = _streamListeners.Keys
+                        .Select(sport => _streamListeners[sport].Count(s => s.Value.Equals(state)))
+                        .Sum();
+
+                    _logger.Info(
+                        $"PublishedFixturesPerStateCount={publishedFixturesPerStateCount} having StreamListenerState={state}");
+
+                    foreach (var sport in _streamListeners.Keys)
+                    {
+                        var publishedFixturesPerStateForSportCount =
+                            _streamListeners[sport].Count(s => s.Value.Equals(state));
+
+                        _logger.Info(
+                            $"PublishedFixturesPerStateForSportCount={publishedFixturesPerStateForSportCount} having StreamListenerState={state} for Sport={sport}");
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region Protected methods
+
+        protected override void PreRestart(Exception reason, object message)
+        {
+            _logger.Error(
+                $"Actor restart reason exception={reason?.ToString() ?? "null"}." +
+                (message != null
+                    ? $" last processing messageType={message.GetType().Name}"
+                    : ""));
+            base.PreRestart(reason, message);
+        }
+
         #endregion
 
         #region Private methods
+
+        private void FaultControllerActorOnErrorOcured(SdkErrorMessage sdkErrorArgs)
+        {
+            if (sdkErrorArgs.ShouldSuspend)
+            {
+                _logger.Warn($"SDK Error occured, all Fixtures will be suspended {sdkErrorArgs.ErrorMessage}");
+
+                var streamListeners = _streamListeners.Values.SelectMany(_ => _.Keys);
+
+                foreach (var sl in streamListeners)
+                {
+                    IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(sl));
+                    streamListenerActor.Tell(new SuspendMessage());
+                }
+            }
+        }
 
         private void StopStreamListenerChildActor(string fixtureId)
         {
@@ -229,11 +342,37 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
+        private void SetStreamListenerState(string sport, string fixtureId, StreamListenerState state)
+        {
+            var invalidSport = string.IsNullOrWhiteSpace(sport);
+            var invalidFixtureId = string.IsNullOrWhiteSpace(fixtureId);
+            if (invalidSport || invalidFixtureId)
+            {
+                if (invalidSport)
+                    _logger.Warn("SetStreamListenerState has sport=null");
+                if (invalidFixtureId)
+                    _logger.Warn("SetStreamListenerState has fixtureId=null");
+                return;
+            }
+
+            if (!_streamListeners.ContainsKey(sport))
+                _streamListeners.Add(sport, new Dictionary<string, StreamListenerState>());
+
+            if (!_streamListeners[sport].ContainsKey(fixtureId))
+                _streamListeners[sport].Add(fixtureId, state);
+
+            _streamListeners[sport][fixtureId] = state;
+        }
+
         #endregion
 
         #region Private messages
 
         private class ResetSendProcessSportsMsg
+        {
+        }
+
+        private class LogPublishedFixturesCountsMsg
         {
         }
 

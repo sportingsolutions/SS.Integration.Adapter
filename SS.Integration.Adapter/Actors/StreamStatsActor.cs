@@ -149,6 +149,9 @@ namespace SS.Integration.Adapter.Actors
 
             var minutes = (int)Math.Ceiling((DateTime.UtcNow - AdapterStartDate).TotalMinutes);
 
+            if (minutes == 0)
+                return;
+
             _logger.Info($"{updateOrSnapshot} for {startMessage.Fixture}, took processingTime={timeTaken.TotalSeconds} seconds at sequence={startMessage.Sequence}");
             _logger.Info($"{startMessage.Fixture} -> Snapshots_Processed={_snapshotsCount}");
             _logger.Info($"{startMessage.Fixture} -> StreamUpdates_Processed={_streamUpdatesCount}");
@@ -166,6 +169,20 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Info($"Stream got disconnected at {_lastDisconnectedDate}");
             _logger.Info($"Detected {_disconnectionsCount / weeks} Stream disconnections / week");
+        }
+
+        #endregion
+
+        #region Protected methods
+
+        protected override void PreRestart(Exception reason, object message)
+        {
+            _logger.Error(
+                $"Actor restart reason exception={reason?.ToString() ?? "null"}." +
+                (message != null
+                    ? $" last processing messageType={message.GetType().Name}"
+                    : ""));
+            base.PreRestart(reason, message);
         }
 
         #endregion

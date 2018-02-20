@@ -224,9 +224,11 @@ namespace SS.Integration.Adapter.Model.Interfaces
         ///     does not exist
         /// 
         /// </summary>
-        /// <param name="TagKey"></param>
+        /// <param name="tagKey"></param>
         /// <returns></returns>
-        string GetTagValue(string TagKey);
+        string GetTagValue(string tagKey);
+
+        bool IsTagValueMatch(string tagKey, string value, bool caseSensitive = false);
 
         /// <summary>
         /// 

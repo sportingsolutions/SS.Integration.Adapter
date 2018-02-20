@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using Akka.Actor;
 using Akka.TestKit.NUnit;
+using FluentAssertions.Types;
 using Moq;
 using Newtonsoft.Json;
 using NUnit.Framework;
@@ -70,8 +71,6 @@ namespace SS.Integration.Adapter.Tests
         {
             resourceFacadeMock = new Mock<IResourceFacade>();
 
-            FootabllSportMock.SetupGet(o => o.Name).Returns("Football");
-
             var snapshotJson = System.Text.Encoding.UTF8.GetString(fixtureData);
             snapshot = FixtureHelper.GetFromJson(snapshotJson);
             var snapshotVar = snapshot;
@@ -114,12 +113,26 @@ namespace SS.Integration.Adapter.Tests
                     .Returns(JsonConvert.SerializeObject(dic, Formatting.Indented));
             }
 
-            ActorOfAsTestActorRef<FixtureStateActor>(
-                Props.Create(() =>
-                    new FixtureStateActor(
-                        SettingsMock.Object,
-                        StoreProviderMock.Object)),
-                FixtureStateActor.ActorName);
+            IActorRef fixtureStateActor;
+            try
+            {
+                fixtureStateActor =
+                    Sys.ActorSelection(FixtureStateActor.Path).ResolveOne(TimeSpan.FromSeconds(5)).Result;
+            }
+            catch (Exception)
+            {
+                fixtureStateActor = null;
+            }
+
+            if (fixtureStateActor == null)
+            {
+                ActorOfAsTestActorRef<FixtureStateActor>(
+                    Props.Create(() =>
+                        new FixtureStateActor(
+                            SettingsMock.Object,
+                            StoreProviderMock.Object)),
+                    FixtureStateActor.ActorName);
+            }
         }
 
         protected IActorRef GetChildActorRef(IActorRef anchorRef, string name)

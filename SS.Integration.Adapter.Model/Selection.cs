@@ -29,12 +29,12 @@ namespace SS.Integration.Adapter.Model
     [Serializable]
     public class Selection
     {
-        private readonly Dictionary<string, string> _Tags;
+        private readonly Dictionary<string, string> _tags;
         private string _OverridenName;
 
         public Selection()
         {
-            _Tags = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+            _tags = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
             _OverridenName = null;
         }
 
@@ -126,13 +126,13 @@ namespace SS.Integration.Adapter.Model
         {
             get
             {
-                return _Tags.Keys;
+                return _tags.Keys;
             }
         }
 
         public bool HasTag(string tagKey)
         {
-            return !string.IsNullOrEmpty(tagKey) && _Tags.ContainsKey(tagKey);
+            return !string.IsNullOrEmpty(tagKey) && _tags.ContainsKey(tagKey);
         }
 
         public void AddOrUpdateTagValue(string tagKey, string tagValue)
@@ -140,20 +140,25 @@ namespace SS.Integration.Adapter.Model
             if (string.IsNullOrEmpty(tagKey))
                 return;
 
-            _Tags[tagKey] = tagValue;
+            _tags[tagKey] = tagValue;
         }
 
         public string GetTagValue(string tagKey)
         {
-            return HasTag(tagKey) ? _Tags[tagKey]?.ToLower() : null;
+            return !string.IsNullOrEmpty(tagKey) && _tags.ContainsKey(tagKey.ToLower()) ? _tags[tagKey.ToLower()] : null;
         }
+
+        public bool IsTagValueMatch(string tagKey, string value, bool caseSensitive = false) =>
+            !string.IsNullOrEmpty(tagKey)
+            && !string.IsNullOrEmpty(value)
+            && value.Equals(GetTagValue(tagKey), caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
 
         [IgnoreDataMember]
         public int TagsCount
         {
             get
             {
-                return _Tags.Count;
+                return _tags.Count;
             }
         }
 
@@ -164,7 +169,7 @@ namespace SS.Integration.Adapter.Model
         {
             get
             {
-                return _Tags;
+                return _tags;
             }
         }
 

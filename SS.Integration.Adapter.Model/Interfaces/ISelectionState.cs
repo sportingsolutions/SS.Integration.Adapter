@@ -77,9 +77,11 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// It returns null if the tag key
         /// does not exist
         /// </summary>
-        /// <param name="TagKey"></param>
+        /// <param name="tagKey"></param>
         /// <returns></returns>
-        string GetTagValue(string TagKey);
+        string GetTagValue(string tagKey);
+
+        bool IsTagValueMatch(string tagKey, string value, bool caseSensitive = false);
 
         /// <summary>
         /// Returns the number of tag associated

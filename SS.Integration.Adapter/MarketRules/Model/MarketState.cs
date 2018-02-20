@@ -126,15 +126,20 @@ namespace SS.Integration.Adapter.MarketRules.Model
             }
         }
 
-        public bool HasTag(string TagKey)
+        public bool HasTag(string tagKey)
         {
-            return _tags.ContainsKey(TagKey);
+            return _tags.ContainsKey(tagKey);
         }
 
-        public string GetTagValue(string TagKey)
+        public string GetTagValue(string tagKey)
         {
-            return _tags.ContainsKey(TagKey) ? _tags[TagKey]?.ToLower() : null;
+            return !string.IsNullOrEmpty(tagKey) && _tags.ContainsKey(tagKey.ToLower()) ? _tags[tagKey.ToLower()] : null;
         }
+
+        public bool IsTagValueMatch(string tagKey, string value, bool caseSensitive = false) => 
+                !string.IsNullOrEmpty(tagKey)
+                && !string.IsNullOrEmpty(value)
+                && value.Equals(GetTagValue(tagKey), caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
 
         public int TagsCount
         {

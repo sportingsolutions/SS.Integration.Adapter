@@ -17,8 +17,10 @@ using System.Reflection;
 using System.Threading;
 using SS.Integration.Adapter.Interface;
 using log4net;
+using SportingSolutions.Udapi.Sdk;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Actors;
+using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 using SS.Integration.Common.Stats;
@@ -62,6 +64,8 @@ namespace SS.Integration.Adapter
             _suspensionManager = suspensionManager ?? throw new ArgumentNullException(nameof(suspensionManager));
             _streamHealthCheckValidation = streamHealthCheckValidation ?? throw new ArgumentNullException(nameof(streamHealthCheckValidation));
             _fixtureValidation = fixtureValidation ?? throw new ArgumentNullException(nameof(fixtureValidation));
+
+            UDAPI.Init(new UdapiConfiguration(_settings));
 
             StateProviderProxy.Init(stateProvider);
 
@@ -138,6 +142,7 @@ namespace SS.Integration.Adapter
                 _platformConnector?.Dispose();
                 _udapiServiceFacade?.Disconnect();
                 AdapterActorSystem.Dispose();
+                UDAPI.Dispose();
             }
             catch (Exception e)
             {
