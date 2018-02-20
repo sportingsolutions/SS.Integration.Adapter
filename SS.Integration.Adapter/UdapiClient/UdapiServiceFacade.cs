@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using SS.Integration.Adapter.Interface;
 using SportingSolutions.Udapi.Sdk;
 using SportingSolutions.Udapi.Sdk.Interfaces;
@@ -82,15 +83,39 @@ namespace SS.Integration.Adapter.UdapiClient
             return _service?.GetFeatures();
         }
 
+        public void Reconnect(Exception reasonException)
+        {
+            _logger.Warn($"Udapi reconnect reason exception={reasonException}");
+            try
+            {
+                Disconnect();
+            }
+            finally
+            {
+                Connect();
+            }
+        }
+
         public List<IResourceFacade> GetResources(string featureName)
         {
             if (_service == null)
                 return null;
 
-            var resourceFacade = new List<IResourceFacade>();
-
-            var udapiFeature = _service.GetFeature(featureName);
-
+            List<IResourceFacade> resourceFacade = null;
+            IFeature udapiFeature = null;
+            try
+            {
+                ;
+                udapiFeature = _service.GetFeature(featureName);
+            }
+            catch (NotAuthenticatedException ex)
+            {
+                Reconnect(ex);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
             if (udapiFeature != null)
             {
                 var udapiResources = udapiFeature.GetResources();
@@ -100,20 +125,37 @@ namespace SS.Integration.Adapter.UdapiClient
             return resourceFacade;
         }
 
+
+
         public IResourceFacade GetResource(string featureName, string resourceName)
         {
             if (_service == null)
                 return null;
 
             IResourceFacade resource = null;
+            IFeature feature = null;
 
-            var feature = _service.GetFeature(featureName);
-
-            var udapiResource = feature?.GetResource(resourceName);
-
-            if (udapiResource != null)
+            try
             {
-                resource = new UdapiResourceFacade(udapiResource, featureName, _reconnectStrategy, _settings.EchoDelay, _settings.EchoInterval);
+                feature = _service.GetFeature(featureName);
+            }
+            catch (NotAuthenticatedException ex)
+            {
+                Reconnect(ex);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
+            if (feature != null)
+            {
+                var udapiResource = feature.GetResource(resourceName);
+
+                if (udapiResource != null)
+                {
+                    resource = new UdapiResourceFacade(udapiResource, featureName, _reconnectStrategy, _settings.EchoDelay, _settings.EchoInterval);
+                }
             }
 
             return resource;
@@ -176,7 +218,7 @@ namespace SS.Integration.Adapter.UdapiClient
                     {
                         _logger.Warn(message);
                     }
-                   
+
                     if (ex as NotAuthenticatedException != null)
                     {
                         connectSession = true;
