@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using SS.Integration.Common.Extensions;
 
 namespace SS.Integration.Adapter.Model
 {
@@ -172,39 +173,27 @@ namespace SS.Integration.Adapter.Model
         /// </summary>
         /// <param name="tagKey"></param>
         /// <returns></returns>
-        public bool HasTag(string tagKey)
-        {
-            return !string.IsNullOrEmpty(tagKey) && _tags.ContainsKey(tagKey);
-        }
+        public bool HasTag(string tagKey, bool keyCaseSensitive = true) => !string.IsNullOrEmpty(tagKey) && _tags.FindKey(tagKey, keyCaseSensitive) != null;
 
         /// <summary>
         /// Returns the value of the given tag.
         /// Null if the tag doesn't exist.
         /// </summary>
         /// <param name="tagKey"></param>
+        /// <param name="keyCaseSensitive"></param>
         /// <returns></returns>
-        public string GetTagValue(string tagKey)
-        {
-            return !string.IsNullOrEmpty(tagKey) && _tags.ContainsKey(tagKey.ToLower()) ? _tags[tagKey.ToLower()] : null;
-        }
+        public string GetTagValue(string tagKey, bool keyCaseSensitive = true) => _tags.GetValue(tagKey, keyCaseSensitive);
 
-        public bool IsTagValueMatch(string tagKey, string value, bool caseSensitive = false) =>
-            !string.IsNullOrEmpty(tagKey)
-            && !string.IsNullOrEmpty(value)
-            && value.Equals(GetTagValue(tagKey), caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
+        public bool IsTagValueMatch(string tagKey, string value, bool valueCaseSensitive = false, bool keyCaseSensitive = true)
+            => _tags.IsValueMatch(tagKey, value, valueCaseSensitive, keyCaseSensitive);
 
         /// <summary>
         /// Allows to add/update a tag
         /// </summary>
-        /// <param name="tagName">Must not be empty or null</param>
+        /// <param name="tagKey">Must not be empty or null</param>
         /// <param name="tagValue"></param>
-        public void AddOrUpdateTagValue(string tagName, string tagValue)
-        {
-            if (string.IsNullOrEmpty(tagName))
-                return;
-
-            _tags[tagName] = tagValue;
-        }
+        /// <param name="keyCaseSensitive"></param>
+        public void AddOrUpdateTagValue(string tagKey, string tagValue, bool keyCaseSensitive = true) => _tags.AddOrUpdateValue(tagKey, tagValue, keyCaseSensitive);
 
         /// <summary>
         /// Returns the list of all tags

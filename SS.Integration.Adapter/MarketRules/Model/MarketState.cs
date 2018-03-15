@@ -284,8 +284,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
                 foreach (var key in market.TagKeys)
                     _tags.Add(key, market.GetTagValue(key));
 
-                if (_tags.ContainsKey("traded_in_play"))
-                    IsTradedInPlay = string.Equals(_tags["traded_in_play"], "true", StringComparison.InvariantCultureIgnoreCase);
+                if (market.HasTag("traded_in_play"))
+                    IsTradedInPlay = market.IsTagValueMatch("traded_in_play", "true", false, false);
             }
             
             // always set to false at each update

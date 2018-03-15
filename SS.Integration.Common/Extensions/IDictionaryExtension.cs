@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace SS.Integration.Common.Extensions
@@ -94,5 +95,54 @@ namespace SS.Integration.Common.Extensions
 
             return false;
         }
+
+        public static string FindKey(this Dictionary<string, object> dic, string key, bool keyCaseSensitive = true)
+        {
+            return dic.Keys.FirstOrDefault(_ => _.Equals(key, keyCaseSensitive
+                ? StringComparison.InvariantCulture
+                : StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        public static string FindKey(this Dictionary<string, string> dic, string key, bool keyCaseSensitive = true)
+        {
+            return dic.Keys.FirstOrDefault(_ => _.Equals(key, keyCaseSensitive
+                ? StringComparison.InvariantCulture
+                : StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        public static string GetValue(this Dictionary<string, string> dic, string key, bool keyCaseSensitive = true)
+        {
+            if (string.IsNullOrEmpty(key))
+                return null;
+
+            var existingKey = dic.FindKey(key, keyCaseSensitive);
+            return !string.IsNullOrEmpty(existingKey)
+                ? dic[existingKey]
+                : null;
+        }
+
+        public static void AddOrUpdateValue(this Dictionary<string, string> dic, string key, string value, bool keyCaseSensitive = true)
+        {
+            if (string.IsNullOrEmpty(key))
+                return ;
+
+            var existingKey = dic.FindKey(key, keyCaseSensitive);
+
+            if (existingKey != null)
+                dic[existingKey] = value;
+        }
+        
+        public static bool IsValueMatch(this Dictionary<string, string> dic, string key, string value, 
+            bool valueCaseSensitive = false, bool keyCaseSensitive = true)
+        {
+            return !string.IsNullOrEmpty(key)
+                && !string.IsNullOrEmpty(value)
+                && value.Equals(GetValue(dic,key, keyCaseSensitive),
+                    valueCaseSensitive
+                        ? StringComparison.InvariantCulture
+                        : StringComparison.InvariantCultureIgnoreCase);
+        }
+
+
     }
 }

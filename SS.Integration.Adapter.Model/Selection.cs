@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using SS.Integration.Common.Extensions;
 
 namespace SS.Integration.Adapter.Model
 {
@@ -130,28 +131,15 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
-        public bool HasTag(string tagKey)
-        {
-            return !string.IsNullOrEmpty(tagKey) && _tags.ContainsKey(tagKey);
-        }
+        public bool HasTag(string tagKey, bool keyCaseSensitive = true) => !string.IsNullOrEmpty(tagKey) && _tags.FindKey(tagKey, keyCaseSensitive) != null;
 
-        public void AddOrUpdateTagValue(string tagKey, string tagValue)
-        {
-            if (string.IsNullOrEmpty(tagKey))
-                return;
+        public void AddOrUpdateTagValue(string tagKey, string tagValue, bool keyCaseSensitive = true) => _tags.AddOrUpdateValue(tagKey, tagValue, keyCaseSensitive);
+        
+        public string GetTagValue(string tagKey, bool keyCaseSensitive = true) => _tags.GetValue(tagKey, keyCaseSensitive);
+        
+        public bool IsTagValueMatch(string tagKey, string value, bool valueCaseSensitive = false, bool keyCaseSensitive = true)
+            => _tags.IsValueMatch(tagKey, value, valueCaseSensitive, keyCaseSensitive);
 
-            _tags[tagKey] = tagValue;
-        }
-
-        public string GetTagValue(string tagKey)
-        {
-            return !string.IsNullOrEmpty(tagKey) && _tags.ContainsKey(tagKey.ToLower()) ? _tags[tagKey.ToLower()] : null;
-        }
-
-        public bool IsTagValueMatch(string tagKey, string value, bool caseSensitive = false) =>
-            !string.IsNullOrEmpty(tagKey)
-            && !string.IsNullOrEmpty(value)
-            && value.Equals(GetTagValue(tagKey), caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
 
         [IgnoreDataMember]
         public int TagsCount
