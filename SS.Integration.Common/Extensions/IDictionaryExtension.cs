@@ -121,7 +121,7 @@ namespace SS.Integration.Common.Extensions
                 : null;
         }
 
-        public static void v(this Dictionary<string, string> dic, string key, string value, bool keyCaseSensitive = true)
+        public static void AddOrUpdateValue(this Dictionary<string, string> dic, string key, string value, bool keyCaseSensitive = true)
         {
             if (string.IsNullOrEmpty(key))
                 return ;
