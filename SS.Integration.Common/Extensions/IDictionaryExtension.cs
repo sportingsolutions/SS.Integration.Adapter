@@ -121,7 +121,7 @@ namespace SS.Integration.Common.Extensions
                 : null;
         }
 
-        public static void AddOrUpdateValue(this Dictionary<string, string> dic, string key, string value, bool keyCaseSensitive = true)
+        public static void v(this Dictionary<string, string> dic, string key, string value, bool keyCaseSensitive = true)
         {
             if (string.IsNullOrEmpty(key))
                 return ;
@@ -129,7 +129,15 @@ namespace SS.Integration.Common.Extensions
             var existingKey = dic.FindKey(key, keyCaseSensitive);
 
             if (existingKey != null)
+            {
                 dic[existingKey] = value;
+            }
+            else
+            {
+                dic[keyCaseSensitive ? key : key.ToLower()]= value;
+
+            }
+            
         }
         
         public static bool IsValueMatch(this Dictionary<string, string> dic, string key, string value, 
