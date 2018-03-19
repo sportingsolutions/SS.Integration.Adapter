@@ -282,7 +282,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
             {
                 _tags = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
                 foreach (var key in market.TagKeys)
-                    _tags.Add(key, market.GetTagValue(key));
+                    _tags.Add(key, market.GetTagValue(key, false));
 
                 if (market.HasTag("traded_in_play"))
                     IsTradedInPlay = market.IsTagValueMatch("traded_in_play", "true", false, false);

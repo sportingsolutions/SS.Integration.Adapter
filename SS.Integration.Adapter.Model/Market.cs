@@ -172,6 +172,7 @@ namespace SS.Integration.Adapter.Model
         /// this method always returns false.
         /// </summary>
         /// <param name="tagKey"></param>
+        /// <param name="keyCaseSensitive"></param>
         /// <returns></returns>
         public bool HasTag(string tagKey, bool keyCaseSensitive = true) => !string.IsNullOrEmpty(tagKey) && _tags.FindKey(tagKey, keyCaseSensitive) != null;
 
