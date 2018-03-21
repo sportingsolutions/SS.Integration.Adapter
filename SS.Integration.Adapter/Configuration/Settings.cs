@@ -137,8 +137,8 @@ namespace SS.Integration.Adapter.Configuration
             value = ConfigurationManager.AppSettings["isSdkServiceCacheEnabled"];
             IsSdkServiceCacheEnabled = !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
 
-            value = ConfigurationManager.AppSettings["FixtureTimeStampDifferenceValue"];
-            FixtureTimeStampDifferenceValue = string.IsNullOrEmpty(value)
+            value = ConfigurationManager.AppSettings["MaxFixtureUpdateDelayInSeconds"];
+            MaxFixtureUpdateDelayInSeconds = string.IsNullOrEmpty(value)
                 ? DEFAULT_FIXTURE_TIMESTAMP_DIFFERECE_VALUE
                 : Convert.ToInt32(value);
 
@@ -215,6 +215,6 @@ namespace SS.Integration.Adapter.Configuration
 
         public bool UseSupervisor { get; private set; }
 
-        public int FixtureTimeStampDifferenceValue { get; private set; }
+        public int MaxFixtureUpdateDelayInSeconds { get; private set; }
     }
 }

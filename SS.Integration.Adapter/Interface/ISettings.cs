@@ -171,6 +171,6 @@ namespace SS.Integration.Adapter.Interface
         /// <summary>
         /// 
         /// </summary>
-        int FixtureTimeStampDifferenceValue { get; }
+        int MaxFixtureUpdateDelayInSeconds { get; }
     }
 }
