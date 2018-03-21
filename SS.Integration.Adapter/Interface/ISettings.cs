@@ -167,5 +167,10 @@ namespace SS.Integration.Adapter.Interface
         /// 
         /// </summary>
         bool IsSdkServiceCacheEnabled { get; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        int FixtureTimeStampDifferenceValue { get; }
     }
 }
