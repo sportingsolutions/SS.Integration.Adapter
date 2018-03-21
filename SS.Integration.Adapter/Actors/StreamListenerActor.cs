@@ -638,18 +638,16 @@ namespace SS.Integration.Adapter.Actors
 
         private void ValidateFixtureTimeStamp(Fixture fixture)
         {
-            _logger.Debug($"Method=ValidateFixtureTimeStamp for {fixture} Entry"); 
+            
             if (fixture.TimeStamp == null)
             {
+                _logger.Warn($"Method=ValidateFixtureTimeStamp for {fixture} fixture.TimeStamp=null");
                 return;
             }
-            _logger.Debug($"Method=ValidateFixtureTimeStamp for {fixture} fixture.TimeStamp not null");
             var timeStamp = fixture.TimeStamp.Value;
-            //      11 12                                       11 41 
-            _logger.Debug($"Method=ValidateFixtureTimeStamp for {fixture} {DateTime.UtcNow},{timeStamp}, {DateTime.UtcNow - timeStamp}");
-            if (DateTime.UtcNow - timeStamp >= TimeSpan.FromSeconds(30))
+            if (DateTime.UtcNow - timeStamp >= TimeSpan.FromSeconds(_settings.FixtureTimeStampDifferenceValue))
             {
-                Suspend();
+                _logger.Warn($"Method=ValidateFixtureTimeStamp for {fixture} DifferenceTime={DateTime.UtcNow - timeStamp}");
             }
         }
 
