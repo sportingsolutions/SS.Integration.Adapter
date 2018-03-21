@@ -636,6 +636,24 @@ namespace SS.Integration.Adapter.Actors
             return snapshot;
         }
 
+        private void ValidateFixtureTimeStamp(Fixture fixture)
+        {
+            _logger.Debug($"Method=ValidateFixtureTimeStamp for {fixture} Entry"); 
+            if (fixture.TimeStamp == null)
+            {
+                return;
+            }
+            _logger.Debug($"Method=ValidateFixtureTimeStamp for {fixture} fixture.TimeStamp not null");
+            var timeStamp = fixture.TimeStamp.Value;
+            //      11 12                                       11 41 
+            _logger.Debug($"Method=ValidateFixtureTimeStamp for {fixture} {DateTime.UtcNow},{timeStamp}, {DateTime.UtcNow - timeStamp}");
+            if (DateTime.UtcNow - timeStamp >= TimeSpan.FromSeconds(30))
+            {
+                Suspend();
+            }
+        }
+
+
         private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool skipMarketRules = false)
         {
             var logString = isFullSnapshot ? "snapshot" : "stream update";
@@ -682,6 +700,7 @@ namespace SS.Integration.Adapter.Actors
                             UpdateReceivedAt = DateTime.UtcNow,
                             PluginMethod = "ProcessSnapshot"
                         });
+                        ValidateFixtureTimeStamp(snapshot);
                         _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
                         _streamStatsActor.Tell(new UpdatePluginStatsFinishMsg
                         {
@@ -707,6 +726,7 @@ namespace SS.Integration.Adapter.Actors
                             UpdateReceivedAt = DateTime.UtcNow,
                             PluginMethod = "ProcessStreamUpdate"
                         });
+                        ValidateFixtureTimeStamp(snapshot);
                         _platformConnector.ProcessStreamUpdate(snapshot, hasEpochChanged);
                         _streamStatsActor.Tell(new UpdatePluginStatsFinishMsg
                         {
