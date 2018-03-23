@@ -343,10 +343,13 @@ namespace SS.Integration.Adapter.Actors
 
         private void StreamUpdateHandler(StreamUpdateMsg msg)
         {
+            var callTime = DateTime.UtcNow;
+            Fixture fixtureDelta = null;
+
             try
             {
                 var streamMessage = msg.Data.FromJson<StreamMessage>();
-                var fixtureDelta = FixtureHelper.GetFixtureDelta(streamMessage);
+                fixtureDelta = FixtureHelper.GetFixtureDelta(streamMessage);
 
                 _logger.Info($"{fixtureDelta} stream update arrived");
 
@@ -401,6 +404,10 @@ namespace SS.Integration.Adapter.Actors
 
                 _erroredException = ex;
                 Become(Errored);
+            }
+            finally
+            {
+                _logger.Debug($"method=StreamUpdateHandler executionTimeInSeconds={(DateTime.UtcNow-callTime).TotalSeconds}  for {fixtureDelta}");
             }
         }
 
