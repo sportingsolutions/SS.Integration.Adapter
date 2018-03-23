@@ -643,6 +643,29 @@ namespace SS.Integration.Adapter.Actors
             return snapshot;
         }
 
+        private void ValidateFixtureTimeStamp(Fixture fixture)
+        {
+            
+            if (fixture.TimeStamp == null)
+            {
+                _logger.Warn($"Method=ValidateFixtureTimeStamp for {fixture} fixture.TimeStamp=null");
+                return;
+            }
+            var timeStamp = fixture.TimeStamp.Value;
+            if (DateTime.UtcNow - timeStamp >= TimeSpan.FromSeconds(_settings.MaxFixtureUpdateDelayInSeconds))
+            {
+                _logger.Warn($"Method=ValidateFixtureTimeStamp for {fixture} DifferenceTime={DateTime.UtcNow - timeStamp}");
+            }
+        }
+
+        private bool ValidateFixture(Fixture fixture, bool isFullSnapshot)
+        {
+            ValidateFixtureTimeStamp(fixture);
+            if (isFullSnapshot && !VerifySequenceOnSnapshot(fixture))
+                return false;
+            return true;
+        }
+
         private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool skipMarketRules = false)
         {
             var logString = isFullSnapshot ? "snapshot" : "stream update";
@@ -654,7 +677,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                if (isFullSnapshot && !VerifySequenceOnSnapshot(snapshot))
+                if (!ValidateFixture(snapshot, isFullSnapshot))
                     return;
 
                 _streamStatsActor.Tell(new UpdateStatsStartMsg
@@ -689,6 +712,7 @@ namespace SS.Integration.Adapter.Actors
                             UpdateReceivedAt = DateTime.UtcNow,
                             PluginMethod = "ProcessSnapshot"
                         });
+
                         _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
                         _streamStatsActor.Tell(new UpdatePluginStatsFinishMsg
                         {
