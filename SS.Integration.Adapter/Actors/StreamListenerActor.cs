@@ -654,13 +654,26 @@ namespace SS.Integration.Adapter.Actors
             var timeStamp = fixture.TimeStamp.Value;
             if (DateTime.UtcNow - timeStamp >= TimeSpan.FromSeconds(_settings.MaxFixtureUpdateDelayInSeconds))
             {
-                _logger.Warn($"Method=ValidateFixtureTimeStamp for {fixture} DifferenceTime={DateTime.UtcNow - timeStamp}");
+                _logger.Warn($"Method=ValidateFixtureTimeStamp for {fixture} DelayInSeconds={(DateTime.UtcNow - timeStamp).TotalSeconds}");
+            }
+            else
+            {
+                _logger.Info($"Method=ValidateFixtureTimeStamp for {fixture} DelayInSeconds={(DateTime.UtcNow - timeStamp).TotalSeconds}"); 
             }
         }
 
         private bool ValidateFixture(Fixture fixture, bool isFullSnapshot)
         {
-            ValidateFixtureTimeStamp(fixture);
+            if (isFullSnapshot)
+            {
+                _logger.Info($"Method=ValidateFixtureTimeStamp will be ignored for snapshot");
+            }
+            else
+            {
+                ValidateFixtureTimeStamp(fixture);
+            }
+            
+            
             if (isFullSnapshot && !VerifySequenceOnSnapshot(fixture))
                 return false;
             return true;
