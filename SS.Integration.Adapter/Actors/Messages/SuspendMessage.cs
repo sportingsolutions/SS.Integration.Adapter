@@ -9,13 +9,12 @@ namespace SS.Integration.Adapter.Actors.Messages
 {
     public class SuspendMessage
     {
-        public bool IsInvalidStream { get; private set; }
 
-        public AddtionalSuspensionReasonInformation OtherSuspensionInfo { get; private set; }
+        public SuspensionReason SuspendReason { get; private set; }
 
-        public SuspendMessage(AddtionalSuspensionReasonInformation otherSuspensionInfo = AddtionalSuspensionReasonInformation.Nothing)
+        public SuspendMessage(SuspensionReason suspendReason)
         {
-            OtherSuspensionInfo = otherSuspensionInfo;
+            SuspendReason = suspendReason;
         }
     }
 }

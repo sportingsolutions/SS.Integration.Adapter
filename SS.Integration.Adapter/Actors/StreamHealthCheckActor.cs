@@ -127,7 +127,7 @@ namespace SS.Integration.Adapter.Actors
                     else
                     {
                         _streamInvalidDetected = true;
-                        Context.Parent.Tell(new SuspendAndReprocessSnapshotMsg(AddtionalSuspensionReasonInformation.InvalidStream));
+                        Context.Parent.Tell(new SuspendAndReprocessSnapshotMsg(SuspensionReason.INVALIDSTREAM));
                     }
                 }
                 else

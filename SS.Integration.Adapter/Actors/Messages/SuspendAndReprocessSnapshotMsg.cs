@@ -18,11 +18,11 @@ namespace SS.Integration.Adapter.Actors.Messages
 {
     internal class SuspendAndReprocessSnapshotMsg
     {
-        public AddtionalSuspensionReasonInformation OtherSuspensionInfo { get; private set; }
+        public SuspensionReason SuspendReason { get; private set; }
 
-        public SuspendAndReprocessSnapshotMsg(AddtionalSuspensionReasonInformation otherSuspensionInfo = AddtionalSuspensionReasonInformation.Nothing)
+        public SuspendAndReprocessSnapshotMsg(SuspensionReason suspendReason)
         {
-            OtherSuspensionInfo = otherSuspensionInfo;
+            SuspendReason = suspendReason;
         }
     }
 }
