@@ -148,7 +148,7 @@ namespace SS.Integration.Adapter.Actors
             OnStateChanged();
 
             Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServer());
-            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
+            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot(otherSuspensionInfo: a.OtherSuspensionInfo));
             Receive<StreamConnectedMsg>(a => Become(Streaming));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
             Receive<StopStreamingMsg>(a => StopStreaming());
@@ -156,7 +156,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
-            Receive<SuspendMessage>(a => Suspend());
+            Receive<SuspendMessage>(a => Suspend(a.OtherSuspensionInfo));
             
             try
             {
@@ -182,7 +182,7 @@ namespace SS.Integration.Adapter.Actors
 
             OnStateChanged();
 
-            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
+            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot(otherSuspensionInfo: a.OtherSuspensionInfo));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
             Receive<StopStreamingMsg>(a => StopStreaming());
             Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
@@ -190,7 +190,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
-            Receive<SuspendMessage>(a => Suspend());
+            Receive<SuspendMessage>(a => Suspend(a.OtherSuspensionInfo));
 
             try
             {
@@ -263,7 +263,7 @@ namespace SS.Integration.Adapter.Actors
 
             OnStateChanged();
 
-            SuspendFixture(SuspensionReason.SUSPENSION);
+            SuspendFixture(SuspensionReason.SUSPENSION, AddtionalSuspensionReasonInformation.InternalError);
             Exception erroredEx;
             RecoverFromErroredState(prevState, out erroredEx);
 
@@ -301,14 +301,14 @@ namespace SS.Integration.Adapter.Actors
                 }
             }
 
-            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
+            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot(otherSuspensionInfo: a.OtherSuspensionInfo));
             Receive<StopStreamingMsg>(a => StopStreaming());
             Receive<StreamUpdateMsg>(a => RecoverFromErroredState(prevState, out erroredEx));
             Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
-            Receive<SuspendMessage>(a => Suspend());
+            Receive<SuspendMessage>(a => Suspend(a.OtherSuspensionInfo));
         }
 
         //No further messages should be accepted, resource has stopped streaming
@@ -364,7 +364,7 @@ namespace SS.Integration.Adapter.Actors
                         return;
                     }
 
-                    SuspendAndReprocessSnapshot();
+                    SuspendAndReprocessSnapshot(otherSuspensionInfo: AddtionalSuspensionReasonInformation.Snapshot);
                     return;
                 }
 
@@ -884,7 +884,7 @@ namespace SS.Integration.Adapter.Actors
             _logger.Info(
                 $"Stream update {fixtureDelta} has epoch change with reason {reason}, the snapshot will be processed instead.");
 
-            SuspendAndReprocessSnapshot(hasEpochChanged);
+            SuspendAndReprocessSnapshot(hasEpochChanged, AddtionalSuspensionReasonInformation.Snapshot);
         }
 
         private void ProcessFixtureDelete(Fixture fixtureDelta)
@@ -955,7 +955,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                SuspendAndReprocessSnapshot(true);
+                SuspendAndReprocessSnapshot(true, AddtionalSuspensionReasonInformation.MatchOver);
             }
             catch (Exception ex)
             {
@@ -976,20 +976,21 @@ namespace SS.Integration.Adapter.Actors
             fixtureStateActor.Tell(new RemoveFixtureStateMsg { FixtureId = _fixtureId });
         }
 
-        private void SuspendAndReprocessSnapshot(bool hasEpochChanged = false)
+        private void SuspendAndReprocessSnapshot(bool hasEpochChanged = false, AddtionalSuspensionReasonInformation otherSuspensionInfo = AddtionalSuspensionReasonInformation.Nothing)
         {
-            SuspendFixture(SuspensionReason.SUSPENSION);
+            SuspendFixture(SuspensionReason.SUSPENSION, otherSuspensionInfo);
             RetrieveAndProcessSnapshot(hasEpochChanged);
         }
 
-        private void Suspend()
+        private void Suspend(AddtionalSuspensionReasonInformation otherSuspensionInfo = AddtionalSuspensionReasonInformation.Nothing)
         {
-            SuspendFixture(SuspensionReason.SUSPENSION);
+            SuspendFixture(SuspensionReason.SUSPENSION, otherSuspensionInfo);
         }
 
-        private void SuspendFixture(SuspensionReason reason)
+        private void SuspendFixture(SuspensionReason reason, AddtionalSuspensionReasonInformation otherSuspensionInfo = AddtionalSuspensionReasonInformation.Nothing)
         {
-            _logger.Info($"Suspending fixtureId={_resource} due reason={reason}");
+            var otherInfo = otherSuspensionInfo != AddtionalSuspensionReasonInformation.Nothing ? $", {otherSuspensionInfo}" : "";
+            _logger.Info($"Suspending fixtureId={_resource} due reason={reason}{otherInfo}");
 
             try
             {

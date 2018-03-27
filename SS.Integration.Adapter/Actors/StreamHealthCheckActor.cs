@@ -17,6 +17,8 @@ using Akka.Actor;
 using log4net;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model.Interfaces;
+
 
 namespace SS.Integration.Adapter.Actors
 {
@@ -125,7 +127,7 @@ namespace SS.Integration.Adapter.Actors
                     else
                     {
                         _streamInvalidDetected = true;
-                        Context.Parent.Tell(new SuspendAndReprocessSnapshotMsg());
+                        Context.Parent.Tell(new SuspendAndReprocessSnapshotMsg(AddtionalSuspensionReasonInformation.InvalidStream));
                     }
                 }
                 else

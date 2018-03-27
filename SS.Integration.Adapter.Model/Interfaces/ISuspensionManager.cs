@@ -25,6 +25,16 @@ namespace SS.Integration.Adapter.Model.Interfaces
         FIXTURE_ERRORED
     }
 
+    public enum AddtionalSuspensionReasonInformation
+    {
+        Nothing,
+        InternalError,
+        Snapshot,
+        SdkError,
+        InvalidStream,
+        MatchOver
+    }
+
     public interface ISuspensionManager
     {
         #region Properties
