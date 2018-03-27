@@ -955,7 +955,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                SuspendAndReprocessSnapshot(SuspensionReason.MATCHOVER, true);
+                SuspendAndReprocessSnapshot(SuspensionReason.MATCH_OVER, true);
             }
             catch (Exception ex)
             {

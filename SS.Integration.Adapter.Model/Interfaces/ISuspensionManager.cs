@@ -25,9 +25,9 @@ namespace SS.Integration.Adapter.Model.Interfaces
         FIXTURE_ERRORED,
         INTERNALERROR,
         SNAPSHOT,
-        SDKERROR,
-        INVALIDSTREAM,
-        MATCHOVER
+        SDK_ERROR,
+        HEALTH_CHECK_FALURE,
+        MATCH_OVER
     }
 
 
