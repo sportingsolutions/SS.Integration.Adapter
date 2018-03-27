@@ -55,6 +55,14 @@ namespace SS.Integration.Adapter
         /// <returns></returns>
         public bool ValidateProcessedSequnce(IResourceFacade resource, StreamListenerState state, int sequence)
         {
+            var rnd = new Random(200);
+            if (rnd.Next() == 100)
+            {
+                _logger.Info($"ValidateProcessedSequnce=false for test purposes {resource}");
+                return false;
+            }
+
+
             if (resource.Content.Sequence - sequence < _settings.StreamSafetyThreshold)
                 return true;
 
