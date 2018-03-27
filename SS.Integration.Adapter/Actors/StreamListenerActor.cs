@@ -148,7 +148,7 @@ namespace SS.Integration.Adapter.Actors
             OnStateChanged();
 
             Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServer());
-            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
+            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot(suspendReason: a.SuspendReason));
             Receive<StreamConnectedMsg>(a => Become(Streaming));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
             Receive<StopStreamingMsg>(a => StopStreaming());
@@ -156,7 +156,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
-            Receive<SuspendMessage>(a => Suspend());
+            Receive<SuspendMessage>(a => Suspend(a.SuspendReason));
             
             try
             {
@@ -182,7 +182,7 @@ namespace SS.Integration.Adapter.Actors
 
             OnStateChanged();
 
-            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
+            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot(suspendReason: a.SuspendReason));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
             Receive<StopStreamingMsg>(a => StopStreaming());
             Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
@@ -190,7 +190,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
-            Receive<SuspendMessage>(a => Suspend());
+            Receive<SuspendMessage>(a => Suspend(a.SuspendReason));
 
             try
             {
@@ -263,7 +263,7 @@ namespace SS.Integration.Adapter.Actors
 
             OnStateChanged();
 
-            SuspendFixture(SuspensionReason.SUSPENSION);
+            SuspendFixture(SuspensionReason.INTERNALERROR);
             Exception erroredEx;
             RecoverFromErroredState(prevState, out erroredEx);
 
@@ -301,14 +301,14 @@ namespace SS.Integration.Adapter.Actors
                 }
             }
 
-            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
+            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot(suspendReason: a.SuspendReason));
             Receive<StopStreamingMsg>(a => StopStreaming());
             Receive<StreamUpdateMsg>(a => RecoverFromErroredState(prevState, out erroredEx));
             Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
-            Receive<SuspendMessage>(a => Suspend());
+            Receive<SuspendMessage>(a => Suspend(a.SuspendReason));
         }
 
         //No further messages should be accepted, resource has stopped streaming
@@ -364,7 +364,7 @@ namespace SS.Integration.Adapter.Actors
                         return;
                     }
 
-                    SuspendAndReprocessSnapshot();
+                    SuspendAndReprocessSnapshot(suspendReason: SuspensionReason.SNAPSHOT);
                     return;
                 }
 
@@ -884,7 +884,7 @@ namespace SS.Integration.Adapter.Actors
             _logger.Info(
                 $"Stream update {fixtureDelta} has epoch change with reason {reason}, the snapshot will be processed instead.");
 
-            SuspendAndReprocessSnapshot(hasEpochChanged);
+            SuspendAndReprocessSnapshot(SuspensionReason.SNAPSHOT, hasEpochChanged);
         }
 
         private void ProcessFixtureDelete(Fixture fixtureDelta)
@@ -955,7 +955,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                SuspendAndReprocessSnapshot(true);
+                SuspendAndReprocessSnapshot(SuspensionReason.MATCHOVER, true);
             }
             catch (Exception ex)
             {
@@ -976,24 +976,24 @@ namespace SS.Integration.Adapter.Actors
             fixtureStateActor.Tell(new RemoveFixtureStateMsg { FixtureId = _fixtureId });
         }
 
-        private void SuspendAndReprocessSnapshot(bool hasEpochChanged = false)
+        private void SuspendAndReprocessSnapshot(SuspensionReason suspendReason, bool hasEpochChanged = false)
         {
-            SuspendFixture(SuspensionReason.SUSPENSION);
+            SuspendFixture(suspendReason);
             RetrieveAndProcessSnapshot(hasEpochChanged);
         }
 
-        private void Suspend()
+        private void Suspend(SuspensionReason suspendReason)
         {
-            SuspendFixture(SuspensionReason.SUSPENSION);
+            SuspendFixture(suspendReason);
         }
 
-        private void SuspendFixture(SuspensionReason reason)
+        private void SuspendFixture(SuspensionReason suspendReason)
         {
-            _logger.Info($"Suspending fixtureId={_resource} due reason={reason}");
+            _logger.Info($"Suspending fixtureId={_resource} due reason={suspendReason}");
 
             try
             {
-                _suspensionManager.Suspend(new Fixture { Id = _fixtureId }, reason);
+                _suspensionManager.Suspend(new Fixture { Id = _fixtureId }, suspendReason);
                 _fixtureIsSuspended = true;
             }
             catch (PluginException ex)

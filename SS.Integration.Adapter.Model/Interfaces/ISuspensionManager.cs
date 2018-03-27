@@ -22,8 +22,14 @@ namespace SS.Integration.Adapter.Model.Interfaces
         DISCONNECT_EVENT,
         FIXTURE_DELETED,
         FIXTURE_DISPOSING,
-        FIXTURE_ERRORED
+        FIXTURE_ERRORED,
+        INTERNALERROR,
+        SNAPSHOT,
+        SDKERROR,
+        INVALIDSTREAM,
+        MATCHOVER
     }
+
 
     public interface ISuspensionManager
     {
