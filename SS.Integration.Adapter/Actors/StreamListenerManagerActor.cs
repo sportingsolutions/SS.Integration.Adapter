@@ -328,7 +328,7 @@ namespace SS.Integration.Adapter.Actors
                 foreach (var sl in streamListeners)
                 {
                     IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(sl));
-                    streamListenerActor.Tell(new SuspendMessage());
+                    streamListenerActor.Tell(new SuspendMessage(SuspensionReason.SDK_ERROR));
                 }
             }
         }

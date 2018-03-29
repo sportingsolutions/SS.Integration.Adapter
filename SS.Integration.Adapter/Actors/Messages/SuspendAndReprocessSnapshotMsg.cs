@@ -12,9 +12,17 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using SS.Integration.Adapter.Model.Interfaces;
+
 namespace SS.Integration.Adapter.Actors.Messages
 {
     internal class SuspendAndReprocessSnapshotMsg
     {
+        public SuspensionReason SuspendReason { get; private set; }
+
+        public SuspendAndReprocessSnapshotMsg(SuspensionReason suspendReason)
+        {
+            SuspendReason = suspendReason;
+        }
     }
 }
