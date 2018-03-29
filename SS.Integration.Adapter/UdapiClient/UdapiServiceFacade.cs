@@ -29,14 +29,23 @@ namespace SS.Integration.Adapter.UdapiClient
         private readonly ILog _logger = LogManager.GetLogger(typeof(UdapiServiceFacade));
 
         private readonly SessionContainer _sessionContainer;
+        private readonly SessionContainer _reservedSessionContainer;
+
         private readonly ISettings _settings;
         private IService _service;
+
         private bool _isClosing;
         private readonly IReconnectStrategy _reconnectStrategy;
+
 
         public UdapiServiceFacade(IReconnectStrategy reconnectStrategy, ISettings settings)
         {
             _sessionContainer = new SessionContainer(new Credentials
+            {
+                UserName = settings.User,
+                Password = settings.Password
+            }, new Uri(settings.Url));
+            _reservedSessionContainer = new SessionContainer(new Credentials
             {
                 UserName = settings.User,
                 Password = settings.Password
@@ -77,12 +86,53 @@ namespace SS.Integration.Adapter.UdapiClient
 
         public bool IsConnected { get; private set; }
 
+
+        public IResourceFacade GetResource(string featureName, string resourceName)
+        {
+            try
+            {
+                return _GetResource(featureName, resourceName);
+            }
+            catch (Exception ex)
+            {
+                ChangeSession(ex);
+                return _GetResource(featureName, resourceName);
+            }
+        }
+
         public IEnumerable<IFeature> GetSports()
+        {
+            try
+            {
+                return _GetSports();
+            }
+            catch (Exception ex)
+            {
+                ChangeSession(ex);
+                return _GetSports();
+            }
+        }
+
+        public List<IResourceFacade> GetResources(string featureName)
+        {
+            try
+            {
+                return _GetResources(featureName);
+            }
+            catch (Exception ex)
+            {
+                ChangeSession(ex);
+                return _GetResources(featureName);
+            }
+        }
+
+
+        private IEnumerable<IFeature> _GetSports()
         {
             return _service?.GetFeatures();
         }
 
-        public List<IResourceFacade> GetResources(string featureName)
+        private List<IResourceFacade> _GetResources(string featureName)
         {
             if (_service == null)
                 return null;
@@ -100,7 +150,9 @@ namespace SS.Integration.Adapter.UdapiClient
             return resourceFacade;
         }
 
-        public IResourceFacade GetResource(string featureName, string resourceName)
+
+
+        private IResourceFacade _GetResource(string featureName, string resourceName)
         {
             if (_service == null)
                 return null;
@@ -117,6 +169,13 @@ namespace SS.Integration.Adapter.UdapiClient
             }
 
             return resource;
+        }
+
+
+        public void ChangeSession(Exception ex)
+        {
+            _logger.Warn($"UDAPI session changed, reason={ex}");
+            _service = _reservedSessionContainer.Session.GetService("UnifiedDataAPI");
         }
 
         // TODO: Refactor!
@@ -143,7 +202,9 @@ namespace SS.Integration.Adapter.UdapiClient
                 {
                     if (connectSession)
                     {
+
                         _sessionContainer.ReleaseSession();
+                        _reservedSessionContainer.ReleaseSession();
                     }
 
                     _service = _sessionContainer.Session.GetService("UnifiedDataAPI");
@@ -176,7 +237,7 @@ namespace SS.Integration.Adapter.UdapiClient
                     {
                         _logger.Warn(message);
                     }
-                   
+
                     if (ex as NotAuthenticatedException != null)
                     {
                         connectSession = true;
