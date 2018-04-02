@@ -95,6 +95,8 @@
     <Compile Include="Actors\Messages\RestartStreamListenerMsg.cs" />
     <Compile Include="Actors\Messages\RetrieveAndProcessSnapshotMsg.cs" />
     <Compile Include="Actors\Messages\StreamListenerCreationCompletedMsg.cs" />
+    <Compile Include="Actors\Messages\FixtureStateSequenceMsg.cs" />
+    <Compile Include="Actors\Messages\UpdateFixtureStateSuspendDelayedMsg.cs" />
     <Compile Include="Actors\Messages\UpdateStatsErrorMsg.cs" />
     <Compile Include="Actors\Messages\UpdatePluginStatsFinishMsg.cs" />
     <Compile Include="Actors\Messages\UpdateStatsFinishMsg.cs" />

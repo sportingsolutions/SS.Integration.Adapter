@@ -26,6 +26,7 @@ namespace SS.Integration.Adapter.Model
         public int Epoch { get { return _epoch; } set { _epoch = value; } }
         public MatchStatus MatchStatus { get; set; }
         public string Sport { get; set; }
+        public bool IsSuspendDelayedUpdate { get; set; }
 
         #region IEquatable
 
