@@ -631,7 +631,7 @@ namespace SS.Integration.Adapter.Actors
         {
             if (fixture.TimeStamp == null)
             {
-                _logger.Warn($"ValidateFixtureTimeStamp isn't passed for fixture with fixtureId={_fixtureId}, fixture.TimeStamp=null");
+                _logger.Warn($"ValidateFixtureTimeStamp isn't passed for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}, fixture.TimeStamp=null");
                 return false;
             }
 
@@ -650,7 +650,7 @@ namespace SS.Integration.Adapter.Actors
         {
             if (isFullSnapshot)
             {
-                _logger.Info($"Method=ValidateFixtureTimeStamp will be ignored for snapshot");
+                _logger.Info($"Method=ValidateFixtureTimeStamp will be ignored for snapshot, fixtureId={_fixtureId}, sequence={_currentSequence}");
                 if (!VerifySequenceOnSnapshot(fixture))
                     return false;
             }
@@ -1037,7 +1037,7 @@ namespace SS.Integration.Adapter.Actors
         {
             if (_currentSequence != msg.Sequence)
             {
-                _logger.Info($"MaxFixtureUpdateDelayInSeconds interval ({_settings.MaxFixtureUpdateDelayInSeconds} sec) is passed for other sequence, skipped");
+                _logger.Info($"MaxFixtureUpdateDelayInSeconds interval ({_settings.MaxFixtureUpdateDelayInSeconds} sec) is passed for {msg.Sequence} sequence, revovering skipped, current sequence={_currentSequence}, fixtureId={_fixtureId}");
                 return;
             }
 
