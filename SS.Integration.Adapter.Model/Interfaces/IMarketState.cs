@@ -228,7 +228,8 @@ namespace SS.Integration.Adapter.Model.Interfaces
         /// <returns></returns>
         string GetTagValue(string tagKey);
 
-        bool IsTagValueMatch(string tagKey, string value, bool caseSensitive = false);
+        bool IsTagValueMatch(string tagKey, string value);
+        bool IsTagValueMatch(string tagKey, string value, bool caseSensitive);
 
         /// <summary>
         /// 

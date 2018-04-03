@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Security.Policy;
 using SS.Integration.Common.Extensions;
 
 namespace SS.Integration.Adapter.Model
@@ -174,7 +175,8 @@ namespace SS.Integration.Adapter.Model
         /// <param name="tagKey"></param>
         /// <param name="keyCaseSensitive"></param>
         /// <returns></returns>
-        public bool HasTag(string tagKey, bool keyCaseSensitive = true) => !string.IsNullOrEmpty(tagKey) && _tags.FindKey(tagKey, keyCaseSensitive) != null;
+        public bool HasTag(string tagKey) => HasTag(tagKey, true);
+        public bool HasTag(string tagKey, bool keyCaseSensitive) => !string.IsNullOrEmpty(tagKey) && _tags.FindKey(tagKey, keyCaseSensitive) != null;
 
         /// <summary>
         /// Returns the value of the given tag.
@@ -183,7 +185,8 @@ namespace SS.Integration.Adapter.Model
         /// <param name="tagKey"></param>
         /// <param name="keyCaseSensitive"></param>
         /// <returns></returns>
-        public string GetTagValue(string tagKey, bool keyCaseSensitive = true) => _tags.GetValue(tagKey, keyCaseSensitive);
+        public string GetTagValue(string tagKey) => GetTagValue(tagKey, true);
+        public string GetTagValue(string tagKey, bool keyCaseSensitive) => _tags.GetValue(tagKey, keyCaseSensitive);
 
         public bool IsTagValueMatch(string tagKey, string value, bool valueCaseSensitive = false, bool keyCaseSensitive = true)
             => _tags.IsValueMatch(tagKey, value, valueCaseSensitive, keyCaseSensitive);
@@ -194,7 +197,8 @@ namespace SS.Integration.Adapter.Model
         /// <param name="tagKey">Must not be empty or null</param>
         /// <param name="tagValue"></param>
         /// <param name="keyCaseSensitive"></param>
-        public void AddOrUpdateTagValue(string tagKey, string tagValue, bool keyCaseSensitive = true) => _tags.AddOrUpdateValue(tagKey, tagValue, keyCaseSensitive);
+        public void AddOrUpdateTagValue(string tagKey, string tagValue) => AddOrUpdateTagValue(tagKey, tagValue, true);
+        public void AddOrUpdateTagValue(string tagKey, string tagValue, bool keyCaseSensitive) => _tags.AddOrUpdateValue(tagKey, tagValue, keyCaseSensitive);
 
         /// <summary>
         /// Returns the list of all tags
