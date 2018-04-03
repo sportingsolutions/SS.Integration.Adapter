@@ -639,10 +639,11 @@ namespace SS.Integration.Adapter.Actors
 
             if (DateTime.UtcNow - timeStamp >= TimeSpan.FromSeconds(_settings.MaxFixtureUpdateDelayInSeconds))
             {
-                _logger.Info($"ValidateFixtureTimeStamp isn't passed for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}, " +
+                _logger.Warn($"ValidateFixtureTimeStamp isn't passed for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}, " +
                      $"delay={(DateTime.UtcNow - timeStamp).TotalSeconds} sec");
                 return false;
             }
+            _logger.Info($"ValidateFixtureTimeStamp successfully passed for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}");
             return true;
         }
 
@@ -1036,7 +1037,7 @@ namespace SS.Integration.Adapter.Actors
         {
             if (_currentSequence != msg.Sequence)
             {
-                _logger.Info($"MaxFixtureUpdateDelayInSeconds interval ({_settings.MaxFixtureUpdateDelayInSeconds} sec) is passed for {msg.Sequence} sequence, revovering skipped, current sequence={_currentSequence}, fixtureId={_fixtureId}");
+                _logger.Warn($"MaxFixtureUpdateDelayInSeconds interval ({_settings.MaxFixtureUpdateDelayInSeconds} sec) is passed for {msg.Sequence} sequence, revovering skipped, current sequence={_currentSequence}, fixtureId={_fixtureId}");
                 return;
             }
 
