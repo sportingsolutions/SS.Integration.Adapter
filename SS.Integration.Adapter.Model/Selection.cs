@@ -131,11 +131,14 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
-        public bool HasTag(string tagKey, bool keyCaseSensitive = true) => !string.IsNullOrEmpty(tagKey) && _tags.FindKey(tagKey, keyCaseSensitive) != null;
+        public bool HasTag(string tagKey) => HasTag(tagKey, true);
+        public bool HasTag(string tagKey, bool keyCaseSensitive) => !string.IsNullOrEmpty(tagKey) && _tags.FindKey(tagKey, keyCaseSensitive) != null;
 
-        public void AddOrUpdateTagValue(string tagKey, string tagValue, bool keyCaseSensitive = true) => _tags.AddOrUpdateValue(tagKey, tagValue, keyCaseSensitive);
-        
-        public string GetTagValue(string tagKey, bool keyCaseSensitive = true) => _tags.GetValue(tagKey, keyCaseSensitive);
+        public void AddOrUpdateTagValue(string tagKey, string tagValue) => AddOrUpdateTagValue(tagKey, tagValue, true);
+        public void AddOrUpdateTagValue(string tagKey, string tagValue, bool keyCaseSensitive) => _tags.AddOrUpdateValue(tagKey, tagValue, keyCaseSensitive);
+
+        public string GetTagValue(string tagKey) => GetTagValue(tagKey, true);
+        public string GetTagValue(string tagKey, bool keyCaseSensitive) => _tags.GetValue(tagKey, keyCaseSensitive);
         
         public bool IsTagValueMatch(string tagKey, string value, bool valueCaseSensitive = false, bool keyCaseSensitive = true)
             => _tags.IsValueMatch(tagKey, value, valueCaseSensitive, keyCaseSensitive);
