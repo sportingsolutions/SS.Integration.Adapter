@@ -1045,8 +1045,9 @@ namespace SS.Integration.Adapter.Actors
                $"fixtureId={_fixtureId}, sequence={_currentSequence}");
             var fixtureState = GetFixtureState();
             UnsuspendFixture(fixtureState);
-            RetrieveAndProcessSnapshot();
             UpdateIsSuspendDelayedFlag(false);
+            if (fixtureState.MatchStatus != MatchStatus.MatchOver)
+                RetrieveAndProcessSnapshot();
         }
 
         private FixtureState GetFixtureState()
