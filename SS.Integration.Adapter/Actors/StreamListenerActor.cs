@@ -651,8 +651,7 @@ namespace SS.Integration.Adapter.Actors
             if (isFullSnapshot)
             {
                 _logger.Info($"Method=ValidateFixtureTimeStamp will be ignored for snapshot, fixtureId={_fixtureId}, sequence={_currentSequence}");
-                if (!VerifySequenceOnSnapshot(fixture))
-                    return false;
+                return VerifySequenceOnSnapshot(fixture);
             }
 
             return ValidateFixtureTimeStamp(fixture);
