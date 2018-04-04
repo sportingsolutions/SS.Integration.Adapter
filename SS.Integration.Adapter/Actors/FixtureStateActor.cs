@@ -137,7 +137,6 @@ namespace SS.Integration.Adapter.Actors
                 return;
 
             fixtureState.IsSuspendDelayedUpdate = msg.IsSuspendDelayedUpdate;
-            _fixturesState[msg.FixtureId] = fixtureState;
         }
 
         private void RemoveFixtureStateMsgHandler(RemoveFixtureStateMsg msg)
