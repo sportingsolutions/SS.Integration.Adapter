@@ -193,7 +193,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.MATCH_OVER),
                         Times.Once);
                     StateManagerMock.Verify(a =>
                             a.ClearState(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
@@ -636,7 +636,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.SNAPSHOT),
                         Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
@@ -736,7 +736,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.SNAPSHOT),
                         Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
@@ -836,7 +836,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.SNAPSHOT),
                         Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
@@ -930,7 +930,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.SNAPSHOT),
                         Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
@@ -1223,7 +1223,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Exactly(2));
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.INTERNALERROR),
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
@@ -1338,7 +1338,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.INTERNALERROR),
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
@@ -1466,7 +1466,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.INTERNALERROR),
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
@@ -1520,7 +1520,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Exactly(2));
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.INTERNALERROR),
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
@@ -1616,7 +1616,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.INTERNALERROR),
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
@@ -2086,7 +2086,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.SNAPSHOT),
                         Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
@@ -2204,7 +2204,7 @@ namespace SS.Integration.Adapter.Tests
                     Assert.NotNull(streamListenerActor);
 
                     resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
-                    //resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Once);
+                    resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Once);
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
                         Times.Exactly(2));
