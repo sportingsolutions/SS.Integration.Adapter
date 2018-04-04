@@ -201,9 +201,19 @@ namespace SS.Integration.Adapter.Actors
                         FixtureId = _fixtureId,
                         FixtureStatus = _resource.MatchStatus.ToString()
                     };
+
+                _logger.Debug($"Sending streamConnectedMsg to streamHealthCheckActor for fixtureId={_fixtureId}, sequence={_currentSequence}");
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
 
-                var fixtureState = GetFixtureState();
+                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+                var fixtureState =
+                    fixtureStateActor
+                        .Ask<FixtureState>(
+                            new GetFixtureStateMsg { FixtureId = _fixtureId },
+                            TimeSpan.FromSeconds(10))
+                        .Result;
+
+                //var fixtureState = GetFixtureState();
 
                 if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
                 {
@@ -217,6 +227,7 @@ namespace SS.Integration.Adapter.Actors
 
                 Stash.UnstashAll();
 
+                _logger.Debug($"Sending streamConnectedMsg to Context.Parent ({Context.Parent.GetType()}) for fixtureId={_fixtureId}, sequence={_currentSequence}");
                 Context.Parent.Tell(streamConnectedMsg);
                 _isInitializing = false;
             }
@@ -413,7 +424,15 @@ namespace SS.Integration.Adapter.Actors
             {
                 _logger.Warn($"Stream got disconnected for {_resource}");
 
-                var fixtureState = GetFixtureState();
+                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+                var fixtureState =
+                    fixtureStateActor
+                        .Ask<FixtureState>(
+                            new GetFixtureStateMsg { FixtureId = _fixtureId },
+                            TimeSpan.FromSeconds(10))
+                        .Result;
+
+                //var fixtureState = GetFixtureState();
 
                 if (_streamHealthCheckValidation.ShouldSuspendOnDisconnection(fixtureState, _fixtureStartTime))
                 {
@@ -484,7 +503,16 @@ namespace SS.Integration.Adapter.Actors
                 Receive<ClearFixtureStateMsg>(a => ClearState(true));
                 Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
 
-                var fixtureState = GetFixtureState();
+                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+                var fixtureState =
+                    fixtureStateActor
+                        .Ask<FixtureState>(
+                            new GetFixtureStateMsg { FixtureId = _fixtureId },
+                            TimeSpan.FromSeconds(10))
+                        .Result;
+
+
+                //var fixtureState = GetFixtureState();
 
                 _currentEpoch = fixtureState?.Epoch ?? -1;
                 _currentSequence = _resource.Content.Sequence;
@@ -555,6 +583,7 @@ namespace SS.Integration.Adapter.Actors
                     $"Newer snapshot {snapshot} was already processed on another thread, current sequence={_currentSequence}");
                 return false;
             }
+            _logger.Debug($"VerifySequenceOnSnapshot successfully passed for fixtureId={snapshot.Id}, sequence={_currentSequence}");
 
             return true;
         }
@@ -643,7 +672,7 @@ namespace SS.Integration.Adapter.Actors
                      $"delay={(DateTime.UtcNow - timeStamp).TotalSeconds} sec");
                 return false;
             }
-            _logger.Info($"ValidateFixtureTimeStamp successfully passed for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}");
+            _logger.Debug($"ValidateFixtureTimeStamp successfully passed for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}");
             return true;
         }
 
@@ -791,6 +820,8 @@ namespace SS.Integration.Adapter.Actors
         {
             ActorSelection supervisorActor = Context.System.ActorSelection("/user/SupervisorActor");
             MatchStatus matchStatus;
+            _logger.Debug($"Updating supervisor state for {snapshot}");
+       
             supervisorActor.Tell(new UpdateSupervisorStateMsg
             {
                 FixtureId = snapshot.Id,
@@ -823,6 +854,7 @@ namespace SS.Integration.Adapter.Actors
 
             if (fixtureDelta.IsDeleted)
             {
+                // $"{_resource} with id={_resource.Id} has been deleted from the GTP Fixture Factory. Suspending all markets and stopping the stream.");
                 ProcessFixtureDelete(fixtureDelta);
                 UpdateSupervisorState(fixtureDelta, false);
                 StopStreaming();
@@ -862,6 +894,7 @@ namespace SS.Integration.Adapter.Actors
 
                 if (fixtureDelta.IsMatchOver)
                 {
+                    //logger.Info($"{_resource} is Match Over. Suspending all markets and stopping the stream.");
                     ProcessMatchOver();
                     StopStreaming();
                     return;
@@ -883,7 +916,7 @@ namespace SS.Integration.Adapter.Actors
         private void ProcessFixtureDelete(Fixture fixtureDelta)
         {
             _logger.Info(
-                $"{_resource} has been deleted from the GTP Fixture Factory. Suspending all markets and stopping the stream.");
+                $"{_resource} with id={_resource.Id} has been deleted from the GTP Fixture Factory. Suspending all markets and stopping the stream.");
 
             Fixture fixtureDeleted = new Fixture
             {
@@ -961,6 +994,7 @@ namespace SS.Integration.Adapter.Actors
         {
             if (stopStreaming)
             {
+                _logger.Debug($"Clearing state, stopping streaming for fixtureId={_fixtureId}, sequence={_currentSequence}");
                 StopStreaming();
             }
 
@@ -1043,7 +1077,16 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Info($"MaxFixtureUpdateDelayInSeconds interval ({_settings.MaxFixtureUpdateDelayInSeconds} sec) is passed, recovering fixture, " +
                $"fixtureId={_fixtureId}, sequence={_currentSequence}");
-            var fixtureState = GetFixtureState();
+
+            var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+            var fixtureState =
+                    fixtureStateActor
+                        .Ask<FixtureState>(
+                            new GetFixtureStateMsg { FixtureId = _fixtureId },
+                            TimeSpan.FromSeconds(10))
+                        .Result;
+
+                //var fixtureState = GetFixtureState();
             UnsuspendFixture(fixtureState);
             UpdateIsSuspendDelayedFlag(false);
             if (fixtureState.MatchStatus != MatchStatus.MatchOver)
