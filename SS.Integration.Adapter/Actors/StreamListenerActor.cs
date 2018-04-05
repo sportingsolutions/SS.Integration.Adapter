@@ -684,9 +684,9 @@ namespace SS.Integration.Adapter.Actors
                     return;
                 }
 
-                if (_fixtureIsSuspended)
+                var fixtureState = GetFixtureState();
+                if (_fixtureIsSuspended && fixtureState.IsSuspendDelayedUpdate)
                 {
-                    var fixtureState = GetFixtureState();
                     UpdateIsSuspendDelayedFlag(snapshot.Sequence, false);
                     UnsuspendFixture(fixtureState);
                 }
