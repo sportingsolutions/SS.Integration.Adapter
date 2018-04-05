@@ -549,46 +549,6 @@ namespace SS.Integration.Adapter.Actors
             _logger.Debug($"Started streaming for {_resource} - resource has sequence={_resource.Content.Sequence}");
         }
 
-        private bool VerifySequenceOnSnapshot(Fixture snapshot)
-        {
-            if (snapshot.Sequence < _lastSequenceProcessedInSnapshot)
-            {
-                _logger.Warn(
-                    $"Newer snapshot {snapshot} was already processed on another thread, current sequence={_currentSequence}");
-                return false;
-            }
-            _logger.Debug($"VerifySequenceOnSnapshot successfully passed for fixtureId={snapshot.Id}, sequence={_currentSequence}");
-
-            return true;
-        }
-
-        private void UnsuspendFixture(FixtureState state)
-        {
-            _logger.Debug($"Unsuspending fixtureId={_fixtureId}, sequence={state.Sequence}");
-            Fixture fixture = new Fixture
-            {
-                Id = _fixtureId,
-                Sequence = -1
-            };
-
-            if (state != null)
-            {
-                fixture.Sequence = state.Sequence;
-                fixture.MatchStatus = state.MatchStatus.ToString();
-            }
-
-            try
-            {
-                _suspensionManager.Unsuspend(fixture);
-                _fixtureIsSuspended = false;
-            }
-            catch (PluginException ex)
-            {
-                UpdateStatsError(ex);
-                throw;
-            }
-        }
-
         private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false, bool skipMarketRules = false)
         {
             var snapshot = RetrieveSnapshot();
@@ -631,8 +591,25 @@ namespace SS.Integration.Adapter.Actors
             return snapshot;
         }
 
-        private bool ValidateFixtureTimeStamp(Fixture fixture)
+        private bool ValidateFixture(Fixture fixture, bool isFullSnapshot)
         {
+            if (!ValidateFixtureTimeStamp(fixture, isFullSnapshot))
+                return false;
+
+            if (!VerifySequenceOnSnapshot(fixture, isFullSnapshot))
+                return false;
+
+            return true;
+        }
+
+        private bool ValidateFixtureTimeStamp(Fixture fixture, bool isFullSnapshot)
+        {
+            if (isFullSnapshot)
+            {
+                _logger.Info($"Method=ValidateFixtureTimeStamp will be ignored for snapshot, fixtureId={_fixtureId}, sequence={_currentSequence}");
+                return true;
+            }
+
             if (fixture.TimeStamp == null)
             {
                 _logger.Warn($"ValidateFixtureTimeStamp failed for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}, fixture.TimeStamp=null");
@@ -647,20 +624,28 @@ namespace SS.Integration.Adapter.Actors
                      $"delay={(DateTime.UtcNow - timeStamp).TotalSeconds} sec");
                 return false;
             }
-            _logger.Debug($"ValidateFixtureTimeStamp successfully passed for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}, " + 
+            _logger.Debug($"ValidateFixtureTimeStamp successfully passed for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}, " +
                 $"delay={(DateTime.UtcNow - timeStamp).TotalSeconds} sec");
             return true;
         }
 
-        private bool ValidateFixture(Fixture fixture, bool isFullSnapshot)
+        private bool VerifySequenceOnSnapshot(Fixture snapshot, bool isFullSnapshot)
         {
-            if (isFullSnapshot)
+            if (!isFullSnapshot)
             {
-                _logger.Info($"Method=ValidateFixtureTimeStamp will be ignored for snapshot, fixtureId={_fixtureId}, sequence={_currentSequence}");
-                return VerifySequenceOnSnapshot(fixture);
+                _logger.Info($"Method=VerifySequenceOnSnapshot will be ignored for not snapshot, fixtureId={_fixtureId}, sequence={_currentSequence}");
+                return true;
             }
 
-            return ValidateFixtureTimeStamp(fixture);
+            if (snapshot.Sequence < _lastSequenceProcessedInSnapshot)
+            {
+                _logger.Warn(
+                    $"Newer snapshot {snapshot} was already processed on another thread, current sequence={_currentSequence}");
+                return false;
+            }
+            _logger.Debug($"VerifySequenceOnSnapshot successfully passed for fixtureId={snapshot.Id}, sequence={_currentSequence}");
+
+            return true;
         }
 
         private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool skipMarketRules = false)
@@ -1004,6 +989,33 @@ namespace SS.Integration.Adapter.Actors
             {
                 _suspensionManager.Suspend(new Fixture { Id = _fixtureId }, suspendReason);
                 _fixtureIsSuspended = true;
+            }
+            catch (PluginException ex)
+            {
+                UpdateStatsError(ex);
+                throw;
+            }
+        }
+
+        private void UnsuspendFixture(FixtureState state)
+        {
+            _logger.Debug($"Unsuspending fixtureId={_fixtureId}, sequence={state.Sequence}");
+            Fixture fixture = new Fixture
+            {
+                Id = _fixtureId,
+                Sequence = -1
+            };
+
+            if (state != null)
+            {
+                fixture.Sequence = state.Sequence;
+                fixture.MatchStatus = state.MatchStatus.ToString();
+            }
+
+            try
+            {
+                _suspensionManager.Unsuspend(fixture);
+                _fixtureIsSuspended = false;
             }
             catch (PluginException ex)
             {
