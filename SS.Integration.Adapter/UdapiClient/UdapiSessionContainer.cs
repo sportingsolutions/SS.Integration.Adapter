@@ -27,9 +27,11 @@ namespace SS.Integration.Adapter.UdapiClient
         private static readonly object SyncRoot = new Object();
         private readonly ICredentials _credentials;
         private readonly Uri _url;
+        public Guid Guid { get; private set; }
 
         public SessionContainer(ICredentials credentials, Uri url)
         {
+            Guid = Guid.NewGuid();
             _credentials = credentials;
             _url = url;
         }

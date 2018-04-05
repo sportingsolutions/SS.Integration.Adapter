@@ -28,9 +28,17 @@ namespace SS.Integration.Adapter.UdapiClient
     {
         private readonly ILog _logger = LogManager.GetLogger(typeof(UdapiServiceFacade));
 
+        private class UdapiSessionPool: List<SessionContainer>
+        { 
+            public int CurrentSessionNumber;
+        }
+
+
+        private readonly UdapiSessionPool _poolSession = new UdapiSessionPool();
+
         private readonly SessionContainer _sessionContainer;
         private readonly SessionContainer _reservedSessionContainer;
-
+        private const int SESSIONPOOLSIZE = 5;
         private readonly ISettings _settings;
         private IService _service;
 
@@ -40,16 +48,24 @@ namespace SS.Integration.Adapter.UdapiClient
 
         public UdapiServiceFacade(IReconnectStrategy reconnectStrategy, ISettings settings)
         {
-            _sessionContainer = new SessionContainer(new Credentials
+            for (int i = 0; i <= SESSIONPOOLSIZE-1; i++)
+            {
+                var session = new SessionContainer(new Credentials
+                {
+                    UserName = settings.User,
+                    Password = settings.Password
+                }, new Uri(settings.Url));
+                _poolSession.Add(session);
+                _poolSession.CurrentSessionNumber = 0;
+                _logger.Warn(session.Guid);
+            }
+            
+            /*_reservedSessionContainer = new SessionContainer(new Credentials
             {
                 UserName = settings.User,
                 Password = settings.Password
             }, new Uri(settings.Url));
-            _reservedSessionContainer = new SessionContainer(new Credentials
-            {
-                UserName = settings.User,
-                Password = settings.Password
-            }, new Uri(settings.Url));
+            */
 
             _settings = settings;
             _isClosing = false;
@@ -91,10 +107,12 @@ namespace SS.Integration.Adapter.UdapiClient
         {
             try
             {
+                _logger.Warn("Method=GetResource entry");
                 return _GetResource(featureName, resourceName);
             }
             catch (Exception ex)
             {
+                _logger.Warn("Method=GetResource exception entry");
                 ChangeSession(ex);
                 return _GetResource(featureName, resourceName);
             }
@@ -104,10 +122,12 @@ namespace SS.Integration.Adapter.UdapiClient
         {
             try
             {
+                _logger.Warn("Method=GetSports entry");
                 return _GetSports();
             }
             catch (Exception ex)
             {
+                _logger.Warn("Method=GetSports exception entry");
                 ChangeSession(ex);
                 return _GetSports();
             }
@@ -117,10 +137,12 @@ namespace SS.Integration.Adapter.UdapiClient
         {
             try
             {
+                _logger.Warn("Method=GetResources entry");
                 return _GetResources(featureName);
             }
             catch (Exception ex)
             {
+                _logger.Warn("Method=GetResources exception entry");
                 ChangeSession(ex);
                 return _GetResources(featureName);
             }
@@ -174,8 +196,18 @@ namespace SS.Integration.Adapter.UdapiClient
 
         public void ChangeSession(Exception ex)
         {
-            _logger.Warn($"UDAPI session changed, reason={ex}");
-            _service = _reservedSessionContainer.Session.GetService("UnifiedDataAPI");
+            _logger.Warn($"Method=ChangeSession entry, currentSession={_poolSession[_poolSession.CurrentSessionNumber].Guid}, currentSessionNumber={_poolSession.CurrentSessionNumber} will be changed");
+            if (_poolSession.CurrentSessionNumber < SESSIONPOOLSIZE - 1)
+            {
+                _poolSession.CurrentSessionNumber++;
+            }
+            else
+            {
+                _poolSession.CurrentSessionNumber = 0;
+                throw ex;
+            }
+            _service = _poolSession[_poolSession.CurrentSessionNumber].Session.GetService("UnifiedDataAPI");
+            _logger.Warn($"Method=ChangeSession , UDAPI session changed to Session={_poolSession[_poolSession.CurrentSessionNumber].Guid}, SessionNumber={_poolSession.CurrentSessionNumber}, reason={ex}");
         }
 
         // TODO: Refactor!
@@ -203,11 +235,15 @@ namespace SS.Integration.Adapter.UdapiClient
                     if (connectSession)
                     {
 
-                        _sessionContainer.ReleaseSession();
-                        _reservedSessionContainer.ReleaseSession();
+                        for (int i = 0; i <= SESSIONPOOLSIZE-1; i++)
+                        {
+                            _poolSession[i].ReleaseSession();
+                        }
+                        
                     }
 
-                    _service = _sessionContainer.Session.GetService("UnifiedDataAPI");
+                    //_service = _sessionContainer.Session.GetService("UnifiedDataAPI");
+                    _service = _poolSession[_poolSession.CurrentSessionNumber].Session.GetService("UnifiedDataAPI");
 
                     if (_service == null)
                     {
