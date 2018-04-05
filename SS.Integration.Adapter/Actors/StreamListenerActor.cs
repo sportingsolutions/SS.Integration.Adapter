@@ -676,9 +676,9 @@ namespace SS.Integration.Adapter.Actors
             {
                 if (!ValidateFixture(snapshot, isFullSnapshot))
                 {
-                    Context.System.Scheduler.ScheduleTellOnce(_settings.MaxFixtureUpdateDelayInSeconds * 1000,
+                    Context.System.Scheduler.ScheduleTellOnce(_settings.DelayedFixtureRecoveryAttemptSchedule * 1000,
                         Self, new FixtureStateSequenceMsg { Sequence = snapshot.Sequence }, Self);
-                    _logger.Info($"Fixture with fixtureId={snapshot.Id} is suspended, recovering for sequence={snapshot.Sequence} is planned after {_settings.MaxFixtureUpdateDelayInSeconds} sec");
+                    _logger.Info($"Fixture with fixtureId={snapshot.Id} is suspended, recovering for sequence={snapshot.Sequence} is planned after {_settings.DelayedFixtureRecoveryAttemptSchedule} sec");
                     UpdateIsSuspendDelayedFlag(snapshot.Sequence, true);
                     SuspendFixture(SuspensionReason.SUSPENSION);
                     return;

@@ -172,5 +172,10 @@ namespace SS.Integration.Adapter.Interface
         /// 
         /// </summary>
         int MaxFixtureUpdateDelayInSeconds { get; }
+
+        /// <summary>
+        /// This flag defines interval to recover fixture
+        /// </summary>
+        int DelayedFixtureRecoveryAttemptSchedule { get; }
     }
 }
