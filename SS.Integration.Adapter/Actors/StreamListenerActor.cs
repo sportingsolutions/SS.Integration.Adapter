@@ -203,18 +203,9 @@ namespace SS.Integration.Adapter.Actors
                         FixtureStatus = _resource.MatchStatus.ToString()
                     };
 
-                _logger.Debug($"Sending streamConnectedMsg to streamHealthCheckActor for fixtureId={_fixtureId}, sequence={_currentSequence}");
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
 
-                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var fixtureState =
-                    fixtureStateActor
-                        .Ask<FixtureState>(
-                            new GetFixtureStateMsg { FixtureId = _fixtureId },
-                            TimeSpan.FromSeconds(10))
-                        .Result;
-
-                //var fixtureState = GetFixtureState();
+                var fixtureState = GetFixtureState();
 
                 if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
                 {
@@ -227,8 +218,6 @@ namespace SS.Integration.Adapter.Actors
                 }
 
                 Stash.UnstashAll();
-
-                _logger.Debug($"Sending streamConnectedMsg to Context.Parent ({Context.Parent.GetType()}) for fixtureId={_fixtureId}, sequence={_currentSequence}");
                 Context.Parent.Tell(streamConnectedMsg);
                 _isInitializing = false;
             }
@@ -425,15 +414,7 @@ namespace SS.Integration.Adapter.Actors
             {
                 _logger.Warn($"Stream got disconnected for {_resource}");
 
-                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var fixtureState =
-                    fixtureStateActor
-                        .Ask<FixtureState>(
-                            new GetFixtureStateMsg { FixtureId = _fixtureId },
-                            TimeSpan.FromSeconds(10))
-                        .Result;
-
-                //var fixtureState = GetFixtureState();
+                var fixtureState = GetFixtureState();
 
                 if (_streamHealthCheckValidation.ShouldSuspendOnDisconnection(fixtureState, _fixtureStartTime))
                 {
@@ -505,16 +486,7 @@ namespace SS.Integration.Adapter.Actors
                 Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
                 Receive<FixtureStateSequenceMsg>(a => AttemptRecoverFixtureState(a));
 
-                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var fixtureState =
-                    fixtureStateActor
-                        .Ask<FixtureState>(
-                            new GetFixtureStateMsg { FixtureId = _fixtureId },
-                            TimeSpan.FromSeconds(10))
-                        .Result;
-
-
-                //var fixtureState = GetFixtureState();
+                var fixtureState = GetFixtureState();
 
                 _currentEpoch = fixtureState?.Epoch ?? -1;
                 _currentSequence = _resource.Content.Sequence;
@@ -714,13 +686,7 @@ namespace SS.Integration.Adapter.Actors
 
                 if (_fixtureIsSuspended)
                 {
-                    var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                    var fixtureState =
-                            fixtureStateActor
-                                .Ask<FixtureState>(
-                                    new GetFixtureStateMsg { FixtureId = _fixtureId },
-                                    TimeSpan.FromSeconds(10))
-                                .Result;
+                    var fixtureState = GetFixtureState();
                     UpdateIsSuspendDelayedFlag(snapshot.Sequence, false);
                     UnsuspendFixture(fixtureState);
                 }
@@ -1011,7 +977,6 @@ namespace SS.Integration.Adapter.Actors
         {
             if (stopStreaming)
             {
-                _logger.Debug($"Clearing state, stopping streaming for fixtureId={_fixtureId}, sequence={_currentSequence}");
                 StopStreaming();
             }
 
@@ -1069,6 +1034,7 @@ namespace SS.Integration.Adapter.Actors
                 _lastSequenceProcessedInSnapshot = snapshot.Sequence;
             }
 
+            
             _currentSequence = snapshot.Sequence;
             _currentEpoch = snapshot.Epoch;
         }
@@ -1094,23 +1060,15 @@ namespace SS.Integration.Adapter.Actors
                 return;
             }
 
-            var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-            var fixtureState =
-                    fixtureStateActor
-                        .Ask<FixtureState>(
-                            new GetFixtureStateMsg { FixtureId = _fixtureId },
-                            TimeSpan.FromSeconds(10))
-                        .Result;
-
+            var fixtureState = GetFixtureState();
 
             UpdateIsSuspendDelayedFlag(_currentSequence, false);
             UnsuspendFixture(fixtureState);
+
             _logger.Info($"MaxFixtureUpdateDelayInSeconds interval ({_settings.MaxFixtureUpdateDelayInSeconds} sec) is passed, recovering fixture, " +
                $"fixtureId={_fixtureId}, sequence={_currentSequence}");
             if (fixtureState.MatchStatus != MatchStatus.MatchOver)
                 RetrieveAndProcessSnapshot();
-
-            //var fixtureState = GetFixtureState();
         }
 
         private FixtureState GetFixtureState()

@@ -113,7 +113,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void UpdateFixtureStateMsgHandler(UpdateFixtureStateMsg msg)
         {
-            _logger.Debug($"Updating state for Fixture fixtureId={msg.FixtureId} sequence={msg.Sequence}");
+            _logger.Debug($"Updating state for fixture with fixtureId={msg.FixtureId}, sequence={msg.Sequence}");
 
             FixtureState fixtureState;
             if (!_fixturesState.TryGetValue(msg.FixtureId, out fixtureState))
@@ -130,7 +130,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void UpdateFixtureStateSuspendDelayed(UpdateFixtureStateSuspendDelayedMsg msg)
         {
-            _logger.Debug($"Updating update suspend flag for Fixture fixtureId={msg.FixtureId}");
+            _logger.Debug($"Updating update suspend flag for fixture with fixtureId={msg.FixtureId}, IsSuspendDelayedUpdate={msg.IsSuspendDelayedUpdate}");
 
             FixtureState fixtureState = null;
             if (!_fixturesState.TryGetValue(msg.FixtureId, out fixtureState))
