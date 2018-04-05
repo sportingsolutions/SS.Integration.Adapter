@@ -124,13 +124,11 @@ namespace SS.Integration.Adapter.Actors
             fixtureState.Sequence = msg.Sequence;
             fixtureState.MatchStatus = msg.Status;
             fixtureState.Epoch = msg.Epoch;
-
-            _fixturesState[msg.FixtureId] = fixtureState;
         }
 
         private void UpdateFixtureStateSuspendDelayed(UpdateFixtureStateSuspendDelayedMsg msg)
         {
-            _logger.Debug($"Updating update suspend flag for fixture with fixtureId={msg.FixtureId}, IsSuspendDelayedUpdate={msg.IsSuspendDelayedUpdate}");
+            _logger.Debug($"Updating IsSuspendDelayedUpdate flag for fixture with fixtureId={msg.FixtureId}, IsSuspendDelayedUpdate={msg.IsSuspendDelayedUpdate}");
 
             FixtureState fixtureState = null;
             if (!_fixturesState.TryGetValue(msg.FixtureId, out fixtureState))
