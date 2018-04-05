@@ -1056,7 +1056,7 @@ namespace SS.Integration.Adapter.Actors
         {
             if (_currentSequence != msg.Sequence)
             {
-                _logger.Warn($"MaxFixtureUpdateDelayInSeconds interval ({_settings.MaxFixtureUpdateDelayInSeconds} sec) is passed for {msg.Sequence} sequence, recovering skipped, current sequence={_currentSequence}, fixtureId={_fixtureId}");
+                _logger.Debug($"MaxFixtureUpdateDelayInSeconds interval ({_settings.MaxFixtureUpdateDelayInSeconds} sec) is passed for {msg.Sequence} sequence, recovering skipped, current sequence={_currentSequence}, fixtureId={_fixtureId}");
                 return;
             }
 
