@@ -86,7 +86,6 @@ namespace SS.Integration.Adapter.Actors
             Receive<RemoveFixtureStateMsg>(a => RemoveFixtureStateMsgHandler(a));
             Receive<WriteStateToFileMsg>(a => WriteStateToFileMsgHandler(a));
             Receive<CleanupStateFilesMsg>(a => CleanupStateFilesMsgHandler(a));
-            Receive<UpdateFixtureStateSuspendDelayedMsg>(a => UpdateFixtureStateSuspendDelayed(a));
         }
 
         #endregion
@@ -124,17 +123,6 @@ namespace SS.Integration.Adapter.Actors
             fixtureState.Sequence = msg.Sequence;
             fixtureState.MatchStatus = msg.Status;
             fixtureState.Epoch = msg.Epoch;
-        }
-
-        private void UpdateFixtureStateSuspendDelayed(UpdateFixtureStateSuspendDelayedMsg msg)
-        {
-            _logger.Debug($"Updating IsSuspendDelayedUpdate flag for fixture with fixtureId={msg.FixtureId}, IsSuspendDelayedUpdate={msg.IsSuspendDelayedUpdate}");
-
-            FixtureState fixtureState = null;
-            if (!_fixturesState.TryGetValue(msg.FixtureId, out fixtureState))
-                return;
-
-            fixtureState.IsSuspendDelayedUpdate = msg.IsSuspendDelayedUpdate;
         }
 
         private void RemoveFixtureStateMsgHandler(RemoveFixtureStateMsg msg)

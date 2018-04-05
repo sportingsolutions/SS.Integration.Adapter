@@ -62,6 +62,7 @@ namespace SS.Integration.Adapter.Actors
         private int _lastSequenceProcessedInSnapshot;
         private DateTime? _fixtureStartTime;
         private bool _fixtureIsSuspended;
+        private bool _isSuspendDelayedUpdate;
         private Exception _erroredException;
         //this field helps track the Stream Listener Actor Initialization 
         //so it can notify the Stream Listener Manager when actor creation failed
@@ -664,15 +665,15 @@ namespace SS.Integration.Adapter.Actors
                     Context.System.Scheduler.ScheduleTellOnce(_settings.DelayedFixtureRecoveryAttemptSchedule * 1000,
                         Self, new FixtureStateSequenceMsg { Sequence = snapshot.Sequence }, Self);
                     _logger.Info($"Fixture with fixtureId={snapshot.Id} is suspended, recovering for sequence={snapshot.Sequence} is planned after {_settings.DelayedFixtureRecoveryAttemptSchedule} sec");
-                    UpdateIsSuspendDelayedFlag(snapshot.Sequence, true);
+                    _isSuspendDelayedUpdate = true;
                     SuspendFixture(SuspensionReason.SUSPENSION);
                     return;
                 }
 
-                var fixtureState = GetFixtureState();
-                if (_fixtureIsSuspended && fixtureState.IsSuspendDelayedUpdate)
+                if (_fixtureIsSuspended && _isSuspendDelayedUpdate)
                 {
-                    UpdateIsSuspendDelayedFlag(snapshot.Sequence, false);
+                    var fixtureState = GetFixtureState();
+                    _isSuspendDelayedUpdate = false;
                     UnsuspendFixture(fixtureState);
                 }
 
@@ -1024,6 +1025,19 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
+        private FixtureState GetFixtureState()
+        {
+            var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+            var fixtureState =
+                fixtureStateActor
+                    .Ask<FixtureState>(
+                        new GetFixtureStateMsg { FixtureId = _fixtureId },
+                        TimeSpan.FromSeconds(10))
+                    .Result;
+            return fixtureState;
+        }
+
+
         private void UpdateFixtureState(Fixture snapshot, bool isSnapshot = false)
         {
             _marketsRuleManager.CommitChanges();
@@ -1051,19 +1065,6 @@ namespace SS.Integration.Adapter.Actors
             _currentEpoch = snapshot.Epoch;
         }
 
-        private void UpdateIsSuspendDelayedFlag(int sequence, bool isSuspend)
-        {
-            var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-            var updateFixtureStateMsg = new UpdateFixtureStateSuspendDelayedMsg
-            {
-                FixtureId = _fixtureId,
-                IsSuspendDelayedUpdate = isSuspend
-            };
-            fixtureStateActor.Tell(updateFixtureStateMsg);
-
-            _currentSequence = sequence;
-        }
-
         private void AttemptRecoverFixtureState(FixtureStateSequenceMsg msg)
         {
             if (_currentSequence != msg.Sequence)
@@ -1074,25 +1075,13 @@ namespace SS.Integration.Adapter.Actors
 
             var fixtureState = GetFixtureState();
 
-            UpdateIsSuspendDelayedFlag(_currentSequence, false);
+            _isSuspendDelayedUpdate = false;
             UnsuspendFixture(fixtureState);
 
             _logger.Info($"MaxFixtureUpdateDelayInSeconds interval ({_settings.MaxFixtureUpdateDelayInSeconds} sec) is passed, recovering fixture, " +
                $"fixtureId={_fixtureId}, sequence={_currentSequence}");
             if (fixtureState.MatchStatus != MatchStatus.MatchOver)
                 RetrieveAndProcessSnapshot();
-        }
-
-        private FixtureState GetFixtureState()
-        {
-            var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-            var fixtureState =
-                fixtureStateActor
-                    .Ask<FixtureState>(
-                        new GetFixtureStateMsg { FixtureId = _fixtureId },
-                        TimeSpan.FromSeconds(10))
-                    .Result;
-            return fixtureState;
         }
 
         private void StopStreaming()
