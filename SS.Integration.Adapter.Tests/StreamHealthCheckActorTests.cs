@@ -417,10 +417,12 @@ namespace SS.Integration.Adapter.Tests
             //
             AwaitAssert(() =>
                 {
+                    /*
                     resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
-                        Times.Exactly(2));
+                       Times.Exactly(2));
+                       */
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
                         Times.Never);
@@ -432,7 +434,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.HEALTH_CHECK_FALURE),
                         Times.Once);
                     Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
                 },
