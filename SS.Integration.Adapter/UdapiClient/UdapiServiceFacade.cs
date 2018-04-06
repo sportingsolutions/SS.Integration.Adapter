@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using SS.Integration.Adapter.Interface;
@@ -88,15 +89,24 @@ namespace SS.Integration.Adapter.UdapiClient
                 return null;
 
             var resourceFacade = new List<IResourceFacade>();
-
-            var udapiFeature = _service.GetFeature(featureName);
-
+            IFeature udapiFeature = null;
+            try
+            {
+                udapiFeature = _service.GetFeature(featureName);
+            }
+            catch (NotAuthenticatedException ex)
+            {
+                Reconnect(ex);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
             if (udapiFeature != null)
             {
                 var udapiResources = udapiFeature.GetResources();
                 resourceFacade.AddRange(udapiResources.Select(udapiResource => new UdapiResourceFacade(udapiResource, featureName, _reconnectStrategy, _settings.EchoDelay, _settings.EchoInterval)));
             }
-
             return resourceFacade;
         }
 
@@ -106,16 +116,25 @@ namespace SS.Integration.Adapter.UdapiClient
                 return null;
 
             IResourceFacade resource = null;
-
-            var feature = _service.GetFeature(featureName);
-
-            var udapiResource = feature?.GetResource(resourceName);
+            IFeature udapiFeature = null;
+            try
+            {
+                udapiFeature = _service.GetFeature(featureName);
+            }
+            catch (NotAuthenticatedException ex)
+            {
+                Reconnect(ex);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            var udapiResource = udapiFeature?.GetResource(resourceName);
 
             if (udapiResource != null)
             {
                 resource = new UdapiResourceFacade(udapiResource, featureName, _reconnectStrategy, _settings.EchoDelay, _settings.EchoInterval);
             }
-
             return resource;
         }
 
@@ -138,7 +157,6 @@ namespace SS.Integration.Adapter.UdapiClient
                         return;
                     }
                 }
-
                 try
                 {
                     if (connectSession)
