@@ -34,6 +34,7 @@ namespace SS.Integration.Adapter.UdapiClient
         private IService _service;
         private bool _isClosing;
         private readonly IReconnectStrategy _reconnectStrategy;
+        public bool IsConnected { get; private set; }
 
         public UdapiServiceFacade(IReconnectStrategy reconnectStrategy, ISettings settings)
         {
@@ -76,11 +77,34 @@ namespace SS.Integration.Adapter.UdapiClient
             _logger.Info("Disconnect from GTP-UDAPI");
         }
 
-        public bool IsConnected { get; private set; }
+        private void Reconnect(Exception reasonException)
+        {
+            _logger.Warn($"Udapi reconnect reason exception={reasonException}");
+            try
+            {
+                Disconnect();
+            }
+            finally
+            {
+                Connect();
+            }
+        }
 
         public IEnumerable<IFeature> GetSports()
         {
+            try
+            {
             return _service?.GetFeatures();
+            }
+            catch (NotAuthenticatedException ex)
+            {
+                Reconnect(ex);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return new List<IFeature>();
         }
 
         public List<IResourceFacade> GetResources(string featureName)
