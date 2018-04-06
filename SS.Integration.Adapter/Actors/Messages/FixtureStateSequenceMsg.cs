@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SS.Integration.Adapter.Actors.Messages
 {
-    internal class FixtureStateSequenceMsg
+    internal class RecoverDelayedFixtureMsg
     {
         public int Sequence { get; set; }
     }

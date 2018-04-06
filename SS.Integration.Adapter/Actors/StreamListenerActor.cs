@@ -158,7 +158,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
             Receive<SuspendMessage>(a => Suspend(a.SuspendReason));
-            Receive<FixtureStateSequenceMsg>(a => AttemptRecoverFixtureState(a));
+            Receive<RecoverDelayedFixtureMsg>(a => AttemptRecoverDelayedFixtureHandler(a));
             
             try
             {
@@ -193,7 +193,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
             Receive<SuspendMessage>(a => Suspend(a.SuspendReason));
-            Receive<FixtureStateSequenceMsg>(a => AttemptRecoverFixtureState(a));
+            Receive<RecoverDelayedFixtureMsg>(a => AttemptRecoverDelayedFixtureHandler(a));
 
             try
             {
@@ -206,7 +206,13 @@ namespace SS.Integration.Adapter.Actors
 
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
 
-                var fixtureState = GetFixtureState();
+                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+                var fixtureState =
+                    fixtureStateActor
+                        .Ask<FixtureState>(
+                            new GetFixtureStateMsg { FixtureId = _fixtureId },
+                            TimeSpan.FromSeconds(10))
+                        .Result;
 
                 if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
                 {
@@ -415,7 +421,13 @@ namespace SS.Integration.Adapter.Actors
             {
                 _logger.Warn($"Stream got disconnected for {_resource}");
 
-                var fixtureState = GetFixtureState();
+                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+                var fixtureState =
+                    fixtureStateActor
+                        .Ask<FixtureState>(
+                            new GetFixtureStateMsg { FixtureId = _fixtureId },
+                            TimeSpan.FromSeconds(10))
+                        .Result;
 
                 if (_streamHealthCheckValidation.ShouldSuspendOnDisconnection(fixtureState, _fixtureStartTime))
                 {
@@ -485,9 +497,15 @@ namespace SS.Integration.Adapter.Actors
                 Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
                 Receive<ClearFixtureStateMsg>(a => ClearState(true));
                 Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
-                Receive<FixtureStateSequenceMsg>(a => AttemptRecoverFixtureState(a));
+                Receive<RecoverDelayedFixtureMsg>(a => AttemptRecoverDelayedFixtureHandler(a));
 
-                var fixtureState = GetFixtureState();
+                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+                var fixtureState =
+                    fixtureStateActor
+                        .Ask<FixtureState>(
+                            new GetFixtureStateMsg { FixtureId = _fixtureId },
+                            TimeSpan.FromSeconds(10))
+                        .Result;
 
                 _currentEpoch = fixtureState?.Epoch ?? -1;
                 _currentSequence = _resource.Content.Sequence;
@@ -607,13 +625,13 @@ namespace SS.Integration.Adapter.Actors
         {
             if (isFullSnapshot)
             {
-                _logger.Info($"Method=ValidateFixtureTimeStamp will be ignored for snapshot, fixtureId={_fixtureId}, sequence={_currentSequence}");
+                _logger.Info($"Method=ValidateFixtureTimeStamp will be ignored for snapshot, fixtureId={_fixtureId}, sequence={fixture.Sequence}");
                 return true;
             }
 
             if (fixture.TimeStamp == null)
             {
-                _logger.Warn($"ValidateFixtureTimeStamp failed for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}, fixture.TimeStamp=null");
+                _logger.Warn($"ValidateFixtureTimeStamp failed for fixture with fixtureId={_fixtureId}, sequence={fixture.Sequence}, fixture.TimeStamp=null");
                 return false;
             }
 
@@ -621,11 +639,11 @@ namespace SS.Integration.Adapter.Actors
 
             if (DateTime.UtcNow - timeStamp >= TimeSpan.FromSeconds(_settings.MaxFixtureUpdateDelayInSeconds))
             {
-                _logger.Warn($"ValidateFixtureTimeStamp failed for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}, " +
+                _logger.Warn($"ValidateFixtureTimeStamp failed for fixture with fixtureId={_fixtureId}, sequence={fixture.Sequence}, " +
                      $"delay={(DateTime.UtcNow - timeStamp).TotalSeconds} sec");
                 return false;
             }
-            _logger.Debug($"ValidateFixtureTimeStamp successfully passed for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}, " +
+            _logger.Debug($"ValidateFixtureTimeStamp successfully passed for fixture with fixtureId={_fixtureId}, sequence={fixture.Sequence}, " +
                 $"delay={(DateTime.UtcNow - timeStamp).TotalSeconds} sec");
             return true;
         }
@@ -663,8 +681,8 @@ namespace SS.Integration.Adapter.Actors
                 if (!ValidateFixture(snapshot, isFullSnapshot))
                 {
                     Context.System.Scheduler.ScheduleTellOnce(_settings.DelayedFixtureRecoveryAttemptSchedule * 1000,
-                        Self, new FixtureStateSequenceMsg { Sequence = snapshot.Sequence }, Self);
-                    _logger.Info($"Fixture with fixtureId={snapshot.Id} is suspended, recovering for sequence={snapshot.Sequence} is planned after {_settings.DelayedFixtureRecoveryAttemptSchedule} sec");
+                        Self, new RecoverDelayedFixtureMsg { Sequence = snapshot.Sequence }, Self);
+                    _logger.Info($"Fixture with fixtureId={snapshot.Id} is suspending, recovering for sequence={snapshot.Sequence} is planned after {_settings.DelayedFixtureRecoveryAttemptSchedule} sec");
                     _isSuspendDelayedUpdate = true;
                     SuspendFixture(SuspensionReason.SUSPENSION);
                     return;
@@ -672,9 +690,9 @@ namespace SS.Integration.Adapter.Actors
 
                 if (_fixtureIsSuspended && _isSuspendDelayedUpdate)
                 {
-                    var fixtureState = GetFixtureState();
-                    _isSuspendDelayedUpdate = false;
-                    UnsuspendFixture(fixtureState);
+                    //_logger.Debug($"Unsuspending delayed update and getting FixtureState for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}");
+                    AttemptRecoverDelayedFixture();
+                    return;
                 }
 
                 _streamStatsActor.Tell(new UpdateStatsStartMsg
@@ -1027,6 +1045,7 @@ namespace SS.Integration.Adapter.Actors
 
         private FixtureState GetFixtureState()
         {
+            _logger.Debug($"Getting FixtureState for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}");
             var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
             var fixtureState =
                 fixtureStateActor
@@ -1034,6 +1053,8 @@ namespace SS.Integration.Adapter.Actors
                         new GetFixtureStateMsg { FixtureId = _fixtureId },
                         TimeSpan.FromSeconds(10))
                     .Result;
+            _logger.Debug($"FixtureState is got, {fixtureState}");
+
             return fixtureState;
         }
 
@@ -1065,23 +1086,36 @@ namespace SS.Integration.Adapter.Actors
             _currentEpoch = snapshot.Epoch;
         }
 
-        private void AttemptRecoverFixtureState(FixtureStateSequenceMsg msg)
+        private void AttemptRecoverDelayedFixtureHandler(RecoverDelayedFixtureMsg msg)
         {
             if (_currentSequence != msg.Sequence)
             {
-                _logger.Debug($"MaxFixtureUpdateDelayInSeconds interval ({_settings.MaxFixtureUpdateDelayInSeconds} sec) is passed for {msg.Sequence} sequence, recovering skipped, current sequence={_currentSequence}, fixtureId={_fixtureId}");
+                _logger.Debug($"MaxFixtureUpdateDelayInSeconds interval ({_settings.DelayedFixtureRecoveryAttemptSchedule} sec) is passed for {msg.Sequence} sequence, recovering skipped, current sequence={_currentSequence}, fixtureId={_fixtureId}");
                 return;
             }
 
-            var fixtureState = GetFixtureState();
+            AttemptRecoverDelayedFixture();
+        }
 
-            _isSuspendDelayedUpdate = false;
-            UnsuspendFixture(fixtureState);
-
-            _logger.Info($"MaxFixtureUpdateDelayInSeconds interval ({_settings.MaxFixtureUpdateDelayInSeconds} sec) is passed, recovering fixture, " +
-               $"fixtureId={_fixtureId}, sequence={_currentSequence}");
-            if (fixtureState.MatchStatus != MatchStatus.MatchOver)
+        private void AttemptRecoverDelayedFixture()
+        {
+            try
+            {
                 RetrieveAndProcessSnapshot();
+                _logger.Info($"MaxFixtureUpdateDelayInSeconds interval ({_settings.DelayedFixtureRecoveryAttemptSchedule} sec) is passed, recovering fixture, " +
+                    $"fixtureId={_fixtureId}, sequence={_currentSequence}");
+
+                Become(Streaming);
+
+                _isSuspendDelayedUpdate = false;
+                _fixtureIsSuspended = false;
+            }
+            catch (PluginException ex)
+            {
+                UpdateStatsError(ex);
+                throw;
+            }
+
         }
 
         private void StopStreaming()
