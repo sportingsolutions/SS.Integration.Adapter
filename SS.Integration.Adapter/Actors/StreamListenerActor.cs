@@ -808,7 +808,7 @@ namespace SS.Integration.Adapter.Actors
             ActorSelection supervisorActor = Context.System.ActorSelection("/user/SupervisorActor");
             MatchStatus matchStatus;
             _logger.Debug($"Updating supervisor state for {snapshot}");
-       
+            
             supervisorActor.Tell(new UpdateSupervisorStateMsg
             {
                 FixtureId = snapshot.Id,
@@ -1105,7 +1105,7 @@ namespace SS.Integration.Adapter.Actors
                 _logger.Info($"MaxFixtureUpdateDelayInSeconds interval ({_settings.DelayedFixtureRecoveryAttemptSchedule} sec) is passed, recovering fixture, " +
                     $"fixtureId={_fixtureId}, sequence={_currentSequence}");
 
-                Become(Streaming);
+                _suspensionManager.Unsuspend(new Fixture { Id = _fixtureId, MatchStatus = _resource.MatchStatus.ToString() });
 
                 _isSuspendDelayedUpdate = false;
                 _fixtureIsSuspended = false;
