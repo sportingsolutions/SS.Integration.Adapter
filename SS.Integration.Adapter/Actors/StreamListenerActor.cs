@@ -206,17 +206,14 @@ namespace SS.Integration.Adapter.Actors
 
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
 
-                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var fixtureState =
-                    fixtureStateActor
-                        .Ask<FixtureState>(
-                            new GetFixtureStateMsg { FixtureId = _fixtureId },
-                            TimeSpan.FromSeconds(10))
-                        .Result;
+                var fixtureState = GetFixtureState();
 
-                if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
+                if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState) || _isSuspendDelayedUpdate)
                 {
+                    _logger.Debug($"FixtureValidation requires a snapshot for {_resource}");
                     RetrieveAndProcessSnapshot();
+                    if (_isSuspendDelayedUpdate)
+                        UnsuspendFixture(fixtureState);
                 }
                 else
                 {
@@ -421,14 +418,8 @@ namespace SS.Integration.Adapter.Actors
             {
                 _logger.Warn($"Stream got disconnected for {_resource}");
 
-                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var fixtureState =
-                    fixtureStateActor
-                        .Ask<FixtureState>(
-                            new GetFixtureStateMsg { FixtureId = _fixtureId },
-                            TimeSpan.FromSeconds(10))
-                        .Result;
-
+                var fixtureState = GetFixtureState();
+                
                 if (_streamHealthCheckValidation.ShouldSuspendOnDisconnection(fixtureState, _fixtureStartTime))
                 {
                     SuspendFixture(SuspensionReason.DISCONNECT_EVENT);
@@ -499,13 +490,7 @@ namespace SS.Integration.Adapter.Actors
                 Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
                 Receive<RecoverDelayedFixtureMsg>(a => AttemptRecoverDelayedFixtureHandler(a));
 
-                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var fixtureState =
-                    fixtureStateActor
-                        .Ask<FixtureState>(
-                            new GetFixtureStateMsg { FixtureId = _fixtureId },
-                            TimeSpan.FromSeconds(10))
-                        .Result;
+                var fixtureState = GetFixtureState();
 
                 _currentEpoch = fixtureState?.Epoch ?? -1;
                 _currentSequence = _resource.Content.Sequence;
@@ -805,34 +790,37 @@ namespace SS.Integration.Adapter.Actors
 
         private void UpdateSupervisorState(Fixture snapshot, bool isFullSnapshot)
         {
-            ActorSelection supervisorActor = Context.System.ActorSelection("/user/SupervisorActor");
-            MatchStatus matchStatus;
-            _logger.Debug($"Updating supervisor state for {snapshot}");
-            
-            supervisorActor.Tell(new UpdateSupervisorStateMsg
+            if (_settings.UseSupervisor)
             {
-                FixtureId = snapshot.Id,
-                Sport = _resource.Sport,
-                Epoch = snapshot.Epoch,
-                CurrentSequence = snapshot.Sequence,
-                StartTime = snapshot.StartTime,
-                IsSnapshot = isFullSnapshot,
-                MatchStatus = Enum.TryParse(snapshot.MatchStatus, out matchStatus)
-                    ? (MatchStatus?)matchStatus
-                    : null,
-                Name = snapshot.FixtureName,
-                CompetitionId = snapshot.Tags.ContainsKey("SSLNCompetitionId")
-                    ? snapshot.Tags["SSLNCompetitionId"].ToString()
-                    : null,
-                CompetitionName = snapshot.Tags.ContainsKey("SSLNCompetitionName")
-                    ? snapshot.Tags["SSLNCompetitionName"].ToString()
-                    : null,
-                LastEpochChangeReason = snapshot.LastEpochChangeReason,
-                IsStreaming = State == StreamListenerState.Streaming,
-                IsSuspended = _fixtureIsSuspended,
-                IsErrored = State == StreamListenerState.Errored,
-                Exception = _erroredException
-            });
+                ActorSelection supervisorActor = Context.System.ActorSelection("/user/SupervisorActor");
+                MatchStatus matchStatus;
+                _logger.Debug($"Updating supervisor state for {snapshot}");
+
+                supervisorActor.Tell(new UpdateSupervisorStateMsg
+                {
+                    FixtureId = snapshot.Id,
+                    Sport = _resource.Sport,
+                    Epoch = snapshot.Epoch,
+                    CurrentSequence = snapshot.Sequence,
+                    StartTime = snapshot.StartTime,
+                    IsSnapshot = isFullSnapshot,
+                    MatchStatus = Enum.TryParse(snapshot.MatchStatus, out matchStatus)
+                        ? (MatchStatus?)matchStatus
+                        : null,
+                    Name = snapshot.FixtureName,
+                    CompetitionId = snapshot.Tags.ContainsKey("SSLNCompetitionId")
+                        ? snapshot.Tags["SSLNCompetitionId"].ToString()
+                        : null,
+                    CompetitionName = snapshot.Tags.ContainsKey("SSLNCompetitionName")
+                        ? snapshot.Tags["SSLNCompetitionName"].ToString()
+                        : null,
+                    LastEpochChangeReason = snapshot.LastEpochChangeReason,
+                    IsStreaming = State == StreamListenerState.Streaming,
+                    IsSuspended = _fixtureIsSuspended,
+                    IsErrored = State == StreamListenerState.Errored,
+                    Exception = _erroredException
+                });
+            }
         }
 
         private void ProcessInvalidEpoch(Fixture fixtureDelta, bool hasEpochChanged)
@@ -1035,6 +1023,7 @@ namespace SS.Integration.Adapter.Actors
             {
                 _suspensionManager.Unsuspend(fixture);
                 _fixtureIsSuspended = false;
+                _isSuspendDelayedUpdate = false;
             }
             catch (PluginException ex)
             {
@@ -1045,15 +1034,11 @@ namespace SS.Integration.Adapter.Actors
 
         private FixtureState GetFixtureState()
         {
-            _logger.Debug($"Getting FixtureState for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}");
             var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-            var fixtureState =
-                fixtureStateActor
-                    .Ask<FixtureState>(
-                        new GetFixtureStateMsg { FixtureId = _fixtureId },
-                        TimeSpan.FromSeconds(10))
-                    .Result;
-            _logger.Debug($"FixtureState is got, {fixtureState}");
+            var fixtureState = fixtureStateActor.Ask<FixtureState>(
+                            new GetFixtureStateMsg { FixtureId = _fixtureId },
+                            TimeSpan.FromSeconds(10))
+                        .Result;
 
             return fixtureState;
         }
@@ -1099,23 +1084,10 @@ namespace SS.Integration.Adapter.Actors
 
         private void AttemptRecoverDelayedFixture()
         {
-            try
-            {
-                RetrieveAndProcessSnapshot();
                 _logger.Info($"MaxFixtureUpdateDelayInSeconds interval ({_settings.DelayedFixtureRecoveryAttemptSchedule} sec) is passed, recovering fixture, " +
                     $"fixtureId={_fixtureId}, sequence={_currentSequence}");
 
-                _suspensionManager.Unsuspend(new Fixture { Id = _fixtureId, MatchStatus = _resource.MatchStatus.ToString() });
-
-                _isSuspendDelayedUpdate = false;
-                _fixtureIsSuspended = false;
-            }
-            catch (PluginException ex)
-            {
-                UpdateStatsError(ex);
-                throw;
-            }
-
+                Become(Streaming);
         }
 
         private void StopStreaming()
