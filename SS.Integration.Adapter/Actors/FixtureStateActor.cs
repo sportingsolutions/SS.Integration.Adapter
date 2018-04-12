@@ -240,9 +240,9 @@ namespace SS.Integration.Adapter.Actors
                     }
                 }
             }
-            catch (JsonSerializationException jse)
+            catch (Exception e)
             {
-                _logger.Error($"Error during state deserialization {jse}. The state file will be removed!");
+                _logger.Error($"Error during state deserialization {e}. The state file will be removed!");
                 DeleteStateFile();
             }
         }

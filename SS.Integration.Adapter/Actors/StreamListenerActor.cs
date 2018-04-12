@@ -202,13 +202,8 @@ namespace SS.Integration.Adapter.Actors
                     };
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
 
-                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var fixtureState =
-                    fixtureStateActor
-                        .Ask<FixtureState>(
-                            new GetFixtureStateMsg { FixtureId = _fixtureId },
-                            TimeSpan.FromSeconds(10))
-                        .Result;
+                
+                var fixtureState = GetFixtureState();
 
                 if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
                 {
@@ -231,6 +226,27 @@ namespace SS.Integration.Adapter.Actors
                 _erroredException = ex;
                 Become(Errored);
             }
+        }
+
+        private FixtureState GetFixtureState()
+        {
+            var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+            FixtureState state = null;
+            try
+            {
+                state = fixtureStateActor
+                    .Ask<FixtureState>(
+                        new GetFixtureStateMsg { FixtureId = _fixtureId },
+                        TimeSpan.FromSeconds(10))
+                    .Result;
+            }
+            catch (Exception e)
+            {
+                _logger.Warn($"GetFixtureState failed for  {_resource} {e}");
+            }
+
+            return state;
+
         }
 
         //Resource has been disconnected, quick reconnection will occur soon
@@ -417,13 +433,7 @@ namespace SS.Integration.Adapter.Actors
             {
                 _logger.Warn($"Stream got disconnected for {_resource}");
 
-                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var fixtureState =
-                    fixtureStateActor
-                        .Ask<FixtureState>(
-                            new GetFixtureStateMsg { FixtureId = _fixtureId },
-                            TimeSpan.FromSeconds(10))
-                        .Result;
+                var fixtureState = GetFixtureState();
 
                 if (_streamHealthCheckValidation.ShouldSuspendOnDisconnection(fixtureState, _fixtureStartTime))
                 {
@@ -494,13 +504,8 @@ namespace SS.Integration.Adapter.Actors
                 Receive<ClearFixtureStateMsg>(a => ClearState(true));
                 Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
 
-                var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-                var fixtureState =
-                    fixtureStateActor
-                        .Ask<FixtureState>(
-                            new GetFixtureStateMsg { FixtureId = _fixtureId },
-                            TimeSpan.FromSeconds(10))
-                        .Result;
+                var fixtureState = GetFixtureState();
+
 
                 _currentEpoch = fixtureState?.Epoch ?? -1;
                 _currentSequence = _resource.Content.Sequence;

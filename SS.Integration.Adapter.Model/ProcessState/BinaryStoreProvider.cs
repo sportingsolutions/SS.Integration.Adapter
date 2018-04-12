@@ -47,7 +47,7 @@ namespace SS.Integration.Adapter.Model.ProcessState
             }
             catch (Exception e)
             {
-                _logger.Warn($"Error reading path={filePath} , file will be deleted , exception={e}");
+                _logger.Error($"Error reading path={filePath} , file will be removed! , exception={e}");
                 DeleteFile(filePath);
                 throw;
             }
@@ -64,7 +64,7 @@ namespace SS.Integration.Adapter.Model.ProcessState
             }
             catch (Exception e)
             {
-                _logger.Warn($"Error converting path={filePath} , file will be deleted , exception={e}");
+                _logger.Error($"Error converting path={filePath} , file will be removed! , exception={e}");
                 DeleteFile(filePath);
                 throw;
             }
