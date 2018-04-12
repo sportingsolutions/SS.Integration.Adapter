@@ -45,7 +45,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly ISettings _settings;
         private readonly IStoreProvider _storeProvider;
         private string _pathFileName;
-        private Dictionary<string, FixtureState> _fixturesState;
+        private Dictionary<string, FixtureState> _fixturesState = new Dictionary<string, FixtureState>();
 
         #endregion
 
@@ -60,8 +60,6 @@ namespace SS.Integration.Adapter.Actors
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _storeProvider = storeProvider ?? throw new ArgumentNullException(nameof(storeProvider));
-
-            _fixturesState = new Dictionary<string, FixtureState>();
 
             SetFilePath();
             LoadStateFile();
@@ -220,11 +218,26 @@ namespace SS.Integration.Adapter.Actors
             {
                 _logger.InfoFormat("Attempting to load file from filePath {0}", _pathFileName);
 
-                var savedFixtureStates = System.IO.File.Exists(_pathFileName) ? _storeProvider.Read(_pathFileName) : null;
-                if (!string.IsNullOrWhiteSpace(savedFixtureStates))
+                if (System.IO.File.Exists(_pathFileName))
                 {
-                    _fixturesState = (Dictionary<string, FixtureState>)
-                        JsonConvert.DeserializeObject(savedFixtureStates, typeof(Dictionary<string, FixtureState>));
+                    string savedFixtureStates = null;
+                    try
+                    {
+                        savedFixtureStates = _storeProvider.Read(_pathFileName);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Error($"LoadStateFile error reading file {_pathFileName} {e}");
+                        throw;
+                    }
+                    
+
+                    if (!string.IsNullOrWhiteSpace(savedFixtureStates))
+                    {
+                        if (JsonConvert.DeserializeObject(savedFixtureStates, typeof(Dictionary<string, FixtureState>))
+                            is Dictionary<string, FixtureState> deserialized && deserialized != null)
+                            _fixturesState = deserialized;
+                    }
                 }
             }
             catch (JsonSerializationException jse)

@@ -15,6 +15,7 @@
 using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using log4net;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Model.ProcessState
@@ -22,6 +23,7 @@ namespace SS.Integration.Adapter.Model.ProcessState
     public class BinaryStoreProvider<T> : FileStoreProvider, IObjectProvider<T>
     {
         private readonly string _pathFormatString;
+        private readonly ILog _logger = LogManager.GetLogger("SS.Integration.Adapter.Model.ProcessState.BinaryStoreProvider");
 
         public BinaryStoreProvider(string directory, string pathFormatString)
             : base(directory)
@@ -38,12 +40,46 @@ namespace SS.Integration.Adapter.Model.ProcessState
         public T GetObject(string id)
         {
             var filePath = GetPath(id);
-            var serializedString = base.Read(filePath);
+            string serializedString;
+            try
+            {
+                serializedString = base.Read(filePath);
+            }
+            catch (Exception e)
+            {
+                _logger.Warn($"Error reading path={filePath} , file will be deleted , exception={e}");
+                DeleteFile(filePath);
+                throw;
+            }
+
+            var result = default(T);
             if (serializedString == null)
-                return default(T);
+                return result;
 
             var serializer = new BinaryFormatter();
-            return (T)serializer.Deserialize(new MemoryStream(Convert.FromBase64String(serializedString)));
+
+            try
+            {
+                result = (T)serializer.Deserialize(new MemoryStream(Convert.FromBase64String(serializedString)));
+            }
+            catch (Exception e)
+            {
+                _logger.Warn($"Error converting path={filePath} , file will be deleted , exception={e}");
+                DeleteFile(filePath);
+                throw;
+            }
+
+            return result;
+
+        }
+
+        private void DeleteFile(string _pathFileName)
+        {
+            if (System.IO.File.Exists(_pathFileName))
+            {
+                System.IO.File.Delete(_pathFileName);
+                _logger.DebugFormat($"Deleted file {_pathFileName}");
+            }
         }
 
         public void SetObject(string id, T item)
