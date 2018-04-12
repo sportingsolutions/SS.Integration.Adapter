@@ -40,7 +40,7 @@ namespace SS.Integration.Adapter.Actors
 
         #region Fields
 
-        private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerActor).ToString());
+        private readonly ILog _logger = LogManager.GetLogger(typeof(StreamHealthCheckActor));
         private readonly IResourceFacade _resource;
         private readonly ISettings _settings;
         private readonly IStreamHealthCheckValidation _streamHealthCheckValidation;
