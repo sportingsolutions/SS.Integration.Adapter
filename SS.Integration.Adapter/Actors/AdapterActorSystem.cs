@@ -12,9 +12,12 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Routing;
+using log4net;
+using SS.Integration.Adapter.Actors.Strategy;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
@@ -27,6 +30,8 @@ namespace SS.Integration.Adapter.Actors
     public static class AdapterActorSystem
     {
         #region Fields
+        private static ILog _logger = LogManager.GetLogger(typeof(AdapterActorSystem).ToString());
+
 
         private static ActorSystem _actorSystem;
         private static IActorRef _sportsProcessorActor;
@@ -60,36 +65,10 @@ namespace SS.Integration.Adapter.Actors
             _actorSystem = ActorSystem.Create("AdapterSystem");
 
             var fileStoreProvider = new FileStoreProvider(settings.StateProviderPath);
-            _fixtureStateActor = ActorSystem.ActorOf(
-                Props.Create(() =>
-                    new FixtureStateActor(
-                        settings,
-                        fileStoreProvider)),
-                FixtureStateActor.ActorName);
-
-            _streamListenerManagerActor = ActorSystem.ActorOf(
-                Props.Create(() =>
-                    new StreamListenerManagerActor(
-                        settings,
-                        adapterPlugin,
-                        stateManager,
-                        suspensionManager,
-                        streamHealthCheckValidation,
-                        fixtureValidation)),
-                StreamListenerManagerActor.ActorName);
-
-            _sportProcessorRouterActor = ActorSystem.ActorOf(
-                Props.Create(() => new SportProcessorRouterActor(udApiService))
-                    .WithRouter(new SmallestMailboxPool(settings.FixtureCreationConcurrency)),
-                SportProcessorRouterActor.ActorName);
-
-            _sportsProcessorActor = ActorSystem.ActorOf(
-                Props.Create(() =>
-                    new SportsProcessorActor(
-                        settings,
-                        udApiService,
-                        _sportProcessorRouterActor)),
-                SportsProcessorActor.ActorName);
+            CreateFixtureStateActor(settings, fileStoreProvider);
+            CreateStreamListenerManagerActor(settings, adapterPlugin, stateManager, suspensionManager, streamHealthCheckValidation, fixtureValidation);
+            CreateSportProcessorRouterActor(settings, udApiService);
+            CreateSportsProcessorActor(settings, udApiService);
 
             // Setup an actor that will handle deadletter type messages
             var deadletterWatchMonitorProps = Props.Create(() => new AdapterDeadletterMonitorActor());
@@ -97,6 +76,89 @@ namespace SS.Integration.Adapter.Actors
 
             // subscribe to the event stream for messages of type "DeadLetter"
             _actorSystem.EventStream.Subscribe(deadletterWatchActorRef, typeof(DeadLetter));
+        }
+
+        private static void CreateSportsProcessorActor(ISettings settings, IServiceFacade udApiService)
+        {
+            try
+            {
+                _sportsProcessorActor = ActorSystem.ActorOf(
+                    Props.Create(() =>
+                        new SportsProcessorActor(
+                            settings,
+                            udApiService,
+                            _sportProcessorRouterActor)),
+                    SportsProcessorActor.ActorName);
+            }
+            catch (Exception e)
+            {
+                _logger.Fatal($"Error creating SportsProcessorActor {e}");
+                throw;
+            }
+            
+        }
+
+        private static void CreateSportProcessorRouterActor(ISettings settings, IServiceFacade udApiService)
+        {
+            try
+            {
+                _sportProcessorRouterActor = ActorSystem.ActorOf(
+                                Props.Create(() => new SportProcessorRouterActor(udApiService))
+                                    .WithRouter(new SmallestMailboxPool(settings.FixtureCreationConcurrency)),
+                                SportProcessorRouterActor.ActorName);
+            }
+            catch (Exception e)
+            {
+                _logger.Fatal($"Error creating SportProcessorRouterActor {e}");
+                throw;
+            }
+            
+        }
+
+        private static void CreateStreamListenerManagerActor(ISettings settings, IAdapterPlugin adapterPlugin,
+            IStateManager stateManager, ISuspensionManager suspensionManager,
+            IStreamHealthCheckValidation streamHealthCheckValidation, IFixtureValidation fixtureValidation)
+        {
+            try
+            {
+                _streamListenerManagerActor = ActorSystem.ActorOf(
+                    Props.Create(() =>
+                        new StreamListenerManagerActor(
+                            settings,
+                            adapterPlugin,
+                            stateManager,
+                            suspensionManager,
+                            streamHealthCheckValidation,
+                            fixtureValidation)),
+                    StreamListenerManagerActor.ActorName);
+            }
+            catch (Exception e)
+            {
+                _logger.Fatal($"Error creating StreamListenerManagerActor {e}");
+                throw;
+            }
+
+           
+        }
+
+        private static void CreateFixtureStateActor(ISettings settings, FileStoreProvider fileStoreProvider)
+        {
+            try
+            {
+                _fixtureStateActor = ActorSystem.ActorOf(
+                    Props.Create(() =>
+                        new FixtureStateActor(
+                            settings,
+                            fileStoreProvider)
+                    ),
+                    FixtureStateActor.ActorName);
+            }
+            catch (Exception e)
+            {
+                _logger.Fatal($"Error creating FixtureStateActor {e}");
+                throw;
+            }
+            
         }
 
         public static void Dispose()
