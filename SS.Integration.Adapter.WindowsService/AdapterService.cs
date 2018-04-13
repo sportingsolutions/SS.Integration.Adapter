@@ -210,9 +210,13 @@ namespace SS.Integration.Adapter.WindowsService
 
                     assemblyVersions[innerAssembly.Name] = innerAssembly.Version.ToString();
                 }
+                assemblyVersions[assembly.Name] = assembly.Version.ToString();
             }
 
-            System.Text.StringBuilder result = new System.Text.StringBuilder($"All assemblies:{Environment.NewLine}");
+            var currentAssembly = System.Reflection.Assembly.GetExecutingAssembly().GetName();
+            assemblyVersions[currentAssembly.Name] = currentAssembly.Version.ToString();
+
+            System.Text.StringBuilder result = new System.Text.StringBuilder($"Loaded assemblies:{Environment.NewLine}");
 
             foreach (var key in assemblyVersions.Keys)
             {
