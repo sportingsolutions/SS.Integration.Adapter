@@ -146,6 +146,7 @@ namespace SS.Integration.Adapter.WindowsService
             InitializeSupervisor();
 
             _logger.Info("Adapter has started");
+            _logger.Debug(GetLibVersions());
         }
 
         private void InitializeSupervisor()
@@ -181,12 +182,49 @@ namespace SS.Integration.Adapter.WindowsService
             {
                 _adapter.Start();
                 InitializeSupervisor();
+
+                _logger.Debug(GetLibVersions());
             }
             else
             {
                 _logger.WarnFormat("Adapter registered {0} FATAL/Unhandled exceptions and will stop the service now", GetMaxFailures());
             }
         }
+
+        private string GetLibVersions()
+        {
+            var exceptAssemblies = new string[] { "mscorlib", "Ninject" };
+
+            IDictionary<string, string> assemblyVersions = new Dictionary<string, string>();
+            var assemblies = System.Reflection.Assembly.GetExecutingAssembly().GetReferencedAssemblies();
+            foreach(var assembly in assemblies)
+            {
+                if (assembly.Name.StartsWith("System") || Array.IndexOf(exceptAssemblies, assembly.Name) > -1)
+                    continue;
+
+                var assembliesByAssembly = Assembly.Load(assembly).GetReferencedAssemblies();
+                foreach(var innerAssembly in assembliesByAssembly)
+                {
+                    if (innerAssembly.Name.StartsWith("System") || Array.IndexOf(exceptAssemblies, innerAssembly.Name) > -1)
+                        continue;
+
+                    assemblyVersions[innerAssembly.Name] = innerAssembly.Version.ToString();
+                }
+            }
+
+            System.Text.StringBuilder result = new System.Text.StringBuilder($"All assemblies:{Environment.NewLine}");
+
+            foreach(var key in assemblyVersions.Keys)
+            {
+                result.Append(key);
+                result.Append(": ");
+                result.Append(assemblyVersions[key]);
+                result.Append(Environment.NewLine);
+            }
+
+            return result.ToString();
+        }
+
 
         private int GetMaxFailures()
         {
