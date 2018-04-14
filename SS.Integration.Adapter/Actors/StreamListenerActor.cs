@@ -211,6 +211,7 @@ namespace SS.Integration.Adapter.Actors
                 }
                 else
                 {
+                    _logger.Warn($"Processing snapshot for {_resource} will be skipped on Start Streaming as processed sequence up to date");
                     UnsuspendFixture(fixtureState);
                 }
 
