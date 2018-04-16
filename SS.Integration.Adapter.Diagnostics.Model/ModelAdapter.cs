@@ -56,7 +56,9 @@ namespace SS.Integration.Adapter.Diagnostics.Model
                 CompetitionId = model.CompetitionId,
                 Description = model.Name,
                 State = model.ListenerOverview != null
-                    ? MatchStatusToFixtureStateMapping[model.ListenerOverview.MatchStatus.GetValueOrDefault()]
+                    ? MatchStatusToFixtureStateMapping.ContainsKey(model.ListenerOverview.MatchStatus.GetValueOrDefault())
+                        ? MatchStatusToFixtureStateMapping[model.ListenerOverview.MatchStatus.GetValueOrDefault()]
+                        : ServiceModelInterface.FixtureState.Setup
                     : ServiceModelInterface.FixtureState.Setup
             };
         }
