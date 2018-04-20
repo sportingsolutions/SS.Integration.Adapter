@@ -234,6 +234,27 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
+        private FixtureState GetFixtureState()
+        {
+            var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+            FixtureState state = null;
+            try
+            {
+                state = fixtureStateActor
+                    .Ask<FixtureState>(
+                        new GetFixtureStateMsg { FixtureId = _fixtureId },
+                        TimeSpan.FromSeconds(10))
+                    .Result;
+            }
+            catch (Exception e)
+            {
+                _logger.Warn($"GetFixtureState failed for  {_resource} {e}");
+            }
+
+            return state;
+
+        }
+
         //Resource has been disconnected, quick reconnection will occur soon
         private void Disconnected()
         {
@@ -1032,16 +1053,6 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
-        private FixtureState GetFixtureState()
-        {
-            var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-            var fixtureState = fixtureStateActor.Ask<FixtureState>(
-                            new GetFixtureStateMsg { FixtureId = _fixtureId },
-                            TimeSpan.FromSeconds(10))
-                        .Result;
-
-            return fixtureState;
-        }
 
 
         private void UpdateFixtureState(Fixture snapshot, bool isSnapshot = false)

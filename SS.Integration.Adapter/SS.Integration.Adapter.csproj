@@ -122,6 +122,7 @@
     <Compile Include="Actors\FixtureStateActor.cs" />
     <Compile Include="Actors\Messages\UpdateSupervisorStateMsg.cs" />
     <Compile Include="Actors\SportProcessorRouterActor.cs" />
+    <Compile Include="Actors\Strategy\FailSupervisorStrategy.cs" />
     <Compile Include="Actors\StreamHealthCheckActor.cs" />
     <Compile Include="Actors\ResourceActor.cs" />
     <Compile Include="Actors\StreamListenerActor.cs" />
