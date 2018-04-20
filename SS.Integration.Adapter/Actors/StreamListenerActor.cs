@@ -616,15 +616,29 @@ namespace SS.Integration.Adapter.Actors
             return snapshot;
         }
 
-        private bool ValidateFixture(Fixture fixture, bool isFullSnapshot)
+        private void FixtureValidationProcessing(Fixture fixture, bool isFullSnapshot, out bool validationPassed)
         {
+            validationPassed = true;
+
             if (!ValidateFixtureTimeStamp(fixture, isFullSnapshot))
-                return false;
+            {
+                HandleUpdateDelay(fixture);
+                validationPassed = false;
+            }
 
             if (!VerifySequenceOnSnapshot(fixture, isFullSnapshot))
-                return false;
+                validationPassed = false;
 
-            return true;
+            
+        }
+
+        private void HandleUpdateDelay(Fixture snapshot)
+        {
+            Context.System.Scheduler.ScheduleTellOnce(_settings.DelayedFixtureRecoveryAttemptSchedule * 1000,
+                Self, new RecoverDelayedFixtureMsg { Sequence = snapshot.Sequence }, Self);
+            _logger.Info($"Fixture with fixtureId={snapshot.Id} is suspending, recovering for sequence={snapshot.Sequence} is planned after {_settings.DelayedFixtureRecoveryAttemptSchedule} sec");
+            _isSuspendDelayedUpdate = true;
+            SuspendFixture(SuspensionReason.UPDTATE_DELAYED);
         }
 
         private bool ValidateFixtureTimeStamp(Fixture fixture, bool isFullSnapshot)
@@ -682,17 +696,14 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Info($"Processing {logString} for {snapshot}");
 
+            FixtureValidationProcessing(snapshot, isFullSnapshot, out var isFixtureValid);
+            if (!isFixtureValid)
+                return;
+            
+
             try
             {
-                if (!ValidateFixture(snapshot, isFullSnapshot))
-                {
-                    Context.System.Scheduler.ScheduleTellOnce(_settings.DelayedFixtureRecoveryAttemptSchedule * 1000,
-                        Self, new RecoverDelayedFixtureMsg { Sequence = snapshot.Sequence }, Self);
-                    _logger.Info($"Fixture with fixtureId={snapshot.Id} is suspending, recovering for sequence={snapshot.Sequence} is planned after {_settings.DelayedFixtureRecoveryAttemptSchedule} sec");
-                    _isSuspendDelayedUpdate = true;
-                    SuspendFixture(SuspensionReason.SUSPENSION);
-                    return;
-                }
+                
 
                 if (_fixtureIsSuspended && _isSuspendDelayedUpdate)
                 {

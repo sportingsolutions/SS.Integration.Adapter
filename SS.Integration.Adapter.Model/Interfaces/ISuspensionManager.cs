@@ -27,7 +27,8 @@ namespace SS.Integration.Adapter.Model.Interfaces
         SNAPSHOT,
         SDK_ERROR,
         HEALTH_CHECK_FALURE,
-        MATCH_OVER
+        MATCH_OVER,
+        UPDTATE_DELAYED
     }
 
 
