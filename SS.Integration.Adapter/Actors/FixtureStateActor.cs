@@ -110,7 +110,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void UpdateFixtureStateMsgHandler(UpdateFixtureStateMsg msg)
         {
-            _logger.Debug($"Updating state for Fixture fixtureId={msg.FixtureId} sequence={msg.Sequence}");
+            _logger.Debug($"Updating state for fixture with fixtureId={msg.FixtureId}, sequence={msg.Sequence}");
 
             FixtureState fixtureState;
             if (!_fixturesState.TryGetValue(msg.FixtureId, out fixtureState))
@@ -121,8 +121,6 @@ namespace SS.Integration.Adapter.Actors
             fixtureState.Sequence = msg.Sequence;
             fixtureState.MatchStatus = msg.Status;
             fixtureState.Epoch = msg.Epoch;
-
-            _fixturesState[msg.FixtureId] = fixtureState;
         }
 
         private void RemoveFixtureStateMsgHandler(RemoveFixtureStateMsg msg)

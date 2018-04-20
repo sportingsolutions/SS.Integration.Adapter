@@ -243,7 +243,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void RestartStreamListenerMsgHandler(RestartStreamListenerMsg msg)
         {
-            _logger.Info($"Restarting {Context.Self.Path.Name}");
+            _logger.Info($"Restarting {Context.Self.Path.Name}, fixtureId={msg.FixtureId}");
 
             _shouldSendProcessSportsMessage = true;
             IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.FixtureId));

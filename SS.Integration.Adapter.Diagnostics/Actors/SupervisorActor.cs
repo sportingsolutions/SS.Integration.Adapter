@@ -132,7 +132,8 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
             }
 
             UpdateSportDetails(msg.Sport);
-            SaveState();
+            
+            SaveState(msg.FixtureId, msg.CurrentSequence);
         }
 
         private void UpdateAdapterStatusMsgHandler(UpdateAdapterStatusMsg msg)
@@ -193,7 +194,7 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
             if (_fixturesOverview.ContainsKey(msg.FixtureId))
             {
                 _fixturesOverview.Remove(msg.FixtureId);
-                SaveState();
+                SaveState(msg.FixtureId);
             }
         }
 
@@ -217,7 +218,7 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
             return false;
         }
 
-        private void SaveState()
+        private void SaveState(string fixtureId, int? currentSequence = null)
         {
             try
             {
@@ -232,7 +233,8 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
             }
             catch (Exception ex)
             {
-                _logger.ErrorFormat("Error during saving supervisor state {0}", ex);
+                _logger.ErrorFormat("Error during saving supervisor state for fixture with fixtureId={1}, sequence{2}, {3}{0}", ex, fixtureId, 
+                    (currentSequence == null ? -1 : currentSequence.Value), Environment.NewLine);
             }
         }
 

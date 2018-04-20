@@ -16,7 +16,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void HandleDeadletter(DeadLetter dl)
         {
-            _logger.Debug($"DeadLetter captured: {dl.Message}, sender: {dl.Sender}, recipient: {dl.Recipient}");
+            _logger.Warn($"DeadLetter captured: {dl.Message}, sender: {dl.Sender}, recipient: {dl.Recipient}");
         }
     }
 }

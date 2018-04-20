@@ -57,7 +57,6 @@ namespace SS.Integration.Adapter.Actors
 
             Receive<StartStreamingMsg>(o => StartStreamingMsgHandler(o));
             Receive<StopStreamingMsg>(o => StopStreamingMsgHandler(o));
-
             Initialize();
         }
 
