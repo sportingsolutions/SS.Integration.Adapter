@@ -6,7 +6,7 @@ namespace SS.Integration.Adapter.Interface
 {
     public interface IStreamHealthCheckValidation
     {
-        bool ValidateStream(IResourceFacade resource, StreamListenerState state, int sequence);
+        bool ValidateProcessedSequnce(IResourceFacade resource, StreamListenerState state, int sequence);
 
         bool CanConnectToStreamServer(IResourceFacade resource, StreamListenerState state);
 

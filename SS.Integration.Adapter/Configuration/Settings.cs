@@ -142,6 +142,11 @@ namespace SS.Integration.Adapter.Configuration
                 ? DEFAULT_FIXTURE_TIMESTAMP_DIFFERECE_VALUE
                 : Convert.ToInt32(value);
 
+            value = ConfigurationManager.AppSettings["DelayedFixtureRecoveryAttemptSchedule"];
+            DelayedFixtureRecoveryAttemptSchedule = string.IsNullOrEmpty(value)
+                ? DEFAULT_FIXTURE_TIMESTAMP_DIFFERECE_VALUE
+                : Convert.ToInt32(value);
+
             LogAll();
         }
 
@@ -216,5 +221,7 @@ namespace SS.Integration.Adapter.Configuration
         public bool UseSupervisor { get; private set; }
 
         public int MaxFixtureUpdateDelayInSeconds { get; private set; }
+
+        public int DelayedFixtureRecoveryAttemptSchedule { get; private set; }
     }
 }

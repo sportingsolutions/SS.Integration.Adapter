@@ -197,24 +197,28 @@ namespace SS.Integration.Adapter.WindowsService
 
             IDictionary<string, string> assemblyVersions = new Dictionary<string, string>();
             var assemblies = System.Reflection.Assembly.GetExecutingAssembly().GetReferencedAssemblies();
-            foreach(var assembly in assemblies)
+            foreach (var assembly in assemblies)
             {
                 if (assembly.Name.StartsWith("System") || Array.IndexOf(exceptAssemblies, assembly.Name) > -1)
                     continue;
 
                 var assembliesByAssembly = Assembly.Load(assembly).GetReferencedAssemblies();
-                foreach(var innerAssembly in assembliesByAssembly)
+                foreach (var innerAssembly in assembliesByAssembly)
                 {
                     if (innerAssembly.Name.StartsWith("System") || Array.IndexOf(exceptAssemblies, innerAssembly.Name) > -1)
                         continue;
 
                     assemblyVersions[innerAssembly.Name] = innerAssembly.Version.ToString();
                 }
+                assemblyVersions[assembly.Name] = assembly.Version.ToString();
             }
 
-            System.Text.StringBuilder result = new System.Text.StringBuilder($"All assemblies:{Environment.NewLine}");
+            var currentAssembly = System.Reflection.Assembly.GetExecutingAssembly().GetName();
+            assemblyVersions[currentAssembly.Name] = currentAssembly.Version.ToString();
 
-            foreach(var key in assemblyVersions.Keys)
+            System.Text.StringBuilder result = new System.Text.StringBuilder($"Loaded assemblies:{Environment.NewLine}");
+
+            foreach (var key in assemblyVersions.Keys)
             {
                 result.Append(key);
                 result.Append(": ");

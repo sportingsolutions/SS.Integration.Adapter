@@ -32,7 +32,7 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
         private readonly ServiceInterface.ISupervisorStreamingService _streamingService;
         private readonly IObjectProvider<Dictionary<string, FixtureOverview>> _objectProvider;
         private readonly Dictionary<string, SportOverview> _sportsOverview;
-        private readonly Dictionary<string, FixtureOverview> _fixturesOverview;
+        private readonly Dictionary<string, FixtureOverview> _fixturesOverview = new Dictionary<string, FixtureOverview>();
 
         #endregion
 
@@ -53,13 +53,11 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
             _streamingService = streamingService ?? throw new ArgumentNullException(nameof(streamingService));
             _objectProvider = objectProvider ?? throw new ArgumentNullException(nameof(objectProvider));
 
-            Dictionary<string, FixtureOverview> storedObject;
-            TryLoadState(out storedObject);
+            if (TryLoadState(out var storedObject) && storedObject != null)
+                _fixturesOverview = storedObject;
 
             _sportsOverview = new Dictionary<string, SportOverview>();
-            _fixturesOverview = storedObject != null
-                ? new Dictionary<string, FixtureOverview>(storedObject)
-                : new Dictionary<string, FixtureOverview>();
+            
 
             SetupSports();
 
@@ -134,7 +132,8 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
             }
 
             UpdateSportDetails(msg.Sport);
-            SaveState();
+            
+            SaveState(msg.FixtureId, msg.CurrentSequence);
         }
 
         private void UpdateAdapterStatusMsgHandler(UpdateAdapterStatusMsg msg)
@@ -195,7 +194,7 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
             if (_fixturesOverview.ContainsKey(msg.FixtureId))
             {
                 _fixturesOverview.Remove(msg.FixtureId);
-                SaveState();
+                SaveState(msg.FixtureId);
             }
         }
 
@@ -203,21 +202,23 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
 
         #region Private methods
 
-        private void TryLoadState(out Dictionary<string, FixtureOverview> storedObject)
+        private bool TryLoadState(out Dictionary<string, FixtureOverview> storedObject)
         {
-            storedObject = null;
-
             try
             {
                 storedObject = _objectProvider.GetObject(null);
+                return true;
             }
             catch (Exception ex)
             {
                 _logger.Error("Error while loading Supervisor state: {0}", ex);
             }
+
+            storedObject = null;
+            return false;
         }
 
-        private void SaveState()
+        private void SaveState(string fixtureId, int? currentSequence = null)
         {
             try
             {
@@ -232,7 +233,8 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
             }
             catch (Exception ex)
             {
-                _logger.ErrorFormat("Error during saving supervisor state {0}", ex);
+                _logger.ErrorFormat("Error during saving supervisor state for fixture with fixtureId={1}, sequence{2}, {3}{0}", ex, fixtureId, 
+                    (currentSequence == null ? -1 : currentSequence.Value), Environment.NewLine);
             }
         }
 

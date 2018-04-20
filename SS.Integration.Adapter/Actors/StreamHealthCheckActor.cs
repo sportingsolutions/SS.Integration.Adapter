@@ -17,6 +17,8 @@ using Akka.Actor;
 using log4net;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model.Interfaces;
+
 
 namespace SS.Integration.Adapter.Actors
 {
@@ -38,13 +40,12 @@ namespace SS.Integration.Adapter.Actors
 
         #region Fields
 
-        private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListenerActor).ToString());
+        private readonly ILog _logger = LogManager.GetLogger(typeof(StreamHealthCheckActor));
         private readonly IResourceFacade _resource;
         private readonly ISettings _settings;
         private readonly IStreamHealthCheckValidation _streamHealthCheckValidation;
         private ICancelable _startStreamingNotResponding;
         private int _startStreamingNotRespondingWarnCount;
-        private bool _streamInvalidDetected;
 
         #endregion
 
@@ -109,33 +110,12 @@ namespace SS.Integration.Adapter.Actors
                     $"State={msg.StreamingState} " +
                     $"isMatchOver={msg.Resource.IsMatchOver}");
 
-                var streamIsValid =
-                    _streamHealthCheckValidation.ValidateStream(msg.Resource, msg.StreamingState, msg.CurrentSequence);
-                var connectToStreamServer =
-                    _streamHealthCheckValidation.CanConnectToStreamServer(msg.Resource, msg.StreamingState);
-
-                if (!streamIsValid)
+                
+                if (!_streamHealthCheckValidation.ValidateProcessedSequnce(msg.Resource, msg.StreamingState, msg.CurrentSequence))
                 {
-                    _logger.Warn($"Detected invalid stream for {msg.Resource}");
-
-                    if (_streamInvalidDetected)
-                    {
-                        Context.Parent.Tell(new StopStreamingMsg());
-                    }
-                    else
-                    {
-                        _streamInvalidDetected = true;
-                        Context.Parent.Tell(new SuspendAndReprocessSnapshotMsg());
-                    }
-                }
-                else
-                {
-                    _streamInvalidDetected = false;
-                }
-
-                if (connectToStreamServer)
-                {
-                    Context.Parent.Tell(new ConnectToStreamServerMsg());
+                    _logger.Warn($"Detected invalid stream for {msg.Resource} resource will be Suspended ans Stopped ");
+                    Context.Parent.Tell(new SuspendMessage(SuspensionReason.HEALTH_CHECK_FALURE));
+                    Context.Parent.Tell(new StopStreamingMsg());
                 }
             }
             catch (Exception ex)

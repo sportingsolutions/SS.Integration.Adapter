@@ -95,6 +95,7 @@
     <Compile Include="Actors\Messages\RestartStreamListenerMsg.cs" />
     <Compile Include="Actors\Messages\RetrieveAndProcessSnapshotMsg.cs" />
     <Compile Include="Actors\Messages\StreamListenerCreationCompletedMsg.cs" />
+    <Compile Include="Actors\Messages\FixtureStateSequenceMsg.cs" />
     <Compile Include="Actors\Messages\UpdateStatsErrorMsg.cs" />
     <Compile Include="Actors\Messages\UpdatePluginStatsFinishMsg.cs" />
     <Compile Include="Actors\Messages\UpdateStatsFinishMsg.cs" />
@@ -121,6 +122,7 @@
     <Compile Include="Actors\FixtureStateActor.cs" />
     <Compile Include="Actors\Messages\UpdateSupervisorStateMsg.cs" />
     <Compile Include="Actors\SportProcessorRouterActor.cs" />
+    <Compile Include="Actors\Strategy\FailSupervisorStrategy.cs" />
     <Compile Include="Actors\StreamHealthCheckActor.cs" />
     <Compile Include="Actors\ResourceActor.cs" />
     <Compile Include="Actors\StreamListenerActor.cs" />

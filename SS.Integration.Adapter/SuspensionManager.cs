@@ -95,7 +95,8 @@ namespace SS.Integration.Adapter
                 case SuspensionReason.FIXTURE_ERRORED:
                     _error = action;
                     break;
-                case SuspensionReason.SUSPENSION:
+
+                default:
                     _default = action;
                     break;
             }
