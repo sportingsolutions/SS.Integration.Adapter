@@ -193,7 +193,6 @@ namespace SS.Integration.Adapter.Actors
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
             Receive<SuspendMessage>(a => Suspend(a.SuspendReason));
-            Receive<RecoverDelayedFixtureMsg>(a => AttemptRecoverDelayedFixtureHandler(a));
 
             try
             {
@@ -210,10 +209,11 @@ namespace SS.Integration.Adapter.Actors
 
                 if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState) || _isSuspendDelayedUpdate)
                 {
-                    _logger.Debug($"FixtureValidation requires a snapshot for {_resource}");
-                    RetrieveAndProcessSnapshot();
                     if (_isSuspendDelayedUpdate)
                         UnsuspendFixture(fixtureState);
+                    _logger.Debug($"FixtureValidation requires a snapshot for {_resource}");
+                    RetrieveAndProcessSnapshot();
+
                 }
                 else
                 {
@@ -1038,7 +1038,6 @@ namespace SS.Integration.Adapter.Actors
 
         private void UnsuspendFixture(FixtureState state)
         {
-            _logger.Debug($"Unsuspending fixtureId={_fixtureId}, sequence={state.Sequence}");
             Fixture fixture = new Fixture
             {
                 Id = _fixtureId,
@@ -1053,6 +1052,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
+                _logger.Debug($"Unsuspending fixture with fixtureId={fixture.Id}, sequence={fixture.Sequence}");
                 _suspensionManager.Unsuspend(fixture);
                 _fixtureIsSuspended = false;
                 _isSuspendDelayedUpdate = false;
