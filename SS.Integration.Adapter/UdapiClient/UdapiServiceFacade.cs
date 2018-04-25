@@ -110,7 +110,16 @@ namespace SS.Integration.Adapter.UdapiClient
         public List<IResourceFacade> GetResources(string featureName)
         {
             if (_service == null)
+            {
+                _logger.Warn($"Method=GetResources Service=null");
                 return null;
+            }
+
+            if (_settings == null)
+            {
+                _logger.Warn($"Method=GetResources Settings=null");
+                return null;
+            }
 
             var resourceFacade = new List<IResourceFacade>();
             IFeature udapiFeature = null;
@@ -129,7 +138,18 @@ namespace SS.Integration.Adapter.UdapiClient
             if (udapiFeature != null)
             {
                 var udapiResources = udapiFeature.GetResources();
-                resourceFacade.AddRange(udapiResources.Select(udapiResource => new UdapiResourceFacade(udapiResource, featureName, _reconnectStrategy, _settings.EchoDelay, _settings.EchoInterval)));
+                if (udapiResources == null)
+                {
+                    _logger.Warn($"Method=GetResources udapiResources=null");
+                    return null;
+                }
+
+                var resourcesToAdd = udapiResources.Select(udapiResource => new UdapiResourceFacade(udapiResource,
+                    featureName, _reconnectStrategy, _settings.EchoDelay, _settings.EchoInterval)).ToList();
+
+                _logger.Debug($"Method=GetResources FeatureName={featureName} ResourcesCount={resourcesToAdd.Count}");
+                
+                resourceFacade.AddRange(resourcesToAdd);
             }
             return resourceFacade;
         }
