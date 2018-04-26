@@ -51,7 +51,7 @@ namespace SS.Integration.Common.Converters
                     var val = x.GetValue(item);
                     return val == null ? "null" : val.ToString();
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     return "null";
                 }
