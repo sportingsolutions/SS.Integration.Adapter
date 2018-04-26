@@ -144,23 +144,12 @@ namespace SS.Integration.Adapter.Actors
         private void LogStreamListenersStateCount()
         {
             var statuses = _streamListeners.Values.SelectMany(_ => _.Values).ToArray();
-            var cntInitializing =  statuses.Count(v => v == StreamListenerState.Initializing);
-
-            var _cntInitializing = 0;
-            var _cntInitialized = 0;
-            var _cntStreaming = 0;
-            var _cntDisconnected = 0;
-            var _cntErrored = 0;
-            var _cntStopped = 0;
-            foreach (var sport in _streamListeners.Keys)
-            {
-                    _cntInitializing += _streamListeners[sport].Count(a => a.Value == StreamListenerState.Initializing);
-                    _cntInitialized += _streamListeners[sport].Count(a => a.Value == StreamListenerState.Initialized);
-                    _cntStreaming += _streamListeners[sport].Count(a => a.Value == StreamListenerState.Streaming);
-                    _cntDisconnected += _streamListeners[sport].Count(a => a.Value == StreamListenerState.Disconnected);
-                    _cntErrored += _streamListeners[sport].Count(a => a.Value == StreamListenerState.Errored);
-                    _cntStopped += _streamListeners[sport].Count(a => a.Value == StreamListenerState.Stopped);
-            }
+           var _cntInitializing = statuses.Count(v => v == StreamListenerState.Initializing);
+            var _cntInitialized = statuses.Count(v => v == StreamListenerState.Initialized);
+            var _cntStreaming = statuses.Count(v => v == StreamListenerState.Streaming);
+            var _cntDisconnected = statuses.Count(v => v == StreamListenerState.Disconnected);
+            var _cntErrored = statuses.Count(v => v == StreamListenerState.Errored);
+            var _cntStopped = statuses.Count(v => v == StreamListenerState.Stopped);
             _logger.Debug(
                 $"Logging StreamListener State Count: Streaming={_cntStreaming}, {Environment.NewLine}Initializing={_cntInitializing}, Initialized={_cntInitialized}, Disconnected={_cntDisconnected}, Errored={_cntErrored}, Stoped={_cntStopped}");
         }
