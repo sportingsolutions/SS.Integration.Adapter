@@ -170,7 +170,7 @@ namespace SS.Integration.Adapter.Actors
            {
                _logger.Info(
                    $"Stream listener for {msg.Resource} doesn't exist. Going to trigger creation.");
-               _streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg {Resource = msg.Resource})
+                _streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = msg.Resource });
            }
            else
            {
