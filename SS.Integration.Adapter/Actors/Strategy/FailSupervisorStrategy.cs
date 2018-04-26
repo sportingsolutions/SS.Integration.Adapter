@@ -19,6 +19,7 @@ namespace SS.Integration.Adapter.Actors.Strategy
             return base.Handle(child, exception);
         }
 
+        [Obsolete]
         protected override void ProcessFailure(IActorContext context, bool restart, Exception cause, ChildRestartStats failedChildStats,
             IReadOnlyCollection<ChildRestartStats> allChildren)
         {
