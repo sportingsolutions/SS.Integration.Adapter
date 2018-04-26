@@ -268,6 +268,8 @@ namespace SS.Integration.Adapter.Actors
 
         private void LogPublishedFixturesCountsMsgHandler(LogPublishedFixturesCountsMsg msg)
         {
+            LogStreamListenerStatistics();
+
             var publishedFixturesTotalCount = _streamListeners.Count > 0
                 ? _streamListeners.Keys.Select(sport => _streamListeners[sport].Count).Sum()
                 : 0;
@@ -316,6 +318,19 @@ namespace SS.Integration.Adapter.Actors
         #endregion
 
         #region Private methods
+
+
+        private void LogStreamListenerStatistics()
+        {
+            var statuses = _streamListeners.Values.SelectMany(_ => _.Values).ToArray();
+            var cntInitializing = statuses.Count(v => v == StreamListenerState.Initializing);
+            var cntInitialized = statuses.Count(v => v == StreamListenerState.Initialized);
+            var cntStreaming = statuses.Count(v => v == StreamListenerState.Streaming);
+            var cntDisconnected = statuses.Count(v => v == StreamListenerState.Disconnected);
+            var cntErrored = statuses.Count(v => v == StreamListenerState.Errored);
+            var cntStopped = statuses.Count(v => v == StreamListenerState.Stopped);
+            _logger.Debug($"StreamListenerStatistics: Streaming={cntStreaming} Initializing={cntInitializing}  Initialized={cntInitialized} Disconnected={cntDisconnected} Errored={cntErrored} Stoped={cntStopped}");
+        }
 
         private void FaultControllerActorOnErrorOcured(SdkErrorMessage sdkErrorArgs)
         {
