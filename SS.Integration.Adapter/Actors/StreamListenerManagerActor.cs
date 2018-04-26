@@ -103,6 +103,8 @@ namespace SS.Integration.Adapter.Actors
                 new LogPublishedFixturesCountsMsg(),
                 Self);
 
+
+
             Receive<ProcessResourceMsg>(o => ProcessResourceMsgHandler(o));
             Receive<StreamConnectedMsg>(o => StreamConnectedMsgHandler(o));
             Receive<StreamDisconnectedMsg>(o => StreamDisconnectedMsgHandler(o));
@@ -126,8 +128,8 @@ namespace SS.Integration.Adapter.Actors
 
             Context.System.Scheduler.ScheduleTellRepeatedly(new TimeSpan(0, 1, 0), new TimeSpan(0, 1, 0),
                 Self, new RegisterSdkErrorActorMessage(), Self);
-
         }
+
 
         private void RegisterSdkErrorActor()
         {
@@ -138,26 +140,53 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
+
+        private void _loggingStreamListenersStateCount()
+        {
+            var _cntInitializing = 0;
+            var _cntInitialized = 0;
+            var _cntStreaming = 0;
+            var _cntDisconnected = 0;
+            var _cntErrored = 0;
+            var _cntStopped = 0;
+            foreach (var sport in _streamListeners.Keys)
+            {
+                    _cntInitializing += _streamListeners[sport].Count(a => a.Value == StreamListenerState.Initializing);
+                    _cntInitialized += _streamListeners[sport].Count(a => a.Value == StreamListenerState.Initialized);
+                    _cntStreaming += _streamListeners[sport].Count(a => a.Value == StreamListenerState.Streaming);
+                    _cntDisconnected += _streamListeners[sport].Count(a => a.Value == StreamListenerState.Disconnected);
+                    _cntErrored += _streamListeners[sport].Count(a => a.Value == StreamListenerState.Errored);
+                    _cntStopped += _streamListeners[sport].Count(a => a.Value == StreamListenerState.Stopped);
+            }
+            _logger.Debug(
+                $"Logging StreamListener State Count: Streaming={_cntStreaming}, {Environment.NewLine}Initializing={_cntInitializing}, Initialized={_cntInitialized}, Disconnected={_cntDisconnected}, Errored={_cntErrored}, Stoped={_cntStopped}");
+        }
+
         #region Message Handlers
 
-        private void ProcessResourceMsgHandler(ProcessResourceMsg msg)
-        {
-            _logger.Info(
+       private void ProcessResourceMsgHandler(ProcessResourceMsg msg)
+       {
+
+           _loggingStreamListenersStateCount();
+
+           _logger.Info(
                 $"ProcessResourceMsgHandler for {msg.Resource}");
-            IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.Resource.Id));
-            if (streamListenerActor.IsNobody())
-            {
-                _logger.Info(
-                    $"Stream listener for {msg.Resource} doesn't exist. Going to trigger creation.");
-                _streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = msg.Resource });
-            }
-            else
-            {
-                _logger.Info(
-                    $"Stream listener for {msg.Resource} already exists. Going to trigger stream health check.");
-                streamListenerActor.Tell(new StreamHealthCheckMsg { Resource = msg.Resource });
-            }
-        }
+
+           IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.Resource.Id));
+
+           if (streamListenerActor.IsNobody())
+           {
+               _logger.Info(
+                   $"Stream listener for {msg.Resource} doesn't exist. Going to trigger creation.");
+               _streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg {Resource = msg.Resource})
+           }
+           else
+           {
+               _logger.Info(
+                   $"Stream listener for {msg.Resource} already exists. Going to trigger stream health check.");
+               streamListenerActor.Tell(new StreamHealthCheckMsg {Resource = msg.Resource});
+           }
+       }
 
         private void StreamListenerInitializedMsgHandler(StreamListenerInitializedMsg msg)
         {
