@@ -141,8 +141,11 @@ namespace SS.Integration.Adapter.Actors
         #endregion
 
 
-        private void _loggingStreamListenersStateCount()
+        private void LogStreamListenersStateCount()
         {
+            var statuses = _streamListeners.Values.SelectMany(_ => _.Values).ToArray();
+            var cntInitializing =  statuses.Count(v => v == StreamListenerState.Initializing);
+
             var _cntInitializing = 0;
             var _cntInitialized = 0;
             var _cntStreaming = 0;
@@ -167,7 +170,7 @@ namespace SS.Integration.Adapter.Actors
        private void ProcessResourceMsgHandler(ProcessResourceMsg msg)
        {
 
-           _loggingStreamListenersStateCount();
+           LogStreamListenersStateCount();
 
            _logger.Info(
                 $"ProcessResourceMsgHandler for {msg.Resource}");
