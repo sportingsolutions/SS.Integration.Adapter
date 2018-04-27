@@ -112,7 +112,7 @@ namespace SS.Integration.Adapter.Actors
         {
             State = StreamListenerBuilderState.Active;
 
-            _logger.Warn(
+            _logger.Info(
                 $"Moved to Active State" +
                 $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
 
@@ -131,7 +131,7 @@ namespace SS.Integration.Adapter.Actors
         {
             State = StreamListenerBuilderState.Busy;
 
-            _logger.Warn(
+            _logger.Info(
                 $"Moved to Busy State" +
                 $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
 
@@ -302,7 +302,7 @@ namespace SS.Integration.Adapter.Actors
             {
                 if (_creationInProgressFixtureIdSet.Count + 1 > _settings.FixtureCreationConcurrency)
                 {
-                    _logger.Warn(
+                    _logger.Info(
                         $"BuildStreamListenerActorInstance - {resource}" +
                         $" - {msg.GetType().Name}" +
                         $" - fixture creation concurrency limit of {_settings.FixtureCreationConcurrency} has been reached" +

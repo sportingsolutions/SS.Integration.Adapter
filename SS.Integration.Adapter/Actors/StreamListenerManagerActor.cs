@@ -329,7 +329,9 @@ namespace SS.Integration.Adapter.Actors
             var cntDisconnected = statuses.Count(v => v == StreamListenerState.Disconnected);
             var cntErrored = statuses.Count(v => v == StreamListenerState.Errored);
             var cntStopped = statuses.Count(v => v == StreamListenerState.Stopped);
-            _logger.Debug($"StreamListenerStatistics: Streaming={cntStreaming} Initializing={cntInitializing}  Initialized={cntInitialized} Disconnected={cntDisconnected} Errored={cntErrored} Stoped={cntStopped}");
+            var mem = GC.GetTotalMemory(true) / 1024 / 1024;
+            var memPerStream = cntStreaming > 0 ? Decimal.Round(GC.GetTotalMemory(true) / 1024m / 1024 / cntStreaming, 2)  : 0m;
+            _logger.Debug($"StreamListenerStatistics: Streaming={cntStreaming} Initializing={cntInitializing}  Initialized={cntInitialized} Disconnected={cntDisconnected} Errored={cntErrored} Stoped={cntStopped} AppMemory={mem} mb MemoryPerStream={memPerStream} mb");
         }
 
         private void FaultControllerActorOnErrorOcured(SdkErrorMessage sdkErrorArgs)
