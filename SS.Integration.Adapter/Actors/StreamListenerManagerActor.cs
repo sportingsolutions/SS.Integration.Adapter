@@ -330,7 +330,7 @@ namespace SS.Integration.Adapter.Actors
             var cntErrored = statuses.Count(v => v == StreamListenerState.Errored);
             var cntStopped = statuses.Count(v => v == StreamListenerState.Stopped);
             var mem = GC.GetTotalMemory(true) / 1024;
-            var memPerStream = cntStreaming > 0 ? GC.GetTotalMemory(true) / 1024m / cntStreaming  : 0m;
+            var memPerStream = cntStreaming > 0 ? Decimal.Round(GC.GetTotalMemory(true) / 1024m / cntStreaming, 2)  : 0m;
             _logger.Debug($"StreamListenerStatistics: Streaming={cntStreaming} Initializing={cntInitializing}  Initialized={cntInitialized} Disconnected={cntDisconnected} Errored={cntErrored} Stoped={cntStopped} AppMemory={mem} mb MemoryPerStream={memPerStream} mb");
         }
 
