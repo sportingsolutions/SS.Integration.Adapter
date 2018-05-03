@@ -142,6 +142,9 @@ namespace SS.Integration.Adapter.Configuration
                 ? DEFAULT_FIXTURE_TIMESTAMP_DIFFERECE_VALUE
                 : Convert.ToInt32(value);
 
+            value = ConfigurationManager.AppSettings["autoReconnect"];
+            AutoReconnect = !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
+
             LogAll();
         }
 
@@ -216,5 +219,7 @@ namespace SS.Integration.Adapter.Configuration
         public bool UseSupervisor { get; private set; }
 
         public int MaxFixtureUpdateDelayInSeconds { get; private set; }
+
+        public bool AutoReconnect { get; private set; }
     }
 }

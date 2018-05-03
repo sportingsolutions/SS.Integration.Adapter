@@ -172,5 +172,7 @@ namespace SS.Integration.Adapter.Interface
         /// 
         /// </summary>
         int MaxFixtureUpdateDelayInSeconds { get; }
+
+        bool AutoReconnect { get; }
     }
 }

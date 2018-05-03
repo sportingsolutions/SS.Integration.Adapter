@@ -311,7 +311,7 @@ namespace SS.Integration.Adapter.Actors
                     }
                 }
 
-                var streamListenerStatesToBecomeStoped = new[] {StreamListenerState.Streaming, StreamListenerState.Initializing};
+                var streamListenerStatesToBecomeStoped = new[] {StreamListenerState.Initializing};
                 if (streamListenerStatesToBecomeStoped.Any(_ => _ == prevState))
                 {
                     _logger.Debug($"StreamListenerActor.Errored moving to Become(Stopped) for {_resource} from StreamListenerState={prevState}");
