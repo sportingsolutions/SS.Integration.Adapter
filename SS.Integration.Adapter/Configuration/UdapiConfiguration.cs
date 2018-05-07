@@ -17,6 +17,7 @@ namespace SS.Integration.Adapter.Configuration
         public bool VerboseLogging => SdkClients.Configuration.Instance.VerboseLogging;
         public ushort AMQPMissedHeartbeat => SdkClients.Configuration.Instance.AMQPMissedHeartbeat;
         public bool AutoReconnect => _settings.AutoReconnect;
+        public bool UseStreamControllerMailbox => _settings.UseStreamControllerMailbox;
         public int DisconnectionDelay => SdkClients.Configuration.Instance.DisconnectionDelay;
 
         public UdapiConfiguration(ISettings settings)
