@@ -174,7 +174,5 @@ namespace SS.Integration.Adapter.Interface
         int MaxFixtureUpdateDelayInSeconds { get; }
 
         bool AutoReconnect { get; }
-
-        bool UseStreamControllerMailbox { get; }
     }
 }

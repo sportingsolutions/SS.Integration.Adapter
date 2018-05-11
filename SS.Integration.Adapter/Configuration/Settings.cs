@@ -145,9 +145,6 @@ namespace SS.Integration.Adapter.Configuration
             value = ConfigurationManager.AppSettings["autoReconnect"];
             AutoReconnect = !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
 
-            value = ConfigurationManager.AppSettings["useStreamControllerMailbox"];
-            UseStreamControllerMailbox = !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
-
             LogAll();
         }
 
@@ -225,6 +222,5 @@ namespace SS.Integration.Adapter.Configuration
 
         public bool AutoReconnect { get; private set; }
 
-        public bool UseStreamControllerMailbox { get; private set; }
     }
 }
