@@ -86,8 +86,8 @@ namespace SS.Integration.Adapter.MarketRules.Model
             {
                 // market is resulted if at least one selection has a price of 1.0 and status settled and the rest are settled or void
                 // alternatively all selections need to be void
-                return (Selections.Any(x => x.Status == SelectionStatus.Settled && x.Price == 1.0) &&
-                        Selections.All(x => x.Status == SelectionStatus.Settled || x.Status == SelectionStatus.Void)) ||
+                return (Selections.Any(x => x.Status == SelectionStatus.Settled && x.Price == 1.0) || Selections.Count() == 1) &&
+                        Selections.All(x => x.Status == SelectionStatus.Settled || x.Status == SelectionStatus.Void) ||
                         IsVoided;
             } 
         }
