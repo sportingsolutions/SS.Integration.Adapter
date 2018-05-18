@@ -102,7 +102,6 @@ namespace SS.Integration.Adapter.Actors
 
                 return 0;
             });
-            return resources;
         }
 
         private void ProcessSportMsgHandler(ProcessSportMsg msg)
@@ -119,7 +118,7 @@ namespace SS.Integration.Adapter.Actors
             }
             if (resources.Count > 1)
             {
-                resources = SortByMatchStatus(resources);
+                SortByMatchStatus(resources);
             }
 
 
