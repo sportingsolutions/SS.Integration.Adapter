@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using System;
+using System.Linq;
 using Akka.Actor;
 using log4net;
 using SS.Integration.Adapter.Actors.Messages;
@@ -76,7 +77,7 @@ namespace SS.Integration.Adapter.Actors
         {
             var sports = _serviceFacade.GetSports();
 
-            foreach (var sport in sports)
+            foreach (var sport in sports.Where(_ => _.Name == "Football"))
             {
                 _sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = sport.Name });
             }

@@ -27,7 +27,7 @@ namespace SS.Integration.Adapter.Actors
 {
     /// <summary>
     /// StreamListener Builder is responsible for mananging concurrent creation of stream listeners
-    /// </summary>
+    /// </summary>  
     public class StreamListenerBuilderActor : ReceiveActor, IWithUnboundedStash
     {
         #region Constants
@@ -300,7 +300,7 @@ namespace SS.Integration.Adapter.Actors
             var streamListenerActorName = StreamListenerActor.GetName(resource.Id);
             if (_streamListenerManagerActorContext.Child(streamListenerActorName).IsNobody())
             {
-                if (_creationInProgressFixtureIdSet.Count + 1 > _settings.FixtureCreationConcurrency)
+                if (_creationInProgressFixtureIdSet.Count + 10 > _settings.FixtureCreationConcurrency)
                 {
                     _logger.Info(
                         $"BuildStreamListenerActorInstance - {resource}" +
@@ -319,6 +319,9 @@ namespace SS.Integration.Adapter.Actors
                         $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items" +
                         $" - Going to create the Stream Listener Actor Instance");
 
+                    if (!_creationInProgressFixtureIdSet.Contains(resource.Id))
+                        _creationInProgressFixtureIdSet.Add(resource.Id);
+
                     _streamListenerManagerActorContext.ActorOf(Props.Create(() =>
                             new StreamListenerActor(
                                 _settings,
@@ -330,8 +333,7 @@ namespace SS.Integration.Adapter.Actors
                                 _fixtureValidation)),
                         streamListenerActorName);
 
-                    if (!_creationInProgressFixtureIdSet.Contains(resource.Id))
-                        _creationInProgressFixtureIdSet.Add(resource.Id);
+                    
                 }
             }
             else
