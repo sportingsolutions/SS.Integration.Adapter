@@ -74,12 +74,9 @@ namespace SS.Integration.Adapter.Actors
 
         private void ProcessSportsMsgHandler()
         {
-            var sports = _serviceFacade.GetSports();
 
-            foreach (var sport in sports)
-            {
-                _sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = sport.Name });
-            }
+            _sportProcessorRouterActor.Tell(new ProcessSportMsg());
+
         }
 
         #endregion
