@@ -73,7 +73,7 @@ namespace SS.Integration.Adapter.Actors
 
         #region Private methods
 
-        private List<IResourceFacade> SortByMatchStatus(List<IResourceFacade> resources)
+        private void SortByMatchStatus(List<IResourceFacade> resources)
         {
             resources.Sort((x, y) =>
             {
