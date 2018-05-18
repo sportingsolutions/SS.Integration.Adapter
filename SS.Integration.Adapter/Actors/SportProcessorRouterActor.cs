@@ -73,34 +73,65 @@ namespace SS.Integration.Adapter.Actors
 
         #region Private methods
 
+        private List<IResourceFacade> SortByMatchStatus(List<IResourceFacade> resources)
+        {
+            resources.Sort((x, y) =>
+            {
+                if (x.Content.MatchStatus == y.Content.MatchStatus)
+                {
+                    return DateTime.Parse(x.Content.StartTime).CompareTo(DateTime.Parse(y.Content.StartTime));
+                }
+
+                if (x.Content.MatchStatus == 40)
+                    return -1;
+
+                if (y.Content.MatchStatus == 40)
+                    return 1;
+
+                if (x.Content.MatchStatus == 30)
+                    return -1;
+
+                if (y.Content.MatchStatus == 30)
+                    return 1;
+
+                if (x.Content.MatchStatus < y.Content.MatchStatus)
+                    return -1;
+
+                if (x.Content.MatchStatus > y.Content.MatchStatus)
+                    return 1;
+
+                return 0;
+            });
+        }
+
         private void ProcessSportMsgHandler(ProcessSportMsg msg)
         {
-            var resources = _serviceFacade.GetResources(msg.Sport);
-            if (ValidateResources(resources, msg.Sport))
+            var sports = _serviceFacade.GetSports();
+            List<IResourceFacade> resources = new List<IResourceFacade>();
+            foreach (var sport in sports)
             {
-                _logger.Debug($"Received {resources.Count} fixtures to process in sport={msg.Sport}");
-
-                if (resources.Count > 1)
+                var _res = _serviceFacade.GetResources(sport.Name);
+                if (ValidateResources(_res, sport.Name))
                 {
-                    resources.Sort((x, y) =>
-                    {
-                        if (x.Content.MatchStatus > y.Content.MatchStatus)
-                            return -1;
-
-                        return x.Content.MatchStatus < y.Content.MatchStatus
-                            ? 1
-                            : DateTime.Parse(x.Content.StartTime).CompareTo(DateTime.Parse(y.Content.StartTime));
-
-                    });
-                }
-
-                var streamListenerManagerActor = Context.System.ActorSelection(StreamListenerManagerActor.Path);
-
-                foreach (var resource in resources)
-                {
-                    streamListenerManagerActor.Tell(new ProcessResourceMsg { Resource = resource }, Self);
+                    resources.AddRange(_res);
                 }
             }
+            if (resources.Count > 1)
+            {
+                SortByMatchStatus(resources);
+            }
+
+
+
+
+
+            var streamListenerManagerActor = Context.System.ActorSelection(StreamListenerManagerActor.Path);
+
+            foreach (var resource in resources)
+            {
+                streamListenerManagerActor.Tell(new ProcessResourceMsg { Resource = resource }, Self);
+            }
+
         }
 
         private bool ValidateResources(IList<IResourceFacade> resources, string sport)
