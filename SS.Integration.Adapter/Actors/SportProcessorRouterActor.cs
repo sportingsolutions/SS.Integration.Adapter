@@ -73,6 +73,38 @@ namespace SS.Integration.Adapter.Actors
 
         #region Private methods
 
+        private List<IResourceFacade> SortByMatchStatus(List<IResourceFacade> resources)
+        {
+            resources.Sort((x, y) =>
+            {
+                if (x.Content.MatchStatus == y.Content.MatchStatus)
+                {
+                    return DateTime.Parse(x.Content.StartTime).CompareTo(DateTime.Parse(y.Content.StartTime));
+                }
+
+                if (x.Content.MatchStatus == 40)
+                    return -1;
+
+                if (y.Content.MatchStatus == 40)
+                    return 1;
+
+                if (x.Content.MatchStatus == 30)
+                    return -1;
+
+                if (y.Content.MatchStatus == 30)
+                    return 1;
+
+                if (x.Content.MatchStatus < y.Content.MatchStatus)
+                    return -1;
+
+                if (x.Content.MatchStatus > y.Content.MatchStatus)
+                    return 1;
+
+                return 0;
+            });
+            return resources;
+        }
+
         private void ProcessSportMsgHandler(ProcessSportMsg msg)
         {
             var sports = _serviceFacade.GetSports();
@@ -87,31 +119,7 @@ namespace SS.Integration.Adapter.Actors
             }
             if (resources.Count > 1)
             {
-                resources.Sort((x, y) =>
-                {
-                    if (x.Content.MatchStatus == y.Content.MatchStatus)
-                        return 0;
-
-                    if (x.Content.MatchStatus == 40)
-                        return -1;
-
-                    if (y.Content.MatchStatus == 40)
-                        return 1;
-
-                    if (x.Content.MatchStatus == 30)
-                        return -1;
-
-                    if (y.Content.MatchStatus == 30)
-                        return 1;
-
-                    if (x.Content.MatchStatus < y.Content.MatchStatus)
-                        return -1;
-
-                    if (x.Content.MatchStatus > y.Content.MatchStatus)
-                        return 1;
-
-                    return 0;
-                });
+                resources = SortByMatchStatus(resources);
             }
 
 
