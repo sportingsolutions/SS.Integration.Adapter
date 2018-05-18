@@ -13,6 +13,7 @@
 //limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Akka.Actor;
 using log4net;
 using SS.Integration.Adapter.Actors.Messages;
@@ -74,12 +75,15 @@ namespace SS.Integration.Adapter.Actors
 
         private void ProcessSportsMsgHandler()
         {
-            var sports = _serviceFacade.GetSports();
+            //var sports = _serviceFacade.GetSports();
 
-            foreach (var sport in sports)
-            {
-                _sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = sport.Name });
-            }
+            
+            //foreach (var sport in sports)
+            //{
+                //var resources = _serviceFacade.GetResources(sport);
+                //facade.AddRange(resources);
+                _sportProcessorRouterActor.Tell(new ProcessSportMsg{Sport=""});
+            //}
         }
 
         #endregion

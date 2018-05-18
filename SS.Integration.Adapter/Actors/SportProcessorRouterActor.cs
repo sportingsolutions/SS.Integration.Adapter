@@ -14,10 +14,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using log4net;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Actors
 {
@@ -53,6 +55,7 @@ namespace SS.Integration.Adapter.Actors
             _serviceFacade = serviceFacade ?? throw new ArgumentNullException(nameof(serviceFacade));
 
             Receive<ProcessSportMsg>(o => ProcessSportMsgHandler(o));
+            
         }
 
         #endregion
@@ -73,6 +76,99 @@ namespace SS.Integration.Adapter.Actors
 
         #region Private methods
 
+        private void ProcessSportMsgHandler(ProcessSportMsg msg)
+        {
+            var sports = _serviceFacade.GetSports();
+            List<IResourceFacade> resources = new List<IResourceFacade>();
+            var s = "";
+            foreach (var sport in sports)
+            {
+
+                var _res = _serviceFacade.GetResources(sport.Name);
+                
+                if (ValidateResources(_res, sport.Name))
+                {
+                    resources.AddRange(_res);
+                }
+                s += $"sport={sport.Name} count={_res.Count} all={resources.Count}{Environment.NewLine}";
+            }
+
+            _logger.Debug($"ProcessSportMsgHandler result {s}");
+            List<IResourceFacade> resources40 = new List<IResourceFacade>();
+            List<IResourceFacade> resources30 = new List<IResourceFacade>();
+            if (resources.Count > 1)
+            {
+               /*
+                foreach (var it in resources)
+                {
+                    if (it.MatchStatus == MatchStatus.InRunning)
+                    {
+                        resources40.Add(it);
+                        resources.Remove(it);
+                    }
+                    else
+                    if (it.MatchStatus == MatchStatus.Prematch)
+                    {
+                        resources30.Add(it);
+                        resources.Remove(it);
+                    }
+                }
+                */
+                 resources.Sort((x, y) =>
+                {
+                    if (x.Content.MatchStatus == y.Content.MatchStatus)
+                        return 0;
+
+                    if (x.Content.MatchStatus == 40)
+                        return -1;
+
+                    if (y.Content.MatchStatus == 40)
+                        return 1;
+
+                    if (x.Content.MatchStatus == 30)
+                        return -1;
+
+                    if (y.Content.MatchStatus == 30)
+                        return 1;
+
+                    if (x.Content.MatchStatus < y.Content.MatchStatus)
+                        return -1;
+
+                    if (x.Content.MatchStatus > y.Content.MatchStatus)
+                        return 1;
+
+                    return 0;
+                });
+            }
+
+            s = "";
+            foreach (var resource in resources)
+            {
+                s += $"{resource.MatchStatus}  ";
+            }
+
+            _logger.Debug($"ProcessSportMsgHandler sort: {s}");
+
+            var streamListenerManagerActor = Context.System.ActorSelection(StreamListenerManagerActor.Path);
+            /*
+            foreach (var resource in resources40)
+            {
+                streamListenerManagerActor.Tell(new ProcessResourceMsg { Resource = resource }, Self);
+            }
+
+            foreach (var resource in resources30)
+            {
+                streamListenerManagerActor.Tell(new ProcessResourceMsg { Resource = resource }, Self);
+            }
+            */
+            foreach (var resource in resources)
+            {
+                streamListenerManagerActor.Tell(new ProcessResourceMsg { Resource = resource }, Self);
+            }
+
+        }
+
+        /*
         private void ProcessSportMsgHandler(ProcessSportMsg msg)
         {
             var resources = _serviceFacade.GetResources(msg.Sport);
@@ -102,6 +198,7 @@ namespace SS.Integration.Adapter.Actors
                 }
             }
         }
+        */
 
         private bool ValidateResources(IList<IResourceFacade> resources, string sport)
         {
