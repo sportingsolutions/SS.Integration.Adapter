@@ -17,7 +17,7 @@ using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.MarketRules.Interfaces
 {
-    internal interface IUpdatableSelectionState : ISelectionState
+    public interface IUpdatableSelectionState : ISelectionState
     {
         /// <summary>
         /// Allows to update the selection's state

@@ -173,6 +173,8 @@ namespace SS.Integration.Adapter.Interface
         /// </summary>
         int MaxFixtureUpdateDelayInSeconds { get; }
 
+        bool AutoReconnect { get; }
+
         /// <summary>
         /// This flag defines interval to recover fixture
         /// </summary>

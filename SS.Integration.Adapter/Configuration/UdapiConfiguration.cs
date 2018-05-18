@@ -16,7 +16,7 @@ namespace SS.Integration.Adapter.Configuration
         public int EchoWaitInterval => _settings.EchoInterval;
         public bool VerboseLogging => SdkClients.Configuration.Instance.VerboseLogging;
         public ushort AMQPMissedHeartbeat => SdkClients.Configuration.Instance.AMQPMissedHeartbeat;
-        public bool AutoReconnect => SdkClients.Configuration.Instance.AutoReconnect;
+        public bool AutoReconnect => _settings.AutoReconnect;
         public int DisconnectionDelay => SdkClients.Configuration.Instance.DisconnectionDelay;
 
         public UdapiConfiguration(ISettings settings)

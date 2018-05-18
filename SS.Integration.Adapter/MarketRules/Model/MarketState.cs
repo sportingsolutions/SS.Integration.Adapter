@@ -24,7 +24,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
     [Serializable]
     internal class MarketState : IUpdatableMarketState
     {
-        private readonly Dictionary<string, IUpdatableSelectionState> _selectionStates;
+        protected internal readonly Dictionary<string, IUpdatableSelectionState> _selectionStates;
         private Dictionary<string, string> _tags;
 
         /// <summary>
@@ -86,9 +86,10 @@ namespace SS.Integration.Adapter.MarketRules.Model
             {
                 // market is resulted if at least one selection has a price of 1.0 and status settled and the rest are settled or void
                 // alternatively all selections need to be void
-                return Selections.All(x => x.Status == SelectionStatus.Settled || x.Status == SelectionStatus.Void) || IsVoided;
-
-            }
+                return (Selections.Any(x => x.Status == SelectionStatus.Settled && x.Price == 1.0) || Selections.Count() == 1) &&
+                        Selections.All(x => x.Status == SelectionStatus.Settled || x.Status == SelectionStatus.Void) ||
+                        IsVoided;
+            } 
         }
 
         public bool IsVoided
