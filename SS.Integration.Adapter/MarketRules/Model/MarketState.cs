@@ -24,7 +24,7 @@ namespace SS.Integration.Adapter.MarketRules.Model
     [Serializable]
     internal class MarketState : IUpdatableMarketState
     {
-        private readonly Dictionary<string, IUpdatableSelectionState> _selectionStates;
+        protected internal readonly Dictionary<string, IUpdatableSelectionState> _selectionStates;
         private Dictionary<string, string> _tags;
 
         /// <summary>
