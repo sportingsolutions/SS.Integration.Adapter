@@ -125,6 +125,7 @@ namespace SS.Integration.Adapter.Actors
 
 
 
+
             var streamListenerManagerActor = Context.System.ActorSelection(StreamListenerManagerActor.Path);
 
             foreach (var resource in resources)
