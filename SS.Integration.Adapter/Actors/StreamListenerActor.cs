@@ -1102,9 +1102,8 @@ namespace SS.Integration.Adapter.Actors
             _logger.Info($"Unsuspend fixtureId={_fixtureId}, sequence={_currentSequence}");
             if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState) || _isSuspendedDueToDelay)
             {
-                if (_isSuspendedDueToDelay)
-                    UnsuspendFixtureState(fixtureState);
                 _logger.Debug($"Unsuspension requires a snapshot for {_resource}");
+                RetrieveAndProcessSnapshot();
             }
             else
             {
