@@ -62,7 +62,7 @@ namespace SS.Integration.Adapter.Actors
         private int _lastSequenceProcessedInSnapshot;
         private DateTime? _fixtureStartTime;
         private bool _fixtureIsSuspended;
-        private bool _isSuspendDelayedUpdate;
+        private bool _isSuspendedDueToDelay;
         private Exception _erroredException;
         //this field helps track the Stream Listener Actor Initialization 
         //so it can notify the Stream Listener Manager when actor creation failed
@@ -205,21 +205,7 @@ namespace SS.Integration.Adapter.Actors
 
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
 
-                var fixtureState = GetFixtureState();
-
-                if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState) || _isSuspendDelayedUpdate)
-                {
-                    if (_isSuspendDelayedUpdate)
-                        UnsuspendFixture(fixtureState);
-                    _logger.Debug($"FixtureValidation requires a snapshot for {_resource}");
-                    RetrieveAndProcessSnapshot();
-
-                }
-                else
-                {
-                    _logger.Warn($"Processing snapshot for {_resource} will be skipped on Start Streaming as processed sequence up to date");
-                    UnsuspendFixture(fixtureState);
-                }
+                Unsuspend();
 
                 Stash.UnstashAll();
                 Context.Parent.Tell(streamConnectedMsg);
@@ -638,9 +624,13 @@ namespace SS.Integration.Adapter.Actors
         {
             Context.System.Scheduler.ScheduleTellOnce(_settings.DelayedFixtureRecoveryAttemptSchedule * 1000,
                 Self, new RecoverDelayedFixtureMsg { Sequence = snapshot.Sequence }, Self);
-            _logger.Info($"Fixture with fixtureId={snapshot.Id} is suspending, recovering for sequence={snapshot.Sequence} is planned after {_settings.DelayedFixtureRecoveryAttemptSchedule} sec");
-            _isSuspendDelayedUpdate = true;
-            SuspendFixture(SuspensionReason.UPDTATE_DELAYED);
+            _logger.Info($"Fixture {snapshot} is suspend{(_isSuspendedDueToDelay ? "ed" : "ing")} , due to delay unsuspend scheduled after timeInSeconds={_settings.DelayedFixtureRecoveryAttemptSchedule}");
+            if (!_isSuspendedDueToDelay)
+            {
+                SuspendFixture(SuspensionReason.UPDTATE_DELAYED);
+                _isSuspendedDueToDelay = true;
+            }
+            
         }
 
         private bool ValidateFixtureTimeStamp(Fixture fixture, bool isFullSnapshot)
@@ -707,10 +697,9 @@ namespace SS.Integration.Adapter.Actors
             {
                 
 
-                if (_fixtureIsSuspended && _isSuspendDelayedUpdate)
+                if (_fixtureIsSuspended)
                 {
-                    //_logger.Debug($"Unsuspending delayed update and getting FixtureState for fixture with fixtureId={_fixtureId}, sequence={_currentSequence}");
-                    AttemptRecoverDelayedFixture();
+                    Unsuspend();
                     return;
                 }
 
@@ -1038,7 +1027,7 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
-        private void UnsuspendFixture(FixtureState state)
+        private void UnsuspendFixtureState(FixtureState state)
         {
             Fixture fixture = new Fixture
             {
@@ -1057,7 +1046,7 @@ namespace SS.Integration.Adapter.Actors
                 _logger.Debug($"Unsuspending fixture with fixtureId={fixture.Id}, sequence={fixture.Sequence}");
                 _suspensionManager.Unsuspend(fixture);
                 _fixtureIsSuspended = false;
-                _isSuspendDelayedUpdate = false;
+                _isSuspendedDueToDelay = false;
             }
             catch (PluginException ex)
             {
@@ -1099,19 +1088,30 @@ namespace SS.Integration.Adapter.Actors
         {
             if (_currentSequence != msg.Sequence)
             {
-                _logger.Debug($"MaxFixtureUpdateDelayInSeconds interval ({_settings.DelayedFixtureRecoveryAttemptSchedule} sec) is passed for {msg.Sequence} sequence, recovering skipped, current sequence={_currentSequence}, fixtureId={_fixtureId}");
+                _logger.Debug($"Delay recovering skipped as  msgSequence={msg.Sequence} <  current sequence={_currentSequence}, fixtureId={_fixtureId}");
                 return;
             }
 
-            AttemptRecoverDelayedFixture();
+            Unsuspend();
         }
 
-        private void AttemptRecoverDelayedFixture()
+        private void Unsuspend()
         {
-                _logger.Info($"MaxFixtureUpdateDelayInSeconds interval ({_settings.DelayedFixtureRecoveryAttemptSchedule} sec) is passed, recovering fixture, " +
-                    $"fixtureId={_fixtureId}, sequence={_currentSequence}");
+            var fixtureState = GetFixtureState();
 
-                Become(Streaming);
+            _logger.Info($"Unsuspend fixtureId={_fixtureId}, sequence={_currentSequence}");
+            if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState) || _isSuspendedDueToDelay)
+            {
+                if (_isSuspendedDueToDelay)
+                    UnsuspendFixtureState(fixtureState);
+                _logger.Debug($"Unsuspension requires a snapshot for {_resource}");
+            }
+            else
+            {
+                _logger.Warn($"Processing snapshot for {_resource} will be skipped on Start Streaming as processed sequence up to date");
+            }
+
+            UnsuspendFixtureState(fixtureState);
         }
 
         private void StopStreaming()
