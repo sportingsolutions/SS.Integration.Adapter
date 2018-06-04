@@ -490,31 +490,6 @@ namespace SS.Integration.Adapter.Tests
                             GetChildActorRef(
                                 streamListenerManagerActor,
                                 StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
-                        streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
-
-                        if (streamListenerActor != null)
-                            Assert.AreEqual(StreamListenerState.Stopped, streamListenerActor.State);
-                    },
-                    TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-                    TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                //exception could be caught here as Stream Listener Actor becomes stopped 
-                //and eventually killed before we actually have the chance to assert for Stopped state
-            }
-
-            streamListenerActorRef = null;
-
-            try
-            {
-                AwaitAssert(() =>
-                    {
-                        streamListenerActorRef =
-                            GetChildActorRef(
-                                streamListenerManagerActor,
-                                StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
 
                         resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
                         PluginMock.Verify(a =>
