@@ -323,325 +323,323 @@ namespace SS.Integration.Adapter.Tests
         ///   and restart stream listener due to missing sequences for second time in a row
         /// </summary>
 
-        //TODO: investigate the test
+        [Test]
+        [Category(STREAM_HEALTH_CHECK_ACTOR_CATEGORY)]
+        public void WhenStreamingAndMatchOverUpdateAfterSecondTimeMissingSequencesThenRecreateStreamListenerAndProcessMatchOver()
+        {
+            //
+            //Arrange
+            //
+            Fixture snapshot;
+            Mock<IResourceFacade> resourceFacadeMock;
+            SetupCommonMockObjects(
+                /*sport*/FootabllSportMock.Object.Name,
+                /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
+                /*storedData*/new { Epoch = 3, Sequence = 1, MatchStatus = MatchStatus.InRunning },
+                out snapshot,
+                out resourceFacadeMock);
+            ServiceMock.Setup(o => o.GetSports()).Returns(new[] { FootabllSportMock.Object });
+            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
+                .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
+            StreamHealthCheckValidationMock.Setup(a =>
+                    a.CanConnectToStreamServer(
+                        It.IsAny<IResourceFacade>(),
+                        It.IsAny<StreamListenerState>()))
+                .Returns(true);
+            FixtureValidationMock.Setup(a =>
+                    a.IsSnapshotNeeded(
+                        It.IsAny<IResourceFacade>(),
+                        It.IsAny<FixtureState>()))
+                .Returns(true);
 
-        //[Test]
-        //[Category(STREAM_HEALTH_CHECK_ACTOR_CATEGORY)]
-        //public void WhenStreamingAndMatchOverUpdateAfterSecondTimeMissingSequencesThenRecreateStreamListenerAndProcessMatchOver()
-        //{
-        //    //
-        //    //Arrange
-        //    //
-        //    Fixture snapshot;
-        //    Mock<IResourceFacade> resourceFacadeMock;
-        //    SetupCommonMockObjects(
-        //        /*sport*/FootabllSportMock.Object.Name,
-        //        /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
-        //        /*storedData*/new { Epoch = 3, Sequence = 1, MatchStatus = MatchStatus.InRunning },
-        //        out snapshot,
-        //        out resourceFacadeMock);
-        //    ServiceMock.Setup(o => o.GetSports()).Returns(new[] { FootabllSportMock.Object });
-        //    ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
-        //        .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
-        //    StreamHealthCheckValidationMock.Setup(a =>
-        //            a.CanConnectToStreamServer(
-        //                It.IsAny<IResourceFacade>(),
-        //                It.IsAny<StreamListenerState>()))
-        //        .Returns(true);
-        //    FixtureValidationMock.Setup(a =>
-        //            a.IsSnapshotNeeded(
-        //                It.IsAny<IResourceFacade>(),
-        //                It.IsAny<FixtureState>()))
-        //        .Returns(true);
+            //
+            //Act
+            //
+            var streamListenerManagerActor =
+                ActorOfAsTestActorRef<StreamListenerManagerActor>(
+                    Props.Create(() =>
+                        new StreamListenerManagerActor(
+                            SettingsMock.Object,
+                            PluginMock.Object,
+                            StateManagerMock.Object,
+                            SuspensionManagerMock.Object,
+                            StreamHealthCheckValidationMock.Object,
+                            FixtureValidationMock.Object)),
+                    StreamListenerManagerActor.ActorName);
+            var sportProcessorRouterActor =
+                ActorOfAsTestActorRef<SportProcessorRouterActor>(
+                    Props.Create(() => new SportProcessorRouterActor(ServiceMock.Object))
+                        .WithRouter(new SmallestMailboxPool(SettingsMock.Object.FixtureCreationConcurrency)),
+                    SportProcessorRouterActor.ActorName);
+            ActorOfAsTestActorRef<SportsProcessorActor>(
+                Props.Create(() =>
+                    new SportsProcessorActor(
+                        SettingsMock.Object,
+                        ServiceMock.Object,
+                        sportProcessorRouterActor)),
+                SportsProcessorActor.ActorName);
 
-        //    //
-        //    //Act
-        //    //
-        //    var streamListenerManagerActor =
-        //        ActorOfAsTestActorRef<StreamListenerManagerActor>(
-        //            Props.Create(() =>
-        //                new StreamListenerManagerActor(
-        //                    SettingsMock.Object,
-        //                    PluginMock.Object,
-        //                    StateManagerMock.Object,
-        //                    SuspensionManagerMock.Object,
-        //                    StreamHealthCheckValidationMock.Object,
-        //                    FixtureValidationMock.Object)),
-        //            StreamListenerManagerActor.ActorName);
-        //    var sportProcessorRouterActor =
-        //        ActorOfAsTestActorRef<SportProcessorRouterActor>(
-        //            Props.Create(() => new SportProcessorRouterActor(ServiceMock.Object))
-        //                .WithRouter(new SmallestMailboxPool(SettingsMock.Object.FixtureCreationConcurrency)),
-        //            SportProcessorRouterActor.ActorName);
-        //    ActorOfAsTestActorRef<SportsProcessorActor>(
-        //        Props.Create(() =>
-        //            new SportsProcessorActor(
-        //                SettingsMock.Object,
-        //                ServiceMock.Object,
-        //                sportProcessorRouterActor)),
-        //        SportsProcessorActor.ActorName);
+            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
-        //    sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
+            IActorRef streamListenerActorRef;
+            StreamListenerActor streamListenerActor = null;
+            IActorRef resourceActorRef;
+            IActorRef healthCheckActorRef;
 
-        //    IActorRef streamListenerActorRef;
-        //    StreamListenerActor streamListenerActor = null;
-        //    IActorRef resourceActorRef;
-        //    IActorRef healthCheckActorRef;
+            //
+            //Assert
+            //
+            #region 1st processing
+            //first time the stream listeners goes into Streaming State
+            AwaitAssert(() =>
+                {
+                    streamListenerActorRef =
+                        GetChildActorRef(
+                            streamListenerManagerActor,
+                            StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
+                    streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
+                    resourceActorRef = GetChildActorRef(streamListenerActorRef, ResourceActor.ActorName);
+                    healthCheckActorRef = GetChildActorRef(streamListenerActorRef, StreamHealthCheckActor.ActorName);
+                    Assert.NotNull(streamListenerActorRef);
+                    Assert.NotNull(streamListenerActor);
+                    Assert.NotNull(resourceActorRef);
+                    Assert.NotNull(healthCheckActorRef);
 
-        //    //
-        //    //Assert
-        //    //
-        //    #region 1st processing
-        //    //first time the stream listeners goes into Streaming State
-        //    AwaitAssert(() =>
-        //        {
-        //            streamListenerActorRef =
-        //                GetChildActorRef(
-        //                    streamListenerManagerActor,
-        //                    StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
-        //            streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
-        //            resourceActorRef = GetChildActorRef(streamListenerActorRef, ResourceActor.ActorName);
-        //            healthCheckActorRef = GetChildActorRef(streamListenerActorRef, StreamHealthCheckActor.ActorName);
-        //            Assert.NotNull(streamListenerActorRef);
-        //            Assert.NotNull(streamListenerActor);
-        //            Assert.NotNull(resourceActorRef);
-        //            Assert.NotNull(healthCheckActorRef);
+                    Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+            #endregion
 
-        //            Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
-        //        },
-        //        TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-        //        TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-        //    #endregion
+            #region 2nd processing
+            //second time the stream is not valid because of missing sequences and the fixture is suspended and snapshot processed
+            StreamHealthCheckValidationMock.Reset();
+            StreamHealthCheckValidationMock.Setup(a =>
+                    a.CanConnectToStreamServer(
+                        It.IsAny<IResourceFacade>(),
+                        It.IsAny<StreamListenerState>()))
+                .Returns(true);
+            StreamHealthCheckValidationMock.Setup(a =>
+                    a.ValidateStream(
+                        It.IsAny<IResourceFacade>(),
+                        It.IsAny<StreamListenerState>(),
+                        It.IsAny<int>()))
+                .Returns(false);
+            //This call will trigger health check message
+            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
-        //    #region 2nd processing
-        //    //second time the stream is not valid because of missing sequences and the fixture is suspended and snapshot processed
-        //    StreamHealthCheckValidationMock.Reset();
-        //    StreamHealthCheckValidationMock.Setup(a =>
-        //            a.CanConnectToStreamServer(
-        //                It.IsAny<IResourceFacade>(),
-        //                It.IsAny<StreamListenerState>()))
-        //        .Returns(true);
-        //    StreamHealthCheckValidationMock.Setup(a =>
-        //            a.ValidateStream(
-        //                It.IsAny<IResourceFacade>(),
-        //                It.IsAny<StreamListenerState>(),
-        //                It.IsAny<int>()))
-        //        .Returns(false);
-        //    //This call will trigger health check message
-        //    sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
+                    PluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                        Times.Exactly(2));
+                    PluginMock.Verify(a =>
+                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
+                        Times.Never);
+                    PluginMock.Verify(a =>
+                            a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    SuspensionManagerMock.Verify(a =>
+                            a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Never);
+                    SuspensionManagerMock.Verify(a =>
+                            a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
+                                SuspensionReason.SUSPENSION),
+                        Times.Once);
+                    Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+            #endregion
 
-        //    //
-        //    //Assert
-        //    //
-        //    AwaitAssert(() =>
-        //        {
-        //            resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
-        //            PluginMock.Verify(a =>
-        //                    a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
-        //                Times.Exactly(2));
-        //            PluginMock.Verify(a =>
-        //                    a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
-        //                Times.Never);
-        //            PluginMock.Verify(a =>
-        //                    a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-        //                Times.Never);
-        //            SuspensionManagerMock.Verify(a =>
-        //                    a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-        //                Times.Never);
-        //            SuspensionManagerMock.Verify(a =>
-        //                    a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-        //                        SuspensionReason.SUSPENSION),
-        //                Times.Once);
-        //            Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
-        //        },
-        //        TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-        //        TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-        //    #endregion
+            #region 3rd processing
+            //third time the stream is not valid because of missing sequences
+            //and the stream listener is stopped because of second stream invalid detection in a row due to missing sequences
+            //but Resource is Match Over so a new Stream Listener instance is created and Match Over is processed
+            StreamHealthCheckValidationMock.Reset();
+            StreamHealthCheckValidationMock.Setup(a =>
+                    a.CanConnectToStreamServer(
+                        It.IsAny<IResourceFacade>(),
+                        It.IsAny<StreamListenerState>()))
+                .Returns(true);
+            StreamHealthCheckValidationMock.Setup(a =>
+                    a.ValidateStream(
+                        It.IsAny<IResourceFacade>(),
+                        It.IsAny<StreamListenerState>(),
+                        It.IsAny<int>()))
+                .Returns(false);
+            //This call will trigger health check message
+            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
-        //    #region 3rd processing
-        //    //third time the stream is not valid because of missing sequences
-        //    //and the stream listener is stopped because of second stream invalid detection in a row due to missing sequences
-        //    //but Resource is Match Over so a new Stream Listener instance is created and Match Over is processed
-        //    StreamHealthCheckValidationMock.Reset();
-        //    StreamHealthCheckValidationMock.Setup(a =>
-        //            a.CanConnectToStreamServer(
-        //                It.IsAny<IResourceFacade>(),
-        //                It.IsAny<StreamListenerState>()))
-        //        .Returns(true);
-        //    StreamHealthCheckValidationMock.Setup(a =>
-        //            a.ValidateStream(
-        //                It.IsAny<IResourceFacade>(),
-        //                It.IsAny<StreamListenerState>(),
-        //                It.IsAny<int>()))
-        //        .Returns(false);
-        //    //This call will trigger health check message
-        //    sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
+            streamListenerActorRef = null;
 
-        //    streamListenerActorRef = null;
+            try
+            {
+                AwaitAssert(() =>
+                    {
+                        streamListenerActorRef =
+                            GetChildActorRef(
+                                streamListenerManagerActor,
+                                StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
+                        streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
 
-        //    try
-        //    {
-        //        AwaitAssert(() =>
-        //            {
-        //                streamListenerActorRef =
-        //                    GetChildActorRef(
-        //                        streamListenerManagerActor,
-        //                        StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
-        //                streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
+                        if (streamListenerActor != null)
+                            Assert.AreEqual(StreamListenerState.Stopped, streamListenerActor.State);
+                    },
+                    TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                    TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+            }
+            catch (Exception)
+            {
+                //exception could be caught here as Stream Listener Actor becomes stopped 
+                //and eventually killed before we actually have the chance to assert for Stopped state
+            }
 
-        //                if (streamListenerActor != null)
-        //                    Assert.AreEqual(StreamListenerState.Stopped, streamListenerActor.State);
-        //            },
-        //            TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-        //            TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-        //    }
-        //    catch (Exception)
-        //    {
-        //        //exception could be caught here as Stream Listener Actor becomes stopped 
-        //        //and eventually killed before we actually have the chance to assert for Stopped state
-        //    }
+            streamListenerActorRef = null;
 
-        //    streamListenerActorRef = null;
+            try
+            {
+                AwaitAssert(() =>
+                    {
+                        streamListenerActorRef =
+                            GetChildActorRef(
+                                streamListenerManagerActor,
+                                StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
 
-        //    try
-        //    {
-        //        AwaitAssert(() =>
-        //            {
-        //                streamListenerActorRef =
-        //                    GetChildActorRef(
-        //                        streamListenerManagerActor,
-        //                        StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
+                        Assert.IsNull(streamListenerActorRef);
+                    },
+                    TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                    TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+            }
+            catch (Exception)
+            {
+                //exception is expected here as Stream Listener Actor should not exist at this time
+            }
 
-        //                Assert.IsNull(streamListenerActorRef);
-        //            },
-        //            TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-        //            TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-        //    }
-        //    catch (Exception)
-        //    {
-        //        //exception is expected here as Stream Listener Actor should not exist at this time
-        //    }
+            resourceFacadeMock.Reset();
+            StateManagerMock.Reset();
+            StoreProviderMock.Reset();
 
-        //    resourceFacadeMock.Reset();
-        //    StateManagerMock.Reset();
-        //    StoreProviderMock.Reset();
+            SetupCommonMockObjects(
+                /*sport*/FootabllSportMock.Object.Name,
+                /*fixtureData*/FixtureSamples.football_matchover_snapshot_2,
+                /*storedData*/new { Epoch = 2, Sequence = 1, MatchStatus = MatchStatus.InRunning },
+                out snapshot,
+                out resourceFacadeMock);
+            ServiceMock.Reset();
+            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
+                .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
 
-        //    SetupCommonMockObjects(
-        //        /*sport*/FootabllSportMock.Object.Name,
-        //        /*fixtureData*/FixtureSamples.football_matchover_snapshot_2,
-        //        /*storedData*/new { Epoch = 2, Sequence = 1, MatchStatus = MatchStatus.InRunning },
-        //        out snapshot,
-        //        out resourceFacadeMock);
-        //    ServiceMock.Reset();
-        //    ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
-        //        .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
-
-        //    //This call will trigger stream listener actor creation
-        //    sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
+            //This call will trigger stream listener actor creation
+            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
 
-        //    streamListenerActorRef = null;
+            streamListenerActorRef = null;
 
-        //    try
-        //    {
-        //        AwaitAssert(() =>
-        //            {
-        //                streamListenerActorRef =
-        //                    GetChildActorRef(
-        //                        streamListenerManagerActor,
-        //                        StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
-        //                streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
+            try
+            {
+                AwaitAssert(() =>
+                    {
+                        streamListenerActorRef =
+                            GetChildActorRef(
+                                streamListenerManagerActor,
+                                StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
+                        streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
 
-        //                if (streamListenerActor != null)
-        //                    Assert.AreEqual(StreamListenerState.Stopped, streamListenerActor.State);
-        //            },
-        //            TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-        //            TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-        //    }
-        //    catch (Exception)
-        //    {
-        //        //exception could be caught here as Stream Listener Actor becomes stopped 
-        //        //and eventually killed before we actually have the chance to assert for Stopped state
-        //    }
+                        if (streamListenerActor != null)
+                            Assert.AreEqual(StreamListenerState.Stopped, streamListenerActor.State);
+                    },
+                    TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                    TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+            }
+            catch (Exception)
+            {
+                //exception could be caught here as Stream Listener Actor becomes stopped 
+                //and eventually killed before we actually have the chance to assert for Stopped state
+            }
 
-        //    streamListenerActorRef = null;
+            streamListenerActorRef = null;
 
-        //    try
-        //    {
-        //        AwaitAssert(() =>
-        //            {
-        //                streamListenerActorRef =
-        //                    GetChildActorRef(
-        //                        streamListenerManagerActor,
-        //                        StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
+            try
+            {
+                AwaitAssert(() =>
+                    {
+                        streamListenerActorRef =
+                            GetChildActorRef(
+                                streamListenerManagerActor,
+                                StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
 
-        //                Assert.IsNull(streamListenerActorRef);
+                        Assert.IsNull(streamListenerActorRef);
 
-        //                resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
-        //                PluginMock.Verify(a =>
-        //                        a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
-        //                    Times.Never);
-        //                PluginMock.Verify(a =>
-        //                        a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
-        //                    Times.Once);
-        //                PluginMock.Verify(a =>
-        //                        a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-        //                    Times.Never);
-        //                SuspensionManagerMock.Verify(a =>
-        //                        a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-        //                    Times.Never);
-        //                SuspensionManagerMock.Verify(a =>
-        //                        a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-        //                            SuspensionReason.SUSPENSION),
-        //                    Times.Once);
-        //            },
-        //            TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-        //            TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-        //    }
-        //    catch (Exception)
-        //    {
-        //        //exception is expected here as Stream Listener Actor should not exist at this time
-        //    }
-        //    #endregion
+                        resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                        PluginMock.Verify(a =>
+                                a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+                            Times.Never);
+                        PluginMock.Verify(a =>
+                                a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
+                            Times.Once);
+                        PluginMock.Verify(a =>
+                                a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                            Times.Never);
+                        SuspensionManagerMock.Verify(a =>
+                                a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                            Times.Never);
+                        SuspensionManagerMock.Verify(a =>
+                                a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
+                                    SuspensionReason.SUSPENSION),
+                            Times.Once);
+                    },
+                    TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                    TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+            }
+            catch (Exception)
+            {
+                //exception is expected here as Stream Listener Actor should not exist at this time
+            }
+            #endregion
 
-        //    #region 4th processing
-        //    //fourth time no Stream Listener is created as Match is already Over and was already processed
-        //    sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
+            #region 4th processing
+            //fourth time no Stream Listener is created as Match is already Over and was already processed
+            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
-        //    streamListenerActorRef = null;
+            streamListenerActorRef = null;
 
-        //    try
-        //    {
-        //        AwaitAssert(() =>
-        //            {
-        //                streamListenerActorRef =
-        //                    GetChildActorRef(
-        //                        streamListenerManagerActor,
-        //                        StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
-        //                streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
-        //                Assert.NotNull(streamListenerActorRef);
-        //                Assert.NotNull(streamListenerActor);
-        //            },
-        //            TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-        //            TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-        //    }
-        //    catch (Exception)
-        //    {
-        //        //exception is expected here as Stream Listener Actor should not exist at this time
-        //    }
+            try
+            {
+                AwaitAssert(() =>
+                    {
+                        streamListenerActorRef =
+                            GetChildActorRef(
+                                streamListenerManagerActor,
+                                StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
+                        streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
+                        Assert.NotNull(streamListenerActorRef);
+                        Assert.NotNull(streamListenerActor);
+                    },
+                    TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                    TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+            }
+            catch (Exception)
+            {
+                //exception is expected here as Stream Listener Actor should not exist at this time
+            }
 
-        //    //
-        //    //Assert
-        //    //
-        //    AwaitAssert(() =>
-        //        {
-        //            Assert.IsNull(streamListenerActorRef);
-        //        },
-        //        TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-        //        TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-        //    #endregion
-        //}
-    
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                {
+                    Assert.IsNull(streamListenerActorRef);
+                },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+            #endregion
+        }
+
         #endregion
     }
 }
