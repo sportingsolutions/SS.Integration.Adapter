@@ -370,7 +370,7 @@ namespace SS.Integration.Adapter.Tests
                     Props.Create(() => new SportProcessorRouterActor(ServiceMock.Object))
                         .WithRouter(new SmallestMailboxPool(SettingsMock.Object.FixtureCreationConcurrency)),
                     SportProcessorRouterActor.ActorName);
-            ActorOfAsTestActorRef<SportsProcessorActor>(
+            var sportProcessActor = ActorOfAsTestActorRef<SportsProcessorActor>(
                 Props.Create(() =>
                     new SportsProcessorActor(
                         SettingsMock.Object,
@@ -492,8 +492,9 @@ namespace SS.Integration.Adapter.Tests
                     TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                     TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 //exception could be caught here as Stream Listener Actor becomes stopped 
                 //and eventually killed before we actually have the chance to assert for Stopped state
             }

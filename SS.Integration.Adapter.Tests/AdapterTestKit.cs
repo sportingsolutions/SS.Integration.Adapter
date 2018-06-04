@@ -137,7 +137,9 @@ namespace SS.Integration.Adapter.Tests
 
         protected IActorRef GetChildActorRef(IActorRef anchorRef, string name)
         {
-            return Sys.ActorSelection(anchorRef, name).ResolveOne(TimeSpan.FromSeconds(5)).Result;
+            var actorSel = Sys.ActorSelection(anchorRef, name);
+            var resolveOne = actorSel.ResolveOne(TimeSpan.FromSeconds(5));
+            return resolveOne.Result;
         }
 
         protected TActor GetUnderlyingActor<TActor>(IActorRef actorRef) where TActor : ActorBase
