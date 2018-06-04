@@ -1603,7 +1603,7 @@ namespace SS.Integration.Adapter.Tests
             AwaitAssert(() =>
                 {
                     //TODO: investigate
-                    //resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
                         Times.Never);
