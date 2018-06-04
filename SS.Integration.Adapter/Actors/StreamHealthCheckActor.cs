@@ -118,15 +118,15 @@ namespace SS.Integration.Adapter.Actors
                 {
                     _logger.Warn($"Detected invalid stream for {msg.Resource}");
 
-                    if (_streamInvalidDetected)
-                    {
-                        Context.Parent.Tell(new StopStreamingMsg());
-                    }
-                    else
-                    {
+                        // if (_streamInvalidDetected)
+                    //{
+                        //Context.Parent.Tell(new StopStreamingMsg());
+                    //}
+                    //else
+                    //{
                         _streamInvalidDetected = true;
                         Context.Parent.Tell(new SuspendAndReprocessSnapshotMsg());
-                    }
+                    //}
                 }
                 else
                 {

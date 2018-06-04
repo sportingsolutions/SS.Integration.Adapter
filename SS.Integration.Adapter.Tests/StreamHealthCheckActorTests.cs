@@ -477,8 +477,6 @@ namespace SS.Integration.Adapter.Tests
             //This call will trigger health check message
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
-             //вряд ли я разработчик, да))
-
             streamListenerActorRef = null;
 
             try
@@ -520,7 +518,6 @@ namespace SS.Integration.Adapter.Tests
 
             //This call will trigger stream listener actor creation
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
-
 
             streamListenerActorRef = null;
 
