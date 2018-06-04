@@ -389,6 +389,7 @@ namespace SS.Integration.Adapter.Tests
             //Assert
             //
             #region 1st processing
+            Console.WriteLine("1st step");
             //first time the stream listeners goes into Streaming State
             AwaitAssert(() =>
                 {
@@ -411,6 +412,7 @@ namespace SS.Integration.Adapter.Tests
             #endregion
 
             #region 2nd processing
+            Console.WriteLine("2nd step");
             //second time the stream is not valid because of missing sequences and the fixture is suspended and snapshot processed
             StreamHealthCheckValidationMock.Reset();
             StreamHealthCheckValidationMock.Setup(a =>
@@ -456,6 +458,7 @@ namespace SS.Integration.Adapter.Tests
             #endregion
 
             #region 3rd processing
+            Console.WriteLine("3rd step");
             //third time the stream is not valid because of missing sequences
             //and the stream listener is stopped because of second stream invalid detection in a row due to missing sequences
             //but Resource is Match Over so a new Stream Listener instance is created and Match Over is processed
@@ -473,6 +476,8 @@ namespace SS.Integration.Adapter.Tests
                 .Returns(false);
             //This call will trigger health check message
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
+
+             //вряд ли я разработчик, да))
 
             streamListenerActorRef = null;
 
@@ -581,6 +586,7 @@ namespace SS.Integration.Adapter.Tests
             #endregion
 
             #region 4th processing
+            Console.WriteLine("4th step");
             //fourth time no Stream Listener is created as Match is already Over and was already processed
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
