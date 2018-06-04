@@ -463,45 +463,6 @@ namespace SS.Integration.Adapter.Tests
             //and the stream listener is stopped because of second stream invalid detection in a row due to missing sequences
             //but Resource is Match Over so a new Stream Listener instance is created and Match Over is processed
             StreamHealthCheckValidationMock.Reset();
-            StreamHealthCheckValidationMock.Setup(a =>
-                    a.CanConnectToStreamServer(
-                        It.IsAny<IResourceFacade>(),
-                        It.IsAny<StreamListenerState>()))
-                .Returns(true);
-            StreamHealthCheckValidationMock.Setup(a =>
-                    a.ValidateStream(
-                        It.IsAny<IResourceFacade>(),
-                        It.IsAny<StreamListenerState>(),
-                        It.IsAny<int>()))
-                .Returns(false);
-            //This call will trigger health check message
-            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
-
-            streamListenerActorRef = null;
-
-            try
-            {
-                AwaitAssert(() =>
-                    {
-                        streamListenerActorRef =
-                            GetChildActorRef(
-                                streamListenerManagerActor,
-                                StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
-                        streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
-
-                        if (streamListenerActor != null)
-                            Assert.AreEqual(StreamListenerState.Stopped, streamListenerActor.State);
-                    },
-                    TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-                    TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                //exception could be caught here as Stream Listener Actor becomes stopped 
-                //and eventually killed before we actually have the chance to assert for Stopped state
-            }
-
             resourceFacadeMock.Reset();
             StateManagerMock.Reset();
             StoreProviderMock.Reset();
