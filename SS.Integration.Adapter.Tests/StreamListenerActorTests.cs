@@ -2225,11 +2225,10 @@ namespace SS.Integration.Adapter.Tests
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
                         Times.Never);
-                    //TODO: investigate
-                    //SuspensionManagerMock.Verify(a =>
-                    //        a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                    //            SuspensionReason.SUSPENSION),
-                    //    Times.Once);
+                    SuspensionManagerMock.Verify(a =>
+                            a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
+                                SuspensionReason.SUSPENSION),
+                        Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Exactly(2));
