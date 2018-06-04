@@ -392,7 +392,7 @@ namespace SS.Integration.Adapter.Tests
             //first time the stream listeners goes into Streaming State
             AwaitAssert(() =>
                 {
-                    streamListenerActorRef =
+                     streamListenerActorRef =
                         GetChildActorRef(
                             streamListenerManagerActor,
                             StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
@@ -499,27 +499,6 @@ namespace SS.Integration.Adapter.Tests
                 //and eventually killed before we actually have the chance to assert for Stopped state
             }
 
-            streamListenerActorRef = null;
-
-            try
-            {
-                AwaitAssert(() =>
-                    {
-                        streamListenerActorRef =
-                            GetChildActorRef(
-                                streamListenerManagerActor,
-                                StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
-
-                        Assert.IsNull(streamListenerActorRef);
-                    },
-                    TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-                    TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-            }
-            catch (Exception)
-            {
-                //exception is expected here as Stream Listener Actor should not exist at this time
-            }
-
             resourceFacadeMock.Reset();
             StateManagerMock.Reset();
             StoreProviderMock.Reset();
@@ -556,8 +535,9 @@ namespace SS.Integration.Adapter.Tests
                     TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                     TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 //exception could be caught here as Stream Listener Actor becomes stopped 
                 //and eventually killed before we actually have the chance to assert for Stopped state
             }
@@ -572,8 +552,6 @@ namespace SS.Integration.Adapter.Tests
                             GetChildActorRef(
                                 streamListenerManagerActor,
                                 StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
-
-                        Assert.IsNull(streamListenerActorRef);
 
                         resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
                         PluginMock.Verify(a =>
