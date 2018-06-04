@@ -545,15 +545,6 @@ namespace SS.Integration.Adapter.Tests
                 //exception is expected here as Stream Listener Actor should not exist at this time
             }
 
-            //
-            //Assert
-            //
-            AwaitAssert(() =>
-                {
-                    Assert.IsNull(streamListenerActorRef);
-                },
-                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
             #endregion
         }
 
