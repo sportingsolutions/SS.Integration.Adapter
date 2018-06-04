@@ -1618,7 +1618,7 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
-                        Times.Once);
+                        Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.FIXTURE_ERRORED),
