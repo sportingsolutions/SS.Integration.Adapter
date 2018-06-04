@@ -371,13 +371,6 @@ namespace SS.Integration.Adapter.Tests
                     Props.Create(() => new SportProcessorRouterActor(ServiceMock.Object))
                         .WithRouter(new SmallestMailboxPool(SettingsMock.Object.FixtureCreationConcurrency)),
                     SportProcessorRouterActor.ActorName);
-            ActorOfAsTestActorRef<SportsProcessorActor>(
-                Props.Create(() =>
-                    new SportsProcessorActor(
-                        SettingsMock.Object,
-                        ServiceMock.Object,
-                        sportProcessorRouterActor)),
-                SportsProcessorActor.ActorName);
 
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
