@@ -2205,7 +2205,7 @@ namespace SS.Integration.Adapter.Tests
                     Assert.NotNull(streamListenerActor);
 
                     resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
-                    //resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Once);
+                    resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Once);
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
                         Times.Exactly(2));
