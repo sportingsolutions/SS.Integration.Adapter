@@ -476,8 +476,7 @@ namespace SS.Integration.Adapter.Tests
             //
             AwaitAssert(() =>
                 {
-                    //TODO: investigate times.once
-                   // resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
                         Times.Once);
@@ -1569,12 +1568,13 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
-            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
-                .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
+           
             //this will force initialization to fail
             resourceFacadeMock.Reset();
             resourceFacadeMock.Setup(o => o.Id).Returns(snapshot.Id);
-
+            ServiceMock.Setup(o => o.GetSports()).Returns(new[] { FootabllSportMock.Object });
+            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
+                .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
             //
             //Act
             //
@@ -1594,7 +1594,7 @@ namespace SS.Integration.Adapter.Tests
                     Props.Create(() => new SportProcessorRouterActor(ServiceMock.Object))
                         .WithRouter(new SmallestMailboxPool(SettingsMock.Object.FixtureCreationConcurrency)),
                     SportProcessorRouterActor.ActorName);
-
+            
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
             //
@@ -1602,8 +1602,7 @@ namespace SS.Integration.Adapter.Tests
             //
             AwaitAssert(() =>
                 {
-                    //TODO: investigate
-                    //resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
                         Times.Never);
@@ -1616,15 +1615,14 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    //TODO: investigate logic below
-                    //SuspensionManagerMock.Verify(a =>
-                    //        a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                    //            SuspensionReason.SUSPENSION),
-                    //    Times.Once);
-                    //SuspensionManagerMock.Verify(a =>
-                    //        a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                    //            SuspensionReason.FIXTURE_ERRORED),
-                    //    Times.Once);
+                    SuspensionManagerMock.Verify(a =>
+                            a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
+                                SuspensionReason.SUSPENSION),
+                        Times.Once);
+                    SuspensionManagerMock.Verify(a =>
+                            a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
+                                SuspensionReason.FIXTURE_ERRORED),
+                        Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
@@ -2227,11 +2225,10 @@ namespace SS.Integration.Adapter.Tests
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
                         Times.Never);
-                    //TODO: investigate
-                    //SuspensionManagerMock.Verify(a =>
-                    //        a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                    //            SuspensionReason.SUSPENSION),
-                    //    Times.Once);
+                    SuspensionManagerMock.Verify(a =>
+                            a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
+                                SuspensionReason.SUSPENSION),
+                        Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Exactly(2));
