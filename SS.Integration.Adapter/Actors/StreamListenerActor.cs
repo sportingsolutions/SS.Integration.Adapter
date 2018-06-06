@@ -622,9 +622,9 @@ namespace SS.Integration.Adapter.Actors
 
         private void HandleUpdateDelay(Fixture snapshot)
         {
-            Context.System.Scheduler.ScheduleTellOnce(_settings.DelayedFixtureRecoveryAttemptSchedule * 1000,
+            Context.System.Scheduler.ScheduleTellOnce(_settings.delayedFixtureRecoveryAttemptSchedule * 1000,
                 Self, new RecoverDelayedFixtureMsg { Sequence = snapshot.Sequence }, Self);
-            _logger.Info($"{snapshot} is suspend{(_fixtureIsSuspended ? "ed" : "ing")}, due to delay unsuspend scheduled after timeInSeconds={_settings.DelayedFixtureRecoveryAttemptSchedule}");
+            _logger.Info($"{snapshot} is suspend{(_fixtureIsSuspended ? "ed" : "ing")}, due to delay unsuspend scheduled after timeInSeconds={_settings.delayedFixtureRecoveryAttemptSchedule}");
             if (!_fixtureIsSuspended)
                 SuspendFixture(SuspensionReason.UPDTATE_DELAYED);
             
@@ -646,7 +646,7 @@ namespace SS.Integration.Adapter.Actors
 
             var timeStamp = fixture.TimeStamp.Value;
 
-            if (DateTime.UtcNow - timeStamp >= TimeSpan.FromSeconds(_settings.MaxFixtureUpdateDelayInSeconds))
+            if (DateTime.UtcNow - timeStamp >= TimeSpan.FromSeconds(_settings.maxFixtureUpdateDelayInSeconds))
             {
                 _logger.Warn($"ValidateFixtureTimeStamp failed for fixture with fixtureId={_fixtureId}, sequence={fixture.Sequence}, " +
                      $"delay={(DateTime.UtcNow - timeStamp).TotalSeconds} sec");
