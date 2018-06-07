@@ -116,6 +116,7 @@ namespace SS.Integration.Adapter.Actors
             if (!_fixturesState.TryGetValue(msg.FixtureId, out fixtureState))
             {
                 fixtureState = new FixtureState { Id = msg.FixtureId, Sport = msg.Sport };
+                _fixturesState.Add(fixtureState.Id, fixtureState);
             }
 
             fixtureState.Sequence = msg.Sequence;
