@@ -1568,12 +1568,13 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
-            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
-                .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
+           
             //this will force initialization to fail
             resourceFacadeMock.Reset();
             resourceFacadeMock.Setup(o => o.Id).Returns(snapshot.Id);
-
+            ServiceMock.Setup(o => o.GetSports()).Returns(new[] { FootabllSportMock.Object });
+            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
+                .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
             //
             //Act
             //
@@ -1593,7 +1594,7 @@ namespace SS.Integration.Adapter.Tests
                     Props.Create(() => new SportProcessorRouterActor(ServiceMock.Object))
                         .WithRouter(new SmallestMailboxPool(SettingsMock.Object.FixtureCreationConcurrency)),
                     SportProcessorRouterActor.ActorName);
-
+            
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
             //
@@ -2204,7 +2205,7 @@ namespace SS.Integration.Adapter.Tests
                     Assert.NotNull(streamListenerActor);
 
                     resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
-                    //resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Once);
+                    resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Once);
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
                         Times.Exactly(2));

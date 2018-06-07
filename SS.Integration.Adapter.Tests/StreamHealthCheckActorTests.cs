@@ -92,6 +92,7 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 3, Sequence = 1, MatchStatus = MatchStatus.Setup },
                 out snapshot,
                 out resourceFacadeMock);
+            ServiceMock.Setup(o => o.GetSports()).Returns(new[] { FootabllSportMock.Object });
             ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
                 .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
             StreamHealthCheckValidationMock.Setup(a =>
@@ -125,14 +126,20 @@ namespace SS.Integration.Adapter.Tests
                     Props.Create(() => new SportProcessorRouterActor(ServiceMock.Object))
                         .WithRouter(new SmallestMailboxPool(SettingsMock.Object.FixtureCreationConcurrency)),
                     SportProcessorRouterActor.ActorName);
-
+            ActorOfAsTestActorRef<SportsProcessorActor>(
+                Props.Create(() =>
+                    new SportsProcessorActor(
+                        SettingsMock.Object,
+                        ServiceMock.Object,
+                        sportProcessorRouterActor)),
+                SportsProcessorActor.ActorName);
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
             IActorRef streamListenerActorRef;
             StreamListenerActor streamListenerActor = null;
             IActorRef resourceActorRef;
             IActorRef healthCheckActorRef;
-
+           
             //Get child actors instances
             AwaitAssert(() =>
                 {
@@ -315,6 +322,7 @@ namespace SS.Integration.Adapter.Tests
         /// - thirs snapshot processing is done due to match over processing after we get the second health check message 
         ///   and restart stream listener due to missing sequences for second time in a row
         /// </summary>
+
         [Test]
         [Category(STREAM_HEALTH_CHECK_ACTOR_CATEGORY)]
         public void WhenStreamingAndMatchOverUpdateAfterSecondTimeMissingSequencesThenRecreateStreamListenerAndProcessMatchOver()
@@ -330,6 +338,7 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 3, Sequence = 1, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
+            ServiceMock.Setup(o => o.GetSports()).Returns(new[] { FootabllSportMock.Object });
             ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
                 .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
             StreamHealthCheckValidationMock.Setup(a =>
