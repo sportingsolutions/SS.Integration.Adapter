@@ -121,6 +121,8 @@ namespace SS.Integration.Adapter.Actors
             fixtureState.Sequence = msg.Sequence;
             fixtureState.MatchStatus = msg.Status;
             fixtureState.Epoch = msg.Epoch;
+
+            _fixturesState[msg.FixtureId] = fixtureState;
         }
 
         private void RemoveFixtureStateMsgHandler(RemoveFixtureStateMsg msg)
