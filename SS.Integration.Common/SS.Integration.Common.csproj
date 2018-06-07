@@ -88,6 +88,7 @@
     <Compile Include="Extensions\IDictionaryExtension.cs" />
     <Compile Include="Extensions\IEnumerableExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
+    <Compile Include="Extensions\TimeExtensions.cs" />
     <Compile Include="FixtureDateTimeJsonConverter.cs" />
     <Compile Include="IncrementPerformanceCounter.cs" />
     <Compile Include="PerformanceCounterBase.cs" />

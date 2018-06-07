@@ -58,6 +58,7 @@ namespace SS.Integration.Adapter.Actors
 
         private readonly string _fixtureId;
         private int _currentEpoch;
+        private int _suspendErrorCounter;
         private int _currentSequence;
         private int _lastSequenceProcessedInSnapshot;
         private DateTime? _fixtureStartTime;
@@ -157,7 +158,8 @@ namespace SS.Integration.Adapter.Actors
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
             Receive<SuspendMessage>(a => Suspend());
-            
+            Receive<SuspendRetryMessage>(a => { if (_suspendErrorCounter > 0) Suspend();});
+
             try
             {
                 RetrieveAndProcessSnapshot();
@@ -191,6 +193,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
             Receive<SuspendMessage>(a => Suspend());
+            Receive<SuspendRetryMessage>(a => { if (_suspendErrorCounter > 0) Suspend(); });
 
             try
             {
@@ -327,6 +330,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
             Receive<SuspendMessage>(a => Suspend());
+            Receive<SuspendRetryMessage>(a => { if (_suspendErrorCounter > 0) Suspend(); });
         }
 
         //No further messages should be accepted, resource has stopped streaming
@@ -1013,8 +1017,11 @@ namespace SS.Integration.Adapter.Actors
             catch (PluginException ex)
             {
                 UpdateStatsError(ex);
-                throw;
+                _suspendErrorCounter++;
+                SdkActorSystem.ActorSystem.Scheduler.ScheduleTellOnce(_suspendErrorCounter.RetryInterval(10), Self, new SuspendRetryMessage(), Self);
             }
+
+            _suspendErrorCounter = 0;
         }
 
         private void UpdateFixtureState(Fixture snapshot, bool isSnapshot = false)
