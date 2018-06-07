@@ -45,7 +45,9 @@ namespace SS.Integration.Adapter.Configuration
         private const int DEFAULT_START_STREAMING_TIMEOUT = 60;
         private const int DEFAULT_START_STREAMING_ATTEMPTS = 10;
         private const int DEFAULT_STREAM_THRESHOLD = int.MaxValue;
-        private const int DEFAULT_FIXTURE_TIMESTAMP_DIFFERECE_VALUE = 30;
+        private const int DEFAULT_FIXTURE_TIMESTAMP_DIFFERENCE_VALUE = 1440;
+        private const int DEFAULT_FIXTURE_RECOVER_INTERVAL = 30;
+
 
         public Settings()
         {
@@ -137,14 +139,14 @@ namespace SS.Integration.Adapter.Configuration
             value = ConfigurationManager.AppSettings["isSdkServiceCacheEnabled"];
             IsSdkServiceCacheEnabled = !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
 
-            value = ConfigurationManager.AppSettings["MaxFixtureUpdateDelayInSeconds"];
-            MaxFixtureUpdateDelayInSeconds = string.IsNullOrEmpty(value)
-                ? DEFAULT_FIXTURE_TIMESTAMP_DIFFERECE_VALUE
+            value = ConfigurationManager.AppSettings["maxFixtureUpdateDelayInSeconds"];
+            maxFixtureUpdateDelayInSeconds = string.IsNullOrEmpty(value)
+                ? DEFAULT_FIXTURE_TIMESTAMP_DIFFERENCE_VALUE
                 : Convert.ToInt32(value);
 
-            value = ConfigurationManager.AppSettings["DelayedFixtureRecoveryAttemptSchedule"];
-            DelayedFixtureRecoveryAttemptSchedule = string.IsNullOrEmpty(value)
-                ? DEFAULT_FIXTURE_TIMESTAMP_DIFFERECE_VALUE
+            value = ConfigurationManager.AppSettings["delayedFixtureRecoveryAttemptSchedule"];
+            delayedFixtureRecoveryAttemptSchedule = string.IsNullOrEmpty(value)
+                ? DEFAULT_FIXTURE_RECOVER_INTERVAL
                 : Convert.ToInt32(value);
 
             value = ConfigurationManager.AppSettings["autoReconnect"];
@@ -223,11 +225,11 @@ namespace SS.Integration.Adapter.Configuration
 
         public bool UseSupervisor { get; private set; }
 
-        public int MaxFixtureUpdateDelayInSeconds { get; private set; }
+        public int maxFixtureUpdateDelayInSeconds { get; private set; }
 
         public bool AutoReconnect { get; private set; }
 
 
-        public int DelayedFixtureRecoveryAttemptSchedule { get; private set; }
+        public int delayedFixtureRecoveryAttemptSchedule { get; private set; }
     }
 }
