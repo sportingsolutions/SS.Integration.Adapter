@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Akka.Event;
 using log4net;
@@ -109,7 +110,7 @@ namespace SS.Integration.Adapter.Actors
             }
 
             _logger.Error(
-                $"Error occured at {msg.ErrorOccuredAt} for {startMessage.Fixture} sequence {startMessage.Sequence} - {msg.Error}");
+                $"Error occured at {msg.ErrorOccuredAt} for {startMessage?.Fixture} sequence {startMessage?.Sequence} - {msg.Error}");
 
             var minutes = (int)Math.Ceiling((DateTime.UtcNow - AdapterStartDate).TotalMinutes);
             if (minutes == 0)
@@ -202,6 +203,8 @@ namespace SS.Integration.Adapter.Actors
 
         private T GetStartMessageObject<T>() where T : UpdateStatsStartMsg
         {
+            if (!_startMessagesStack.Any())
+                return null;
             var startMessage = _startMessagesStack.Pop();
             var startMessageCast = startMessage as T;
             if (startMessageCast == null)

@@ -7,8 +7,8 @@ using SS.Integration.Adapter.Model;
 
 namespace SS.Integration.Adapter.Actors.Messages
 {
-    public class SuspendMessage
+    public class UnSuspendRetryMessage
     {
-        
+        public FixtureState State { set; get; }
     }
 }

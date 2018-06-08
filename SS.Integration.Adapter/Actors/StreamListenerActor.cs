@@ -59,6 +59,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly string _fixtureId;
         private int _currentEpoch;
         private int _suspendErrorCounter;
+        private int _unSuspendErrorCounter;
         private int _currentSequence;
         private int _lastSequenceProcessedInSnapshot;
         private DateTime? _fixtureStartTime;
@@ -158,7 +159,10 @@ namespace SS.Integration.Adapter.Actors
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
             Receive<SuspendMessage>(a => Suspend());
-            Receive<SuspendRetryMessage>(a => { if (_suspendErrorCounter > 0) Suspend();});
+            Receive<SuspendRetryMessage>(a =>  SuspendRetryHandler());
+            Receive<UnSuspendRetryMessage>(a => UnSuspendRetryHandler(a));
+
+
 
             try
             {
@@ -174,7 +178,7 @@ namespace SS.Integration.Adapter.Actors
                 Become(Errored);
             }
         }
-
+        
         //Connected and streaming state - all messages should be processed
         private void Streaming()
         {
@@ -193,7 +197,8 @@ namespace SS.Integration.Adapter.Actors
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
             Receive<SuspendMessage>(a => Suspend());
-            Receive<SuspendRetryMessage>(a => { if (_suspendErrorCounter > 0) Suspend(); });
+            Receive<SuspendRetryMessage>(a => SuspendRetryHandler());
+            Receive<UnSuspendRetryMessage>(a => UnSuspendRetryHandler(a));
 
             try
             {
@@ -229,6 +234,22 @@ namespace SS.Integration.Adapter.Actors
                 _erroredException = ex;
                 Become(Errored);
             }
+        }
+
+        private void SuspendRetryHandler()
+        {
+            _logger.Info($"SuspendRetry message received  for {_resource} suspendErrorCounter={_suspendErrorCounter}");
+            if (_suspendErrorCounter > 0)
+                Suspend();
+        }
+
+        private void UnSuspendRetryHandler(UnSuspendRetryMessage msg)
+        {
+            _logger.Info($"UnSuspendRetry message received  for {_resource} unSuspendErrorCounter={_unSuspendErrorCounter}");
+            if (_unSuspendErrorCounter > 0)
+                UnsuspendFixture(msg.State);
+
+
         }
 
         private FixtureState GetFixtureState()
@@ -330,7 +351,8 @@ namespace SS.Integration.Adapter.Actors
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
             Receive<SuspendMessage>(a => Suspend());
-            Receive<SuspendRetryMessage>(a => { if (_suspendErrorCounter > 0) Suspend(); });
+            Receive<SuspendRetryMessage>(a => SuspendRetryHandler());
+            Receive<UnSuspendRetryMessage>(a => UnSuspendRetryHandler(a));
         }
 
         //No further messages should be accepted, resource has stopped streaming
@@ -604,11 +626,13 @@ namespace SS.Integration.Adapter.Actors
             {
                 _suspensionManager.Unsuspend(fixture);
                 _fixtureIsSuspended = false;
+                _unSuspendErrorCounter = 0;
             }
-            catch (PluginException ex)
+            catch (Exception ex)
             {
                 UpdateStatsError(ex);
-                throw;
+                _unSuspendErrorCounter++;
+                SdkActorSystem.ActorSystem.Scheduler.ScheduleTellOnce(_unSuspendErrorCounter.RetryInterval(5), Self, new SuspendRetryMessage(), Self);
             }
         }
 
@@ -1013,15 +1037,16 @@ namespace SS.Integration.Adapter.Actors
             {
                 _suspensionManager.Suspend(new Fixture { Id = _fixtureId }, reason);
                 _fixtureIsSuspended = true;
+                _suspendErrorCounter = 0;
             }
-            catch (PluginException ex)
+            catch (Exception ex)
             {
                 UpdateStatsError(ex);
                 _suspendErrorCounter++;
-                SdkActorSystem.ActorSystem.Scheduler.ScheduleTellOnce(_suspendErrorCounter.RetryInterval(10), Self, new SuspendRetryMessage(), Self);
+                SdkActorSystem.ActorSystem.Scheduler.ScheduleTellOnce(_suspendErrorCounter.RetryInterval(5), Self, new SuspendRetryMessage(), Self);
             }
 
-            _suspendErrorCounter = 0;
+            
         }
 
         private void UpdateFixtureState(Fixture snapshot, bool isSnapshot = false)
