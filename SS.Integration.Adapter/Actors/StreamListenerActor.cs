@@ -370,11 +370,27 @@ namespace SS.Integration.Adapter.Actors
             Context.Parent.Tell(new StreamListenerStoppedMsg { FixtureId = _fixtureId });
         }
 
+        private void Initizing()
+        {
+            State = StreamListenerState.Initializing;
+
+            _logger.Info($"Stream listener for {_resource} moved to Initializing State");
+
+            Receive<StreamConnectedMsg>(a => Become(Streaming));
+            Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
+            Receive<StreamUpdateMsg>(a => Stash.Stash());
+            Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
+            Receive<ClearFixtureStateMsg>(a => ClearState(true));
+            Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
+            Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
+            Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServer());
+        }
+
         #endregion
 
-        #region Message Handlers
+            #region Message Handlers
 
-        private void StreamHealthCheckMsgHandler(StreamHealthCheckMsg msg)
+            private void StreamHealthCheckMsgHandler(StreamHealthCheckMsg msg)
         {
             msg.StreamingState = State;
             msg.CurrentSequence = _currentSequence;
@@ -523,14 +539,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                State = StreamListenerState.Initializing;
-
-                Receive<StreamConnectedMsg>(a => Become(Streaming));
-                Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
-                Receive<StreamUpdateMsg>(a => Stash.Stash());
-                Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
-                Receive<ClearFixtureStateMsg>(a => ClearState(true));
-                Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
+                Become(Initizing);
 
                 var fixtureState = GetFixtureState();
 
@@ -569,7 +578,7 @@ namespace SS.Integration.Adapter.Actors
                     //either connect to stream server and go to Streaming State, or go to Initialized State
                     if (_streamHealthCheckValidation.CanConnectToStreamServer(_resource, State))
                     {
-                        ConnectToStreamServer();
+                        SdkActorSystem.ActorSystem.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(5), Self, new ConnectToStreamServerMsg(), Self);
                     }
                     else
                     {
@@ -834,6 +843,7 @@ namespace SS.Integration.Adapter.Actors
             }
 
             _logger.Info($"Finished processing {logString} for {snapshot}");
+            
         }
 
         private void UpdateSupervisorState(Fixture snapshot, bool isFullSnapshot)
@@ -1045,8 +1055,8 @@ namespace SS.Integration.Adapter.Actors
                 _suspendErrorCounter++;
                 SdkActorSystem.ActorSystem.Scheduler.ScheduleTellOnce(_suspendErrorCounter.RetryInterval(5), Self, new SuspendRetryMessage(), Self);
             }
-
             
+
         }
 
         private void UpdateFixtureState(Fixture snapshot, bool isSnapshot = false)
