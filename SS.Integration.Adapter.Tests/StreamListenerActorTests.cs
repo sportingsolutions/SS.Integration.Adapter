@@ -190,7 +190,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Never);
+                        Times.Once); //because we make unsuspend in every snapshot processing if fixture had been suspended
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.MATCH_OVER),
@@ -733,7 +733,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Never);
+                        Times.Once);    //because process snapshot unsuspends fixture
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SNAPSHOT),
@@ -833,7 +833,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Never);
+                        Times.Once);   //once calling of process snapshot calls unsuspend
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SNAPSHOT),
@@ -988,7 +988,8 @@ namespace SS.Integration.Adapter.Tests
                 Id = resourceFacadeMock.Object.Id,
                 Sequence = resourceFacadeMock.Object.Content.Sequence + 1,
                 Epoch = snapshot.Epoch,
-                MatchStatus = ((int)MatchStatus.InRunning).ToString()
+                MatchStatus = ((int)MatchStatus.InRunning).ToString(),
+                TimeStamp = DateTime.Now
             };
             StreamMessage message = new StreamMessage { Content = update };
 

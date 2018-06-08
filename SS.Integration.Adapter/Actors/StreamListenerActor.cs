@@ -503,8 +503,8 @@ namespace SS.Integration.Adapter.Actors
 
                 _currentEpoch = fixtureState?.Epoch ?? -1;
                 _currentSequence = _resource.Content.Sequence;
-                _lastSequenceProcessedInSnapshot = -1;
-                _fixtureIsSuspended = false;
+                _lastSequenceProcessedInSnapshot = -1; 
+                 _fixtureIsSuspended = false;
 
                 if (!string.IsNullOrEmpty(_resource.Content?.StartTime))
                 {
@@ -1001,7 +1001,8 @@ namespace SS.Integration.Adapter.Actors
 
         private void SuspendAndReprocessSnapshot(SuspensionReason suspendReason, bool hasEpochChanged = false)
         {
-            SuspendFixture(suspendReason);
+            if (!_fixtureIsSuspended)
+                SuspendFixture(suspendReason);
             RetrieveAndProcessSnapshot(hasEpochChanged);
         }
 

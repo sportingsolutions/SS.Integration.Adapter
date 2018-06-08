@@ -143,7 +143,7 @@ namespace SS.Integration.Adapter.Actors
         private void ProcessResourceMsgHandler(ProcessResourceMsg msg)
         {
             _logger.Info(
-                $"ProcessResourceMsgHandler for {msg.Resource} Epoch={msg.Resource.Content.MatchStatus}");
+                $"ProcessResourceMsgHandler for {msg.Resource} Epoch={msg.Resource.Content?.MatchStatus}");
             IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.Resource.Id));
             if (streamListenerActor.IsNobody())
             {
