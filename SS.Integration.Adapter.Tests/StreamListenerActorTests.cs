@@ -1569,12 +1569,12 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
+            resourceFacadeMock.Reset();
+            resourceFacadeMock.Setup(o => o.Id).Returns(snapshot.Id);
+            ServiceMock.Setup(o => o.GetSports()).Returns(new[] { FootabllSportMock.Object });
             ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
                 .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
             //this will force initialization to fail
-            resourceFacadeMock.Reset();
-            resourceFacadeMock.Setup(o => o.Id).Returns(snapshot.Id);
-
             //
             //Act
             //

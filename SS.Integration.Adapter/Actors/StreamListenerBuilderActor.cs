@@ -300,7 +300,7 @@ namespace SS.Integration.Adapter.Actors
             var streamListenerActorName = StreamListenerActor.GetName(resource.Id);
             if (_streamListenerManagerActorContext.Child(streamListenerActorName).IsNobody())
             {
-                if (_creationInProgressFixtureIdSet.Count + 10 > _settings.FixtureCreationConcurrency)
+                if (_creationInProgressFixtureIdSet.Count + 1 > _settings.FixtureCreationConcurrency)
                 {
                     _logger.Info(
                         $"BuildStreamListenerActorInstance - {resource}" +
