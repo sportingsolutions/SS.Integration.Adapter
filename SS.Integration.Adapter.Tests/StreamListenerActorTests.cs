@@ -633,7 +633,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Once);
+                        Times.Exactly(2));  //because first unsuspend when start streaming, second when processing snapshot for invalid sequence
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SNAPSHOT),
@@ -833,7 +833,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Once);   //once calling of process snapshot calls unsuspend
+                        Times.Once);   //because once calling of process snapshot calls unsuspend
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SNAPSHOT),
@@ -927,7 +927,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Once);
+                        Times.Exactly(2)); //because first unsuspend when start streaming, second when processing snapshot for invalid epoch
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SNAPSHOT),

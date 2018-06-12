@@ -337,6 +337,7 @@ namespace SS.Integration.Adapter.Tests
                 /*storedData*/new { Epoch = 3, Sequence = 1, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
+            ServiceMock.Setup(o => o.GetSports()).Returns(new[] { FootabllSportMock.Object });
             ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
                 .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
             StreamHealthCheckValidationMock.Setup(a =>
