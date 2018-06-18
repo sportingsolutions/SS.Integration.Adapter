@@ -439,7 +439,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Never);
+                        Times.Once);  //on start streaming
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.HEALTH_CHECK_FALURE),
