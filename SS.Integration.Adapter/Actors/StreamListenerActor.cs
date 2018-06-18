@@ -63,6 +63,7 @@ namespace SS.Integration.Adapter.Actors
         private DateTime? _fixtureStartTime;
         private bool _fixtureIsSuspended;
         private Exception _erroredException;
+        private bool _fixtureIsUnsuspendedInRecover = false;
         //this field helps track the Stream Listener Actor Initialization 
         //so it can notify the Stream Listener Manager when actor creation failed
         private bool _isInitializing;
@@ -146,7 +147,7 @@ namespace SS.Integration.Adapter.Actors
             _logger.Info($"Stream listener for {_resource} moved to Initialized State");
 
             OnStateChanged();
-
+            
             Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServer());
             Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot(suspendReason: a.SuspendReason));
             Receive<StreamConnectedMsg>(a => Become(Streaming));
@@ -562,11 +563,11 @@ namespace SS.Integration.Adapter.Actors
             _logger.Debug($"Started streaming for {_resource} - resource has sequence={_resource.Content.Sequence}");
         }
 
-        private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false, bool skipMarketRules = false)
+        private bool RetrieveAndProcessSnapshot(bool hasEpochChanged = false, bool skipMarketRules = false)
         {
             var snapshot = RetrieveSnapshot();
             var shouldSkipProcessingMarketRules = skipMarketRules || _settings.SkipRulesOnError && _erroredException != null;
-            ProcessSnapshot(snapshot, true, hasEpochChanged, shouldSkipProcessingMarketRules);
+            return ProcessSnapshot(snapshot, true, hasEpochChanged, shouldSkipProcessingMarketRules);
         }
 
         private Fixture RetrieveSnapshot()
@@ -676,7 +677,7 @@ namespace SS.Integration.Adapter.Actors
             return true;
         }
 
-        private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool skipMarketRules = false)
+        private bool ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool skipMarketRules = false)
         {
             var logString = isFullSnapshot ? "snapshot" : "stream update";
 
@@ -687,14 +688,13 @@ namespace SS.Integration.Adapter.Actors
 
             FixtureValidationProcessing(snapshot, isFullSnapshot, out var isFixtureValid);
             if (!isFixtureValid)
-                return;
+                return false;
 
             if (_fixtureIsSuspended)
             {
                 if (!isFullSnapshot)
                 {
-                    RetrieveAndProcessSnapshot();
-                    return;
+                    return RetrieveAndProcessSnapshot();
                 }
             }
 
@@ -786,6 +786,7 @@ namespace SS.Integration.Adapter.Actors
             catch (FixtureIgnoredException)
             {
                 _logger.Warn($"{_resource} received a FixtureIgnoredException");
+                return false;
             }
             catch (AggregateException ex)
             {
@@ -808,6 +809,7 @@ namespace SS.Integration.Adapter.Actors
             }
 
             _logger.Info($"Finished processing {logString} for {snapshot}");
+            return true;
         }
 
         private void UpdateSupervisorState(Fixture snapshot, bool isFullSnapshot)
@@ -1106,7 +1108,8 @@ namespace SS.Integration.Adapter.Actors
             else
             {
                 _logger.Warn($"Processing snapshot for {_resource} will be skipped on Start Streaming as processed sequence up to date");
-                UnsuspendFixtureState(fixtureState);
+                if (!_fixtureIsUnsuspendedInRecover)
+                    UnsuspendFixtureState(fixtureState);
             }
         }
 
@@ -1126,7 +1129,7 @@ namespace SS.Integration.Adapter.Actors
                 _logger.Warn(
                     $"Fixture {_resource} is in Errored State - trying now to reprocess full snapshot");
 
-                RetrieveAndProcessSnapshot();
+                _fixtureIsUnsuspendedInRecover = RetrieveAndProcessSnapshot();
 
                 switch (prevState)
                 {
