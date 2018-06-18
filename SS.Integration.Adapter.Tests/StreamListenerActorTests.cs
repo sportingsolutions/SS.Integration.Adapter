@@ -1915,7 +1915,7 @@ namespace SS.Integration.Adapter.Tests
             //Act
             //
             //Wait 1 second and force Stream Disconnection
-            Task.Delay(1000).Wait();
+            Task.Delay(6000).Wait();
             resourceActorRef.Tell(
                 new StopStreamingMsg(),
                 streamListenerManagerActor);
@@ -2149,10 +2149,11 @@ namespace SS.Integration.Adapter.Tests
                             FixtureValidationMock.Object)),
                     StreamListenerManagerActor.ActorName);
             var sportProcessorRouterActor =
-                ActorOfAsTestActorRef<SportProcessorRouterActor>(
+               ActorOfAsTestActorRef<SportProcessorRouterActor>(
                     Props.Create(() => new SportProcessorRouterActor(ServiceMock.Object))
                         .WithRouter(new SmallestMailboxPool(SettingsMock.Object.FixtureCreationConcurrency)),
                     SportProcessorRouterActor.ActorName);
+
             ActorOfAsTestActorRef<SportsProcessorActor>(
                 Props.Create(() =>
                     new SportsProcessorActor(
@@ -2185,9 +2186,9 @@ namespace SS.Integration.Adapter.Tests
             //Act
             //
             //Wait 1 second and force Stream Health Check message
-            Task.Delay(1000).Wait();
+            Task.Delay(5000).Wait();
             streamListenerActorRef.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
-            Task.Delay(1000).Wait();
+            Task.Delay(5000).Wait();
             streamListenerActorRef.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
 
             //
