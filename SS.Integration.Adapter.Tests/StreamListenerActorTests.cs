@@ -2087,7 +2087,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Exactly(2));      //because first on start streaming (prev behavior), second on process snapshot (new behavior)
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SNAPSHOT),
+                                SuspensionReason.HEALTH_CHECK_FALURE),
                         Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
@@ -2227,7 +2227,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.HEALTH_CHECK_FALURE),
                         Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
