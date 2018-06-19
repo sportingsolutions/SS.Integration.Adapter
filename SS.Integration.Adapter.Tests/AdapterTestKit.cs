@@ -21,7 +21,7 @@ namespace SS.Integration.Adapter.Tests
     {
         #region Constants
 
-        public const int ASSERT_WAIT_TIMEOUT = 5000 /*ms*/;
+        public const int ASSERT_WAIT_TIMEOUT = 5000 * 2 /*ms*/;
         public const int ASSERT_EXEC_INTERVAL = 200 /*ms*/;
 
         #endregion
