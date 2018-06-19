@@ -397,9 +397,15 @@ namespace SS.Integration.Adapter.Tests
                     Assert.NotNull(streamListenerActor);
                     Assert.NotNull(resourceActorRef);
                     Assert.NotNull(healthCheckActorRef);
-
-                    Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
                 },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+
+            Task.Delay(StreamListenerActor.CONNECT_TO_STREAM_DELAY).Wait();
+            AwaitAssert(() =>
+            {
+                Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
+            },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
             #endregion
@@ -443,8 +449,14 @@ namespace SS.Integration.Adapter.Tests
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.SUSPENSION),
                         Times.Once);
-                    Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
                 },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+            Task.Delay(StreamListenerActor.CONNECT_TO_STREAM_DELAY).Wait();
+            AwaitAssert(() =>
+            {
+                Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
+            },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
             #endregion

@@ -38,6 +38,7 @@ namespace SS.Integration.Adapter.Actors
         #region Constants
 
         public const string ActorName = nameof(StreamListenerActor);
+        public const int CONNECT_TO_STREAM_DELAY = 5000;   //milliseconds
 
         #endregion
 
@@ -578,7 +579,8 @@ namespace SS.Integration.Adapter.Actors
                     //either connect to stream server and go to Streaming State, or go to Initialized State
                     if (_streamHealthCheckValidation.CanConnectToStreamServer(_resource, State))
                     {
-                        SdkActorSystem.ActorSystem.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(5), Self, new ConnectToStreamServerMsg(), Self);
+                        SdkActorSystem.ActorSystem.Scheduler.ScheduleTellOnce(TimeSpan.FromMilliseconds(CONNECT_TO_STREAM_DELAY), 
+                            Self, new ConnectToStreamServerMsg(), Self);
                     }
                     else
                     {

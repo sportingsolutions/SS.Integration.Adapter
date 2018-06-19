@@ -2177,11 +2177,16 @@ namespace SS.Integration.Adapter.Tests
                     streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
                     Assert.NotNull(streamListenerActorRef);
                     Assert.NotNull(streamListenerActor);
-                    Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-
+            Task.Delay(StreamListenerActor.CONNECT_TO_STREAM_DELAY).Wait();
+            AwaitAssert(() =>
+            {
+                Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
+            },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
             //
             //Act
             //
