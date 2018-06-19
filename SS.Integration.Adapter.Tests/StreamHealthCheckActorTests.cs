@@ -481,6 +481,7 @@ namespace SS.Integration.Adapter.Tests
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
             streamListenerActorRef = null;
+            Task.Delay(1000).Wait();
 
             try
             {
