@@ -2191,9 +2191,9 @@ namespace SS.Integration.Adapter.Tests
             //Act
             //
             //Wait 1 second and force Stream Health Check message
-            Task.Delay(5000).Wait();
+            
             streamListenerActorRef.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
-            Task.Delay(5000).Wait();
+            Task.Delay(1000).Wait();
             streamListenerActorRef.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
             Task.Delay(1000).Wait();
             //
