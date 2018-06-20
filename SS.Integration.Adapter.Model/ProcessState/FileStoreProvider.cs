@@ -48,8 +48,8 @@ namespace SS.Integration.Adapter.Model
         public void Write(string pathFileName, string content)
         {
             pathFileName = GetFullPath(pathFileName);
-            
-            using (var writer = new StreamWriter(pathFileName,false))
+
+            using (var writer = new StreamWriter(pathFileName, false))
             {
                 writer.Write(content);
             }

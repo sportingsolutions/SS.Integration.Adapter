@@ -66,6 +66,7 @@ namespace SS.Integration.Adapter.Actors
         private DateTime? _fixtureStartTime;
         private bool _fixtureIsSuspended;
         private Exception _erroredException;
+        private bool _fixtureIsUnsuspendedInRecover = false;
         //this field helps track the Stream Listener Actor Initialization 
         //so it can notify the Stream Listener Manager when actor creation failed
         private bool _isInitializing;
@@ -149,7 +150,7 @@ namespace SS.Integration.Adapter.Actors
             _logger.Info($"Stream listener for {_resource} moved to Initialized State");
 
             OnStateChanged();
-
+            
             Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServer());
             Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
             Receive<StreamConnectedMsg>(a => Become(Streaming));
@@ -197,9 +198,10 @@ namespace SS.Integration.Adapter.Actors
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
-            Receive<SuspendMessage>(a => Suspend());
             Receive<SuspendRetryMessage>(a => SuspendRetryHandler());
             Receive<UnSuspendRetryMessage>(a => UnSuspendRetryHandler(a));
+            Receive<SuspendMessage>(a => Suspend(a.SuspendReason));
+            Receive<RecoverDelayedFixtureMsg>(a => AttemptRecoverDelayedFixtureHandler(a));
 
             try
             {
@@ -211,15 +213,19 @@ namespace SS.Integration.Adapter.Actors
                     };
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
 
-                
-                var fixtureState = GetFixtureState();
+                UnsuspendOnStartStreaming();
 
-                if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
+                if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState) || _isSuspendDelayedUpdate)
                 {
+                    if (_isSuspendDelayedUpdate)
+                        UnsuspendFixture(fixtureState);
+                    _logger.Debug($"FixtureValidation requires a snapshot for {_resource}");
                     RetrieveAndProcessSnapshot();
+
                 }
                 else
                 {
+                    _logger.Warn($"Processing snapshot for {_resource} will be skipped on Start Streaming as processed sequence up to date");
                     UnsuspendFixture(fixtureState);
                 }
 
@@ -547,8 +553,8 @@ namespace SS.Integration.Adapter.Actors
 
                 _currentEpoch = fixtureState?.Epoch ?? -1;
                 _currentSequence = _resource.Content.Sequence;
-                _lastSequenceProcessedInSnapshot = -1;
-                _fixtureIsSuspended = false;
+                _lastSequenceProcessedInSnapshot = -1; 
+                 _fixtureIsSuspended = false;
 
                 if (!string.IsNullOrEmpty(_resource.Content?.StartTime))
                 {
@@ -651,7 +657,7 @@ namespace SS.Integration.Adapter.Actors
         {
             var snapshot = RetrieveSnapshot();
             var shouldSkipProcessingMarketRules = skipMarketRules || _settings.SkipRulesOnError && _erroredException != null;
-            ProcessSnapshot(snapshot, true, hasEpochChanged, shouldSkipProcessingMarketRules);
+            return ProcessSnapshot(snapshot, true, hasEpochChanged, shouldSkipProcessingMarketRules);
         }
 
         private Fixture RetrieveSnapshot()
@@ -697,35 +703,70 @@ namespace SS.Integration.Adapter.Actors
                 _logger.Warn($"Method=ValidateFixtureTimeStamp for {fixture} fixture.TimeStamp=null");
                 return;
             }
-            var timeStamp = fixture.TimeStamp.Value;
-            if (DateTime.UtcNow - timeStamp >= TimeSpan.FromSeconds(_settings.MaxFixtureUpdateDelayInSeconds))
-            {
-                _logger.Warn($"Method=ValidateFixtureTimeStamp for {fixture} DelayInSeconds={(DateTime.UtcNow - timeStamp).TotalSeconds}");
-            }
-            else
-            {
-                _logger.Info($"Method=ValidateFixtureTimeStamp for {fixture} DelayInSeconds={(DateTime.UtcNow - timeStamp).TotalSeconds}"); 
-            }
+
+            if (!VerifySequenceOnSnapshot(fixture, isFullSnapshot))
+                validationPassed = false;
+
+            
         }
 
-        private bool ValidateFixture(Fixture fixture, bool isFullSnapshot)
+        private void HandleUpdateDelay(Fixture snapshot)
+        {
+            Context.System.Scheduler.ScheduleTellOnce(_settings.delayedFixtureRecoveryAttemptSchedule * 1000,
+                Self, new RecoverDelayedFixtureMsg { Sequence = snapshot.Sequence }, Self);
+            _logger.Info($"{snapshot} is suspend{(_fixtureIsSuspended ? "ed" : "ing")}, due to delay unsuspend scheduled after timeInSeconds={_settings.delayedFixtureRecoveryAttemptSchedule}");
+            if (!_fixtureIsSuspended)
+                SuspendFixture(SuspensionReason.UPDTATE_DELAYED);
+            
+        }
+
+        private bool ValidateFixtureTimeStamp(Fixture fixture, bool isFullSnapshot)
         {
             if (isFullSnapshot)
             {
-                _logger.Info($"Method=ValidateFixtureTimeStamp will be ignored for snapshot");
+                _logger.Info($"Method=ValidateFixtureTimeStamp will be ignored for snapshot, fixtureId={_fixtureId}, sequence={fixture.Sequence}");
+                return true;
             }
-            else
+
+            if (fixture.TimeStamp == null)
             {
-                ValidateFixtureTimeStamp(fixture);
-            }
-            
-            
-            if (isFullSnapshot && !VerifySequenceOnSnapshot(fixture))
+                _logger.Warn($"ValidateFixtureTimeStamp failed for fixture with fixtureId={_fixtureId}, sequence={fixture.Sequence}, fixture.TimeStamp=null");
                 return false;
+            }
+
+            var timeStamp = fixture.TimeStamp.Value;
+
+            if (DateTime.UtcNow - timeStamp >= TimeSpan.FromSeconds(_settings.maxFixtureUpdateDelayInSeconds))
+            {
+                _logger.Warn($"ValidateFixtureTimeStamp failed for fixture with fixtureId={_fixtureId}, sequence={fixture.Sequence}, " +
+                     $"delay={(DateTime.UtcNow - timeStamp).TotalSeconds} sec");
+                return false;
+            }
+            _logger.Debug($"ValidateFixtureTimeStamp successfully passed for fixture with fixtureId={_fixtureId}, sequence={fixture.Sequence}, " +
+                $"delay={(DateTime.UtcNow - timeStamp).TotalSeconds} sec");
             return true;
         }
 
-        private void ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool skipMarketRules = false)
+        private bool VerifySequenceOnSnapshot(Fixture snapshot, bool isFullSnapshot)
+        {
+            if (!isFullSnapshot)
+            {
+                _logger.Info($"Method=VerifySequenceOnSnapshot will be ignored for not snapshot, fixtureId={_fixtureId}, sequence={_currentSequence}");
+                return true;
+            }
+
+            if (snapshot.Sequence < _lastSequenceProcessedInSnapshot)
+            {
+                _logger.Warn(
+                    $"Newer snapshot {snapshot} was already processed on another thread, current sequence={_currentSequence}");
+                return false;
+            }
+            _logger.Debug($"VerifySequenceOnSnapshot successfully passed for fixtureId={snapshot.Id}, sequence={_currentSequence}");
+
+            return true;
+        }
+
+        private bool ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool skipMarketRules = false)
         {
             var logString = isFullSnapshot ? "snapshot" : "stream update";
 
@@ -734,11 +775,20 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Info($"Processing {logString} for {snapshot}");
 
+            FixtureValidationProcessing(snapshot, isFullSnapshot, out var isFixtureValid);
+            if (!isFixtureValid)
+                return false;
+
+            if (_fixtureIsSuspended)
+            {
+                if (!isFullSnapshot)
+                {
+                    return RetrieveAndProcessSnapshot();
+                }
+            }
+
             try
             {
-                if (!ValidateFixture(snapshot, isFullSnapshot))
-                    return;
-
                 _streamStatsActor.Tell(new UpdateStatsStartMsg
                 {
                     Fixture = snapshot,
@@ -811,8 +861,10 @@ namespace SS.Integration.Adapter.Actors
                     }
                 }
 
-
                 UpdateFixtureState(snapshot, isFullSnapshot);
+                if (_fixtureIsSuspended)
+                    UnsuspendFixtureState(GetFixtureState());
+
                 UpdateSupervisorState(snapshot, isFullSnapshot);
 
                 _streamStatsActor.Tell(new UpdateStatsFinishMsg
@@ -823,6 +875,7 @@ namespace SS.Integration.Adapter.Actors
             catch (FixtureIgnoredException)
             {
                 _logger.Warn($"{_resource} received a FixtureIgnoredException");
+                return false;
             }
             catch (AggregateException ex)
             {
@@ -845,7 +898,7 @@ namespace SS.Integration.Adapter.Actors
             }
 
             _logger.Info($"Finished processing {logString} for {snapshot}");
-            
+            return true;
         }
 
         private void UpdateSupervisorState(Fixture snapshot, bool isFullSnapshot)
@@ -1032,7 +1085,8 @@ namespace SS.Integration.Adapter.Actors
 
         private void SuspendAndReprocessSnapshot(bool hasEpochChanged = false)
         {
-            SuspendFixture(SuspensionReason.SUSPENSION);
+            if (!_fixtureIsSuspended)
+                SuspendFixture(SuspensionReason.SUSPENSION);
             RetrieveAndProcessSnapshot(hasEpochChanged);
         }
 
@@ -1059,6 +1113,18 @@ namespace SS.Integration.Adapter.Actors
             }
             
 
+            try
+            {
+                _logger.Debug($"Unsuspending fixture with fixtureId={fixture.Id}, sequence={fixture.Sequence}");
+                _suspensionManager.Unsuspend(fixture);
+                _fixtureIsSuspended = false;
+                _isSuspendDelayedUpdate = false;
+            }
+            catch (PluginException ex)
+            {
+                UpdateStatsError(ex);
+                throw;
+            }
         }
 
         private void UpdateFixtureState(Fixture snapshot, bool isSnapshot = false)
@@ -1087,6 +1153,34 @@ namespace SS.Integration.Adapter.Actors
             _currentEpoch = snapshot.Epoch;
         }
 
+        private void AttemptRecoverDelayedFixtureHandler(RecoverDelayedFixtureMsg msg)
+        {
+            if (_currentSequence != msg.Sequence)
+            {
+                _logger.Debug($"Attempt to recover fixture: delay recovering skipped as  msgSequence={msg.Sequence} <  current sequence={_currentSequence}, fixtureId={_fixtureId}");
+                return;
+            }
+            RetrieveAndProcessSnapshot();
+        }
+
+        private void UnsuspendOnStartStreaming()
+        {
+            var fixtureState = GetFixtureState();
+
+            _logger.Info($"UnsuspendOnStartStreaming fixtureId={_fixtureId}, sequence={_currentSequence}");
+            if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
+            {
+                _logger.Debug($"Unsuspension requires a snapshot for {_resource}");
+                RetrieveAndProcessSnapshot();
+            }
+            else
+            {
+                _logger.Warn($"Processing snapshot for {_resource} will be skipped on Start Streaming as processed sequence up to date");
+                if (!_fixtureIsUnsuspendedInRecover)
+                    UnsuspendFixtureState(fixtureState);
+            }
+        }
+
         private void StopStreaming()
         {
             _resourceActor.Tell(new StopStreamingMsg());
@@ -1103,7 +1197,7 @@ namespace SS.Integration.Adapter.Actors
                 _logger.Warn(
                     $"Fixture {_resource} is in Errored State - trying now to reprocess full snapshot");
 
-                RetrieveAndProcessSnapshot();
+                _fixtureIsUnsuspendedInRecover = RetrieveAndProcessSnapshot();
 
                 switch (prevState)
                 {
