@@ -363,7 +363,7 @@ namespace SS.Integration.Adapter.Actors
             Context.Parent.Tell(new StreamListenerStoppedMsg { FixtureId = _fixtureId });
         }
 
-        private void Initizing()
+        private void Initializing()
         {
             State = StreamListenerState.Initializing;
 
@@ -381,9 +381,9 @@ namespace SS.Integration.Adapter.Actors
 
         #endregion
 
-            #region Message Handlers
+        #region Message Handlers
 
-            private void StreamHealthCheckMsgHandler(StreamHealthCheckMsg msg)
+        private void StreamHealthCheckMsgHandler(StreamHealthCheckMsg msg)
         {
             msg.StreamingState = State;
             msg.CurrentSequence = _currentSequence;
@@ -532,7 +532,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                Become(Initizing);
+                Become(Initializing);
 
                 var fixtureState = GetFixtureState();
 
