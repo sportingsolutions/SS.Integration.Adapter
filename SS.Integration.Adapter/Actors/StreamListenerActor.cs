@@ -160,7 +160,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
-            Receive<SuspendMessage>(a => Suspend());
+            Receive<SuspendMessage>(a => Suspend(a.Reason));
             Receive<SuspendRetryMessage>(a =>  SuspendRetryHandler());
             Receive<UnSuspendRetryMessage>(a => UnSuspendRetryHandler(a));
 
@@ -1090,9 +1090,9 @@ namespace SS.Integration.Adapter.Actors
             RetrieveAndProcessSnapshot(hasEpochChanged);
         }
 
-        private void Suspend()
+        private void Suspend(SuspensionReason reason)
         {
-            SuspendFixture(SuspensionReason.SUSPENSION);
+            SuspendFixture(reason);
         }
 
         private void SuspendFixture(SuspensionReason reason)
