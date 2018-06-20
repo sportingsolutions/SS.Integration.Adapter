@@ -152,7 +152,7 @@ namespace SS.Integration.Adapter.Actors
             OnStateChanged();
             
             Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServer());
-            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
+            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot(a.SuspendReason));
             Receive<StreamConnectedMsg>(a => Become(Streaming));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
             Receive<StopStreamingMsg>(a => StopStreaming());
@@ -190,7 +190,7 @@ namespace SS.Integration.Adapter.Actors
 
             OnStateChanged();
 
-            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
+            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot(a.SuspendReason));
             Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
             Receive<StopStreamingMsg>(a => StopStreaming());
             Receive<StreamUpdateMsg>(a => StreamUpdateHandler(a));
@@ -200,7 +200,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
             Receive<SuspendRetryMessage>(a => SuspendRetryHandler());
             Receive<UnSuspendRetryMessage>(a => UnSuspendRetryHandler(a));
-            Receive<SuspendMessage>(a => Suspend(a.SuspendReason));
+            Receive<SuspendMessage>(a => Suspend(a.Reason));
             Receive<RecoverDelayedFixtureMsg>(a => AttemptRecoverDelayedFixtureHandler(a));
 
             try
@@ -214,20 +214,6 @@ namespace SS.Integration.Adapter.Actors
                 _streamHealthCheckActor.Tell(streamConnectedMsg);
 
                 UnsuspendOnStartStreaming();
-
-                if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState) || _isSuspendDelayedUpdate)
-                {
-                    if (_isSuspendDelayedUpdate)
-                        UnsuspendFixture(fixtureState);
-                    _logger.Debug($"FixtureValidation requires a snapshot for {_resource}");
-                    RetrieveAndProcessSnapshot();
-
-                }
-                else
-                {
-                    _logger.Warn($"Processing snapshot for {_resource} will be skipped on Start Streaming as processed sequence up to date");
-                    UnsuspendFixture(fixtureState);
-                }
 
                 Stash.UnstashAll();
 
@@ -247,7 +233,7 @@ namespace SS.Integration.Adapter.Actors
         {
             _logger.Info($"SuspendRetry message received  for {_resource} suspendErrorCounter={_suspendErrorCounter}");
             if (_suspendErrorCounter > 0)
-                Suspend();
+                SuspendFixture(SuspensionReason.PLUGIN_ERROR);
         }
 
         private void UnSuspendRetryHandler(UnSuspendRetryMessage msg)
@@ -310,7 +296,7 @@ namespace SS.Integration.Adapter.Actors
 
             OnStateChanged();
 
-            SuspendFixture(SuspensionReason.SUSPENSION);
+            SuspendFixture(SuspensionReason.INTERNALERROR);
             Exception erroredEx;
             RecoverFromErroredState(prevState, out erroredEx);
 
@@ -350,14 +336,14 @@ namespace SS.Integration.Adapter.Actors
                 }
             }
 
-            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot());
+            Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot(a.SuspendReason));
             Receive<StopStreamingMsg>(a => StopStreaming());
             Receive<StreamUpdateMsg>(a => RecoverFromErroredState(prevState, out erroredEx));
             Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
             Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
             Receive<ClearFixtureStateMsg>(a => ClearState(true));
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
-            Receive<SuspendMessage>(a => Suspend());
+            Receive<SuspendMessage>(a => Suspend(a.Reason));
             Receive<SuspendRetryMessage>(a => SuspendRetryHandler());
             Receive<UnSuspendRetryMessage>(a => UnSuspendRetryHandler(a));
         }
@@ -434,7 +420,7 @@ namespace SS.Integration.Adapter.Actors
                         return;
                     }
 
-                    SuspendAndReprocessSnapshot();
+                    SuspendAndReprocessSnapshot(SuspensionReason.SNAPSHOT);
                     return;
                 }
 
@@ -653,7 +639,7 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
-        private void RetrieveAndProcessSnapshot(bool hasEpochChanged = false, bool skipMarketRules = false)
+        private bool RetrieveAndProcessSnapshot(bool hasEpochChanged = false, bool skipMarketRules = false)
         {
             var snapshot = RetrieveSnapshot();
             var shouldSkipProcessingMarketRules = skipMarketRules || _settings.SkipRulesOnError && _erroredException != null;
@@ -695,20 +681,22 @@ namespace SS.Integration.Adapter.Actors
             return snapshot;
         }
 
-        private void ValidateFixtureTimeStamp(Fixture fixture)
+        private void FixtureValidationProcessing(Fixture fixture, bool isFullSnapshot, out bool validationPassed)
         {
-            
-            if (fixture.TimeStamp == null)
+            validationPassed = true;
+
+            if (!ValidateFixtureTimeStamp(fixture, isFullSnapshot))
             {
-                _logger.Warn($"Method=ValidateFixtureTimeStamp for {fixture} fixture.TimeStamp=null");
-                return;
+                HandleUpdateDelay(fixture);
+                validationPassed = false;
             }
 
             if (!VerifySequenceOnSnapshot(fixture, isFullSnapshot))
                 validationPassed = false;
 
-            
+
         }
+
 
         private void HandleUpdateDelay(Fixture snapshot)
         {
@@ -991,7 +979,7 @@ namespace SS.Integration.Adapter.Actors
             _logger.Info(
                 $"Stream update {fixtureDelta} has epoch change with reason {reason}, the snapshot will be processed instead.");
 
-            SuspendAndReprocessSnapshot(hasEpochChanged);
+            SuspendAndReprocessSnapshot(SuspensionReason.SNAPSHOT, hasEpochChanged);
         }
 
         private void ProcessFixtureDelete(Fixture fixtureDelta)
@@ -1062,7 +1050,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                SuspendAndReprocessSnapshot(true);
+                SuspendAndReprocessSnapshot(SuspensionReason.MATCH_OVER, true);
             }
             catch (Exception ex)
             {
@@ -1083,10 +1071,10 @@ namespace SS.Integration.Adapter.Actors
             fixtureStateActor.Tell(new RemoveFixtureStateMsg { FixtureId = _fixtureId });
         }
 
-        private void SuspendAndReprocessSnapshot(bool hasEpochChanged = false)
+        private void SuspendAndReprocessSnapshot(SuspensionReason suspendReason, bool hasEpochChanged = false)
         {
             if (!_fixtureIsSuspended)
-                SuspendFixture(SuspensionReason.SUSPENSION);
+                SuspendFixture(suspendReason);
             RetrieveAndProcessSnapshot(hasEpochChanged);
         }
 
@@ -1111,14 +1099,29 @@ namespace SS.Integration.Adapter.Actors
                 _suspendErrorCounter++;
                 SdkActorSystem.ActorSystem.Scheduler.ScheduleTellOnce(_suspendErrorCounter.RetryInterval(5), Self, new SuspendRetryMessage(), Self);
             }
-            
+
+           
+        }
+
+        private void UnsuspendFixtureState(FixtureState state)
+        {
+            Fixture fixture = new Fixture
+            {
+                Id = _fixtureId,
+                Sequence = -1
+            };
+
+            if (state != null)
+            {
+                fixture.Sequence = state.Sequence;
+                fixture.MatchStatus = state.MatchStatus.ToString();
+            }
 
             try
             {
                 _logger.Debug($"Unsuspending fixture with fixtureId={fixture.Id}, sequence={fixture.Sequence}");
                 _suspensionManager.Unsuspend(fixture);
                 _fixtureIsSuspended = false;
-                _isSuspendDelayedUpdate = false;
             }
             catch (PluginException ex)
             {

@@ -193,7 +193,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Once); //because we make unsuspend in every snapshot processing if fixture had been suspended
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.MATCH_OVER),
                         Times.Once);
                     StateManagerMock.Verify(a =>
                             a.ClearState(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
@@ -1224,7 +1224,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Exactly(2));
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.INTERNALERROR),
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
@@ -1339,7 +1339,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.INTERNALERROR),
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
@@ -1467,7 +1467,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.INTERNALERROR),
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
@@ -1521,7 +1521,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Exactly(2));
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.INTERNALERROR),
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
@@ -1618,7 +1618,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.INTERNALERROR),
                         Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
