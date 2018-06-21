@@ -723,15 +723,15 @@ namespace SS.Integration.Adapter.Actors
             }
 
             var timeStamp = fixture.TimeStamp.Value;
-
-            if (DateTime.UtcNow - timeStamp >= TimeSpan.FromSeconds(_settings.maxFixtureUpdateDelayInSeconds))
+            var now = DateTime.UtcNow;
+            if (now - timeStamp >= TimeSpan.FromSeconds(_settings.maxFixtureUpdateDelayInSeconds))
             {
                 _logger.Warn($"ValidateFixtureTimeStamp failed for fixture with fixtureId={_fixtureId}, sequence={fixture.Sequence}, " +
                      $"delay={(DateTime.UtcNow - timeStamp).TotalSeconds} sec");
                 return false;
             }
             _logger.Debug($"ValidateFixtureTimeStamp successfully passed for fixture with fixtureId={_fixtureId}, sequence={fixture.Sequence}, " +
-                $"delay={(DateTime.UtcNow - timeStamp).TotalSeconds} sec");
+                $"delay={(now - timeStamp).TotalSeconds} sec");
             return true;
         }
 
