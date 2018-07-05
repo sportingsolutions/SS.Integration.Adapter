@@ -619,7 +619,7 @@ namespace SS.Integration.Adapter.Tests
                     FixtureValidationMock.Object));
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
-
+            Task.Delay(10000).Wait();
             //
             //Assert
             //
@@ -640,7 +640,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Exactly(2));  //because first unsuspend when start streaming, second when processing snapshot for invalid sequence
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.SNAPSHOT),
                         Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
@@ -826,7 +826,7 @@ namespace SS.Integration.Adapter.Tests
 
             resourceFacadeMock.Object.Content.Sequence = update.Sequence;
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
-
+            Task.Delay(10000).Wait();
             //
             //Assert
             //
@@ -847,7 +847,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Once);    //because process snapshot unsuspends fixture
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.SNAPSHOT),
                         Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
@@ -926,13 +926,13 @@ namespace SS.Integration.Adapter.Tests
                     FixtureValidationMock.Object));
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
-
+            Task.Delay(10000).Wait();
             //
             //Assert
             //
             AwaitAssert(() =>
                 {
-                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
+                   resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.AtLeast(1));
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
                         Times.Once);
@@ -947,7 +947,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Once);   //because once calling of process snapshot calls unsuspend
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.SNAPSHOT),
                         Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
@@ -1020,7 +1020,7 @@ namespace SS.Integration.Adapter.Tests
                     FixtureValidationMock.Object));
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
-
+            Task.Delay(10000).Wait();
             //
             //Assert
             //
@@ -1041,7 +1041,7 @@ namespace SS.Integration.Adapter.Tests
                         Times.Exactly(2)); //because first unsuspend when start streaming, second when processing snapshot for invalid epoch
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.SNAPSHOT),
                         Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
