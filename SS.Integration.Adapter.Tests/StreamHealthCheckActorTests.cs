@@ -373,7 +373,7 @@ namespace SS.Integration.Adapter.Tests
                     SportProcessorRouterActor.ActorName);
 
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
-
+            Task.Delay(5000).Wait();
             IActorRef streamListenerActorRef;
             StreamListenerActor streamListenerActor = null;
             IActorRef resourceActorRef;
@@ -435,7 +435,7 @@ namespace SS.Integration.Adapter.Tests
                     resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
-                        Times.Exactly(2));
+                        Times.AtLeast(1));
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
                         Times.Never);
@@ -444,10 +444,10 @@ namespace SS.Integration.Adapter.Tests
                         Times.Never);
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Once);    //on start streaming
-                    SuspensionManagerMock.Verify(a =>
+                        Times.AtLeast(1));    //on start streaming
+                   SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.SUSPENSION),
+                                SuspensionReason.HEALTH_CHECK_FALURE),
                         Times.Once);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -476,12 +476,12 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>(),
                         It.IsAny<int>()))
-                .Returns(false);
+                .Returns(true);
             //This call will trigger health check message
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
 
             streamListenerActorRef = null;
-            Task.Delay(1000).Wait();
+            Task.Delay(5000).Wait();
 
             try
             {
@@ -494,7 +494,7 @@ namespace SS.Integration.Adapter.Tests
                         streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
 
                         if (streamListenerActor != null)
-                            Assert.AreEqual(StreamListenerState.Stopped, streamListenerActor.State);
+                            Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
                     },
                     TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                     TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
@@ -516,7 +516,7 @@ namespace SS.Integration.Adapter.Tests
                                 streamListenerManagerActor,
                                 StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
 
-                        Assert.IsNull(streamListenerActorRef);
+                        Assert.NotNull(streamListenerActorRef);
                     },
                     TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                     TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
@@ -557,7 +557,7 @@ namespace SS.Integration.Adapter.Tests
                         streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
 
                         if (streamListenerActor != null)
-                            Assert.AreEqual(StreamListenerState.Stopped, streamListenerActor.State);
+                            Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
                     },
                     TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                     TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
@@ -579,24 +579,24 @@ namespace SS.Integration.Adapter.Tests
                                 streamListenerManagerActor,
                                 StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
 
-                        Assert.IsNull(streamListenerActorRef);
+                        Assert.NotNull(streamListenerActorRef);
 
-                        resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                        resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Never);
                         PluginMock.Verify(a =>
                                 a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
-                            Times.Never);
+                            Times.AtLeast(1));
                         PluginMock.Verify(a =>
                                 a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
-                            Times.Once);
+                            Times.Never);
                         PluginMock.Verify(a =>
                                 a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                             Times.Never);
                         SuspensionManagerMock.Verify(a =>
                                 a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                            Times.Never);
+                            Times.AtLeast(1));
                         SuspensionManagerMock.Verify(a =>
                                 a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                    SuspensionReason.SUSPENSION),
+                                    SuspensionReason.HEALTH_CHECK_FALURE),
                             Times.Once);
                     },
                     TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
@@ -639,7 +639,7 @@ namespace SS.Integration.Adapter.Tests
             //
             AwaitAssert(() =>
                 {
-                    Assert.IsNull(streamListenerActorRef);
+                    Assert.NotNull(streamListenerActorRef);
                 },
                 TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
