@@ -36,6 +36,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService.Controllers
                     {
                         var res = Request.CreateResponse(HttpStatusCode.OK, fixture, UrlUtilities.JSON_MEDIA_TYPE);
                         res.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true };
+                        return res;
                     }
                 }
             }
