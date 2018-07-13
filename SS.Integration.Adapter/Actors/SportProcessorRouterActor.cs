@@ -14,8 +14,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using log4net;
+using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Interface;
 
@@ -111,6 +113,7 @@ namespace SS.Integration.Adapter.Actors
             foreach (var sport in sports)
             {
                 var _res = _serviceFacade.GetResources(sport.Name);
+                LogListOfFixtures(_res, sport);
                 if (ValidateResources(_res, sport.Name))
                 {
                     resources.AddRange(_res);
@@ -132,6 +135,12 @@ namespace SS.Integration.Adapter.Actors
                 streamListenerManagerActor.Tell(new ProcessResourceMsg { Resource = resource }, Self);
             }
 
+        }
+
+        private void LogListOfFixtures(List<IResourceFacade> _res, IFeature sport)
+        {
+            var list = _res.Select(_ => $"fixtureId={_.Id} sport={_.Sport} name=\"{_.Name}\"");
+            _logger.Info($"ProcessSportMsgHandler sport={sport.Name} resources=\"{string.Join(" , ", list)} \"");
         }
 
         private bool ValidateResources(IList<IResourceFacade> resources, string sport)
