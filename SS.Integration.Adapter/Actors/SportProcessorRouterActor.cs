@@ -109,7 +109,18 @@ namespace SS.Integration.Adapter.Actors
         private void ProcessSportMsgHandler(ProcessSportMsg msg)
         {
             var sports = _serviceFacade.GetSports();
-            List<IResourceFacade> resources = new List<IResourceFacade>();
+            if (sports == null)
+            {
+                var errorMsg = "ServiceFacade GetSports responce=NULL probably credentials problem";
+                _logger.Error(errorMsg);
+                throw new Exception(errorMsg);
+            }
+
+            _logger.Debug($"ServiceFacade GetSports returned SportsCount={sports?.Count()} listOfSports={$"\"{string.Join(", ", sports.Select(_=> _.Name))}\"" }");
+
+            
+
+            List <IResourceFacade> resources = new List<IResourceFacade>();
             foreach (var sport in sports)
             {
                 var _res = _serviceFacade.GetResources(sport.Name);
@@ -146,7 +157,7 @@ namespace SS.Integration.Adapter.Actors
         private bool ValidateResources(IList<IResourceFacade> resources, string sport)
         {
             var valid = true;
-
+            
             if (resources == null)
             {
                 _logger.Warn($"Cannot find sport={sport} in UDAPI....");
