@@ -739,7 +739,6 @@ namespace SS.Integration.Adapter.Actors
         {
             if (!isFullSnapshot)
             {
-                _logger.Info($"Method=VerifySequenceOnSnapshot will be ignored for not snapshot, fixtureId={_fixtureId}, sequence={_currentSequence}");
                 return true;
             }
 
@@ -867,21 +866,19 @@ namespace SS.Integration.Adapter.Actors
             }
             catch (AggregateException ex)
             {
-                _marketsRuleManager.RollbackChanges();
-
                 int total = ex.InnerExceptions.Count;
                 int count = 0;
                 foreach (var e in ex.InnerExceptions)
                 {
                     _logger.Error($"Error processing {logString} for {snapshot} ({++count}/{total})", e);
                 }
+                _marketsRuleManager.RollbackChanges();
                 throw;
             }
             catch (Exception ex)
             {
-                _marketsRuleManager.RollbackChanges();
-
                 _logger.Error($"Error processing {logString} {snapshot}", ex);
+                _marketsRuleManager.RollbackChanges();
                 throw;
             }
 

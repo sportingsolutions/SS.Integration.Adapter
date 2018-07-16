@@ -116,6 +116,16 @@ namespace SS.Integration.Adapter.MarketRules
 
         public IMarketRuleResultIntent Apply(Fixture fixture, IMarketStateCollection oldState, IMarketStateCollection newState)
         {
+            if (_includedSports == null)
+                throw new Exception($"Apply Market Rule _includedSports=NULL {fixture}");
+
+            if (_includedSports == null)
+                throw new Exception($"Apply Market Rule newState=NULL {fixture}");
+
+            if (_includedSports == null)
+                throw new Exception($"Apply Market Rule newState.Sport=NULL {fixture}");
+
+
             var result = new MarketRuleResultIntent();
 
             if (_includedSports.Contains(newState.Sport.ToLower()))
