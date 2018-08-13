@@ -134,7 +134,7 @@ namespace SS.Integration.Adapter.Diagnostics
             var getFixturesMsg = new GetFixturesMsg();
             var fixtures = _supervisorActor.Ask<IEnumerable<FixtureOverview>>(getFixturesMsg).Result
                 .Where(f => !(f.ListenerOverview.IsDeleted.GetValueOrDefault() ||
-                              f.ListenerOverview.MatchStatus.HasValue));
+                              f.ListenerOverview.MatchStatus.HasValue && (int)f.ListenerOverview.MatchStatus <= (int)MatchStatus.MatchOverUnConfirmed));
             return fixtures.Any()
                 ? fixtures.Select(f => f.ToServiceModel<ServiceModel.FixtureOverview>())
                 : Enumerable.Empty<ServiceModel.FixtureOverview>();
