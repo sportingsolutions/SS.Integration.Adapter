@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using log4net;
 using SS.Integration.Adapter.Model.Enums;
 using ModelInterface = SS.Integration.Adapter.Diagnostics.Model.Interface;
 using ServiceModelInterface = SS.Integration.Adapter.Diagnostics.Model.Service.Model.Interface;
@@ -8,7 +9,7 @@ using ServiceModel = SS.Integration.Adapter.Diagnostics.Model.Service.Model;
 namespace SS.Integration.Adapter.Diagnostics.Model
 {
     public static class ModelAdapter
-    {
+    {    
         private static readonly Dictionary<MatchStatus, ServiceModelInterface.FixtureState> MatchStatusToFixtureStateMapping =
             new Dictionary<MatchStatus, ServiceModelInterface.FixtureState>
             {

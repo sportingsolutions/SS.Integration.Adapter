@@ -87,9 +87,16 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
 
         private void UpdateSupervisorStateMsgHandler(UpdateSupervisorStateMsg msg)
         {
-            _logger.Info($"Updating supervisor state for {msg.FixtureId}");
+            _logger.Info($"Updating supervisor state for {msg.FixtureId} IsSnapshot={msg.IsSnapshot}");
 
             var fixtureOverview = GetFixtureOverview(msg.FixtureId);
+            fixtureOverview.FeedUpdate = new FeedUpdateOverview()
+            {
+                Epoch = msg.Epoch,
+                IsSnapshot = msg.IsSnapshot,
+                Sequence = msg.CurrentSequence,
+                LastEpochChangeReason = msg.LastEpochChangeReason
+            };
             fixtureOverview.TimeStamp = DateTime.UtcNow;
             fixtureOverview.Sport = msg.Sport;
             fixtureOverview.Name = msg.Name ?? fixtureOverview.Name;
@@ -114,7 +121,7 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
             details.Id = msg.FixtureId;
             details.IsDeleted = msg.IsDeleted;
             details.IsOver = msg.IsOver;
-
+       
             _streamingService.OnFixtureUpdate(details);
 
             if (msg.IsErrored.HasValue && msg.IsErrored.Value && msg.Exception != null)
@@ -167,6 +174,7 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
 
         private void GetFixtureOverviewMsgHandler(GetFixtureOverviewMsg msg)
         {
+            _logger.Debug($"Method=GetFixtureOverviewMsgHandler fixtureId={msg.FixtureId}");
             Sender.Tell(GetFixtureOverview(msg.FixtureId));
         }
 
