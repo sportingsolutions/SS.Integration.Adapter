@@ -95,7 +95,9 @@ namespace SS.Integration.Adapter.Diagnostics.Actors
                 Epoch = msg.Epoch,
                 IsSnapshot = msg.IsSnapshot,
                 Sequence = msg.CurrentSequence,
-                LastEpochChangeReason = msg.LastEpochChangeReason
+                LastEpochChangeReason = msg.LastEpochChangeReason,
+                IsProcessed = true,
+                Issued = DateTime.Now
             };
             fixtureOverview.TimeStamp = DateTime.UtcNow;
             fixtureOverview.Sport = msg.Sport;
