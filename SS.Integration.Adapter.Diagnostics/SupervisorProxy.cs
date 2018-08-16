@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
+using log4net;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Diagnostics.Actors.Messages;
 using SS.Integration.Adapter.Diagnostics.Model;
@@ -17,6 +18,7 @@ namespace SS.Integration.Adapter.Diagnostics
         #region Fields
 
         private readonly IActorRef _supervisorActor;
+        private static readonly ILog _logger = LogManager.GetLogger(typeof(SupervisorProxy));
 
         #endregion
 
@@ -59,14 +61,14 @@ namespace SS.Integration.Adapter.Diagnostics
 
             var getFixturesMsg = new GetFixturesMsg();
             var sportFixtures = _supervisorActor.Ask<IEnumerable<FixtureOverview>>(getFixturesMsg).Result
-                .Where(f => f.Sport.Equals(sportCode) &&
+                .Where(f => f.Sport.Equals(sportCode) && 
                             !(f.ListenerOverview.IsDeleted.GetValueOrDefault() ||
-                              f.ListenerOverview.MatchStatus.HasValue &&
+                              f.ListenerOverview.MatchStatus.HasValue && 
                               (int)f.ListenerOverview.MatchStatus.Value >= (int)MatchStatus.MatchOverUnConfirmed));
 
             foreach (var fixture in sportFixtures)
             {
-                details.AddFixture(fixture.ToServiceModel<ServiceModel.FixtureOverview>());
+                  details.AddFixture(fixture.ToServiceModel<ServiceModel.FixtureOverview>());
             }
 
 
@@ -75,6 +77,8 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public ServiceModelInterface.IFixtureDetails GetFixtureDetail(string fixtureId)
         {
+            _logger.Debug(
+                $"Method=GetFixtureDetail fixtureId={fixtureId}");
             var getFixtureOverviewMsg = new GetFixtureOverviewMsg
             {
                 FixtureId = fixtureId
@@ -134,7 +138,7 @@ namespace SS.Integration.Adapter.Diagnostics
             var getFixturesMsg = new GetFixturesMsg();
             var fixtures = _supervisorActor.Ask<IEnumerable<FixtureOverview>>(getFixturesMsg).Result
                 .Where(f => !(f.ListenerOverview.IsDeleted.GetValueOrDefault() ||
-                              f.ListenerOverview.MatchStatus.HasValue));
+                              f.ListenerOverview.MatchStatus.HasValue && (int)f.ListenerOverview.MatchStatus <= (int)MatchStatus.MatchOverUnConfirmed));
             return fixtures.Any()
                 ? fixtures.Select(f => f.ToServiceModel<ServiceModel.FixtureOverview>())
                 : Enumerable.Empty<ServiceModel.FixtureOverview>();

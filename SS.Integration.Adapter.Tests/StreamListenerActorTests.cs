@@ -2275,7 +2275,7 @@ namespace SS.Integration.Adapter.Tests
                 SportsProcessorActor.ActorName);
 
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
-
+            Task.Delay(5000).Wait();
             IActorRef streamListenerActorRef = null;
             StreamListenerActor streamListenerActor = null;
 
@@ -2307,7 +2307,7 @@ namespace SS.Integration.Adapter.Tests
             streamListenerActorRef.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
             Task.Delay(1000).Wait();
             streamListenerActorRef.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
-            // Task.Delay(1000).Wait();
+            Task.Delay(1000).Wait();
             //
             //Assert
             //

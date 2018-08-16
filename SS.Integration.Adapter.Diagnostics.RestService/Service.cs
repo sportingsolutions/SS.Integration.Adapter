@@ -48,7 +48,7 @@ namespace SS.Integration.Adapter.Diagnostics.RestService
 
         #endregion
 
-        #region Constructors
+ #region Constructors
 
         public Service(ISupervisorServiceConfiguration configuration, ISupervisorProxy proxy)
         {
