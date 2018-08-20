@@ -387,7 +387,7 @@ namespace SS.Integration.Adapter.Actors
         {
         }
 
-        private class LogPublishedFixturesCountsMsg
+        public class LogPublishedFixturesCountsMsg
         {
         }
 

@@ -129,8 +129,9 @@ namespace SS.Integration.Adapter.Actors
                             stateManager,
                             suspensionManager,
                             streamHealthCheckValidation,
-                            fixtureValidation)),
+                            fixtureValidation)).WithMailbox("stream-listener-manager-actor-mailbox"),
                     StreamListenerManagerActor.ActorName);
+
             }
             catch (Exception e)
             {
