@@ -389,7 +389,7 @@ namespace SS.Integration.Adapter.Actors
             msg.CurrentSequence = _currentSequence;
 
             _logger.Info(
-                $"{_resource} Stream health check message arrived - State = {State}; CurrentSequence = {_currentSequence}");
+                $"{_resource} Stream health check message arrived - State={State}; CurrentSequence={_currentSequence}");
 
             _streamHealthCheckActor.Tell(msg);
         }
