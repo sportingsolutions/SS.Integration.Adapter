@@ -168,12 +168,7 @@ namespace SS.Integration.Adapter.Diagnostics
 
         public bool ClearState(string fixtureId)
         {
-            var clearFixtureStateMsg = new ClearFixtureStateMsg
-            {
-                FixtureId = fixtureId
-            };
-            _supervisorActor.Tell(clearFixtureStateMsg);
-
+            _supervisorActor.Tell(new ClearFixtureStateMsg { FixtureId = fixtureId });
             return true;
         }
 
