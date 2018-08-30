@@ -2322,7 +2322,7 @@ namespace SS.Integration.Adapter.Tests
                     Assert.NotNull(streamListenerActor);
 
                     resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
-                    resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Once);
+                    resourceFacadeMock.Verify(a => a.StopStreaming(), Times.AtMost(1));
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
                         Times.Once);
