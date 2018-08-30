@@ -598,8 +598,6 @@ namespace SS.Integration.Adapter.Actors
 
             _streamHealthCheckActor.Tell(new ConnectToStreamServerMsg());
             _resourceActor.Tell(new StartStreamingMsg());
-
-            _logger.Debug($"Started streaming for {_resource} - resource has sequence={_resource.Content.Sequence}");
         }
 
         private bool VerifySequenceOnSnapshot(Fixture snapshot)

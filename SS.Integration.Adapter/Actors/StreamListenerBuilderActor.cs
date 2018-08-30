@@ -112,7 +112,7 @@ namespace SS.Integration.Adapter.Actors
         {
            State = StreamListenerBuilderState.Active;
 
-            _logger.Warn(
+            _logger.Info(
                 $"Moved to Active State" +
                 $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
 
@@ -331,7 +331,13 @@ namespace SS.Integration.Adapter.Actors
                         streamListenerActorName);
 
                     if (!_creationInProgressFixtureIdSet.Contains(resource.Id))
+                    {
                         _creationInProgressFixtureIdSet.Add(resource.Id);
+                    }
+                    else
+                    {
+                        _logger.Warn($"Attempt to add second StreamListenerActor for {resource}");
+                    }
                 }
             }
             else

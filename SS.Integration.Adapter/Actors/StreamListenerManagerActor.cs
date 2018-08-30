@@ -353,6 +353,7 @@ namespace SS.Integration.Adapter.Actors
             IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(fixtureId));
             if (!streamListenerActor.IsNobody())
             {
+                //streamListenerActor.
                 Context.Stop(streamListenerActor);
             }
         }

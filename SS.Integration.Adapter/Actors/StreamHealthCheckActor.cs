@@ -44,7 +44,6 @@ namespace SS.Integration.Adapter.Actors
         private readonly ISettings _settings;
         private readonly IStreamHealthCheckValidation _streamHealthCheckValidation;
         private ICancelable _startStreamingNotResponding;
-        private int _startStreamingNotRespondingWarnCount;
         private bool _streamInvalidDetected;
 
         #endregion
@@ -151,10 +150,9 @@ namespace SS.Integration.Adapter.Actors
             if (interval <= 0)
                 interval = 1;
 
-            _startStreamingNotRespondingWarnCount = 0;
             _startStreamingNotResponding =
-                Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(
-                    interval * 1000,
+                Context.System.Scheduler.ScheduleTellOnceCancelable(
+            //.ScheduleTellRepeatedlyCancelable(
                     interval * 1000,
                     Self,
                     new StartStreamingNotRespondingMsg { FixtureId = _resource.Id },
@@ -169,18 +167,13 @@ namespace SS.Integration.Adapter.Actors
 
         private void StartStreamingNotRespondingMsgHandler(StartStreamingNotRespondingMsg msg)
         {
-            _startStreamingNotRespondingWarnCount += 1;
-            var unresponsiveTime = _startStreamingNotRespondingWarnCount * _settings.StartStreamingTimeoutInSeconds;
-            _logger.Warn(
-                $"StartStreaming for {_resource} did't respond for {unresponsiveTime} seconds. " +
-                "Possible network problem or port 5672 is locked");
+            _logger.Warn($"StartStreaming for {_resource} did't respond for {_settings.StartStreamingTimeoutInSeconds} seconds. " +
+                "Possible network problem or port 5672 is locked. StartStreaming will be canceled");
 
-            if (_startStreamingNotRespondingWarnCount > _settings.StartStreamingAttempts)
-            {
-                _startStreamingNotResponding?.Cancel();
-                var streamListenerManagerActor = Context.System.ActorSelection(StreamListenerManagerActor.Path);
-                streamListenerManagerActor.Tell(msg);
-            }
+            _startStreamingNotResponding = null;
+           var streamListenerManagerActor = Context.System.ActorSelection(StreamListenerManagerActor.Path);
+           streamListenerManagerActor.Tell(msg);
+           
         }
 
         #endregion
