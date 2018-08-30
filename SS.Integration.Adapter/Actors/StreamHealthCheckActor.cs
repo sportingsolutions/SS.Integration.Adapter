@@ -112,13 +112,12 @@ namespace SS.Integration.Adapter.Actors
 
                 var streamIsValid =
                     _streamHealthCheckValidation.ValidateStream(msg.Resource, msg.StreamingState, msg.CurrentSequence);
-                var connectToStreamServer =
-                    _streamHealthCheckValidation.CanConnectToStreamServer(msg.Resource, msg.StreamingState);
-
+                
                 if (!streamIsValid)
                 {
-                    _logger.Warn($"Detected invalid stream for {msg.Resource}");
-
+                    _logger.Warn($"StreamHealthCheckMsgHandler: Detected {(_streamInvalidDetected ? "invalid" : "suspicious")} stream  {(msg.IsUpdateProcessing ? "It will be ignored as ":"")}IsUpdateProcessing={msg.IsUpdateProcessing} {msg.Resource}");
+                    if (msg.IsUpdateProcessing)
+                        return;
                     if (_streamInvalidDetected)
                     {
                         Context.Parent.Tell(new StopStreamingMsg());
@@ -126,7 +125,7 @@ namespace SS.Integration.Adapter.Actors
                     else
                     {
                         _streamInvalidDetected = true;
-                        Context.Parent.Tell(new SuspendAndReprocessSnapshotMsg(SuspensionReason.HEALTH_CHECK_FALURE));
+                        Context.Parent.Tell(new SuspendMessage(SuspensionReason.HEALTH_CHECK_FALURE));
                     }
                 }
                 else
@@ -134,7 +133,7 @@ namespace SS.Integration.Adapter.Actors
                     _streamInvalidDetected = false;
                 }
 
-                if (connectToStreamServer)
+                if (_streamHealthCheckValidation.CanConnectToStreamServer(msg.Resource, msg.StreamingState))
                 {
                     Context.Parent.Tell(new ConnectToStreamServerMsg());
                 }

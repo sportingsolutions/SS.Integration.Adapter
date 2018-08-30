@@ -18,5 +18,6 @@ namespace SS.Integration.Adapter.Actors.Messages
     {
         public Enums.StreamListenerState StreamingState { get; set; }
         public int CurrentSequence { get; set; }
+        public bool IsUpdateProcessing { get; set; }
     }
 }

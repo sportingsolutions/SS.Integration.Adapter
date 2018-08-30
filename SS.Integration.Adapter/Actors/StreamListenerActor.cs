@@ -70,6 +70,7 @@ namespace SS.Integration.Adapter.Actors
         //this field helps track the Stream Listener Actor Initialization 
         //so it can notify the Stream Listener Manager when actor creation failed
         private bool _isInitializing;
+        private bool _isUpdateProcessing;
 
         #endregion
 
@@ -346,6 +347,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<SuspendMessage>(a => Suspend(a.Reason));
             Receive<SuspendRetryMessage>(a => SuspendRetryHandler());
             Receive<UnSuspendRetryMessage>(a => UnSuspendRetryHandler(a));
+            Receive<StreamDisconnectedMsg>(a => StreamDisconnectedMsgHandler(a));
         }
 
         //No further messages should be accepted, resource has stopped streaming
@@ -387,6 +389,7 @@ namespace SS.Integration.Adapter.Actors
         {
             msg.StreamingState = State;
             msg.CurrentSequence = _currentSequence;
+            msg.IsUpdateProcessing = _isUpdateProcessing;
 
             _logger.Info(
                 $"{_resource} Stream health check message arrived - State={State}; CurrentSequence={_currentSequence}");
@@ -776,6 +779,8 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
+                _isUpdateProcessing = true;
+
                 _streamStatsActor.Tell(new UpdateStatsStartMsg
                 {
                     Fixture = snapshot,
@@ -784,7 +789,8 @@ namespace SS.Integration.Adapter.Actors
                     UpdateReceivedAt = DateTime.UtcNow
                 });
 
-                _logger.Info($"BeforeMarketRules MarketsCount={snapshot.Markets.Count} ActiveMarketsCount={snapshot.Markets.Count(_ => _.IsActive)} SelectionsCount={snapshot.Markets.SelectMany(_ => _.Selections).Count()}  {snapshot}");
+                _logger.Info(
+                    $"BeforeMarketRules MarketsCount={snapshot.Markets.Count} ActiveMarketsCount={snapshot.Markets.Count(_ => _.IsActive)} SelectionsCount={snapshot.Markets.SelectMany(_ => _.Selections).Count()}  {snapshot}");
                 if (!skipMarketRules)
                 {
                     _marketsRuleManager.ApplyRules(snapshot);
@@ -794,7 +800,9 @@ namespace SS.Integration.Adapter.Actors
                 {
                     _marketsRuleManager.ApplyRules(snapshot, true);
                 }
-                _logger.Info($"AfterMarketRules MarketsCount={snapshot.Markets.Count} ActiveMarketsCount={snapshot.Markets.Count(_ => _.IsActive)} SelectionsCount={snapshot.Markets.SelectMany(_ => _.Selections).Count()}  {snapshot}");
+
+                _logger.Info(
+                    $"AfterMarketRules MarketsCount={snapshot.Markets.Count} ActiveMarketsCount={snapshot.Markets.Count(_ => _.IsActive)} SelectionsCount={snapshot.Markets.SelectMany(_ => _.Selections).Count()}  {snapshot}");
 
                 if (isFullSnapshot)
                 {
@@ -842,7 +850,8 @@ namespace SS.Integration.Adapter.Actors
                     }
                     catch (Exception ex)
                     {
-                        var pluginError = new PluginException($"Plugin ProcessStreamUpdate {snapshot} error occured", ex);
+                        var pluginError =
+                            new PluginException($"Plugin ProcessStreamUpdate {snapshot} error occured", ex);
                         UpdateStatsError(pluginError);
                         throw pluginError;
                     }
@@ -872,6 +881,7 @@ namespace SS.Integration.Adapter.Actors
                 {
                     _logger.Error($"Error processing {logString} for {snapshot} ({++count}/{total})", e);
                 }
+
                 _marketsRuleManager.RollbackChanges();
                 throw;
             }
@@ -880,6 +890,11 @@ namespace SS.Integration.Adapter.Actors
                 _logger.Error($"Error processing {logString} {snapshot}", ex);
                 _marketsRuleManager.RollbackChanges();
                 throw;
+            }
+
+            finally
+            {
+                _isUpdateProcessing = false;
             }
 
             _logger.Info($"Finished processing {logString} for {snapshot}");

@@ -110,7 +110,7 @@ namespace SS.Integration.Adapter.Actors
         //In the active state StreamListeners can be created on demand
         private void Active()
         {
-            State = StreamListenerBuilderState.Active;
+           State = StreamListenerBuilderState.Active;
 
             _logger.Warn(
                 $"Moved to Active State" +
@@ -300,7 +300,7 @@ namespace SS.Integration.Adapter.Actors
             var streamListenerActorName = StreamListenerActor.GetName(resource.Id);
             if (_streamListenerManagerActorContext.Child(streamListenerActorName).IsNobody())
             {
-                if (_creationInProgressFixtureIdSet.Count + 1 > _settings.FixtureCreationConcurrency)
+                if (_creationInProgressFixtureIdSet.Count - 4 > _settings.FixtureCreationConcurrency)
                 {
                     _logger.Warn(
                         $"BuildStreamListenerActorInstance - {resource}" +
