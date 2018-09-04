@@ -13,9 +13,11 @@
 //limitations under the License.
 
 using System;
+using System.Runtime.CompilerServices;
 using Akka.Actor;
 using log4net;
 using SS.Integration.Adapter.Actors.Messages;
+using SS.Integration.Adapter.Enums;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model.Interfaces;
 
@@ -34,6 +36,7 @@ namespace SS.Integration.Adapter.Actors
         #region Constants
 
         public const string ActorName = nameof(StreamHealthCheckActor);
+        
 
         #endregion
 
@@ -46,6 +49,9 @@ namespace SS.Integration.Adapter.Actors
         private ICancelable _startStreamingNotResponding;
         private int _startStreamingNotRespondingWarnCount;
         private bool _streamInvalidDetected;
+
+        private int lastProcessedSequnce = 0;
+        private DateTime lastExecute = DateTime.MinValue;
 
         #endregion
 
@@ -70,6 +76,7 @@ namespace SS.Integration.Adapter.Actors
             Receive<StreamConnectedMsg>(a => StreamConnectedMsgHandler(a));
             Receive<StartStreamingNotRespondingMsg>(a => StartStreamingNotRespondingMsgHandler(a));
             Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
+
         }
 
         #endregion
@@ -90,34 +97,36 @@ namespace SS.Integration.Adapter.Actors
 
         #region Message Handlers
 
+       
         private void StreamHealthCheckMsgHandler(StreamHealthCheckMsg msg)
         {
             if (_resource == null || msg.Resource == null || msg.Resource.Id != _resource.Id)
                 return;
 
+            _resource.Content.Sequence = msg.Resource.Content.Sequence;
+            _resource.Content.MatchStatus = msg.Resource.Content.MatchStatus;
+
+            LogState(msg);
+
+
+            if (!ValidateTime())
+                return;
+            
+
             try
             {
-                _resource.Content.Sequence = msg.Resource.Content.Sequence;
-                _resource.Content.MatchStatus = msg.Resource.Content.MatchStatus;
-
-                _logger.Debug(
-                    $"Listener state for {msg.Resource} has " +
-                    $"sequence={msg.Resource.Content.Sequence} " +
-                    $"processedSequence={msg.CurrentSequence} " +
-                    (msg.Resource.Content.Sequence > msg.CurrentSequence
-                        ? $"missedSequence={msg.Resource.Content.Sequence - msg.CurrentSequence} "
-                        : "") +
-                    $"State={msg.StreamingState} " +
-                    $"isMatchOver={msg.Resource.IsMatchOver}");
-
-                var streamIsValid =
-                    _streamHealthCheckValidation.ValidateStream(msg.Resource, msg.StreamingState, msg.CurrentSequence);
                 
-                if (!streamIsValid)
+
+                var sequnceMatch = _streamHealthCheckValidation.IsSequenceValid(msg.Resource, msg.StreamingState, msg.CurrentSequence);
+
+                var sequnceUpdated = msg.CurrentSequence > lastProcessedSequnce;
+
+                //var streamIsValid
+                
+                if (!sequnceMatch && !sequnceUpdated)
                 {
-                    _logger.Warn($"StreamHealthCheckMsgHandler: Detected {(_streamInvalidDetected ? "invalid" : "suspicious")} stream  {(msg.IsUpdateProcessing ? "It will be ignored as ":"")}IsUpdateProcessing={msg.IsUpdateProcessing} {msg.Resource}");
-                    if (msg.IsUpdateProcessing)
-                        return;
+                    _logger.Warn($"StreamHealthCheckMsgHandler: Detected {(_streamInvalidDetected ? "invalid" : "suspicious")} stream {msg.Resource}");
+                    
                     if (_streamInvalidDetected)
                     {
                         Context.Parent.Tell(new StopStreamingMsg());
@@ -143,6 +152,34 @@ namespace SS.Integration.Adapter.Actors
                 _logger.Error($"Error occured on Stream Health Check for {_resource} - exception - {ex}");
                 throw;
             }
+
+            lastExecute = DateTime.UtcNow;
+            lastProcessedSequnce = msg.CurrentSequence;
+
+        }
+
+        private bool ValidateTime()
+        {
+            if ((DateTime.UtcNow - lastExecute).TotalSeconds < 30)
+            {
+                _logger.Info("StreamHealthCheckMsgHandler will be skipped as last validation accured less that 30s ago ");
+                return false;
+            }
+            return true;
+        }
+
+        private void LogState(StreamHealthCheckMsg msg)
+        {
+            var delay = (DateTime.Now - msg.Time).TotalSeconds;
+            _logger.Debug(
+                $" Listener state for {msg.Resource} has " +
+                $"sequence={msg.Resource.Content.Sequence} " +
+                $"processedSequence={msg.CurrentSequence} " +
+                (msg.Resource.Content.Sequence > msg.CurrentSequence
+                    ? $"missedSequence={msg.Resource.Content.Sequence - msg.CurrentSequence} "
+                    : "") +
+                $"State={msg.StreamingState} " +
+                $"isMatchOver={msg.Resource.IsMatchOver} messageTime={msg.Time} delay={delay.ToString("N")} sec");
         }
 
         private void ConnectToStreamServerMsgHandler(ConnectToStreamServerMsg msg)
@@ -172,7 +209,7 @@ namespace SS.Integration.Adapter.Actors
             _startStreamingNotRespondingWarnCount += 1;
             var unresponsiveTime = _startStreamingNotRespondingWarnCount * _settings.StartStreamingTimeoutInSeconds;
             _logger.Warn(
-                $"StartStreaming for {_resource} did't respond for {unresponsiveTime} seconds. " +
+                $"StartStreaming  for {_resource} did't respond for {unresponsiveTime} seconds. " +
                 "Possible network problem or port 5672 is locked");
 
             if (_startStreamingNotRespondingWarnCount > _settings.StartStreamingAttempts)

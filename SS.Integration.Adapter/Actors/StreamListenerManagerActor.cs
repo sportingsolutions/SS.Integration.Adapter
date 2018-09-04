@@ -155,7 +155,7 @@ namespace SS.Integration.Adapter.Actors
             {
                 _logger.Info(
                     $"Stream listener for {msg.Resource} already exists. Going to trigger stream health check.");
-                streamListenerActor.Tell(new StreamHealthCheckMsg { Resource = msg.Resource });
+                streamListenerActor.Tell(new StreamHealthCheckMsg { Resource = msg.Resource, Time = DateTime.Now});
             }
         }
 

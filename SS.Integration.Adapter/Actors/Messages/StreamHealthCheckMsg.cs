@@ -12,12 +12,14 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
+
 namespace SS.Integration.Adapter.Actors.Messages
 {
     internal class StreamHealthCheckMsg : ProcessResourceMsg
     {
         public Enums.StreamListenerState StreamingState { get; set; }
         public int CurrentSequence { get; set; }
-        public bool IsUpdateProcessing { get; set; }
+        public DateTime Time { get; set; }
     }
 }

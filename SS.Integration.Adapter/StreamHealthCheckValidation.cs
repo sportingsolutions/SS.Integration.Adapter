@@ -53,9 +53,9 @@ namespace SS.Integration.Adapter
         /// <param name="state"></param>
         /// <param name="sequence"></param>
         /// <returns></returns>
-        public bool ValidateStream(IResourceFacade resource, StreamListenerState state, int sequence)
+        public bool IsSequenceValid(IResourceFacade resource, StreamListenerState state, int sequence)
         {
-            return resource.Content.Sequence <= sequence || ShouldIgnoreUnprocessedSequence(resource, state);
+            return resource.Content.Sequence == sequence || ShouldIgnoreUnprocessedSequence(resource, state);
 
         }
 
@@ -98,13 +98,13 @@ namespace SS.Integration.Adapter
         {
             if (state != StreamListenerState.Streaming)
             {
-                _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Not Streaming\"");
+                _logger.Debug($"IsSequenceValid skipped for {resource} Reason=\"Not Streaming\"");
                 return true;
             }
 
             if (resource.Content.MatchStatus == (int)MatchStatus.Setup && !_settings.AllowFixtureStreamingInSetupMode)
             {
-                _logger.Debug($"ValidateStream skipped for {resource} Reason=\"Fixture is in setup state\"");
+                _logger.Debug($"IsSequenceValid skipped for {resource} Reason=\"Fixture is in setup state\"");
                 return true;
             }
 

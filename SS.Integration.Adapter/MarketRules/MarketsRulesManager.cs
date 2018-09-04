@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
@@ -35,6 +36,7 @@ namespace SS.Integration.Adapter.MarketRules
         private readonly IStoredObjectProvider _stateProvider;
         private readonly IEnumerable<IMarketRule> _rules;
         private IUpdatableMarketStateCollection _currentTransaction;
+        private bool logDetailedMarketRules;
 
         internal MarketRulesManager(string fixtureId, IStoredObjectProvider stateProvider, IEnumerable<IMarketRule> filteringRules)
         {
@@ -46,6 +48,9 @@ namespace SS.Integration.Adapter.MarketRules
             _stateProvider = stateProvider;
 
             _logger.InfoFormat("Initialised market rule manager for fixtureId={0}", fixtureId);
+
+            var value = ConfigurationManager.AppSettings["logDetailedMarketRules"];
+            logDetailedMarketRules = string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
         }
 
         #region IMarketRulesManager
@@ -310,16 +315,30 @@ namespace SS.Integration.Adapter.MarketRules
                 return;
 
             // REMOVE
+            var start = DateTime.UtcNow;
+
+            var ids = new List<string>();
+
             foreach (var mkt in toRemove.Keys)
             {
                 // we need to check that a removable market
                 // wasn't marked as editable or not editable
                 if (toRemove[mkt] && !toedit.ContainsKey(mkt))
                 {
-                    _logger.DebugFormat("Removing {0} of fixtureId={1} due rule={2}", mkt, fixture.Id, dueRule[mkt]);
-                    fixture.Markets.Remove(mkt);
+                    if (logDetailedMarketRules)
+                        _logger.DebugFormat("Removing {0} of fixtureId={1} due rule={2}", mkt, fixture.Id, dueRule[mkt]);
+                    //fixture.Markets.Remove(mkt);
+                    ids.Add(mkt.Id);
                 }
             }
+            var current = fixture.Markets.Where(_ => !ids.Contains(_.Id)).ToList();
+            fixture.Markets.Clear();
+            fixture.Markets.AddRange(current);
+            
+
+            _logger.Info($"Removing markets took marketRulesTime={(DateTime.UtcNow - start).TotalSeconds.ToString("N")} marketsCount={fixture.Markets.Count} removableCount={toRemove.Values.Count(_ => _)} {fixture}");
+
+
         }
 
         private static bool ShouldKeepFirstMarket(MarketRuleAddIntent firstIntent, MarketRuleAddIntent secondIntent)

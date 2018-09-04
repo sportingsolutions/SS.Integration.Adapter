@@ -59,7 +59,7 @@ namespace SS.Integration.Adapter.Tests
                     StreamStatsActor.ActorName);
             var dateNow = DateTime.UtcNow;
             var updateStatsStartMsg =
-                new UpdateStatsStartMsg
+                new AdapterProcessingStarted
                 {
                     UpdateReceivedAt = dateNow,
                     Sequence = 1,
@@ -73,7 +73,7 @@ namespace SS.Integration.Adapter.Tests
                     }
                 };
             var updateStatsFinishMsg = 
-                new UpdateStatsFinishMsg
+                new AdapterProcessingFinished
                 {
                     CompletedAt = dateNow.AddMilliseconds(1500)
                 };
@@ -122,7 +122,7 @@ namespace SS.Integration.Adapter.Tests
                     StreamStatsActor.ActorName);
             var dateNow = DateTime.UtcNow;
             var updateStatsStartMsg =
-                new UpdateStatsStartMsg
+                new AdapterProcessingStarted
                 {
                     UpdateReceivedAt = dateNow,
                     Sequence = 1,
@@ -136,7 +136,7 @@ namespace SS.Integration.Adapter.Tests
                     }
                 };
             var updateStatsFinishMsg =
-                new UpdateStatsFinishMsg
+                new AdapterProcessingFinished
                 {
                     CompletedAt = dateNow.AddMilliseconds(1500)
                 };

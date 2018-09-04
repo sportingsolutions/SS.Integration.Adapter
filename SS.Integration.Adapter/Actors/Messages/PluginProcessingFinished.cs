@@ -12,16 +12,9 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
-using SS.Integration.Adapter.Model;
-
 namespace SS.Integration.Adapter.Actors.Messages
 {
-    internal class UpdateStatsStartMsg
+    internal class PluginProcessingFinished : AdapterProcessingFinished
     {
-        public bool IsSnapshot { get; set; }
-        public DateTime UpdateReceivedAt { get; set; }
-        public int Sequence { get; set; }
-        public Fixture Fixture { get; set; }
     }
 }

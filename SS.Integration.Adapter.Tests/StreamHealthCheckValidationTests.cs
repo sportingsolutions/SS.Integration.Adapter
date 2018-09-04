@@ -73,7 +73,7 @@ namespace SS.Integration.Adapter.Tests
             //
             //Act
             //
-            bool streamIsValid = streamHealthCheckValidation.ValidateStream(
+            bool streamIsValid = streamHealthCheckValidation.IsSequenceValid(
                 _resourceFacadeMock.Object,
                 It.IsAny<StreamListenerState>(),
                 currentSequence);
@@ -107,7 +107,7 @@ namespace SS.Integration.Adapter.Tests
             //
             //Act
             //
-            bool streamIsValid = streamHealthCheckValidation.ValidateStream(
+            bool streamIsValid = streamHealthCheckValidation.IsSequenceValid(
                 _resourceFacadeMock.Object,
                 It.IsNotIn(StreamListenerState.Streaming),
                 currentSequence);
@@ -142,7 +142,7 @@ namespace SS.Integration.Adapter.Tests
             //
             //Act
             //
-            bool streamIsValid = streamHealthCheckValidation.ValidateStream(
+            bool streamIsValid = streamHealthCheckValidation.IsSequenceValid(
                 _resourceFacadeMock.Object,
                 StreamListenerState.Streaming,
                 currentSequence);
@@ -178,7 +178,7 @@ namespace SS.Integration.Adapter.Tests
             //
             //Act
             //
-            bool streamIsValid = streamHealthCheckValidation.ValidateStream(
+            bool streamIsValid = streamHealthCheckValidation.IsSequenceValid(
                 _resourceFacadeMock.Object,
                 StreamListenerState.Streaming,
                 currentSequence);
@@ -213,7 +213,7 @@ namespace SS.Integration.Adapter.Tests
             //
             //Act
             //
-            bool streamIsValid = streamHealthCheckValidation.ValidateStream(
+            bool streamIsValid = streamHealthCheckValidation.IsSequenceValid(
                 _resourceFacadeMock.Object,
                 StreamListenerState.Streaming,
                 currentSequence);
@@ -249,7 +249,7 @@ namespace SS.Integration.Adapter.Tests
             //
             //Act
             //
-            bool streamIsValid = streamHealthCheckValidation.ValidateStream(
+            bool streamIsValid = streamHealthCheckValidation.IsSequenceValid(
                 _resourceFacadeMock.Object,
                 StreamListenerState.Streaming,
                 currentSequence);
@@ -288,7 +288,7 @@ namespace SS.Integration.Adapter.Tests
             //
             //Act
             //
-            bool streamIsValid = streamHealthCheckValidation.ValidateStream(
+            bool streamIsValid = streamHealthCheckValidation.IsSequenceValid(
                 _resourceFacadeMock.Object,
                 StreamListenerState.Streaming,
                 currentSequence);

@@ -101,11 +101,11 @@
     <Compile Include="Actors\Messages\SuspendRetryMessage.cs" />
     <Compile Include="Actors\Messages\UnSuspendRetryMessage.cs" />
     <Compile Include="Actors\Messages\UpdateStatsErrorMsg.cs" />
-    <Compile Include="Actors\Messages\UpdatePluginStatsFinishMsg.cs" />
-    <Compile Include="Actors\Messages\UpdateStatsFinishMsg.cs" />
+    <Compile Include="Actors\Messages\PluginProcessingFinished.cs" />
+    <Compile Include="Actors\Messages\AdapterProcessingFinished.cs" />
     <Compile Include="Actors\Messages\RemoveFixtureStateMsg.cs" />
-    <Compile Include="Actors\Messages\UpdatePluginStatsStartMsg.cs" />
-    <Compile Include="Actors\Messages\UpdateStatsStartMsg.cs" />
+    <Compile Include="Actors\Messages\PluginProcessingStarted.cs" />
+    <Compile Include="Actors\Messages\AdapterProcessingStarted.cs" />
     <Compile Include="Actors\Messages\UpdateFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\ProcessResourceMsg.cs" />
     <Compile Include="Actors\Messages\GetFixtureStateMsg.cs" />
@@ -133,6 +133,7 @@
     <Compile Include="Actors\StreamListenerBuilderActor.cs" />
     <Compile Include="Actors\StreamListenerManagerActor.cs" />
     <Compile Include="Actors\StreamStatsActor.cs" />
+    <Compile Include="Actors\UpdateProcessing.cs" />
     <Compile Include="Adapter.cs" />
     <Compile Include="Actors\AdapterActorSystem.cs" />
     <Compile Include="Configuration\Settings.cs" />
@@ -143,6 +144,7 @@
     <Compile Include="Exceptions\PluginException.cs" />
     <Compile Include="FixtureHelper.cs" />
     <Compile Include="Actors\SportsProcessorActor.cs" />
+    <Compile Include="Helpers\StreamStats.cs" />
     <Compile Include="Interface\IFixtureValidation.cs" />
     <Compile Include="Interface\IStreamHealthCheckValidation.cs" />
     <Compile Include="Interface\IMarketRuleManager.cs" />

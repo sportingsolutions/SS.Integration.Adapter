@@ -12,10 +12,12 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
+
 namespace SS.Integration.Adapter.Actors.Messages
 {
-    internal class UpdatePluginStatsStartMsg : UpdateStatsStartMsg
+    internal class AdapterProcessingFinished
     {
-        public string PluginMethod { get; set; }
+        public DateTime CompletedAt { get; set; }
     }
 }

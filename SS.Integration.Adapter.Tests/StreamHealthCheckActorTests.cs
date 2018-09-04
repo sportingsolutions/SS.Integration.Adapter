@@ -167,7 +167,7 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<StreamListenerState>()))
                 .Returns(true);
             StreamHealthCheckValidationMock.Setup(a =>
-                    a.ValidateStream(
+                    a.IsSequenceValid(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>(),
                         It.IsAny<int>()))
@@ -419,7 +419,7 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<StreamListenerState>()))
                 .Returns(true);
             StreamHealthCheckValidationMock.Setup(a =>
-                    a.ValidateStream(
+                    a.IsSequenceValid(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>(),
                         It.IsAny<int>()))
@@ -472,7 +472,7 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<StreamListenerState>()))
                 .Returns(true);
             StreamHealthCheckValidationMock.Setup(a =>
-                    a.ValidateStream(
+                    a.IsSequenceValid(
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<StreamListenerState>(),
                         It.IsAny<int>()))

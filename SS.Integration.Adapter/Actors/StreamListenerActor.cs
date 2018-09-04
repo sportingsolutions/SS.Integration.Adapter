@@ -27,6 +27,7 @@ using SportingSolutions.Udapi.Sdk.Extensions;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Enums;
 using SS.Integration.Adapter.Exceptions;
+using SS.Integration.Adapter.Helpers;
 
 namespace SS.Integration.Adapter.Actors
 {
@@ -39,6 +40,7 @@ namespace SS.Integration.Adapter.Actors
 
         public const string ActorName = nameof(StreamListenerActor);
         public const int CONNECT_TO_STREAM_DELAY = 5000;   //milliseconds
+        
 
         #endregion
 
@@ -67,10 +69,10 @@ namespace SS.Integration.Adapter.Actors
         private bool _fixtureIsSuspended;
         private Exception _erroredException;
         private bool _fixtureIsUnsuspendedInRecover = false;
-        //this field helps track the Stream Listener Actor Initialization 
-        //so it can notify the Stream Listener Manager when actor creation failed
+        //this field helps track the Stream listener Actor Initialization 
+        //so it can notify the Stream listener Manager when actor creation failed
         private bool _isInitializing;
-        private bool _isUpdateProcessing;
+        private StreamStats streamStats;
 
         #endregion
 
@@ -128,22 +130,31 @@ namespace SS.Integration.Adapter.Actors
 
                 Context.Parent.Tell(new NewStreamListenerActorMsg { FixtureId = _resource.Id, Sport = _resource.Sport });
 
+                streamStats = new StreamStats();
+
+                _logger.Info($"Creating Stream listener for {_resource}");
+
                 Initialize();
             }
             catch (Exception ex)
             {
                 _logger.Error(
-                    $"Stream Listener instantiation failed for {_resource} - exception - {ex}");
+                    $"Stream listener instantiation failed for {_resource} - exception - {ex}");
                 _erroredException = ex;
                 Become(Errored);
             }
+        }
+
+        protected override void PostStop()
+        {
+            _logger.Info($"Stream listener Stopped for {_resource}");
         }
 
         #endregion
 
         #region Behaviors
 
-        //Initialised but not streaming yet - this can happen when you start fixture in Setup
+        //Initialised but not streaming yet - this can happen when you start fixture  in Setup
         private void Initialized()
         {
             State = StreamListenerState.Initialized;
@@ -176,7 +187,7 @@ namespace SS.Integration.Adapter.Actors
             catch (Exception ex)
             {
                 _logger.Error(
-                    $"Stream Listener for {_resource} failed on Initialized State when RetrieveAndProcessSnapshot - exception - {ex}");
+                    $"Stream listener for {_resource} failed on Initialized State when RetrieveAndProcessSnapshot - exception - {ex}");
                 _erroredException = ex;
                 Become(Errored);
             }
@@ -283,11 +294,11 @@ namespace SS.Integration.Adapter.Actors
             //tell Stream Stats actor that we got disconnected so it can monitor number of disconnections
             _streamStatsActor.Tell(streamDisconnectedMessage);
 
-            //tell Stream Listener Manager Actor that we got disconnected so it can kill and recreate this child actor
+            //tell Stream listener Manager Actor that we got disconnected so it can kill and recreate this child actor
             Context.Parent.Tell(streamDisconnectedMessage);
         }
 
-        //Error has occured, resource will try to recover by processing full snapshot
+        //Error has occured, resource will try to recover by  Processing full snapshot
         private void Errored()
         {
             var prevState = State;
@@ -306,13 +317,13 @@ namespace SS.Integration.Adapter.Actors
                 try
                 {
                     _logger.Error(
-                        $"Suspending Fixture {_resource} with FIXTURE_ERRORED as Stream Listener failed to recover from Errored State - exception - {erroredEx}");
+                        $"Suspending fixture  {_resource} with FIXTURE_ERRORED as Stream listener failed to recover from Errored State - exception - {erroredEx}");
                     SuspendFixture(SuspensionReason.FIXTURE_ERRORED);
                 }
                 catch (Exception ex)
                 {
                     _logger.Error(
-                        $"Failed Suspending Fixture {_resource} on Errored State - exception - {ex}");
+                        $"Failed Suspending fixture  {_resource} on Errored State - exception - {ex}");
                 }
                 finally
                 {
@@ -361,7 +372,7 @@ namespace SS.Integration.Adapter.Actors
 
             Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
 
-            //tell Stream Listener Manager Actor that we stopped so it can kill this child actor
+            //tell Stream listener Manager Actor that we stopped so it can kill this child actor
             Context.Parent.Tell(new StreamListenerStoppedMsg { FixtureId = _fixtureId });
         }
 
@@ -389,7 +400,6 @@ namespace SS.Integration.Adapter.Actors
         {
             msg.StreamingState = State;
             msg.CurrentSequence = _currentSequence;
-            msg.IsUpdateProcessing = _isUpdateProcessing;
 
             _logger.Info(
                 $"{_resource} Stream health check message arrived - State={State}; CurrentSequence={_currentSequence}");
@@ -400,7 +410,7 @@ namespace SS.Integration.Adapter.Actors
         private void StreamUpdateHandler(StreamUpdateMsg msg)
         {
             var callTime = DateTime.UtcNow;
-            Fixture fixtureDelta = null;
+            Fixture  fixtureDelta = null;
 
             try
             {
@@ -413,7 +423,7 @@ namespace SS.Integration.Adapter.Actors
                 {
                     _logger.Warn($"Update for {fixtureDelta} will not be processed because sequence is not valid");
 
-                    // if snapshot was already processed with higher sequence no need to process this sequence
+                    // if snapshot was already processed with higher sequence no need to Processing this sequence
                     // THIS should never happen!!
                     if (fixtureDelta.Sequence <= _lastSequenceProcessedInSnapshot)
                     {
@@ -448,7 +458,7 @@ namespace SS.Integration.Adapter.Actors
                 int count = 0;
                 foreach (var innerEx in ex.InnerExceptions)
                 {
-                    _logger.Error($"Error processing update for {_resource} {innerEx} ({++count}/{total})");
+                    _logger.Error($"Error  Processing update for {_resource} {innerEx} ({++count}/{total})");
                 }
 
                 _erroredException = ex;
@@ -456,7 +466,7 @@ namespace SS.Integration.Adapter.Actors
             }
             catch (Exception ex)
             {
-                _logger.Error($"Error processing update {_resource} - exception - {ex}");
+                _logger.Error($"Error  Processing update {_resource} - exception - {ex}");
 
                 _erroredException = ex;
                 Become(Errored);
@@ -484,7 +494,7 @@ namespace SS.Integration.Adapter.Actors
             }
             catch (Exception ex)
             {
-                _logger.Error($"Error processing disconnection for {_resource} - exception - {ex}");
+                _logger.Error($"Error  Processing disconnection for {_resource} - exception - {ex}");
 
                 _erroredException = ex;
                 Become(Errored);
@@ -520,7 +530,7 @@ namespace SS.Integration.Adapter.Actors
             _logger.Error(
                 $"Actor restart reason exception={reason?.ToString() ?? "null"}." +
                 (message != null
-                    ? $" last processing messageType={message.GetType().Name}"
+                    ? $" last  Processing messageType={message.GetType().Name}"
                     : ""));
             base.PreRestart(reason, message);
         }
@@ -616,7 +626,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void UnsuspendFixture(FixtureState state)
         {
-            Fixture fixture = new Fixture
+            Fixture  fixture = new Fixture
             {
                 Id = _fixtureId,
                 Sequence = -1
@@ -630,6 +640,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
+                _logger.Debug($"Unsuspending fixture  {fixture}");
                 _suspensionManager.Unsuspend(fixture);
                 _fixtureIsSuspended = false;
                 _unSuspendErrorCounter = 0;
@@ -686,6 +697,9 @@ namespace SS.Integration.Adapter.Actors
 
         private void FixtureValidationProcessing(Fixture fixture, bool isFullSnapshot, out bool validationPassed)
         {
+            if (fixture == null || (fixture != null && string.IsNullOrWhiteSpace(fixture.Id)))
+                throw new ArgumentException($"Received empty {ActionName(isFullSnapshot)} for {_resource}");
+
             validationPassed = true;
 
             if (!ValidateFixtureTimeStamp(fixture, isFullSnapshot))
@@ -715,13 +729,13 @@ namespace SS.Integration.Adapter.Actors
         {
             if (isFullSnapshot)
             {
-                _logger.Info($"Method=ValidateFixtureTimeStamp will be ignored for snapshot, fixtureId={_fixtureId}, sequence={fixture.Sequence}");
+                _logger.Info($"Method=ValidateFixtureTimeStamp will be ignored for snapshot,  fixtureId={_fixtureId}, sequence={fixture.Sequence}");
                 return true;
             }
 
             if (fixture.TimeStamp == null)
             {
-                _logger.Warn($"ValidateFixtureTimeStamp failed for fixture with fixtureId={_fixtureId}, sequence={fixture.Sequence}, fixture.TimeStamp=null");
+                _logger.Warn($"ValidateFixtureTimeStamp failed for fixture  with  fixtureId={_fixtureId}, sequence={fixture.Sequence}, fixture.TimeStamp=null");
                 return false;
             }
 
@@ -729,11 +743,11 @@ namespace SS.Integration.Adapter.Actors
             var now = DateTime.UtcNow;
             if (now - timeStamp >= TimeSpan.FromSeconds(_settings.maxFixtureUpdateDelayInSeconds))
             {
-                _logger.Warn($"ValidateFixtureTimeStamp failed for fixture with fixtureId={_fixtureId}, sequence={fixture.Sequence}, " +
+                _logger.Warn($"ValidateFixtureTimeStamp failed for fixture  with  fixtureId={_fixtureId}, sequence={fixture.Sequence}, " +
                      $"delay={(DateTime.UtcNow - timeStamp).TotalSeconds} sec");
                 return false;
             }
-            _logger.Debug($"ValidateFixtureTimeStamp successfully passed for fixture with fixtureId={_fixtureId}, sequence={fixture.Sequence}, " +
+            _logger.Debug($"ValidateFixtureTimeStamp successfully passed for fixture  with  fixtureId={_fixtureId}, sequence={fixture.Sequence}, " +
                 $"delay={(now - timeStamp).TotalSeconds} sec");
             return true;
         }
@@ -751,126 +765,52 @@ namespace SS.Integration.Adapter.Actors
                     $"Newer snapshot {snapshot} was already processed on another thread, current sequence={_currentSequence}");
                 return false;
             }
-            _logger.Debug($"VerifySequenceOnSnapshot successfully passed for fixtureId={snapshot.Id}, sequence={_currentSequence}");
+            _logger.Debug($"VerifySequenceOnSnapshot successfully passed for  fixtureId={snapshot.Id}, sequence={_currentSequence}");
 
             return true;
         }
 
+        private string ActionName(bool isFullSnapshot) => isFullSnapshot ? "Snapshot" : "Update";
+
         private bool ProcessSnapshot(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged, bool skipMarketRules = false)
         {
-            var logString = isFullSnapshot ? "snapshot" : "stream update";
-
-            if (snapshot == null || (snapshot != null && string.IsNullOrWhiteSpace(snapshot.Id)))
-                throw new ArgumentException($"Received empty {logString} for {_resource}");
-
-            _logger.Info($"Processing {logString} for {snapshot}");
+            _logger.Info($"Processing {ActionName(isFullSnapshot)} for {snapshot}");
 
             FixtureValidationProcessing(snapshot, isFullSnapshot, out var isFixtureValid);
             if (!isFixtureValid)
                 return false;
 
-            if (_fixtureIsSuspended)
+            NotifyProcessSnapshotStarted(snapshot, isFullSnapshot);
+
+            if (_fixtureIsSuspended && !isFullSnapshot)
             {
-                if (!isFullSnapshot)
-                {
-                    return RetrieveAndProcessSnapshot();
-                }
+                _logger.Info($"Fixture is suspended full snapshot will be requested {snapshot}");
+                streamStats.AdapterProcessingInterrupted();
+                return RetrieveAndProcessSnapshot();
             }
 
             try
             {
-                _isUpdateProcessing = true;
+                AplyAndLogMarketRules(snapshot, skipMarketRules);
 
-                _streamStatsActor.Tell(new UpdateStatsStartMsg
-                {
-                    Fixture = snapshot,
-                    Sequence = snapshot.Sequence,
-                    IsSnapshot = isFullSnapshot,
-                    UpdateReceivedAt = DateTime.UtcNow
-                });
+                //Processing on plugin side
+                ProcessPluginActions(snapshot, isFullSnapshot, hasEpochChanged);
 
-                _logger.Info(
-                    $"BeforeMarketRules MarketsCount={snapshot.Markets.Count} ActiveMarketsCount={snapshot.Markets.Count(_ => _.IsActive)} SelectionsCount={snapshot.Markets.SelectMany(_ => _.Selections).Count()}  {snapshot}");
-                if (!skipMarketRules)
-                {
-                    _marketsRuleManager.ApplyRules(snapshot);
-                    snapshot.IsModified = true;
-                }
-                else
-                {
-                    _marketsRuleManager.ApplyRules(snapshot, true);
-                }
-
-                _logger.Info(
-                    $"AfterMarketRules MarketsCount={snapshot.Markets.Count} ActiveMarketsCount={snapshot.Markets.Count(_ => _.IsActive)} SelectionsCount={snapshot.Markets.SelectMany(_ => _.Selections).Count()}  {snapshot}");
-
-                if (isFullSnapshot)
-                {
-                    try
-                    {
-                        _streamStatsActor.Tell(new UpdatePluginStatsStartMsg()
-                        {
-                            Fixture = snapshot,
-                            Sequence = snapshot.Sequence,
-                            IsSnapshot = true,
-                            UpdateReceivedAt = DateTime.UtcNow,
-                            PluginMethod = "ProcessSnapshot"
-                        });
-
-                        _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
-                        _streamStatsActor.Tell(new UpdatePluginStatsFinishMsg
-                        {
-                            CompletedAt = DateTime.UtcNow
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        var pluginError = new PluginException($"Plugin ProcessSnapshot {snapshot} error occured", ex);
-                        UpdateStatsError(pluginError);
-                        throw pluginError;
-                    }
-                }
-                else
-                {
-                    try
-                    {
-                        _streamStatsActor.Tell(new UpdatePluginStatsStartMsg()
-                        {
-                            Fixture = snapshot,
-                            Sequence = snapshot.Sequence,
-                            IsSnapshot = false,
-                            UpdateReceivedAt = DateTime.UtcNow,
-                            PluginMethod = "ProcessStreamUpdate"
-                        });
-                        _platformConnector.ProcessStreamUpdate(snapshot, hasEpochChanged);
-                        _streamStatsActor.Tell(new UpdatePluginStatsFinishMsg
-                        {
-                            CompletedAt = DateTime.UtcNow
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        var pluginError =
-                            new PluginException($"Plugin ProcessStreamUpdate {snapshot} error occured", ex);
-                        UpdateStatsError(pluginError);
-                        throw pluginError;
-                    }
-                }
 
                 UpdateFixtureState(snapshot, isFullSnapshot);
+
+                NotifyProcessSnapshotFinished(snapshot, isFullSnapshot);
+
                 if (_fixtureIsSuspended)
                     UnsuspendFixtureState(GetFixtureState());
 
                 UpdateSupervisorState(snapshot, isFullSnapshot);
 
-                _streamStatsActor.Tell(new UpdateStatsFinishMsg
-                {
-                    CompletedAt = DateTime.UtcNow
-                });
+                
             }
             catch (FixtureIgnoredException)
             {
-                _logger.Warn($"{_resource} received a FixtureIgnoredException");
+                _logger.Warn($" {_resource} received a FixtureIgnoredException");
                 return false;
             }
             catch (AggregateException ex)
@@ -879,7 +819,7 @@ namespace SS.Integration.Adapter.Actors
                 int count = 0;
                 foreach (var e in ex.InnerExceptions)
                 {
-                    _logger.Error($"Error processing {logString} for {snapshot} ({++count}/{total})", e);
+                    _logger.Error($"Error  Processing {ActionName(isFullSnapshot)} for {snapshot} ({++count}/{total})", e);
                 }
 
                 _marketsRuleManager.RollbackChanges();
@@ -887,18 +827,122 @@ namespace SS.Integration.Adapter.Actors
             }
             catch (Exception ex)
             {
-                _logger.Error($"Error processing {logString} {snapshot}", ex);
+                _logger.Error($"Error  Processing {ActionName(isFullSnapshot)} {snapshot}", ex);
                 _marketsRuleManager.RollbackChanges();
                 throw;
             }
 
             finally
             {
-                _isUpdateProcessing = false;
+                streamStats.AdapterProcessingInterrupted();
             }
 
-            _logger.Info($"Finished processing {logString} for {snapshot}");
+            _logger.Info($"Finished  Processing {ActionName(isFullSnapshot)} for {snapshot}");
             return true;
+        }
+
+        #region Stats Notifications
+        private void NotifyProcessSnapshotFinished(Fixture snapshot, bool isFullSnapshot)
+        {
+            _streamStatsActor.Tell(new AdapterProcessingFinished
+            {
+                CompletedAt = DateTime.UtcNow
+            });
+
+            streamStats.AdapterProcessingFinished(GetProcessingMessage(snapshot, isFullSnapshot));
+        }
+
+        private void NotifyProcessOnPluginFinished(Fixture snapshot, bool isFullSnapshot)
+        {
+            _streamStatsActor.Tell(new PluginProcessingFinished
+            {
+                CompletedAt = DateTime.UtcNow
+            });
+
+            streamStats.PluginProcessingFinished(GetProcessingMessage(snapshot, isFullSnapshot));
+        }
+
+        private void NotifyProcessOnPluginStarted(Fixture snapshot, bool isFullSnapshot, string actionName)
+        {
+            _streamStatsActor.Tell(new PluginProcessingStarted()
+            {
+                Fixture = snapshot,
+                Sequence = snapshot.Sequence,
+                IsSnapshot = isFullSnapshot,
+                UpdateReceivedAt = DateTime.UtcNow,
+                PluginMethod = $"Processing {actionName}"
+            });
+
+            streamStats.PluginProcessingStarted(GetProcessingMessage(snapshot, isFullSnapshot));
+        }
+
+        private UpdateProcessing GetProcessingMessage(Fixture snapshot, bool isFullSnapshot)
+        {
+            return new UpdateProcessing()
+            {
+                FixtureName = snapshot.ToString(),
+                IsSnapshot = isFullSnapshot,
+                Time = DateTime.UtcNow,
+                PluginMethod = $"Processing {ActionName(isFullSnapshot)}",
+                Sequence = snapshot.Sequence
+            };
+        }
+
+        private void NotifyProcessSnapshotStarted(Fixture snapshot, bool isFullSnapshot)
+        {
+            _streamStatsActor.Tell(new AdapterProcessingStarted
+            {
+                Fixture = snapshot,
+                Sequence = snapshot.Sequence,
+                IsSnapshot = isFullSnapshot,
+                UpdateReceivedAt = DateTime.UtcNow,
+                PluginMethod = $"Processing {ActionName(isFullSnapshot)}"
+            });
+
+            streamStats.AdapterProcessingStarted(GetProcessingMessage(snapshot, isFullSnapshot));
+        } 
+        #endregion
+
+        private void ProcessPluginActions(Fixture snapshot, bool isFullSnapshot, bool hasEpochChanged)
+        {
+            NotifyProcessOnPluginStarted(snapshot, isFullSnapshot, ActionName(isFullSnapshot));
+            try
+            {
+                if (isFullSnapshot)
+                {
+                    _platformConnector.ProcessSnapshot(snapshot, hasEpochChanged);
+                }
+                else
+                {
+                    _platformConnector.ProcessStreamUpdate(snapshot, hasEpochChanged);
+                }
+
+                NotifyProcessOnPluginFinished(snapshot, isFullSnapshot);
+            }
+            catch (Exception ex)
+            {
+                var pluginError = new PluginException($"Plugin {ActionName(isFullSnapshot)} {snapshot} error occured", ex);
+                UpdateStatsError(pluginError);
+                throw pluginError;
+            }
+        }
+
+        private void AplyAndLogMarketRules(Fixture snapshot, bool skipMarketRules)
+        {
+            _logger.Info(
+                $"BeforeMarketRules MarketsCount={snapshot.Markets.Count} ActiveMarketsCount={snapshot.Markets.Count(_ => _.IsActive)} SelectionsCount={snapshot.Markets.SelectMany(_ => _.Selections).Count()} {snapshot}");
+            if (!skipMarketRules)
+            {
+                _marketsRuleManager.ApplyRules(snapshot);
+                snapshot.IsModified = true;
+            }
+            else
+            {
+                _marketsRuleManager.ApplyRules(snapshot, true);
+            }
+
+            _logger.Info(
+                $"AfterMarketRules MarketsCount={snapshot.Markets.Count} ActiveMarketsCount={snapshot.Markets.Count(_ => _.IsActive)} SelectionsCount={snapshot.Markets.SelectMany(_ => _.Selections).Count()} {snapshot}");
         }
 
         private void UpdateSupervisorState(Fixture snapshot, bool isFullSnapshot)
@@ -948,11 +992,11 @@ namespace SS.Integration.Adapter.Actors
                 if (!string.IsNullOrEmpty(fixtureDelta.MatchStatus))
                 {
                     _logger.Debug(
-                        $"{_resource} has changed matchStatus={Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus)}");
+                        $" {_resource} has changed matchStatus={Enum.Parse(typeof(MatchStatus), fixtureDelta.MatchStatus)}");
 
                     try
                     {
-                        _streamStatsActor.Tell(new UpdatePluginStatsStartMsg()
+                        _streamStatsActor.Tell(new PluginProcessingStarted()
                         {
                             Fixture = fixtureDelta,
                             Sequence = fixtureDelta.Sequence,
@@ -961,7 +1005,7 @@ namespace SS.Integration.Adapter.Actors
                             PluginMethod = "ProcessMatchStatus"
                         });
                         _platformConnector.ProcessMatchStatus(fixtureDelta);
-                        _streamStatsActor.Tell(new UpdatePluginStatsFinishMsg
+                        _streamStatsActor.Tell(new PluginProcessingFinished
                         {
                             CompletedAt = DateTime.UtcNow
                         });
@@ -997,7 +1041,7 @@ namespace SS.Integration.Adapter.Actors
         private void ProcessFixtureDelete(Fixture fixtureDelta)
         {
             _logger.Info(
-                $"{_resource} has been deleted from the GTP Fixture Factory. Suspending all markets and stopping the stream.");
+                $" {_resource} has been deleted from the GTP fixture  Factory. Suspending all markets and stopping the stream.");
 
             Fixture fixtureDeleted = new Fixture
             {
@@ -1014,7 +1058,7 @@ namespace SS.Integration.Adapter.Actors
                 SuspendFixture(SuspensionReason.FIXTURE_DELETED);
                 try
                 {
-                    _streamStatsActor.Tell(new UpdatePluginStatsStartMsg()
+                    _streamStatsActor.Tell(new PluginProcessingStarted()
                     {
                         Fixture = fixtureDelta,
                         Sequence = fixtureDelta.Sequence,
@@ -1024,7 +1068,7 @@ namespace SS.Integration.Adapter.Actors
                     });
 
                     _platformConnector.ProcessFixtureDeletion(fixtureDeleted);
-                    _streamStatsActor.Tell(new UpdatePluginStatsFinishMsg
+                    _streamStatsActor.Tell(new PluginProcessingFinished
                     {
                         CompletedAt = DateTime.UtcNow
                     });
@@ -1038,11 +1082,11 @@ namespace SS.Integration.Adapter.Actors
             }
             catch (Exception e)
             {
-                _logger.Error($"An exception occured while trying to process fixture deletion for {_resource}", e);
+                _logger.Error($"An exception occured while trying to Processing fixture  deletion for {_resource}", e);
                 throw;
             }
 
-            //reset fixture state
+            //reset fixture  state
             _marketsRuleManager.OnFixtureUnPublished();
             var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
             var updateFixtureStateMsg = new UpdateFixtureStateMsg
@@ -1058,7 +1102,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void ProcessMatchOver()
         {
-            _logger.Info($"{_resource} is Match Over. Suspending all markets and stopping the stream.");
+            _logger.Info($" {_resource} is Match Over. Suspending all markets and stopping the stream.");
 
             try
             {
@@ -1066,7 +1110,7 @@ namespace SS.Integration.Adapter.Actors
             }
             catch (Exception ex)
             {
-                _logger.Error($"An error occured while trying to process match over resource {_resource} - exception - {ex}");
+                _logger.Error($"An error occured while trying to Processing match over resource {_resource} - exception - {ex}");
                 throw;
             }
         }
@@ -1097,7 +1141,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void SuspendFixture(SuspensionReason reason)
         {
-            _logger.Info($"Suspending fixtureId={_resource} due reason={reason}");
+            _logger.Info($"Suspending  fixtureId= {_resource} due reason={reason}");
 
             try
             {
@@ -1131,7 +1175,7 @@ namespace SS.Integration.Adapter.Actors
 
             try
             {
-                _logger.Debug($"Unsuspending fixture with fixtureId={fixture.Id}, sequence={fixture.Sequence}");
+                _logger.Debug($"Unsuspending fixture  {fixture}");
                 _suspensionManager.Unsuspend(fixture);
                 _fixtureIsSuspended = false;
             }
@@ -1172,7 +1216,7 @@ namespace SS.Integration.Adapter.Actors
         {
             if (_currentSequence != msg.Sequence)
             {
-                _logger.Debug($"Attempt to recover fixture: delay recovering skipped as  msgSequence={msg.Sequence} <  current sequence={_currentSequence}, fixtureId={_fixtureId}");
+                _logger.Debug($"Attempt to recover fixture: delay recovering skipped as  msgSequence={msg.Sequence} <  current sequence={_currentSequence},  fixtureId={_fixtureId}");
                 return;
             }
             RetrieveAndProcessSnapshot();
@@ -1182,7 +1226,7 @@ namespace SS.Integration.Adapter.Actors
         {
             var fixtureState = GetFixtureState();
 
-            _logger.Info($"UnsuspendOnStartStreaming fixtureId={_fixtureId}, sequence={_currentSequence}");
+            _logger.Info($"UnsuspendOnStartStreaming  fixtureId={_fixtureId}, sequence={_currentSequence}");
             if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
             {
                 _logger.Debug($"Unsuspension requires a snapshot for {_resource}");
@@ -1190,7 +1234,7 @@ namespace SS.Integration.Adapter.Actors
             }
             else
             {
-                _logger.Warn($"Processing snapshot for {_resource} will be skipped on Start Streaming as processed sequence up to date");
+                _logger.Warn($" Processing snapshot for {_resource} will be skipped on Start Streaming as processed sequence up to date");
                 if (!_fixtureIsUnsuspendedInRecover)
                     UnsuspendFixtureState(fixtureState);
             }
@@ -1198,8 +1242,10 @@ namespace SS.Integration.Adapter.Actors
 
         private void StopStreaming()
         {
+            _logger.Warn($"StopStreaming message received {_resource}");
             _resourceActor.Tell(new StopStreamingMsg());
-
+            if (!_fixtureIsSuspended)
+                SuspendFixture(SuspensionReason.STOP_STREAMING);
             Become(Stopped);
         }
 
@@ -1210,25 +1256,42 @@ namespace SS.Integration.Adapter.Actors
             try
             {
                 _logger.Warn(
-                    $"Fixture {_resource} is in Errored State - trying now to reprocess full snapshot");
+                    $"Fixture {_resource} is in Errored State - trying now to reProcessing full snapshot PreviousState={prevState}");
 
                 _fixtureIsUnsuspendedInRecover = RetrieveAndProcessSnapshot();
 
-                switch (prevState)
+                if (RetrieveAndProcessSnapshot())
                 {
-                    case StreamListenerState.Initializing:
+                    switch (prevState)
+                    {
+                        case StreamListenerState.Initializing:
+                            {
+                                Initialize();
+                                break;
+                            }
+
+                        case StreamListenerState.Streaming:
+                            {
+                                Become(Streaming);
+                                break;
+                            }
+
+                        default:
                         {
                             Initialize();
                             break;
                         }
-                    case StreamListenerState.Streaming:
-                        {
-                            Become(Streaming);
-                            break;
-                        }
+                    }
+                    _erroredException = null;
+                }
+                else
+                {
+                    _erroredException = new Exception("Snapshot processing failed");
+                    throw _erroredException;
                 }
 
-                _erroredException = null;
+
+                
             }
             catch (Exception ex)
             {

@@ -29,7 +29,8 @@ namespace SS.Integration.Adapter.Model.Interfaces
         HEALTH_CHECK_FALURE,
         MATCH_OVER,
         UPDTATE_DELAYED,
-        PLUGIN_ERROR
+        PLUGIN_ERROR,
+        STOP_STREAMING
     }
 
     public interface ISuspensionManager

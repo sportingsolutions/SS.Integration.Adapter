@@ -130,6 +130,9 @@ namespace SS.Integration.Adapter.Configuration
             value = ConfigurationManager.AppSettings["skipRulesOnError"];
             SkipRulesOnError = string.IsNullOrEmpty(value) ? false : Convert.ToBoolean(value);
 
+            value = ConfigurationManager.AppSettings["logDetailedMarketRules"];
+            LogDetailedMarketRules = string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
+
             value = ConfigurationManager.AppSettings["streamSafetyThreshold"];
             StreamSafetyThreshold = string.IsNullOrEmpty(value) ? DEFAULT_STREAM_THRESHOLD : Convert.ToInt32(value);
 
@@ -228,6 +231,8 @@ namespace SS.Integration.Adapter.Configuration
         public int maxFixtureUpdateDelayInSeconds { get; private set; }
 
         public bool AutoReconnect { get; private set; }
+
+        public bool LogDetailedMarketRules { get; private set; }
 
 
         public int delayedFixtureRecoveryAttemptSchedule { get; private set; }
