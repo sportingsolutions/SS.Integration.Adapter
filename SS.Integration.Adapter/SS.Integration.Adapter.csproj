@@ -85,6 +85,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Actors\AdapterDeadletterMonitorActor.cs" />
+    <Compile Include="Actors\Mailboxes\StreamListenerActorMailbox.cs" />
     <Compile Include="Actors\Messages\ClearFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\CheckFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\GetStreamListenerActorStateMsg.cs" />

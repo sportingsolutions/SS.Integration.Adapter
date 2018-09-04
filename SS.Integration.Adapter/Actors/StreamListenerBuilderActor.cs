@@ -327,7 +327,7 @@ namespace SS.Integration.Adapter.Actors
                                 _stateManager,
                                 _suspensionManager,
                                 _streamHealthCheckValidation,
-                                _fixtureValidation)),
+                                _fixtureValidation)).WithMailbox("streamlisteneractor-mailbox"),
                         streamListenerActorName);
 
                     if (!_creationInProgressFixtureIdSet.Contains(resource.Id))
