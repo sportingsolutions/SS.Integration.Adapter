@@ -23,13 +23,18 @@ namespace SS.Integration.Adapter.Actors.Mailboxes
         {
             var messageType = message.GetType();
 
-            int priority = 1;
+            int priority = 10;
             if (message is StreamHealthCheckMsg)
             {
                 priority = 0;
                 _logger.Debug($"PriorityGenerator set priority={priority} with messageType={messageType}");
             }
-            
+            if (message is StopStreamingMsg)
+            {
+                priority = 1;
+                _logger.Debug($"PriorityGenerator set priority={priority} with messageType={messageType}");
+            }
+
             return priority;
         }
 
