@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using log4net;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
@@ -42,12 +43,16 @@ namespace SS.Integration.Adapter.MarketRules
         private static readonly ILog _Logger = LogManager.GetLogger(typeof(PendingMarketFilteringRule));
         private readonly HashSet<string> _includedSports;
         private readonly HashSet<string> _excludedMarketTypes;
-        
+        private bool logDetailedMarketRules;
+
 
         public PendingMarketFilteringRule()
         {
             _includedSports = new HashSet<string>();
             _excludedMarketTypes = new HashSet<string>();
+
+            var value = ConfigurationManager.AppSettings["logDetailedMarketRules"];
+            logDetailedMarketRules = string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
         }
 
         public string Name
@@ -189,13 +194,15 @@ namespace SS.Integration.Adapter.MarketRules
                             });
 
                             var mri = new MarketRuleEditIntent(editMarketAction, MarketRuleEditIntent.OperationType.CHANGE_DATA);
-                            _Logger.DebugFormat("market rule={0} => {1} of {2} is created", Name, mkt, fixture);
+                            if (logDetailedMarketRules)
+                                _Logger.DebugFormat("market rule={0} => {1} of {2} is created", Name, mkt, fixture);
                             result.EditMarket(mkt, mri);
                         }
                         else
                         {
                             //dont create market
-                            _Logger.DebugFormat("market rule={0} => {1} of {2} is not created", Name, mkt, fixture);
+                            if (logDetailedMarketRules)
+                                _Logger.DebugFormat("market rule={0} => {1} of {2} is not created", Name, mkt, fixture);
                             result.MarkAsRemovable(mkt);
                         }
                     }

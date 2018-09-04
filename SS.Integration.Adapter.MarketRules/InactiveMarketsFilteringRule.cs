@@ -13,6 +13,8 @@
 //limitations under the License.
 
 
+using System;
+using System.Configuration;
 using System.Linq;
 using log4net;
 using SS.Integration.Adapter.Model;
@@ -33,8 +35,13 @@ namespace SS.Integration.Adapter.MarketRules
         private const string NAME = "Inactive_Markets";
         private static readonly ILog _Logger = LogManager.GetLogger(typeof(InactiveMarketsFilteringRule));
         private static InactiveMarketsFilteringRule _Instance;
+        private bool logDetailedMarketRules;
 
-        private InactiveMarketsFilteringRule() { }
+        private InactiveMarketsFilteringRule()
+        {
+            var value = ConfigurationManager.AppSettings["logDetailedMarketRules"];
+            logDetailedMarketRules = string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
+        }
 
 
         public static InactiveMarketsFilteringRule Instance
@@ -60,11 +67,21 @@ namespace SS.Integration.Adapter.MarketRules
                 m => (oldState != null && oldState.HasMarket(m.Id) && oldState[m.Id].IsEqualTo(newState[m.Id]))
                         && (!m.IsActive && !oldState[m.Id].IsActive));
 
-            foreach (var market in inactiveMarkets.ToList())
+            var start = DateTime.UtcNow;
+            var inactiveList = inactiveMarkets.ToList();
+
+
+            
+
+                foreach (var market in inactiveList)
             {
                 result.MarkAsRemovable(market);
-                _Logger.DebugFormat("market rule={0} => {1} of fixtureId={2} is marked as removable", Name, market, fixture.Id);
+                if (logDetailedMarketRules)
+                    _Logger.DebugFormat("market rule={0} => {1} of fixtureId={2} is marked as removable", Name, market, fixture.Id);
             }
+            
+
+            _Logger.Info($"Marking markets as removable took marketRulesTime={(DateTime.UtcNow - start).TotalSeconds.ToString("N")} marketsCount={fixture.Markets.Count} removableCount={inactiveList.Count} {fixture}");
 
             return result;
         }
