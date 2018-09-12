@@ -33,6 +33,7 @@ using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Configuration;
 using SS.Integration.Adapter.Diagnostics.Model.Service.Model;
 using SS.Integration.Adapter.Enums;
+using Settings = SS.Integration.Adapter.Configuration.Settings;
 
 namespace SS.Integration.Adapter.Tests
 {
@@ -2088,137 +2089,6 @@ namespace SS.Integration.Adapter.Tests
         }
 
         /// <summary>
-        /// This test ensures that when stream healthcheck detects invalid sequence for the first time 
-        /// then it suspends the fixture and reprocess full snapshot
-        /// </summary>
-        [Test]
-        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
-        public void OnHealthCheckStreamInvalidThenSuspendAndReprocessSnapshot()
-        {
-            //
-            //Arrange
-            //
-            Fixture snapshot;
-            Mock<IResourceFacade> resourceFacadeMock;
-            SetupCommonMockObjects(
-                /*sport*/FootabllSportMock.Object.Name,
-                /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
-                /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
-                out snapshot,
-                out resourceFacadeMock);
-
-            ServiceMock.Setup(o => o.GetSports()).Returns(new[] { FootabllSportMock.Object });
-            ServiceMock.Setup(o => o.GetResources(It.Is<string>(s => s.Equals(FootabllSportMock.Object.Name))))
-                .Returns(new List<IResourceFacade> { resourceFacadeMock.Object });
-            StreamHealthCheckValidationMock.Setup(a =>
-                    a.CanConnectToStreamServer(
-                        It.IsAny<IResourceFacade>(),
-                        It.IsAny<StreamListenerState>()))
-                .Returns(true);
-
-            var streamListenerManagerActor =
-                ActorOfAsTestActorRef<StreamListenerManagerActor>(
-                    Props.Create(() =>
-                        new StreamListenerManagerActor(
-                            SettingsMock.Object,
-                            PluginMock.Object,
-                            StateManagerMock.Object,
-                            SuspensionManagerMock.Object,
-                            StreamHealthCheckValidationMock.Object,
-                            FixtureValidationMock.Object)),
-                    StreamListenerManagerActor.ActorName);
-            var sportProcessorRouterActor =
-                ActorOfAsTestActorRef<SportProcessorRouterActor>(
-                    Props.Create(() => new SportProcessorRouterActor(ServiceMock.Object))
-                        .WithRouter(new SmallestMailboxPool(SettingsMock.Object.FixtureCreationConcurrency)),
-                    SportProcessorRouterActor.ActorName);
-            ActorOfAsTestActorRef<SportsProcessorActor>(
-                Props.Create(() =>
-                    new SportsProcessorActor(
-                        SettingsMock.Object,
-                        ServiceMock.Object,
-                        sportProcessorRouterActor)),
-                SportsProcessorActor.ActorName);
-
-            sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
-
-            IActorRef streamListenerActorRef = null;
-            StreamListenerActor streamListenerActor = null;
-
-            //Get child actors instances
-            AwaitAssert(() =>
-                {
-                    streamListenerActorRef =
-                        GetChildActorRef(
-                            streamListenerManagerActor,
-                            StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
-                    streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
-                    Assert.NotNull(streamListenerActorRef);
-                    Assert.NotNull(streamListenerActor);
-                },
-                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-
-            //
-            //Act
-            //
-            //Wait 1 second and force Stream Health Check message
-            Task.Delay(1000).Wait();
-            streamListenerActorRef.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
-
-            //
-            //Assert
-            //
-            AwaitAssert(() =>
-                {
-                    streamListenerActorRef =
-                        GetChildActorRef(
-                            streamListenerManagerActor,
-                            StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
-                    streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
-
-                    Assert.NotNull(streamListenerActorRef);
-                    Assert.NotNull(streamListenerActor);
-
-                    resourceFacadeMock.Verify(a => a.StopStreaming(), Times.Never);
-                    PluginMock.Verify(a =>
-                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
-                        Times.Never);
-                    PluginMock.Verify(a =>
-                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
-                        Times.Never);
-                    PluginMock.Verify(a =>
-                            a.ProcessMatchStatus(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Never);
-                    PluginMock.Verify(a =>
-                            a.ProcessFixtureDeletion(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Never);
-                    SuspensionManagerMock.Verify(a =>
-                            a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Once);      
-                    SuspensionManagerMock.Verify(a =>
-                            a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                                SuspensionReason.HEALTH_CHECK_FALURE),
-                        Times.Once);
-                    MarketRulesManagerMock.Verify(a =>
-                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Never);
-                    MarketRulesManagerMock.Verify(a =>
-                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
-                        Times.Never);
-                    MarketRulesManagerMock.Verify(a =>
-                            a.CommitChanges(),
-                        Times.Never);
-                    MarketRulesManagerMock.Verify(a =>
-                            a.RollbackChanges(),
-                        Times.Never);
-                    Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
-                },
-                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-        }
-
-        /// <summary>
         /// This test ensures that when stream healthcheck detects invalid sequence for the second time 
         /// then it stops the stream listener
         /// </summary>
@@ -2302,9 +2172,10 @@ namespace SS.Integration.Adapter.Tests
             //Act
             //
             //Wait 1 second and force Stream Health Check message
-            
+
+
             streamListenerActorRef.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
-            Task.Delay(1000).Wait();
+            Task.Delay((Settings.MinimalHealthcheckInterval + 1)*1000).Wait();
             streamListenerActorRef.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
             Task.Delay(1000).Wait();
             //

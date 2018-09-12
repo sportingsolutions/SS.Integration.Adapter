@@ -119,7 +119,7 @@ namespace SS.Integration.Adapter.Actors
 
                 var sequnceMatch = _streamHealthCheckValidation.IsSequenceValid(msg.Resource, msg.StreamingState, msg.CurrentSequence);
 
-                var sequnceUpdated = msg.CurrentSequence > lastProcessedSequnce;
+                var sequnceUpdated = msg.CurrentSequence > lastProcessedSequnce && lastProcessedSequnce > 0;
 
                 //var streamIsValid
                 
@@ -160,9 +160,9 @@ namespace SS.Integration.Adapter.Actors
 
         private bool ValidateTime()
         {
-            if ((DateTime.UtcNow - lastExecute).TotalSeconds < 30)
+            if ((DateTime.UtcNow - lastExecute).TotalSeconds < Configuration.Settings.MinimalHealthcheckInterval)
             {
-                _logger.Info("StreamHealthCheckMsgHandler will be skipped as last validation accured less that 30s ago ");
+                _logger.Info($"StreamHealthCheckMsgHandler will be skipped as last validation accured less that {Configuration.Settings.MinimalHealthcheckInterval}s ago ");
                 return false;
             }
             return true;

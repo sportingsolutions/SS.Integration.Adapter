@@ -48,6 +48,8 @@ namespace SS.Integration.Adapter.Configuration
         private const int DEFAULT_FIXTURE_TIMESTAMP_DIFFERENCE_VALUE = 1440;
         private const int DEFAULT_FIXTURE_RECOVER_INTERVAL = 30;
 
+        public const int MinimalHealthcheckInterval = 30;
+
 
         public Settings()
         {
