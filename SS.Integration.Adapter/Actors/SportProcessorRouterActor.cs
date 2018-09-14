@@ -151,7 +151,7 @@ namespace SS.Integration.Adapter.Actors
         private void LogListOfFixtures(List<IResourceFacade> _res, IFeature sport)
         {
             var list = _res.Select(_ => $"fixtureId={_.Id} sport={_.Sport} name=\"{_.Name}\"");
-            _logger.Info($"ProcessSportMsgHandler sport={sport.Name} resources=\"{string.Join(" , ", list)} \"");
+            _logger.Info($"ProcessSportMsgHandler sport={sport.Name} count={list.Count()} resources=\"{string.Join(" , ", list)} \"");
         }
 
         private bool ValidateResources(IList<IResourceFacade> resources, string sport)
