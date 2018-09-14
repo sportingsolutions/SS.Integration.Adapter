@@ -1871,79 +1871,79 @@ namespace SS.Integration.Adapter.Tests
         /// <summary>
         /// This test ensures that we don't process the market rules when processing snapshot on-demand
         /// </summary>
-        [Test]
-        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
-        public void OnProcessSnapshotSkipMarketRulesWhenErrored()
-        {
-            //
-            //Arrange
-            //
-            Fixture snapshot;
-            Mock<IResourceFacade> resourceFacadeMock;
-            SetupCommonMockObjects(
-                /*sport*/FootabllSportMock.Object.Name,
-                /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
-                /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
-                out snapshot,
-                out resourceFacadeMock);
-            StreamHealthCheckValidationMock.Setup(a =>
-                    a.CanConnectToStreamServer(
-                        It.IsAny<IResourceFacade>(),
-                        It.IsAny<StreamListenerState>()))
-                .Returns(true);
-            FixtureValidationMock.SetupSequence(o =>
-                    o.IsSnapshotNeeded(
-                        It.IsAny<IResourceFacade>(),
-                        It.IsAny<FixtureState>()))
-                .Throws(new Exception())
-                .Returns(false);
-            SettingsMock.SetupGet(o => o.SkipRulesOnError).Returns(true);
+        //[Test]
+        //[Category(STREAM_LISTENER_ACTOR_CATEGORY)]
+        //public void OnProcessSnapshotSkipMarketRulesWhenErrored()
+        //{
+        //    //
+        //    //Arrange
+        //    //
+        //    Fixture snapshot;
+        //    Mock<IResourceFacade> resourceFacadeMock;
+        //    SetupCommonMockObjects(
+        //        /*sport*/FootabllSportMock.Object.Name,
+        //        /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
+        //        /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
+        //        out snapshot,
+        //        out resourceFacadeMock);
+        //    StreamHealthCheckValidationMock.Setup(a =>
+        //            a.CanConnectToStreamServer(
+        //                It.IsAny<IResourceFacade>(),
+        //                It.IsAny<StreamListenerState>()))
+        //        .Returns(true);
+        //    FixtureValidationMock.SetupSequence(o =>
+        //            o.IsSnapshotNeeded(
+        //                It.IsAny<IResourceFacade>(),
+        //                It.IsAny<FixtureState>()))
+        //        .Throws(new Exception())
+        //        .Returns(false);
+        //    SettingsMock.SetupGet(o => o.SkipRulesOnError).Returns(true);
 
-            //
-            //Act
-            //
-            var actor = ActorOfAsTestActorRef(() =>
-                new StreamListenerActor(
-                    SettingsMock.Object,
-                    PluginMock.Object,
-                    resourceFacadeMock.Object,
-                    StateManagerMock.Object,
-                    SuspensionManagerMock.Object,
-                    StreamHealthCheckValidationMock.Object,
-                    FixtureValidationMock.Object));
+        //    //
+        //    //Act
+        //    //
+        //    var actor = ActorOfAsTestActorRef(() =>
+        //        new StreamListenerActor(
+        //            SettingsMock.Object,
+        //            PluginMock.Object,
+        //            resourceFacadeMock.Object,
+        //            StateManagerMock.Object,
+        //            SuspensionManagerMock.Object,
+        //            StreamHealthCheckValidationMock.Object,
+        //            FixtureValidationMock.Object));
 
-            //
-            //Assert
-            //
-            AwaitAssert(() =>
-                {
-                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
-                    PluginMock.Verify(a =>
-                            a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
-                        Times.Once);
-                    SuspensionManagerMock.Verify(a =>
-                            a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Once);
-                    MarketRulesManagerMock.Verify(a =>
-                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                        Times.Never);
-                    MarketRulesManagerMock.Verify(a =>
-                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
-                        Times.Never);
-                    MarketRulesManagerMock.Verify(a =>
-                            a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
-                        Times.Once);
-                    MarketRulesManagerMock.Verify(a =>
-                            a.CommitChanges(),
-                        Times.Once);
-                    MarketRulesManagerMock.Verify(a =>
-                            a.RollbackChanges(),
-                        Times.Never);
-                    Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
-                },
-                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-        }
+        //    //
+        //    //Assert
+        //    //
+        //    AwaitAssert(() =>
+        //        {
+        //            resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+        //            PluginMock.Verify(a =>
+        //                    a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+        //                Times.Once);
+        //            SuspensionManagerMock.Verify(a =>
+        //                    a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+        //                Times.Once);
+        //            MarketRulesManagerMock.Verify(a =>
+        //                    a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+        //                Times.Never);
+        //            MarketRulesManagerMock.Verify(a =>
+        //                    a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+        //                Times.Never);
+        //            MarketRulesManagerMock.Verify(a =>
+        //                    a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
+        //                Times.Once);
+        //            MarketRulesManagerMock.Verify(a =>
+        //                    a.CommitChanges(),
+        //                Times.Once);
+        //            MarketRulesManagerMock.Verify(a =>
+        //                    a.RollbackChanges(),
+        //                Times.Never);
+        //            Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
+        //        },
+        //        TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+        //        TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        //}
 
         /// <summary>
         /// This test ensures that when disconnection occurs then the reconnection is automatically done.

@@ -462,7 +462,7 @@ namespace SS.Integration.Adapter.Tests
 
             streamListenerActorRef =GetChildActorRef(streamListenerManagerActor,StreamListenerActor.GetName(resourceFacadeMock.Object.Id));
             streamListenerActor = GetUnderlyingActor<StreamListenerActor>(streamListenerActorRef);
-
+            Thread.Sleep(5000);
             AwaitAssert(() =>
             {
                 Assert.AreEqual(StreamListenerState.Streaming, streamListenerActor.State);
