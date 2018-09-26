@@ -54,7 +54,7 @@ namespace SS.Integration.Adapter.Actors
         {
             _serviceFacade = serviceFacade ?? throw new ArgumentNullException(nameof(serviceFacade));
 
-            Receive<ProcessSportMsg>(o => ProcessSportMsgHandler(o));
+            Receive<ProcessSportMsg>(o => ProcessSportsMsgHandler(o));
         }
 
         #endregion
@@ -106,7 +106,7 @@ namespace SS.Integration.Adapter.Actors
             });
         }
 
-        private void ProcessSportMsgHandler(ProcessSportMsg msg)
+        private void ProcessSportsMsgHandler(ProcessSportMsg msg)
         {
             var sports = _serviceFacade.GetSports();
             if (sports == null)
@@ -135,7 +135,7 @@ namespace SS.Integration.Adapter.Actors
                 SortByMatchStatus(resources);
             }
 
-
+            _logger.Info($"ProcessSportsMsgHandler resourcesCount={resources.Count}");
 
 
 
