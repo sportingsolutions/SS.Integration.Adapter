@@ -170,14 +170,7 @@ namespace SS.Integration.Adapter.UdapiClient
 
         public override string ToString()
         {
-            var format = "Fixture with fixtureId={0}";
-            if (Name != null)
-            {
-                format += " fixtureName=\"{1}\"";
-                return string.Format(format, Id, Name);
-            }
-
-            return string.Format(format, Id);
+            return $"Fixture with fixtureId={Id} sequnce={Content?.Sequence} name=\"{Name}\"";
         }
 
         #endregion
