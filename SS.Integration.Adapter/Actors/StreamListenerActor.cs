@@ -550,7 +550,6 @@ namespace SS.Integration.Adapter.Actors
 
 				var fixtureState = GetFixtureState();
 
-
 				_currentEpoch = fixtureState?.Epoch ?? -1;
 				_currentSequence = _resource.Content.Sequence;
 				_lastSequenceProcessedInSnapshot = -1;
@@ -769,12 +768,11 @@ namespace SS.Integration.Adapter.Actors
 			if (snapshot.Sequence < _lastSequenceProcessedInSnapshot)
 			{
 				_logger.Warn(
-					$"Newer snapshot {snapshot} was already processed on another thread, current sequence={_currentSequence}");
+					$"Newer snapshot {snapshot} was already processed on another thread, current lastProcessedSnapshot=Sequence={_lastSequenceProcessedInSnapshot}");
 				return false;
 			}
 
-			_logger.Debug(
-				$"VerifySequenceOnSnapshot successfully passed for  fixtureId={snapshot.Id}, sequence={_currentSequence}");
+			_logger.Debug($"VerifySequenceOnSnapshot successfully passed for  {snapshot}");
 
 			return true;
 		}
@@ -1139,7 +1137,10 @@ namespace SS.Integration.Adapter.Actors
 
 			_stateManager.ClearState(_fixtureId);
 			var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
-			fixtureStateActor.Tell(new RemoveFixtureStateMsg {FixtureId = _fixtureId});
+
+
+			SdkActorSystem.ActorSystem.Scheduler.ScheduleTellOnce(TimeSpan.FromMinutes(10),
+				fixtureStateActor, new RemoveFixtureStateMsg {FixtureId = _fixtureId}, Self);
 		}
 
 		private void SuspendAndReprocessSnapshot(SuspensionReason suspendReason, bool hasEpochChanged = false)
