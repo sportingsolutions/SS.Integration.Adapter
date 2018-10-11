@@ -108,6 +108,13 @@ namespace SS.Integration.Adapter.Actors
 
             LogState(msg);
 
+	        if (msg.Resource.IsMatchOver)
+	        {
+		        Context.Parent.Tell(new StopStreamingMsg());
+						return;
+
+					}
+
 
             if (!ValidateTime())
                 return;
@@ -172,8 +179,7 @@ namespace SS.Integration.Adapter.Actors
         {
             var delay = (DateTime.Now - msg.Time).TotalSeconds;
             _logger.Debug(
-                $" Listener state for {msg.Resource} has " +
-                $"sequence={msg.Resource.Content.Sequence} " +
+                $"Listener state for {msg.Resource} has " +
                 $"processedSequence={msg.CurrentSequence} " +
                 (msg.Resource.Content.Sequence > msg.CurrentSequence
                     ? $"missedSequence={msg.Resource.Content.Sequence - msg.CurrentSequence} "
