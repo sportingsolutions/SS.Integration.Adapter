@@ -24,6 +24,7 @@ using SportingSolutions.Udapi.Sdk.Model.Message;
 using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Enums;
 using SS.Integration.Adapter.Interface;
+using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
 using SdkErrorMessage = SportingSolutions.Udapi.Sdk.Events.SdkErrorMessage;
 
@@ -142,12 +143,29 @@ namespace SS.Integration.Adapter.Actors
 
         private void ProcessResourceMsgHandler(ProcessResourceMsg msg)
         {
+           
+
             _logger.Info(
-                $"ProcessResourceMsgHandler for {msg.Resource} Epoch={msg.Resource.Content?.MatchStatus}");
-            IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.Resource.Id));
+                $"ProcessResourceMsgHandler for {msg.Resource} Epoch={msg.Resource.Content?.MatchStatus}{(msg.Resource.IsMatchOver ? $" isMatchOver=true": "")}");
+
+	        
+	        if (msg.Resource.Content == null)
+	        {
+		        _logger.Info($"ProcessResourceMsgHandler for {msg.Resource} content=NULL terminating");
+				return;
+	        }
+
+			IActorRef streamListenerActor = Context.Child(StreamListenerActor.GetName(msg.Resource.Id));
             if (streamListenerActor.IsNobody())
             {
-                _logger.Info(
+	            var fixtureState = GetFixtureState(msg.Resource);
+	            if (fixtureState != null && fixtureState.Sequence > msg.Resource.Content.Sequence)
+	            {
+		            _logger.Info($"ProcessResourceMsgHandler for {msg.Resource} message is too old: messageSequnce={msg.Resource.Content.Sequence} stateSiqunce={fixtureState.Sequence} terminating");
+		            return;
+	            }
+
+				_logger.Info(
                     $"Stream listener for {msg.Resource} doesn't exist. Going to trigger creation.");
                 _streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = msg.Resource });
             }
@@ -159,7 +177,28 @@ namespace SS.Integration.Adapter.Actors
             }
         }
 
-        private void StreamListenerInitializedMsgHandler(StreamListenerInitializedMsg msg)
+	    private FixtureState GetFixtureState(IResourceFacade resource)
+	    {
+		    var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
+		    FixtureState state = null;
+		    try
+		    {
+			    state = fixtureStateActor
+				    .Ask<FixtureState>(
+					    new GetFixtureStateMsg { FixtureId = resource.Id },
+					    TimeSpan.FromSeconds(10))
+				    .Result;
+		    }
+		    catch (Exception e)
+		    {
+			    _logger.Warn($"GetFixtureState failed for  {resource} {e}");
+		    }
+
+		    return state;
+
+	    }
+
+		private void StreamListenerInitializedMsgHandler(StreamListenerInitializedMsg msg)
         {
             _logger.Info(
                 $"Stream Listener for {msg.Resource} has been Initialized");
