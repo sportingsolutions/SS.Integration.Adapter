@@ -19,6 +19,7 @@ using Akka.Actor;
 using log4net;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Actors.Messages;
+using SS.Integration.Adapter.Helpers;
 using SS.Integration.Adapter.Interface;
 
 namespace SS.Integration.Adapter.Actors
@@ -41,16 +42,16 @@ namespace SS.Integration.Adapter.Actors
 
         private readonly ILog _logger = LogManager.GetLogger(typeof(SportProcessorRouterActor));
         private readonly IServiceFacade _serviceFacade;
+	    
+		#endregion
 
-        #endregion
+		#region Constructors
 
-        #region Constructors
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="serviceFacade"></param>
-        public SportProcessorRouterActor(IServiceFacade serviceFacade)
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="serviceFacade"></param>
+		public SportProcessorRouterActor(IServiceFacade serviceFacade)
         {
             _serviceFacade = serviceFacade ?? throw new ArgumentNullException(nameof(serviceFacade));
 
@@ -75,36 +76,7 @@ namespace SS.Integration.Adapter.Actors
 
         #region Private methods
 
-        private void SortByMatchStatus(List<IResourceFacade> resources)
-        {
-            resources.Sort((x, y) =>
-            {
-                if (x.Content.MatchStatus == y.Content.MatchStatus)
-                {
-                    return DateTime.Parse(x.Content.StartTime).CompareTo(DateTime.Parse(y.Content.StartTime));
-                }
-
-                if (x.Content.MatchStatus == 40)
-                    return -1;
-
-                if (y.Content.MatchStatus == 40)
-                    return 1;
-
-                if (x.Content.MatchStatus == 30)
-                    return -1;
-
-                if (y.Content.MatchStatus == 30)
-                    return 1;
-
-                if (x.Content.MatchStatus < y.Content.MatchStatus)
-                    return -1;
-
-                if (x.Content.MatchStatus > y.Content.MatchStatus)
-                    return 1;
-
-                return 0;
-            });
-        }
+        
 
         private void ProcessSportsMsgHandler(ProcessSportMsg msg)
         {
@@ -132,7 +104,7 @@ namespace SS.Integration.Adapter.Actors
             }
             if (resources.Count > 1)
             {
-                SortByMatchStatus(resources);
+                resources.SortByMatchStatus();
             }
 
             _logger.Info($"ProcessSportsMsgHandler resourcesCount={resources.Count}");
