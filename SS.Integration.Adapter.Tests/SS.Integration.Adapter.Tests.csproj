@@ -122,6 +122,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MarketStateTest.cs" />
+    <Compile Include="PriorityHelperTest.cs" />
     <Compile Include="SuspensionManagerTests.cs" />
     <Compile Include="FixtureOverviewTests.cs" />
     <Compile Include="FixtureSamples.Designer.cs">
