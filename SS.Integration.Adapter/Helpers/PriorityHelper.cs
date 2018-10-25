@@ -15,16 +15,7 @@ namespace SS.Integration.Adapter.Helpers
 			{
 				if (x.Content.MatchStatus == y.Content.MatchStatus)
 				{
-					var xD = DateTime.Parse(x.Content.StartTime);
-					var yD = DateTime.Parse(y.Content.StartTime);
-					var date = DateTime.Now;
-					if (xD.Date == date.Date && yD.Date != date.Date)
-						return -1;
-
-					if (xD.Date != date.Date && yD.Date == date.Date)
-						return -1;
-
-					return xD.CompareTo(yD);
+					return CompareByStartDate(x, y);
 				}
 
 				if (x.Content.MatchStatus == 40)
@@ -47,6 +38,20 @@ namespace SS.Integration.Adapter.Helpers
 
 				return 0;
 			});
+		}
+
+		private static int CompareByStartDate(IResourceFacade x, IResourceFacade y)
+		{
+			var xD = DateTime.Parse(x.Content.StartTime);
+			var yD = DateTime.Parse(y.Content.StartTime);
+			var date = DateTime.Now;
+			if (xD.Date == date.Date && yD.Date != date.Date)
+				return -1;
+
+			if (xD.Date != date.Date && yD.Date == date.Date)
+				return -1;
+
+			return xD.CompareTo(yD);
 		}
 	}
 }
