@@ -14,14 +14,12 @@
 
 using System;
 using SS.Integration.Adapter.Model.Interfaces;
-using log4net;
 
 namespace SS.Integration.Adapter.Model
 {
     public class CachedObjectStoreWithPersistance<T> : CachedObjectStore<T> where T : class
     {
         private readonly IObjectProvider<T> _persistanceStore;
-        private readonly ILog _logger = LogManager.GetLogger(typeof (CachedObjectStoreWithPersistance<T>));
 
         public CachedObjectStoreWithPersistance(IObjectProvider<T> persistanceStore, string cacheUniqueId,
                                                 int cacheExpiryInSecs = 60)
@@ -49,7 +47,6 @@ namespace SS.Integration.Adapter.Model
             }
             catch (Exception ex)
             {
-                _logger.Error(string.Format("Deserialization error occured for item with id={0}. Storage file must be corrupted and will be removed",id), ex);
                 
                 Remove(id);
                 

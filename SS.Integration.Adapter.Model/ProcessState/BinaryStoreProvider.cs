@@ -15,7 +15,6 @@
 using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
-using log4net;
 using SS.Integration.Adapter.Model.Interfaces;
 
 namespace SS.Integration.Adapter.Model.ProcessState
@@ -23,7 +22,6 @@ namespace SS.Integration.Adapter.Model.ProcessState
     public class BinaryStoreProvider<T> : FileStoreProvider, IObjectProvider<T>
     {
         private readonly string _pathFormatString;
-        private readonly ILog _logger = LogManager.GetLogger("SS.Integration.Adapter.Model.ProcessState.BinaryStoreProvider");
 
         public BinaryStoreProvider(string directory, string pathFormatString)
             : base(directory)
@@ -47,7 +45,6 @@ namespace SS.Integration.Adapter.Model.ProcessState
             }
             catch (Exception e)
             {
-                _logger.Error($"Error reading path={filePath} , file will be removed! , exception={e}");
                 DeleteFile(filePath);
                 throw;
             }
@@ -64,7 +61,6 @@ namespace SS.Integration.Adapter.Model.ProcessState
             }
             catch (Exception e)
             {
-                _logger.Error($"Error converting path={filePath} , file will be removed! , exception={e}");
                 DeleteFile(filePath);
                 throw;
             }
@@ -78,7 +74,6 @@ namespace SS.Integration.Adapter.Model.ProcessState
             if (System.IO.File.Exists(_pathFileName))
             {
                 System.IO.File.Delete(_pathFileName);
-                _logger.DebugFormat($"Deleted file {_pathFileName}");
             }
         }
 
