@@ -170,7 +170,7 @@ namespace SS.Integration.Adapter.UdapiClient
 
         public override string ToString()
         {
-            return $"Fixture with fixtureId={Id} sequnce={Content?.Sequence} name=\"{Name}\"";
+            return $"Fixture with fixtureId={Id} sequence={Content?.Sequence} name=\"{Name}\"";
         }
 
         #endregion

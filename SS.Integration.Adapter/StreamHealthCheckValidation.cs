@@ -55,7 +55,7 @@ namespace SS.Integration.Adapter
         /// <returns></returns>
         public bool IsSequenceValid(IResourceFacade resource, StreamListenerState state, int sequence)
         {
-            return resource.Content.Sequence == sequence || ShouldIgnoreUnprocessedSequence(resource, state);
+            return resource.Content.Sequence <= sequence || ShouldIgnoreUnprocessedSequence(resource, state);
 
         }
 

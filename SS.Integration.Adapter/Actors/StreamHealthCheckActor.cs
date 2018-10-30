@@ -50,7 +50,7 @@ namespace SS.Integration.Adapter.Actors
         private int _startStreamingNotRespondingWarnCount;
         private bool _streamInvalidDetected;
 
-        private int lastProcessedSequnce = 0;
+        private int lastProcessedSequence = 0;
         private DateTime lastExecute = DateTime.MinValue;
 
         #endregion
@@ -108,6 +108,8 @@ namespace SS.Integration.Adapter.Actors
 
             LogState(msg);
 
+			//return;
+
 	        if (msg.Resource.IsMatchOver)
 	        {
 		        Context.Parent.Tell(new StopStreamingMsg());
@@ -124,13 +126,13 @@ namespace SS.Integration.Adapter.Actors
             {
                 
 
-                var sequnceMatch = _streamHealthCheckValidation.IsSequenceValid(msg.Resource, msg.StreamingState, msg.CurrentSequence);
+                var isSequenceValid = _streamHealthCheckValidation.IsSequenceValid(msg.Resource, msg.StreamingState, msg.CurrentSequence);
 
-                var sequnceUpdated = msg.CurrentSequence > lastProcessedSequnce && lastProcessedSequnce > 0;
+                var SequenceUpdated = msg.CurrentSequence > lastProcessedSequence && lastProcessedSequence > 0;
 
                 //var streamIsValid
                 
-                if (!sequnceMatch && !sequnceUpdated)
+                if (!isSequenceValid && !SequenceUpdated)
                 {
                     _logger.Warn($"StreamHealthCheckMsgHandler: Detected {(_streamInvalidDetected ? "invalid" : "suspicious")} stream {msg.Resource}");
                     
@@ -161,7 +163,7 @@ namespace SS.Integration.Adapter.Actors
             }
 
             lastExecute = DateTime.UtcNow;
-            lastProcessedSequnce = msg.CurrentSequence;
+            lastProcessedSequence = msg.CurrentSequence;
 
         }
 

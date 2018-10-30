@@ -161,7 +161,7 @@ namespace SS.Integration.Adapter.Actors
 	            var fixtureState = GetFixtureState(msg.Resource);
 	            if (fixtureState != null && fixtureState.Sequence > msg.Resource.Content.Sequence)
 	            {
-		            _logger.Info($"ProcessResourceMsgHandler for {msg.Resource} message is too old: messageSequnce={msg.Resource.Content.Sequence} stateSiqunce={fixtureState.Sequence} terminating");
+		            _logger.Info($"ProcessResourceMsgHandler for {msg.Resource} message is too old: messageSequence={msg.Resource.Content.Sequence} stateSequence={fixtureState.Sequence} terminating");
 		            return;
 	            }
 
