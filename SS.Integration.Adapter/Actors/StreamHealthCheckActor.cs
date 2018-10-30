@@ -52,6 +52,7 @@ namespace SS.Integration.Adapter.Actors
 
         private int lastProcessedSequence = 0;
         private DateTime lastExecute = DateTime.MinValue;
+	    private DateTime? matchOverDetectedTime;
 
         #endregion
 
@@ -110,12 +111,8 @@ namespace SS.Integration.Adapter.Actors
 
 			//return;
 
-	        if (msg.Resource.IsMatchOver)
-	        {
-		        Context.Parent.Tell(new StopStreamingMsg());
-						return;
-
-					}
+	        if (StopStreamingDueToMatchOver(msg))
+		        return;
 
 
             if (!ValidateTime())
@@ -167,7 +164,28 @@ namespace SS.Integration.Adapter.Actors
 
         }
 
-        private bool ValidateTime()
+	    private bool StopStreamingDueToMatchOver(StreamHealthCheckMsg msg)
+	    {
+		    if (msg.Resource.IsMatchOver)
+		    {
+			    if (matchOverDetectedTime == null)
+			    {
+				    matchOverDetectedTime = DateTime.Now;
+			    }
+			    else
+			    {
+				    if (matchOverDetectedTime.Value.AddMinutes(10) > DateTime.Now)
+				    {
+					    Context.Parent.Tell(new StopStreamingMsg());
+					    return true;
+				    }
+			    }
+		    }
+
+		    return false;
+	    }
+
+	    private bool ValidateTime()
         {
             if ((DateTime.UtcNow - lastExecute).TotalSeconds < Configuration.Settings.MinimalHealthcheckInterval)
             {
