@@ -51,6 +51,7 @@ namespace SS.Integration.Adapter.Actors
         private bool _shouldSendProcessSportsMessage;
         private readonly Dictionary<string, Dictionary<string, StreamListenerState>> _streamListeners;
         private readonly ICancelable _logPublishedFixturesCountsMsgSchedule;
+	    private List<decimal> delays = new List<decimal>();
 
         #endregion
 
@@ -103,8 +104,9 @@ namespace SS.Integration.Adapter.Actors
                 Self,
                 new LogPublishedFixturesCountsMsg(),
                 Self);
-
-            Receive<ProcessResourceMsg>(o => ProcessResourceMsgHandler(o));
+	        
+	        Receive<RegisterDelayMsg>(o => RegisterDelayMsgHandler(o));
+			Receive<ProcessResourceMsg>(o => ProcessResourceMsgHandler(o));
             Receive<StreamConnectedMsg>(o => StreamConnectedMsgHandler(o));
             Receive<StreamDisconnectedMsg>(o => StreamDisconnectedMsgHandler(o));
             Receive<StreamListenerStoppedMsg>(o => StreamListenerStoppedMsgHandler(o));
@@ -130,7 +132,14 @@ namespace SS.Integration.Adapter.Actors
 
         }
 
-        private void RegisterSdkErrorActor()
+	    private void RegisterDelayMsgHandler(RegisterDelayMsg _registerDelayMsg)
+	    {
+			delays.Add(_registerDelayMsg.Delay);
+		    _logger.Debug($"Average processing delay={delays.Average()} count={delays.Count}");
+
+		}
+
+	    private void RegisterSdkErrorActor()
         {
             _logger.Info($"Sending registering message to FaultControllerActor");
             if (SdkActorSystem.FaultControllerActorRef != null)

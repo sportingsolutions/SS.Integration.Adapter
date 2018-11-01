@@ -89,6 +89,7 @@
     <Compile Include="Actors\Messages\CheckFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\GetStreamListenerActorStateMsg.cs" />
     <Compile Include="Actors\Messages\RecoverDelayedFixtureMsg.cs" />
+    <Compile Include="Actors\Messages\RegisterDelayMsg.cs" />
     <Compile Include="Actors\Messages\RegisterSdkErrorActorMessage.cs" />
     <Compile Include="Actors\Messages\StreamListenerActorStateChangedMsg.cs" />
     <Compile Include="Actors\Messages\NewStreamListenerActorMsg.cs" />
