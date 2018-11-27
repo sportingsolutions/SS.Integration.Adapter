@@ -11,33 +11,29 @@ namespace SS.Integration.Adapter.Helpers
 	{
 		public static void SortByMatchStatus(this List<IResourceFacade> resources)
 		{
-			resources.Sort((x, y) =>
+			resources.Sort((x, y) => { return CompareToByStatusAndDate(x, y); });
+		}
+
+		public static int CompareToByStatusAndDate(this IResourceFacade x, IResourceFacade y)
+		{
+			if (x.Content.MatchStatus == y.Content.MatchStatus)
 			{
-				if (x.Content.MatchStatus == y.Content.MatchStatus)
-				{
-					return CompareByStartDate(x, y);
-				}
+				return CompareByStartDate(x, y);
+			}
 
-				if (x.Content.MatchStatus == 40)
-					return -1;
+			if (x.Content.MatchStatus == 40)
+				return -1;
 
-				if (y.Content.MatchStatus == 40)
-					return 1;
+			if (y.Content.MatchStatus == 40)
+				return 1;
 
-				if (x.Content.MatchStatus == 30)
-					return -1;
+			if (x.Content.MatchStatus == 30)
+				return -1;
 
-				if (y.Content.MatchStatus == 30)
-					return 1;
+			if (y.Content.MatchStatus == 30)
+				return 1;
 
-				if (x.Content.MatchStatus < y.Content.MatchStatus)
-					return -1;
-
-				if (x.Content.MatchStatus > y.Content.MatchStatus)
-					return 1;
-
-				return 0;
-			});
+			return (int) x.Content.MatchStatus.CompareTo((int) y.Content.MatchStatus);
 		}
 
 		private static int CompareByStartDate(IResourceFacade x, IResourceFacade y)
@@ -49,7 +45,7 @@ namespace SS.Integration.Adapter.Helpers
 				return -1;
 
 			if (xD.Date != date.Date && yD.Date == date.Date)
-				return -1;
+				return 1;
 
 			return xD.CompareTo(yD);
 		}
