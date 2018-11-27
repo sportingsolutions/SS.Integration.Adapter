@@ -50,8 +50,10 @@ namespace SS.Integration.Adapter.Tests
         static Mock<IUpdatableSelectionState> _settled1Price1 = new Mock<IUpdatableSelectionState>();
         static Mock<IUpdatableSelectionState> _settled1Price0 = new Mock<IUpdatableSelectionState>();
         static Mock<IUpdatableSelectionState> _settled2Price0 = new Mock<IUpdatableSelectionState>();
-        static Mock<IUpdatableSelectionState> _settled3Price0 = new Mock<IUpdatableSelectionState>();
-        static Mock<IUpdatableSelectionState> _active1Price1 = new Mock<IUpdatableSelectionState>();
+	    static Mock<IUpdatableSelectionState> _settled2Price1 = new Mock<IUpdatableSelectionState>();
+		static Mock<IUpdatableSelectionState> _settled3Price0 = new Mock<IUpdatableSelectionState>();
+	    static Mock<IUpdatableSelectionState> _voided3Price0 = new Mock<IUpdatableSelectionState>();
+		static Mock<IUpdatableSelectionState> _active1Price1 = new Mock<IUpdatableSelectionState>();
         static Mock<IUpdatableSelectionState> _active1Price0 = new Mock<IUpdatableSelectionState>();
 
         static SelectionStateFactory()
@@ -65,10 +67,16 @@ namespace SS.Integration.Adapter.Tests
             _settled2Price0.SetupGet(p => p.Status).Returns(SelectionStatus.Settled);
             _settled2Price0.SetupGet(p => p.Price).Returns(0.0);
 
-            _settled3Price0.SetupGet(p => p.Status).Returns(SelectionStatus.Settled);
+	        _settled2Price1.SetupGet(p => p.Status).Returns(SelectionStatus.Settled);
+	        _settled2Price1.SetupGet(p => p.Price).Returns(1.0);
+
+			_settled3Price0.SetupGet(p => p.Status).Returns(SelectionStatus.Settled);
             _settled3Price0.SetupGet(p => p.Price).Returns(0.0);
 
-            _active1Price1.SetupGet(p => p.Status).Returns(SelectionStatus.Active);
+	        _voided3Price0.SetupGet(p => p.Status).Returns(SelectionStatus.Void);
+	        _voided3Price0.SetupGet(p => p.Price).Returns(0.0);
+
+			_active1Price1.SetupGet(p => p.Status).Returns(SelectionStatus.Active);
             _active1Price1.SetupGet(p => p.Price).Returns(1.0);
 
             _active1Price0.SetupGet(p => p.Status).Returns(SelectionStatus.Active);
@@ -81,18 +89,28 @@ namespace SS.Integration.Adapter.Tests
             {
                 // 2 settled 1 active
                 yield return new TestCaseData(new List<IUpdatableSelectionState>() { _active1Price0.Object, _settled2Price0.Object, _active1Price1.Object }).Returns(false);
-                // 3 settled 1 with price 1
-                yield return new TestCaseData(new List<IUpdatableSelectionState>() { _settled1Price0.Object, _settled2Price0.Object, _settled1Price1.Object }).Returns(true);
-                // 3 settled 1 with price 1
-                yield return new TestCaseData(new List<IUpdatableSelectionState>() { _settled1Price0.Object, _settled2Price0.Object, _settled3Price0.Object }).Returns(false);
-                // 3 settled 1 with price 1
-                yield return new TestCaseData(new List<IUpdatableSelectionState>() { _settled1Price1.Object}).Returns(true);
-                // 3 settled 1 with price 1
-                yield return new TestCaseData(new List<IUpdatableSelectionState>() { _settled1Price0.Object}).Returns(true);
-                // 3 settled 1 with price 1
-                yield return new TestCaseData(new List<IUpdatableSelectionState>() { _active1Price1.Object}).Returns(false);
+				// 3 settled 1 with price 1
+				yield return new TestCaseData(new List<IUpdatableSelectionState>() { _settled1Price0.Object, _settled2Price0.Object, _settled1Price1.Object }).Returns(true);
+	            // 4 settled 2 with price 1
+	            yield return new TestCaseData(new List<IUpdatableSelectionState>() { _settled1Price0.Object, _settled2Price0.Object, _settled1Price1.Object, _settled2Price1.Object }).Returns(true);
 
-            }
+	            // 3 settled 1 with price 1, 1 voided
+	            yield return new TestCaseData(new List<IUpdatableSelectionState>() { _settled1Price0.Object, _settled2Price0.Object, _settled1Price1.Object, _voided3Price0.Object }).Returns(true);
+
+	            // 2 settled with price 0, 1 voided, 1 active
+	            yield return new TestCaseData(new List<IUpdatableSelectionState>() { _settled1Price0.Object, _settled2Price0.Object, _active1Price0.Object, _voided3Price0.Object }).Returns(false);
+
+
+				// 3 settled 0 with price 1
+				yield return new TestCaseData(new List<IUpdatableSelectionState>() { _settled1Price0.Object, _settled2Price0.Object, _settled3Price0.Object }).Returns(true);
+				// 3 settled 1 with price 1
+				yield return new TestCaseData(new List<IUpdatableSelectionState>() { _settled1Price1.Object }).Returns(true);
+				// 3 settled 1 with price 1
+				yield return new TestCaseData(new List<IUpdatableSelectionState>() { _settled1Price0.Object }).Returns(true);
+				// 3 settled 1 with price 1
+				yield return new TestCaseData(new List<IUpdatableSelectionState>() { _active1Price1.Object }).Returns(false);
+
+			}
         }
     }
 }
