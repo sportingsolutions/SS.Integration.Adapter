@@ -40,7 +40,7 @@ namespace SS.Integration.Adapter.Helpers
 		{
 			var xD = DateTime.Parse(x.Content.StartTime);
 			var yD = DateTime.Parse(y.Content.StartTime);
-			var date = DateTime.Now;
+			var date = DateTime.UtcNow;
 			if (xD.Date == date.Date && yD.Date != date.Date)
 				return -1;
 

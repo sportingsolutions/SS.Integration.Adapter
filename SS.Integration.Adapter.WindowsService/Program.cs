@@ -30,7 +30,9 @@ namespace SS.Integration.Adapter.WindowsService
         /// </summary>
         public static void Main()
         {
-            SetCulture();
+	        Console.WriteLine("Attach debbuger and press enter to start");
+			Console.ReadLine();
+	        SetCulture();
             var path = Assembly.GetExecutingAssembly().Location;
             var fileInfo = new FileInfo(path);
             var dir = fileInfo.DirectoryName;

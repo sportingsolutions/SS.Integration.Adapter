@@ -12,10 +12,15 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
+
 namespace SS.Integration.Adapter.Actors.Messages
 {
     internal class StreamUpdateMsg
     {
         public string Data { get; set; }
-    }
+	    public DateTime PickupFromQueueTime { get; set; }
+	    //public DateTime PushedToAdapterAt { get; set; }
+	    public DateTime ReceivedByAdapterAt { get; set; }
+	}
 }

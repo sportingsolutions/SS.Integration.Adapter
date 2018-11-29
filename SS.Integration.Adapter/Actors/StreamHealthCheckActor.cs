@@ -170,11 +170,11 @@ namespace SS.Integration.Adapter.Actors
 		    {
 			    if (matchOverDetectedTime == null)
 			    {
-				    matchOverDetectedTime = DateTime.Now;
+				    matchOverDetectedTime = DateTime.UtcNow;
 			    }
 			    else
 			    {
-				    if (matchOverDetectedTime.Value.AddMinutes(10) > DateTime.Now)
+				    if (matchOverDetectedTime.Value.AddMinutes(10) > DateTime.UtcNow)
 				    {
 					    Context.Parent.Tell(new StopStreamingMsg());
 					    return true;
@@ -197,7 +197,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void LogState(StreamHealthCheckMsg msg)
         {
-            var delay = (DateTime.Now - msg.Time).TotalSeconds;
+            var delay = (DateTime.UtcNow - msg.Time).TotalSeconds;
             _logger.Debug(
                 $"Listener state for {msg.Resource} has " +
                 $"processedSequence={msg.CurrentSequence} " +

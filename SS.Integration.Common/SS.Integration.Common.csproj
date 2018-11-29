@@ -81,6 +81,7 @@
     <Compile Include="Converters\ReflectionXmlSerializer.cs" />
     <Compile Include="Extensions\Anonymous.cs" />
     <Compile Include="Extensions\CommonExtensions.cs" />
+    <Compile Include="Extensions\DecimalExtensions.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\IDictionaryExtension.cs" />
     <Compile Include="Extensions\IEnumerableExtensions.cs" />

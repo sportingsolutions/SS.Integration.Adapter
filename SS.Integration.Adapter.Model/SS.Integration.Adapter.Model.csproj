@@ -76,6 +76,8 @@
     <Compile Include="Participant.cs" />
     <Compile Include="ProcessState\BinaryStoreProvider.cs" />
     <Compile Include="ProcessState\FileStoreProvider.cs" />
+    <Compile Include="ProcessState\FixtureActionMetrics.cs" />
+    <Compile Include="ProcessState\ProcessingMetrics.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RollingMarket.cs" />
     <Compile Include="RollingMarketScore.cs" />

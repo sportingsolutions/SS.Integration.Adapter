@@ -26,6 +26,7 @@ using SS.Integration.Adapter.Enums;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
 using SS.Integration.Adapter.Model.Interfaces;
+using SS.Integration.Common.Extensions;
 using SdkErrorMessage = SportingSolutions.Udapi.Sdk.Events.SdkErrorMessage;
 
 namespace SS.Integration.Adapter.Actors
@@ -51,22 +52,21 @@ namespace SS.Integration.Adapter.Actors
         private bool _shouldSendProcessSportsMessage;
         private readonly Dictionary<string, Dictionary<string, StreamListenerState>> _streamListeners;
         private readonly ICancelable _logPublishedFixturesCountsMsgSchedule;
-	    private List<decimal> delays = new List<decimal>();
 
-        #endregion
+		#endregion
 
-        #region Constructors
+		#region Constructors
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="settings"></param>
-        /// <param name="adapterPlugin"></param>
-        /// <param name="stateManager"></param>
-        /// <param name="suspensionManager"></param>
-        /// <param name="streamHealthCheckValidation"></param>
-        /// <param name="fixtureValidation"></param>
-        public StreamListenerManagerActor(
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="settings"></param>
+		/// <param name="adapterPlugin"></param>
+		/// <param name="stateManager"></param>
+		/// <param name="suspensionManager"></param>
+		/// <param name="streamHealthCheckValidation"></param>
+		/// <param name="fixtureValidation"></param>
+		public StreamListenerManagerActor(
             ISettings settings,
             IAdapterPlugin adapterPlugin,
             IStateManager stateManager,
@@ -105,8 +105,7 @@ namespace SS.Integration.Adapter.Actors
                 new LogPublishedFixturesCountsMsg(),
                 Self);
 	        
-	        Receive<RegisterDelayMsg>(o => RegisterDelayMsgHandler(o));
-			Receive<ProcessResourceMsg>(o => ProcessResourceMsgHandler(o));
+	        Receive<ProcessResourceMsg>(o => ProcessResourceMsgHandler(o));
             Receive<StreamConnectedMsg>(o => StreamConnectedMsgHandler(o));
             Receive<StreamDisconnectedMsg>(o => StreamDisconnectedMsgHandler(o));
             Receive<StreamListenerStoppedMsg>(o => StreamListenerStoppedMsgHandler(o));
@@ -131,13 +130,6 @@ namespace SS.Integration.Adapter.Actors
                 Self, new RegisterSdkErrorActorMessage(), Self);
 
         }
-
-	    private void RegisterDelayMsgHandler(RegisterDelayMsg _registerDelayMsg)
-	    {
-			delays.Add(_registerDelayMsg.Delay);
-		    _logger.Debug($"Average processing delay={delays.Average()} count={delays.Count}");
-
-		}
 
 	    private void RegisterSdkErrorActor()
         {
@@ -182,7 +174,7 @@ namespace SS.Integration.Adapter.Actors
             {
                 _logger.Info(
                     $"Stream listener for {msg.Resource} already exists. Going to trigger stream health check.");
-                streamListenerActor.Tell(new StreamHealthCheckMsg { Resource = msg.Resource, Time = DateTime.Now});
+                streamListenerActor.Tell(new StreamHealthCheckMsg { Resource = msg.Resource, Time = DateTime.UtcNow});
             }
         }
 
@@ -377,7 +369,11 @@ namespace SS.Integration.Adapter.Actors
             var cntDisconnected = statuses.Count(v => v == StreamListenerState.Disconnected);
             var cntErrored = statuses.Count(v => v == StreamListenerState.Errored);
             var cntStopped = statuses.Count(v => v == StreamListenerState.Stopped);
-            _logger.Debug($"StreamListenerStatistics: Streaming={cntStreaming} Initializing={cntInitializing}  Initialized={cntInitialized} Disconnected={cntDisconnected} Errored={cntErrored} Stoped={cntStopped}");
+	        var mem = GC.GetTotalMemory(true) / 1024 / 1024;
+			var performance = new System.Diagnostics.PerformanceCounter("Memory", "Available MBytes");
+	        var memFree = performance.NextValue();
+			//var memFree = 
+			_logger.Debug($"StreamListenerStatistics: streaming={cntStreaming} initializing={cntInitializing}  initialized={cntInitialized} disconnected={cntDisconnected} errored={cntErrored} stoped={cntStopped} appMemory={mem} mb freeMemory={memFree}");
         }
 
         private void FaultControllerActorOnErrorOcured(SdkErrorMessage sdkErrorArgs)

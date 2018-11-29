@@ -197,11 +197,17 @@ namespace SS.Integration.Adapter.Model
             return string.Format(format, Id, Sequence) + fixtureSport;
         }
 
-        /// <summary>
-        /// Performs a deep-clone of the object
-        /// </summary>
-        /// <returns></returns>
-        public object Clone()
+
+	    public string ToStringShort()
+	    {
+		    return $"fixtureId={Id} sequence={Sequence}";
+	    }
+
+		/// <summary>
+		/// Performs a deep-clone of the object
+		/// </summary>
+		/// <returns></returns>
+		public object Clone()
         {
             return Reflection.PropertyCopy<Fixture>.CopyFrom(this);
         }

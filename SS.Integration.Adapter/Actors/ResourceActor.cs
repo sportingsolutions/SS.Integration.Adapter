@@ -115,7 +115,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void Resource_StreamEvent(object sender, StreamEventArgs e)
         {
-            _streamListenerActor.Tell(new StreamUpdateMsg { Data = e.Update });
+            _streamListenerActor.Tell(new StreamUpdateMsg { Data = e.Update, PickupFromQueueTime  = e.PickupFromQueueTime, ReceivedByAdapterAt = DateTime.UtcNow});
         }
 
         private void StartStreamingMsgHandler(StartStreamingMsg msg)

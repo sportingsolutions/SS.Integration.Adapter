@@ -38,15 +38,8 @@ namespace SS.Integration.Adapter
         /// <param name="fixtureDelta"></param>
         /// <param name="sequence"></param>
         /// <returns></returns>
-        public bool IsSequenceValid(Fixture fixtureDelta, int sequence)
+        public bool IsNotMissedUpdates(Fixture fixtureDelta, int sequence)
         {
-            if (fixtureDelta.Sequence < sequence)
-            {
-                _logger.Debug(
-                    $"fixture delta sequence={fixtureDelta.Sequence} is less than current sequence={sequence} in {fixtureDelta}");
-                return false;
-            }
-
             if (fixtureDelta.Sequence - sequence > 1)
             {
                 _logger.Debug(
@@ -57,7 +50,19 @@ namespace SS.Integration.Adapter
             return true;
         }
 
-        /// <summary>
+
+	    public bool IsSequnceActual(Fixture fixtureDelta, int sequence)
+	    {
+			if (fixtureDelta.Sequence < sequence)
+		    {
+			    _logger.Debug(
+				    $"fixture delta sequence={fixtureDelta.Sequence} is less than current sequence={sequence} in {fixtureDelta}");
+			    return false;
+		    }
+		    return true;
+		}
+
+	    /// <summary>
         /// This method validates the fixture epoch.
         /// In order for the fixture epoch to be valid one of the following must be true:
         /// - current fixture epoch has to be the same as the last processed fixture epoch.

@@ -25,7 +25,7 @@ namespace SS.Integration.Adapter.Tests
 		[Test]
 		public void SortByMatchDateTest()
 		{
-			var cd = DateTime.Now.Date.AddHours(12);
+			var cd = DateTime.UtcNow.Date.AddHours(12);
 			var r1 = GetResource(40, cd.AddHours(-1));
 			var r2 = GetResource(40, cd);
 			var r3 = GetResource(40, cd.AddHours(1));
@@ -54,7 +54,7 @@ namespace SS.Integration.Adapter.Tests
 		[Test]
 		public void CompareToByStatusAndDateInvertioTest()
 		{
-			var cd = DateTime.Now.Date.AddHours(12);
+			var cd = DateTime.UtcNow.Date.AddHours(12);
 			var r1 = GetResource(40, cd.AddHours(-1));
 			var r2 = GetResource(40, cd);
 			var r3 = GetResource(40, cd.AddHours(1));
@@ -81,7 +81,7 @@ namespace SS.Integration.Adapter.Tests
 		[Test]
 		public void SortByMatchStatusTest()
 		{
-			var cd = DateTime.Now;
+			var cd = DateTime.UtcNow;
 
 			var r1 = GetResource(20, cd.AddHours(0));
 			var r2 = GetResource(30, cd.AddHours(-2));
@@ -116,7 +116,7 @@ namespace SS.Integration.Adapter.Tests
 		// First shoul be Todas matches order by start time the other order by start time
 		public void SortByTimeTest()
 		{
-			var cd = DateTime.Now;
+			var cd = DateTime.UtcNow;
 
 			var r1 = GetResource(40, cd.AddHours(2));
 			var r2 = GetResource(40, cd.AddHours(0));

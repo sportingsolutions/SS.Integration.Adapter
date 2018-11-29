@@ -72,8 +72,9 @@
       <HintPath>..\packages\RestSharp.105.2.3\lib\net452\RestSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SportingSolutions.Udapi.Sdk, Version=2.1.25.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SportingSolutions.Udapi.Sdk.2.1.25\lib\net40\SportingSolutions.Udapi.Sdk.dll</HintPath>
+    <Reference Include="SportingSolutions.Udapi.Sdk, Version=0.0.0.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\SS.Integration.UnifiedDataAPIClient.DotNet\SportingSolutions.Udapi.Sdk\bin\Debug\SportingSolutions.Udapi.Sdk.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Collections.Immutable, Version=1.2.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -89,7 +90,6 @@
     <Compile Include="Actors\Messages\CheckFixtureStateMsg.cs" />
     <Compile Include="Actors\Messages\GetStreamListenerActorStateMsg.cs" />
     <Compile Include="Actors\Messages\RecoverDelayedFixtureMsg.cs" />
-    <Compile Include="Actors\Messages\RegisterDelayMsg.cs" />
     <Compile Include="Actors\Messages\RegisterSdkErrorActorMessage.cs" />
     <Compile Include="Actors\Messages\StreamListenerActorStateChangedMsg.cs" />
     <Compile Include="Actors\Messages\NewStreamListenerActorMsg.cs" />
@@ -131,10 +131,10 @@
     <Compile Include="Actors\StreamHealthCheckActor.cs" />
     <Compile Include="Actors\ResourceActor.cs" />
     <Compile Include="Actors\StreamListenerActor.cs" />
+    <Compile Include="Actors\StreamListenerActor.ProcessUpdate.cs" />
     <Compile Include="Actors\StreamListenerBuilderActor.cs" />
     <Compile Include="Actors\StreamListenerManagerActor.cs" />
     <Compile Include="Actors\StreamStatsActor.cs" />
-    <Compile Include="Actors\UpdateProcessing.cs" />
     <Compile Include="Adapter.cs" />
     <Compile Include="Actors\AdapterActorSystem.cs" />
     <Compile Include="Configuration\Settings.cs" />
@@ -146,7 +146,7 @@
     <Compile Include="FixtureHelper.cs" />
     <Compile Include="Actors\SportsProcessorActor.cs" />
     <Compile Include="Helpers\PriorityHelper.cs" />
-    <Compile Include="Helpers\StreamStats.cs" />
+    <Compile Include="Helpers\StreamProcessingStats.cs" />
     <Compile Include="Interface\IFixtureValidation.cs" />
     <Compile Include="Interface\IStreamHealthCheckValidation.cs" />
     <Compile Include="Interface\IMarketRuleManager.cs" />

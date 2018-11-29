@@ -690,7 +690,7 @@ namespace SS.Integration.Adapter.Tests
         //                It.IsAny<StreamListenerState>()))
         //        .Returns(true);
         //    FixtureValidationMock.Setup(a =>
-        //            a.IsSequenceValid(
+        //            a.IsNotMissedUpdates(
         //                It.IsAny<Fixture>(),
         //                It.IsAny<int>()))
         //        .Returns(true);
@@ -899,7 +899,7 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<FixtureState>()))
                 .Returns(true);
             FixtureValidationMock.Setup(a =>
-                    a.IsSequenceValid(
+                    a.IsNotMissedUpdates(
                         It.IsAny<Fixture>(),
                         It.IsAny<int>()))
                 .Returns(true);
@@ -994,7 +994,7 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<StreamListenerState>()))
                 .Returns(true);
             FixtureValidationMock.Setup(a =>
-                    a.IsSequenceValid(
+                    a.IsNotMissedUpdates(
                         It.IsAny<Fixture>(),
                         It.IsAny<int>()))
                 .Returns(true);
@@ -1087,7 +1087,7 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<StreamListenerState>()))
                 .Returns(true);
             FixtureValidationMock.Setup(a =>
-                    a.IsSequenceValid(
+                    a.IsNotMissedUpdates(
                         It.IsAny<Fixture>(),
                         It.IsAny<int>()))
                 .Returns(true);
@@ -1102,7 +1102,7 @@ namespace SS.Integration.Adapter.Tests
                 Sequence = resourceFacadeMock.Object.Content.Sequence + 1,
                 Epoch = snapshot.Epoch,
                 MatchStatus = ((int)MatchStatus.InRunning).ToString(),
-                TimeStamp = DateTime.Now
+                TimeStamp = DateTime.UtcNow
             };
             StreamMessage message = new StreamMessage { Content = update };
 
@@ -1198,7 +1198,7 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<FixtureState>()))
                 .Returns(true);
             FixtureValidationMock.Setup(a =>
-                    a.IsSequenceValid(
+                    a.IsNotMissedUpdates(
                         It.IsAny<Fixture>(),
                         It.IsAny<int>()))
                 .Returns(true);

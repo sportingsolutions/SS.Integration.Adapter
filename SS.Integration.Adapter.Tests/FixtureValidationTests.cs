@@ -66,7 +66,7 @@ namespace SS.Integration.Adapter.Tests
             //
             //Act
             //
-            bool isSequenceValid = fixtureValidation.IsSequenceValid(
+            bool isSequenceValid = fixtureValidation.IsNotMissedUpdates(
                 fixtureDelta,
                 currentSequence);
 
@@ -95,7 +95,7 @@ namespace SS.Integration.Adapter.Tests
             //
             //Act
             //
-            bool isSequenceValid = fixtureValidation.IsSequenceValid(
+            bool isSequenceValid = fixtureValidation.IsNotMissedUpdates(
                 fixtureDelta,
                 currentSequence);
 
@@ -124,7 +124,7 @@ namespace SS.Integration.Adapter.Tests
             //
             //Act
             //
-            bool isSequenceValid = fixtureValidation.IsSequenceValid(
+            bool isSequenceValid = fixtureValidation.IsNotMissedUpdates(
                 fixtureDelta,
                 currentSequence);
 

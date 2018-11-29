@@ -4,9 +4,11 @@ namespace SS.Integration.Adapter.Interface
 {
     public interface IFixtureValidation
     {
-        bool IsSequenceValid(Fixture fixtureDelta, int sequence);
+        bool IsNotMissedUpdates(Fixture fixtureDelta, int sequence);
 
-        bool IsEpochValid(Fixture fixtureDelta, int epoch);
+	    bool IsSequnceActual(Fixture fixtureDelta, int sequence);
+
+		bool IsEpochValid(Fixture fixtureDelta, int epoch);
 
         bool IsSnapshotNeeded(IResourceFacade resourceFacade, FixtureState state);
     }
