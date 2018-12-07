@@ -32,12 +32,6 @@ using SS.Integration.Adapter.Model.ProcessState;
 
 namespace SS.Integration.Adapter.Actors
 {
-	internal class UpdateMetrics
-	{
-		public DateTime ReceivedAt { get; set; }
-		public DateTime ReceivedByAdapterAt { get; set; }
-	}
-	
 	/// <summary>
 	/// This class is responsible for managing resource and streaming 
 	/// </summary>

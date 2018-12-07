@@ -89,7 +89,7 @@ namespace SS.Integration.Adapter.Model.ProcessState
 			if (Completed.HasValue)
 				result = "Completed";
 
-			return $"UpdateProcessingReport {tt.TimeString("Total")} {prodTime.TimeString("Productive")}  {st.TimeString("SDK")} {at.TimeString("Adapter")} {dt.TimeString("Deserialize")} {actions} result={result}";
+			return $"UpdateProcessingReport {tt.TimeString("Total")} {prodTime.TimeString("Productive")}  {st.TimeString("SDK")} {at.TimeString("Adapter")} {dt.TimeString("Deserialize")} {actions} result={result} {comment}";
 		}
 	}
 }
