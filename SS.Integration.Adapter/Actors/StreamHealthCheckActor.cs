@@ -238,11 +238,10 @@ namespace SS.Integration.Adapter.Actors
                 $"StartStreaming  for {_resource} did't respond for {unresponsiveTime} seconds. " +
                 "Possible network problem or port 5672 is locked");
 
-            if (_startStreamingNotRespondingWarnCount > _settings.StartStreamingAttempts)
+            if (_startStreamingNotRespondingWarnCount > _settings.StartStreamingAttempts) //need to decrease startstreamingattempts (max 5)
             {
                 _startStreamingNotResponding?.Cancel();
-                var streamListenerManagerActor = Context.System.ActorSelection(StreamListenerManagerActor.Path);
-                streamListenerManagerActor.Tell(msg);
+                Context.Parent.Tell(new StopStreamingMsg());
             }
         }
 
