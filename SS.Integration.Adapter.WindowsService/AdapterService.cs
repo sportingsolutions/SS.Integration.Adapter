@@ -179,6 +179,7 @@ namespace SS.Integration.Adapter.WindowsService
 
             if (maxFailures > _fatalExceptionsCounter)
             {
+                _adapterWorkerThread.Wait();
                 _adapter.Start();
                 InitializeSupervisor();
             }
@@ -241,7 +242,7 @@ namespace SS.Integration.Adapter.WindowsService
         private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             _logger.FatalFormat("Adapter termination in progress={1} caused by UNHANDLED Exception {0}", (Exception)e.ExceptionObject, e.IsTerminating);
-            
+
             if(e.IsTerminating)
                 OnStop();
             else

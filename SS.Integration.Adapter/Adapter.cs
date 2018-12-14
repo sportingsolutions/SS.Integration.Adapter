@@ -99,6 +99,12 @@ namespace SS.Integration.Adapter
             {
                 LogVersions();
 
+                if (SdkActorSystem.InitializeActors)
+                {
+                    _logger.Info("SDK is restarting...");
+                    UDAPI.Init(new UdapiConfiguration(_settings));
+                }
+
                 _logger.Info("Adapter is connecting to the UDAPI service...");
 
                 _udapiServiceFacade.Connect();
