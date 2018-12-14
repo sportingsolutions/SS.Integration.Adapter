@@ -51,7 +51,7 @@ namespace SS.Integration.Adapter
         }
 
 
-	    public bool IsSequnceActual(Fixture fixtureDelta, int sequence)
+	    public bool IsSequnceActual(Fixture fixtureDelta, int sequence/*, bool isFullSnapshot*/)
 	    {
 			if (fixtureDelta.Sequence < sequence)
 		    {

@@ -95,7 +95,7 @@ namespace SS.Integration.Adapter.Tests
             //
             //Act
             //
-            bool isSequenceValid = fixtureValidation.IsNotMissedUpdates(
+            bool isSequenceValid = fixtureValidation.IsSequnceActual(
                 fixtureDelta,
                 currentSequence);
 

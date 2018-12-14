@@ -109,10 +109,16 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<FixtureState>()))
                 .Returns(true);
 
-            //
-            //Act
-            //
-            var actor = ActorOfAsTestActorRef(() =>
+	        FixtureValidationMock.Setup(a =>
+			        a.IsSequnceActual(
+				        It.IsAny<Fixture>(),
+				        It.IsAny<int>()))
+		        .Returns(true);
+
+			//
+			//Act
+			//
+			var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
                     SettingsMock.Object,
                     PluginMock.Object,
@@ -319,10 +325,16 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<FixtureState>()))
                 .Returns(true);
 
-            //
-            //Act
-            //
-            var actor = ActorOfAsTestActorRef(() =>
+	        FixtureValidationMock.Setup(a =>
+			        a.IsSequnceActual(
+				        It.IsAny<Fixture>(),
+				        It.IsAny<int>()))
+		        .Returns(true);
+
+			//
+			//Act
+			//
+			var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
                     SettingsMock.Object,
                     PluginMock.Object,
@@ -399,10 +411,16 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<FixtureState>()))
                 .Returns(true);
 
-            //
-            //Act
-            //
-            var actor = ActorOfAsTestActorRef(() =>
+	        FixtureValidationMock.Setup(a =>
+			        a.IsSequnceActual(
+				        It.IsAny<Fixture>(),
+				        It.IsAny<int>()))
+		        .Returns(true);
+
+			//
+			//Act
+			//
+			var actor = ActorOfAsTestActorRef(() =>
                 new StreamListenerActor(
                     SettingsMock.Object,
                     PluginMock.Object,
@@ -803,7 +821,13 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<IResourceFacade>(),
                         It.IsAny<FixtureState>()))
                 .Returns(true);
-            var update = new Fixture
+
+	        FixtureValidationMock.Setup(a =>
+			        a.IsSequnceActual(
+				        It.IsAny<Fixture>(),
+				        It.IsAny<int>()))
+		        .Returns(true);
+			var update = new Fixture
             {
                 Id = resourceFacadeMock.Object.Id,
                 //invalid sequence
@@ -998,7 +1022,13 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<Fixture>(),
                         It.IsAny<int>()))
                 .Returns(true);
-            var update = new Fixture
+
+	        FixtureValidationMock.Setup(a =>
+			        a.IsSequnceActual(
+				        It.IsAny<Fixture>(),
+				        It.IsAny<int>()))
+		        .Returns(true);
+			var update = new Fixture
             {
                 Id = resourceFacadeMock.Object.Id,
                 Sequence = resourceFacadeMock.Object.Content.Sequence,
@@ -1096,7 +1126,14 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<Fixture>(),
                         It.IsAny<int>()))
                 .Returns(true);
-            var update = new Fixture
+
+	        FixtureValidationMock.Setup(a =>
+			        a.IsSequnceActual(
+				        It.IsAny<Fixture>(),
+				        It.IsAny<int>()))
+		        .Returns(true);
+
+			var update = new Fixture
             {
                 Id = resourceFacadeMock.Object.Id,
                 Sequence = resourceFacadeMock.Object.Content.Sequence + 1,
@@ -1202,7 +1239,14 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<Fixture>(),
                         It.IsAny<int>()))
                 .Returns(true);
-            var update = new Fixture
+
+	        FixtureValidationMock.Setup(a =>
+			        a.IsSequnceActual(
+				        It.IsAny<Fixture>(),
+				        It.IsAny<int>()))
+		        .Returns(true);
+
+			var update = new Fixture
             {
                 Id = resourceFacadeMock.Object.Id,
                 Sequence = resourceFacadeMock.Object.Content.Sequence,
@@ -2093,11 +2137,12 @@ namespace SS.Integration.Adapter.Tests
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
-        /// <summary>
-        /// This test ensures that when stream healthcheck detects invalid sequence for the second time 
-        /// then it stops the stream listener
-        /// </summary>
-        [Test]
+		/// <summary>
+		/// This test ensures that when stream healthcheck detects invalid sequence for the second time 
+		/// then it stops the stream listener
+		/// </summary>
+        
+		[Test]
         [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
         public void OnHealthCheckStreamInvalidSecondTimeStopStreamListener()
         {

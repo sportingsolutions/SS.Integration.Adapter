@@ -109,10 +109,16 @@ namespace SS.Integration.Adapter.Tests
                         It.IsAny<FixtureState>()))
                 .Returns(true);
 
-            //
-            //Act
-            //
-            var streamListenerManagerActor =
+	        FixtureValidationMock.Setup(a =>
+			        a.IsSequnceActual(
+				        It.IsAny<Fixture>(),
+				        It.IsAny<int>()))
+		        .Returns(true);
+
+			//
+			//Act
+			//
+			var streamListenerManagerActor =
                 ActorOfAsTestActorRef<StreamListenerManagerActor>(
                     Props.Create(() =>
                         new StreamListenerManagerActor(
