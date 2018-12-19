@@ -171,6 +171,7 @@ namespace SS.Integration.Adapter.WindowsService
             _fatalExceptionsCounter++;
 
             DisposeSupervisor();
+            _adapterWorkerThread.Wait();
             _adapter.Stop();
             int maxFailures = GetMaxFailures();
 
@@ -179,7 +180,6 @@ namespace SS.Integration.Adapter.WindowsService
 
             if (maxFailures > _fatalExceptionsCounter)
             {
-                _adapterWorkerThread.Wait();
                 _adapter.Start();
                 InitializeSupervisor();
             }
