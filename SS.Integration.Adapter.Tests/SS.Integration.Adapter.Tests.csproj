@@ -96,7 +96,7 @@
       <HintPath>..\packages\RabbitMQ.Client.3.6.5\lib\net45\RabbitMQ.Client.dll</HintPath>
     </Reference>
     <Reference Include="RestSharp">
-      <HintPath>..\packages\RestSharp.105.2.3\lib\net45\RestSharp.dll</HintPath>
+      <HintPath>..\packages\RestSharp.106.5.4\lib\net45\RestSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="SportingSolutions.Udapi.Sdk, Version=2.1.47.0, Culture=neutral, processorArchitecture=MSIL">
