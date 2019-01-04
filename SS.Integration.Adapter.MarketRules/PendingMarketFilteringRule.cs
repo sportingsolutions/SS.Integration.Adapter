@@ -163,7 +163,7 @@ namespace SS.Integration.Adapter.MarketRules
                         else
                         {
                             //dont create market
-                            _Logger.DebugFormat("market rule={0} => {1} of {2} is not created", Name, mkt, fixture);
+                            _Logger.DebugFormat("market rule={0} => {1} of {2} is not created because market isActive={3}", Name, mkt, fixture, newMarketState.IsActive);
                             result.MarkAsRemovable(mkt);
                         }
                     }
@@ -202,7 +202,7 @@ namespace SS.Integration.Adapter.MarketRules
                         {
                             //dont create market
                             if (logDetailedMarketRules)
-                                _Logger.DebugFormat("market rule={0} => {1} of {2} is not created", Name, mkt, fixture);
+                                _Logger.DebugFormat("market rule={0} => {1} of {2} is not created because market isActive={3}", Name, mkt, fixture, newMarketState.IsActive);
                             result.MarkAsRemovable(mkt);
                         }
                     }
