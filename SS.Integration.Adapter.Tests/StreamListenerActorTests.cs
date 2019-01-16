@@ -152,6 +152,120 @@ namespace SS.Integration.Adapter.Tests
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
+        [Test]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
+        public void OnRecoverFromErroredStateAfterFailedRecovering()
+        {
+            //OnInitializationStartStreamingAndProcessFirstSnapshot
+            Fixture snapshot;
+            Mock<IResourceFacade> resourceFacadeMock;
+            
+            SetupCommonMockObjects(
+                /*sport*/FootabllSportMock.Object.Name,
+                /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
+                /*storedData*/new { Epoch = 7, Sequence = 1, MatchStatus = MatchStatus.InRunning },
+                out snapshot,
+                out resourceFacadeMock,
+                (mockObj, snapshotJson) =>
+                {
+                    mockObj.SetupSequence(o => o.GetSnapshot())
+                        .Returns(snapshotJson)
+                        .Returns(null)
+                        .Returns(null)
+                        .Returns(snapshotJson.Replace(@"""Sequence"": 2,", @"""Sequence"": 3,"))
+                        .Returns(snapshotJson.Replace(@"""Sequence"": 2,", @"""Sequence"": 3,"));
+                });
+            StreamHealthCheckValidationMock.Setup(a =>
+                    a.CanConnectToStreamServer(
+                        It.IsAny<IResourceFacade>(),
+                        It.IsAny<StreamListenerState>()))
+                .Returns(true);
+            FixtureValidationMock.Setup(a =>
+                    a.IsSnapshotNeeded(
+                        It.IsAny<IResourceFacade>(),
+                        It.IsAny<FixtureState>()))
+                .Returns(true);
+
+            //
+            //Act
+            //
+
+            var actor = ActorOfAsTestActorRef(() =>
+                new StreamListenerActor(
+                    SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
+                    StreamHealthCheckValidationMock.Object,
+                    FixtureValidationMock.Object));
+
+            //      .Returns(snapshotJson.Replace(@"""Sequence"": 2,", @"""Sequence"": 4,"));
+            //});
+
+            var update = new Fixture
+            {
+                Id = resourceFacadeMock.Object.Id,
+                //invalid sequence
+                Sequence = 3,
+                MatchStatus = ((int)resourceFacadeMock.Object.MatchStatus).ToString()
+            };
+            StreamMessage message = new StreamMessage { Content = update };
+
+            Task.Delay(10000).Wait();
+
+            //
+            //Act
+            //
+            //
+            AwaitAssert(() =>
+            {
+                resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
+            },
+            TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+            TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+
+
+            resourceFacadeMock.Object.Content.Sequence = update.Sequence;
+            actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
+            Task.Delay(10000).Wait();
+
+            //update.Sequence++;
+            //message.Content = update;
+            //resourceFacadeMock.Object.Content.Sequence = update.Sequence;
+            //actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
+            //Task.Delay(5000).Wait();
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+            {
+                
+                Assert.AreEqual(StreamListenerState.Errored, actor.UnderlyingActor.State);
+            },
+            TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+            TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+            
+
+
+
+            resourceFacadeMock.Object.Content.Sequence = update.Sequence + 1;
+            actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
+            Task.Delay(10000).Wait();
+
+            AwaitAssert(() =>
+            {
+
+                Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
+            },
+            TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+            TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+
+        }
+
+
         /// <summary>
         /// This test ensures we process the match over when status has changed from InPlay to MatchOver
         /// </summary>

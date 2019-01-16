@@ -74,6 +74,7 @@ namespace SS.Integration.Adapter.Actors
 		//so it can notify the Stream listener Manager when actor creation failed
 		private bool _isInitializing;
 		private StreamStats streamStats;
+        private StreamListenerState? _prevState = null;
 
 		#endregion
 
@@ -199,7 +200,7 @@ namespace SS.Integration.Adapter.Actors
 		{
 			State = StreamListenerState.Streaming;
 
-			_logger.Info($"Stream listener for {_resource} moved to Streaming State");
+			 _logger.Info($"Stream listener for {_resource} moved to Streaming State");
 
 			OnStateChanged();
 
@@ -300,7 +301,7 @@ namespace SS.Integration.Adapter.Actors
 		//Error has occured, resource will try to recover by  Processing full snapshot
 		private void Errored()
 		{
-			var prevState = State;
+			_prevState = State;
 			State = StreamListenerState.Errored;
 
 			_logger.Info($"Stream listener for {_resource} moved to Errored State");
@@ -309,7 +310,7 @@ namespace SS.Integration.Adapter.Actors
 
 			SuspendFixture(SuspensionReason.INTERNALERROR);
 			Exception erroredEx;
-			RecoverFromErroredState(prevState, out erroredEx);
+			RecoverFromErroredState(_prevState.Value, out erroredEx);
 
 			if (erroredEx != null)
 			{
@@ -340,17 +341,17 @@ namespace SS.Integration.Adapter.Actors
 				}
 
 				var streamListenerStatesToBecomeStoped = new[] {StreamListenerState.Initializing};
-				if (streamListenerStatesToBecomeStoped.Any(_ => _ == prevState))
+				if (streamListenerStatesToBecomeStoped.Any(_ => _ == _prevState))
 				{
 					_logger.Debug(
-						$"StreamListenerActor.Errored moving to Become(Stopped) for {_resource} from StreamListenerState={prevState}");
+						$"StreamListenerActor.Errored moving to Become(Stopped) for {_resource} from StreamListenerState={_prevState}");
 					Become(Stopped);
 				}
 			}
 
 			Receive<SuspendAndReprocessSnapshotMsg>(a => SuspendAndReprocessSnapshot(a.SuspendReason));
 			Receive<StopStreamingMsg>(a => StopStreaming());
-			Receive<StreamUpdateMsg>(a => RecoverFromErroredState(prevState, out erroredEx));
+			Receive<StreamUpdateMsg>(a => RecoverFromErroredState(_prevState.Value, out erroredEx));
 			Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
 			Receive<RetrieveAndProcessSnapshotMsg>(a => RetrieveAndProcessSnapshot(false, true));
 			Receive<ClearFixtureStateMsg>(a => ClearState(true));
@@ -409,6 +410,15 @@ namespace SS.Integration.Adapter.Actors
 
 		private void StreamUpdateHandler(StreamUpdateMsg msg)
 		{
+            if (State == StreamListenerState.Errored)
+            {
+                Exception ex;
+                RecoverFromErroredState(_prevState.Value, out ex);
+                if (ex != null)
+                    _logger.Error($"Error recovering {_resource} with exception {ex}");
+                return;
+            }
+
 			var callTime = DateTime.UtcNow;
 			Fixture fixtureDelta = null;
 
@@ -1278,7 +1288,7 @@ namespace SS.Integration.Adapter.Actors
 
 				_fixtureIsUnsuspendedInRecover = RetrieveAndProcessSnapshot();
 
-				if (RetrieveAndProcessSnapshot())
+				if (_fixtureIsUnsuspendedInRecover)
 				{
 					switch (prevState)
 					{
