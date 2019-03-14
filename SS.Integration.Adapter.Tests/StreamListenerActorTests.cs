@@ -290,6 +290,81 @@ namespace SS.Integration.Adapter.Tests
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
+
+        /// <summary>
+        /// This test ensures we move directly to finished state on initialization when the fixture has status match over on the saved state
+        /// </summary>
+        [Test]
+        [TestCase("football_matchabandonedprematch_snapshot_5")]
+        [TestCase("football_matchabandoned_snapshot_5")]
+        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
+        public void OnInitializationMoveToStoppedStateWhenResourceHasAbandonedStatus(string resourceName)
+        {
+            //
+            //Arrange
+            //
+            Fixture snapshot;
+            Mock<IResourceFacade> resourceFacadeMock;
+            SetupCommonMockObjects(
+                /*sport*/FootabllSportMock.Object.Name,
+                /*fixtureData*/(byte[]) FixtureSamples.ResourceManager.GetObject(resourceName),
+                ///*fixtureData*/FixtureSamples.football_matchabandoned_snapshot_5,
+                /*storedData*/new { Epoch = 5, Sequence = 4, MatchStatus = MatchStatus.InRunning },
+                out snapshot,
+                out resourceFacadeMock);
+
+            //
+            //Act
+            //
+            var actor = ActorOfAsTestActorRef(() =>
+                new StreamListenerActor(
+                    SettingsMock.Object,
+                    PluginMock.Object,
+                    resourceFacadeMock.Object,
+                    StateManagerMock.Object,
+                    SuspensionManagerMock.Object,
+                    StreamHealthCheckValidationMock.Object,
+                    FixtureValidationMock.Object));
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+            {
+                resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+                PluginMock.Verify(a =>
+                        a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
+                    Times.Once);
+                SuspensionManagerMock.Verify(a =>
+                        a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                    Times.Once);
+                SuspensionManagerMock.Verify(a =>
+                        a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
+                            SuspensionReason.SUSPENSION),
+                    Times.Never);
+                StateManagerMock.Verify(a =>
+                        a.ClearState(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+                    Times.Never);
+                MarketRulesManagerMock.Verify(a =>
+                        a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                    Times.Once);
+                MarketRulesManagerMock.Verify(a =>
+                        a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+                    Times.Never);
+                MarketRulesManagerMock.Verify(a =>
+                        a.CommitChanges(),
+                    Times.Once);
+                MarketRulesManagerMock.Verify(a =>
+                        a.RollbackChanges(),
+                    Times.Never);
+                Assert.AreEqual(StreamListenerState.Stopped, actor.UnderlyingActor.State);
+            },
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+
+
         /// <summary>
         /// This test ensures we process the new match status change on initialization when the stored match status is different than the current one
         /// </summary>

@@ -89,6 +89,14 @@ namespace SS.Integration.Adapter.UdapiClient
             }
         }
 
+        public bool IsMatchOverOrAbandoned
+        {
+            get
+            {
+                return Content != null && (Content.MatchStatus == (int)MatchStatus.MatchOver || Content.MatchStatus == (int)MatchStatus.Abandoned || Content.MatchStatus == (int)MatchStatus.AbandonedPreMatch);
+            }
+        }
+
         public string GetSnapshot()
         {
             try

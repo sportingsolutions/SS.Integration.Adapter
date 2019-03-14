@@ -166,6 +166,16 @@ namespace SS.Integration.Adapter.Model
             }
         }
 
+        [IgnoreDataMember]
+        public bool IsMatchOverOrAbandoned
+        {
+            get
+            {
+                int matchStatus = int.Parse(this.MatchStatus);
+                return matchStatus == (int)Enums.MatchStatus.MatchOver || matchStatus == (int)Enums.MatchStatus.Abandoned || matchStatus == (int)Enums.MatchStatus.AbandonedPreMatch;
+            }
+        }
+
         /// <summary>
         /// Timestamp indicates when update was send to a queue
         /// </summary>

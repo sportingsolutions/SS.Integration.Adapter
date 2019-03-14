@@ -61,6 +61,11 @@ namespace SS.Integration.Adapter.Interface
         /// is over
         /// </summary>
         bool IsMatchOver { get; }
+        /// <summary>
+        /// Returns true if the match 
+        /// is over or abandoned
+        /// </summary>
+        bool IsMatchOverOrAbandoned { get; }
 
         /// <summary>
         /// Returns the resource's match status

@@ -99,7 +99,14 @@ namespace SS.Integration.Adapter.Tests
             if (snapshot.IsMatchOver)
             {
                 resourceFacadeMock.SetupGet(o => o.IsMatchOver).Returns(true);
+                resourceFacadeMock.SetupGet(o => o.IsMatchOverOrAbandoned).Returns(true);
             }
+
+            if (snapshot.IsMatchOverOrAbandoned)
+            {
+                resourceFacadeMock.SetupGet(o => o.IsMatchOverOrAbandoned).Returns(true);
+            }
+
 
             var storedFixtureState = new FixtureState { Id = snapshot.Id, Sport = sport };
 

@@ -179,7 +179,6 @@ namespace SS.Integration.Adapter.UdapiClient
                     }
 
                     IsConnected = true;
-
                     return;
                 }
                 catch (Exception ex)
@@ -187,7 +186,7 @@ namespace SS.Integration.Adapter.UdapiClient
                     lastException = ex;
                     counter++;
                     string message =
-                        $"{ex.GetType().Name}: Failed to init Udapi service  on attempt {counter}.";
+                        $"{ex.GetType().Name}: Failed to init Udapi service  on attempt {counter}{Environment.NewLine}{ex}";
                     if (counter == _settings.MaxRetryAttempts)
                     {
                         _logger.Error(message + Environment.NewLine + $"Stack Trace:{ex.StackTrace}");

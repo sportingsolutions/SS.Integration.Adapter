@@ -24,6 +24,7 @@ namespace SS.Integration.Adapter.Diagnostics.Model
                 { MatchStatus.MatchOverConfirmedResults, ServiceModelInterface.FixtureState.Over },
                 { MatchStatus.MatchOver, ServiceModelInterface.FixtureState.Over },
                 { MatchStatus.Stopped, ServiceModelInterface.FixtureState.Over },
+                { MatchStatus.AbandonedPreMatch, ServiceModelInterface.FixtureState.Over },
                 { MatchStatus.Abandoned, ServiceModelInterface.FixtureState.Over },
                 { MatchStatus.Paused, ServiceModelInterface.FixtureState.Ready }
             };

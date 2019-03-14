@@ -560,9 +560,9 @@ namespace SS.Integration.Adapter.Actors
 					_fixtureStartTime = DateTime.Parse(_resource.Content.StartTime);
 				}
 
-				if (_resource.IsMatchOver)
+				if (_resource.IsMatchOverOrAbandoned)
 				{
-					if (fixtureState != null && fixtureState.MatchStatus != MatchStatus.MatchOver)
+					if (fixtureState != null && fixtureState.MatchStatus != MatchStatus.MatchOver && fixtureState.MatchStatus != MatchStatus.Abandoned && fixtureState.MatchStatus != MatchStatus.AbandonedPreMatch)
 					{
 						ProcessMatchOver();
 					}
@@ -1029,7 +1029,7 @@ namespace SS.Integration.Adapter.Actors
 					}
 				}
 
-				if (fixtureDelta.IsMatchOver)
+				if (fixtureDelta.IsMatchOverOrAbandoned)
 				{
 					ProcessMatchOver();
 					StopStreaming();
@@ -1114,7 +1114,7 @@ namespace SS.Integration.Adapter.Actors
 
 		private void ProcessMatchOver()
 		{
-			_logger.Info($" {_resource} is Match Over. Suspending all markets and stopping the stream.");
+			_logger.Info($" {_resource} is Match Over or Abandoned. Suspending all markets and stopping the stream.");
 
 			try
 			{

@@ -166,7 +166,7 @@ namespace SS.Integration.Adapter.Actors
 
 	    private bool StopStreamingDueToMatchOver(StreamHealthCheckMsg msg)
 	    {
-		    if (msg.Resource.IsMatchOver)
+		    if (msg.Resource.IsMatchOverOrAbandoned)
 		    {
 			    if (matchOverDetectedTime == null)
 			    {
