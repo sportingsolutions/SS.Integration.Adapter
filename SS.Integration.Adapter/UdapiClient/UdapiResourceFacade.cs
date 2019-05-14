@@ -81,13 +81,8 @@ namespace SS.Integration.Adapter.UdapiClient
             }
         }
 
-        public bool IsMatchOver 
-        {
-            get
-            {
-                return Content != null && Content.MatchStatus == (int)MatchStatus.MatchOver;
-            }
-        }
+        public bool IsMatchOver => Content != null && ((Model.Enums.MatchStatus)Content.MatchStatus).IsMatchOver();
+        
 
         public string GetSnapshot()
         {

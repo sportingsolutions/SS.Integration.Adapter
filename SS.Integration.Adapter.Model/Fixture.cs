@@ -158,13 +158,7 @@ namespace SS.Integration.Adapter.Model
         }
 
         [IgnoreDataMember]
-        public bool IsMatchOver
-        {
-            get
-            {
-                return int.Parse(this.MatchStatus) == (int)Enums.MatchStatus.MatchOver;
-            }
-        }
+        public bool IsMatchOver => ((Enums.MatchStatus)int.Parse(this.MatchStatus)).IsMatchOver(); 
 
         /// <summary>
         /// Timestamp indicates when update was send to a queue

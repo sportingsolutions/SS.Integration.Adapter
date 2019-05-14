@@ -12,8 +12,8 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-using System;
 using SS.Integration.Adapter.Model.Enums;
+using System;
 
 namespace SS.Integration.Adapter.Actors.Messages
 {
@@ -49,7 +49,7 @@ namespace SS.Integration.Adapter.Actors.Messages
 
         public bool? IsSuspended { get; set; }
 
-        public bool IsOver => MatchStatus.HasValue && MatchStatus.Value == Model.Enums.MatchStatus.MatchOver;
+        public bool IsOver => MatchStatus.HasValue && MatchStatus.Value.IsMatchOver();
 
         public Exception Exception { get; set; }
     }

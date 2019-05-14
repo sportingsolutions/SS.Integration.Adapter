@@ -25,6 +25,7 @@ using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Enums;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
+using SS.Integration.Adapter.Model.Enums;
 using SS.Integration.Adapter.Model.Interfaces;
 using SdkErrorMessage = SportingSolutions.Udapi.Sdk.Events.SdkErrorMessage;
 
@@ -155,7 +156,7 @@ namespace SS.Integration.Adapter.Actors
            
 
             _logger.Info(
-                $"ProcessResourceMsgHandler for {msg.Resource} Epoch={msg.Resource.Content?.MatchStatus}{(msg.Resource.IsMatchOver ? $" isMatchOver=true": "")}");
+                $"ProcessResourceMsgHandler for {msg.Resource} Epoch={msg.Resource.Content?.MatchStatus}{(msg.Resource.MatchStatus.IsMatchOver() ? $" isMatchOver=true": "")}");
 
 	        
 	        if (msg.Resource.Content == null)

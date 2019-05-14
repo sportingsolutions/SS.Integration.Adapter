@@ -47,6 +47,7 @@
     <Compile Include="AdapterVersionInfo.cs" />
     <Compile Include="CachedObjectStore.cs" />
     <Compile Include="CachedObjectStoreWithPersistance.cs" />
+    <Compile Include="Enums\EnumExtensions.cs" />
     <Compile Include="Enums\EpochChangeReasonEnum.cs" />
     <Compile Include="Enums\FixtureEventTypeEnum.cs" />
     <Compile Include="Enums\MatchStatusEnum.cs" />

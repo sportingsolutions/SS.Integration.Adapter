@@ -28,6 +28,7 @@ namespace SS.Integration.Adapter.Model.Enums
         MatchOverConfirmedResults = 47,
         MatchOver = 50,
         Stopped = 80,
+        AbandonedPreMatch = 89,
         Abandoned = 90,
         Paused = 99
     }

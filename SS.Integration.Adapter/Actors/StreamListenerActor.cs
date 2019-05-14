@@ -560,9 +560,9 @@ namespace SS.Integration.Adapter.Actors
 					_fixtureStartTime = DateTime.Parse(_resource.Content.StartTime);
 				}
 
-				if (_resource.IsMatchOver)
+				if (_resource.MatchStatus.IsMatchOver())
 				{
-					if (fixtureState != null && fixtureState.MatchStatus != MatchStatus.MatchOver)
+					if (fixtureState != null && !fixtureState.MatchStatus.IsMatchOver())
 					{
 						ProcessMatchOver();
 					}

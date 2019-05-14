@@ -20,6 +20,7 @@ using SS.Integration.Adapter.Actors.Messages;
 using SS.Integration.Adapter.Enums;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model.Interfaces;
+using SS.Integration.Adapter.Model.Enums;
 
 namespace SS.Integration.Adapter.Actors
 {
@@ -205,7 +206,7 @@ namespace SS.Integration.Adapter.Actors
                     ? $"missedSequence={msg.Resource.Content.Sequence - msg.CurrentSequence} "
                     : "") +
                 $"State={msg.StreamingState} " +
-                $"isMatchOver={msg.Resource.IsMatchOver} messageTime={msg.Time} delay={delay.ToString("N")} sec");
+                $"isMatchOver={msg.Resource.MatchStatus.IsMatchOver()} messageTime={msg.Time} delay={delay.ToString("N")} sec");
         }
 
         private void ConnectToStreamServerMsgHandler(ConnectToStreamServerMsg msg)

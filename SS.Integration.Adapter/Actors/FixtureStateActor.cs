@@ -96,8 +96,7 @@ namespace SS.Integration.Adapter.Actors
             _fixturesState.TryGetValue(msg.Resource.Id, out fixtureState);
             //if we don't have the fixture state stored then we should process it
             //otherwise if the match is not over then it means we should process it
-            msg.ShouldProcessFixture = fixtureState == null || fixtureState.MatchStatus != MatchStatus.MatchOver;
-
+            msg.ShouldProcessFixture = fixtureState == null || !fixtureState.MatchStatus.IsMatchOver();
             Sender.Tell(msg, Self);
         }
 

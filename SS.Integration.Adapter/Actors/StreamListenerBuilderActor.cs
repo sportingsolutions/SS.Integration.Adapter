@@ -208,14 +208,14 @@ namespace SS.Integration.Adapter.Actors
                 $"CreateStreamListenerMsgHandler - {msg.Resource}" +
                 $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
 
-            if (msg.Resource.MatchStatus != MatchStatus.MatchOver)
+            if (!msg.Resource.MatchStatus.IsMatchOver())
             {
                 BuildStreamListenerActorInstance(msg, msg.Resource);
             }
             else //if match is already over then check fixture state in order to validate stream listener instance creation
             {
                 _logger.Debug(
-                    $"CreateStreamListenerMsgHandler - {msg.Resource} has MatchStatus=MatchOver" +
+                    $"CreateStreamListenerMsgHandler - {msg.Resource} has MatchStatus={msg.Resource.MatchStatus}" +
                     $" - checking saved fixture state");
                 var fixtureStateActor = Context.System.ActorSelection(FixtureStateActor.Path);
                 fixtureStateActor.Tell(new CheckFixtureStateMsg { Resource = msg.Resource });
@@ -236,7 +236,7 @@ namespace SS.Integration.Adapter.Actors
             {
                 _logger.Debug(
                     $"CheckFixtureStateMsgHandler - {msg.Resource}" +
-                    $"skip creating StreamListenerActor instance as MatchStatus=MatchOver");
+                    $"skip creating StreamListenerActor instance as MatchStatus={msg.Resource.MatchStatus}");
             }
         }
 
