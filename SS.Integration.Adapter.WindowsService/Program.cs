@@ -31,11 +31,11 @@ namespace SS.Integration.Adapter.WindowsService
         public static void Main()
         {
             SetCulture();
-            var path = Assembly.GetExecutingAssembly().Location;
+            /*var path = Assembly.GetExecutingAssembly().Location;
             var fileInfo = new FileInfo(path);
             var dir = fileInfo.DirectoryName;
             log4net.Config.XmlConfigurator.ConfigureAndWatch(new FileInfo(string.Format("{0}\\log4net.config", dir)));
-
+            */
             var logger = LogManager.GetLogger(typeof(Program).ToString());
 
             logger.Info("Initialising SportingSolutions Integration WindowsService");
