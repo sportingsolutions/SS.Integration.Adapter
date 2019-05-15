@@ -121,6 +121,12 @@
   <data name="football_inplay_snapshot_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>data\football-inplay-snapshot-2;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="football_matchabandonedprematch_snapshot_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>data\football-matchabandonedprematch-snapshot-2;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="football_matchabandoned_snapshot_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>data\football-matchabandoned-snapshot-2;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="football_matchover_snapshot_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>data\football-matchover-snapshot-2;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>

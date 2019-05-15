@@ -252,7 +252,9 @@ namespace SS.Integration.Adapter.Tests
         /// </summary>
         [Test]
         [Category(FIXTURE_STATE_ACTOR_CATEGORY)]
-        public void GivenFixtureStateActorWhenMatchIsOverThenShouldProcessFixtureReturnsTrue()
+        [TestCase(MatchStatus.Abandoned)]
+        [TestCase(MatchStatus.MatchOver)]
+        public void GivenFixtureStateActorWhenMatchIsOverThenShouldProcessFixtureReturnsTrue(MatchStatus matchStatus)
         {
             //
             //Arrange
@@ -297,7 +299,7 @@ namespace SS.Integration.Adapter.Tests
 
             Mock<IResourceFacade> resourceMock = new Mock<IResourceFacade>();
             resourceMock.SetupGet(o => o.Id).Returns(storedFixtureState.Id);
-            resourceMock.SetupGet(o => o.MatchStatus).Returns(MatchStatus.MatchOver);
+            resourceMock.SetupGet(o => o.MatchStatus).Returns(matchStatus);
 
             //
             //Act

@@ -192,7 +192,9 @@ namespace SS.Integration.Adapter.Tests
         /// </summary>
         [Test]
         [Category(STREAM_LISTENER_BUILDER_ACTOR_CATEGORY)]
-        public void TestSkipStreamListenerActorInstanceCreationWhenFixtureHasMatchOver()
+        [TestCase(MatchStatus.AbandonedPreMatch)]
+        [TestCase(MatchStatus.MatchOver)]
+        public void TestSkipStreamListenerActorInstanceCreationWhenFixtureHasMatchOver(MatchStatus matchStatus)
         {
             //
             //Arrange
@@ -200,7 +202,7 @@ namespace SS.Integration.Adapter.Tests
             SettingsMock.SetupGet(a => a.FixtureCreationConcurrency).Returns(10);
             var resourceFacadeMock = new Mock<IResourceFacade>();
             resourceFacadeMock.SetupGet(o => o.Id).Returns("Fixture1Id");
-            resourceFacadeMock.SetupGet(o => o.MatchStatus).Returns(MatchStatus.MatchOver);
+            resourceFacadeMock.SetupGet(o => o.MatchStatus).Returns(matchStatus);
 
             //
             //Act

@@ -327,7 +327,9 @@ namespace SS.Integration.Adapter.Tests
 
         [Test]
         [Category(STREAM_HEALTH_CHECK_ACTOR_CATEGORY)]
-        public void WhenStreamingAndMatchOverUpdateAfterSecondTimeMissingSequencesThenRecreateStreamListenerAndProcessMatchOver()
+        [TestCase("football_matchabandonedprematch_snapshot_2")]
+        [TestCase("football_matchover_snapshot_2")]
+        public void WhenStreamingAndMatchOverUpdateAfterSecondTimeMissingSequencesThenRecreateStreamListenerAndProcessMatchOver(string resourceName)
         {
             //
             //Arrange
@@ -540,9 +542,10 @@ namespace SS.Integration.Adapter.Tests
             StateManagerMock.Reset();
             StoreProviderMock.Reset();
 
+            var snapshotResource = (byte[])FixtureSamples.ResourceManager.GetObject(resourceName, System.Globalization.CultureInfo.InvariantCulture);
             SetupCommonMockObjects(
                 /*sport*/FootabllSportMock.Object.Name,
-                /*fixtureData*/FixtureSamples.football_matchover_snapshot_2,
+                /*fixtureData*/snapshotResource,
                 /*storedData*/new { Epoch = 2, Sequence = 1, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);

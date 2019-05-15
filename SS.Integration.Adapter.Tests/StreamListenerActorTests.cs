@@ -157,20 +157,22 @@ namespace SS.Integration.Adapter.Tests
         /// </summary>
         [Test]
         [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
-        public void OnInitializationMoveToStoppedStateWhenResourceHasMatchOverStatus()
+        [TestCase("football_matchabandoned_snapshot_2")]
+        [TestCase("football_matchover_snapshot_2")]
+        public void OnInitializationMoveToStoppedStateWhenResourceHasMatchOverStatus(string resourceName)
         {
             //
             //Arrange
             //
+            var snapshotResource = (byte[]) FixtureSamples.ResourceManager.GetObject(resourceName, System.Globalization.CultureInfo.InvariantCulture); 
             Fixture snapshot;
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
                 /*sport*/FootabllSportMock.Object.Name,
-                /*fixtureData*/FixtureSamples.football_matchover_snapshot_2,
+                /*fixtureData*/snapshotResource,
                 /*storedData*/new { Epoch = 7, Sequence = 1, MatchStatus = MatchStatus.InRunning },
                 out snapshot,
                 out resourceFacadeMock);
-
             //
             //Act
             //
@@ -226,8 +228,11 @@ namespace SS.Integration.Adapter.Tests
         /// </summary>
         [Test]
         [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
-        public void OnInitializationMoveToStoppedStateWhenMatchOverWasAlreadyProcessed()
+        [TestCase("football_matchabandonedprematch_snapshot_2")]
+        [TestCase("football_matchover_snapshot_2")]
+        public void OnInitializationMoveToStoppedStateWhenMatchOverWasAlreadyProcessed(string resourceName)
         {
+            var snapshotResource = (byte[])FixtureSamples.ResourceManager.GetObject(resourceName, System.Globalization.CultureInfo.InvariantCulture);
             //
             //Arrange
             //
@@ -235,8 +240,8 @@ namespace SS.Integration.Adapter.Tests
             Mock<IResourceFacade> resourceFacadeMock;
             SetupCommonMockObjects(
                 /*sport*/FootabllSportMock.Object.Name,
-                /*fixtureData*/FixtureSamples.football_matchover_snapshot_2,
-                /*storedData*/new { Epoch = 7, Sequence = 1, MatchStatus = MatchStatus.MatchOver },
+                /*fixtureData*/snapshotResource,
+                /*storedData*/new { Epoch = 7, Sequence = 1, MatchStatus = MatchStatus.Abandoned },
                 out snapshot,
                 out resourceFacadeMock);
 

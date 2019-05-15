@@ -151,7 +151,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <None Include="Data\football-inplay-snapshot-2" />
+    <None Include="Data\football-matchabandonedprematch-snapshot-2" />
     <None Include="Data\football-matchover-snapshot-2" />
+    <None Include="Data\football-matchabandoned-snapshot-2" />
     <None Include="Data\football-setup-snapshot-2" />
     <None Include="Data\football-ready-snapshot-3" />
     <None Include="log4net.config">
