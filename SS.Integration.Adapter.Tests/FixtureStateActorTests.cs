@@ -36,6 +36,7 @@ namespace SS.Integration.Adapter.Tests
         #region Constants
 
         public const string FIXTURE_STATE_ACTOR_CATEGORY = nameof(FixtureStateActorTests);
+        private const string FIXTURE_STATES_PATH = @"Data\fixtureStates.json";
 
         #endregion
 
@@ -47,7 +48,8 @@ namespace SS.Integration.Adapter.Tests
             SetupTestLogging();
 
             SettingsMock = new Mock<ISettings>();
-            var fi = new  FileInfo("../../Data/fixtureStates.json");
+            var assemblyPath = Assembly.GetExecutingAssembly().Location;
+            var fi = new FileInfo(Path.Combine(assemblyPath, @"..\..\..", FIXTURE_STATES_PATH));
             var fixtureStatesFilePath = fi.FullName;
             Assert.IsTrue(File.Exists(fixtureStatesFilePath));
             SettingsMock.SetupGet(a => a.StateProviderPath).Returns(GetType().Assembly.Location);
