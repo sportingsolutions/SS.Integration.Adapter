@@ -10,7 +10,7 @@ namespace SS.Integration.Adapter.Model.Enums
     {
         public static bool IsMatchOver(this MatchStatus matchStatus)
         {
-            return matchStatus == MatchStatus.Abandoned || matchStatus == MatchStatus.AbandonedPreMatch || matchStatus == MatchStatus.AbandonedPreMatch;
+            return matchStatus == MatchStatus.MatchOver || matchStatus == MatchStatus.AbandonedPreMatch || matchStatus == MatchStatus.Abandoned;
         }
     }
 }
