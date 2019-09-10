@@ -145,6 +145,7 @@
     <Compile Include="Exceptions\PluginException.cs" />
     <Compile Include="FixtureHelper.cs" />
     <Compile Include="Actors\SportsProcessorActor.cs" />
+    <Compile Include="Helpers\FixtureLogger.cs" />
     <Compile Include="Helpers\PriorityHelper.cs" />
     <Compile Include="Helpers\StreamStats.cs" />
     <Compile Include="Interface\IFixtureValidation.cs" />
