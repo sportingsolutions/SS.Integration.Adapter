@@ -129,7 +129,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void StopStreamingMsgHandler(StopStreamingMsg msg)
         {
-            _logger.Info("Resource will Stop Streaming");
+            _logger.Info($"{_resource} will Stop Streaming");
 
             if (_isStreamConnected)
             {
