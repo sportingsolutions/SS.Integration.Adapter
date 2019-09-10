@@ -90,13 +90,11 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Debug($"ServiceFacade GetSports returned SportsCount={sports?.Count()} listOfSports={$"\"{string.Join(", ", sports.Select(_=> _.Name))}\"" }");
 
-            
-
             List <IResourceFacade> resources = new List<IResourceFacade>();
             foreach (var sport in sports)
             {
                 var _res = _serviceFacade.GetResources(sport.Name);
-                LogListOfFixtures(_res, sport);
+                _logger.Info($"ProcessSportMsgHandler {GetListOfFixtures(_res, sport)}");
                 if (ValidateResources(_res, sport.Name))
                 {
                     resources.AddRange(_res);
@@ -104,12 +102,16 @@ namespace SS.Integration.Adapter.Actors
             }
             if (resources.Count > 1)
             {
-                resources.SortByMatchStatus();
+                try
+                {
+                    resources.SortByMatchStatus();
+                }
+                catch (System.ArgumentException argEx)
+                {
+                    _logger.Warn($"Can't sort resources. Fixtures list: {GetListOfFixtures(resources)}. {argEx}");
+                }
             }
-
             _logger.Info($"ProcessSportsMsgHandler resourcesCount={resources.Count}");
-
-
 
             var streamListenerManagerActor = Context.System.ActorSelection(StreamListenerManagerActor.Path);
 
@@ -120,10 +122,11 @@ namespace SS.Integration.Adapter.Actors
 
         }
 
-        private void LogListOfFixtures(List<IResourceFacade> _res, IFeature sport)
+        private string GetListOfFixtures(List<IResourceFacade> _res, IFeature sport = null)
         {
-            var list = _res.Select(_ => $"fixtureId={_.Id} sport={_.Sport} name=\"{_.Name}\"");
-            _logger.Info($"ProcessSportMsgHandler sport={sport.Name} count={list.Count()} resources=\"{string.Join(" , ", list)} \"");
+            var list = _res.Select(_ => $"fixtureId={_?.Id} sport={_?.Sport} name=\"{_?.Name}\" matchStatus={_?.MatchStatus} startTime={_?.Content?.StartTime}");
+            var sportName = sport != null ? sport.Name : "Any";
+            return $"sport ={sportName} count ={ list.Count()} resources =\"{string.Join(" , ", list)} \"";
         }
 
         private bool ValidateResources(IList<IResourceFacade> resources, string sport)
