@@ -16,7 +16,13 @@ namespace SS.Integration.Adapter.Helpers
 
 		public static int CompareToByStatusAndDate(this IResourceFacade x, IResourceFacade y)
 		{
-			if (x.Content.MatchStatus == y.Content.MatchStatus)
+            if (x.Content == null)
+                return 1;
+
+            if (y.Content == null)
+                return -1;
+
+            if (x.Content.MatchStatus == y.Content.MatchStatus)
 			{
 				return CompareByStartDate(x, y);
 			}
@@ -38,7 +44,13 @@ namespace SS.Integration.Adapter.Helpers
 
 		private static int CompareByStartDate(IResourceFacade x, IResourceFacade y)
 		{
-			var xD = DateTime.Parse(x.Content.StartTime);
+            if (string.IsNullOrWhiteSpace(x.Content.StartTime))
+                return 1;
+
+            if (string.IsNullOrWhiteSpace(y.Content.StartTime))
+                return -1;
+
+            var xD = DateTime.Parse(x.Content.StartTime);
 			var yD = DateTime.Parse(y.Content.StartTime);
 			var date = DateTime.Now;
 			if (xD.Date == date.Date && yD.Date != date.Date)
