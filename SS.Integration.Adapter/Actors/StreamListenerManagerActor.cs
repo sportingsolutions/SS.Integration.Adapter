@@ -255,6 +255,7 @@ namespace SS.Integration.Adapter.Actors
         private void StreamListenerStoppedMsgHandler(StreamListenerStoppedMsg msg)
         {
             StopStreamListenerChildActor(msg.FixtureId);
+            RemoveStreamListenerState(msg.Sport, msg.FixtureId);
         }
 
         private void TerminatedHandler(Terminated t)
@@ -407,16 +408,8 @@ namespace SS.Integration.Adapter.Actors
 
         private void SetStreamListenerState(string sport, string fixtureId, StreamListenerState state)
         {
-            var invalidSport = string.IsNullOrWhiteSpace(sport);
-            var invalidFixtureId = string.IsNullOrWhiteSpace(fixtureId);
-            if (invalidSport || invalidFixtureId)
-            {
-                if (invalidSport)
-                    _logger.Warn("SetStreamListenerState has sport=null");
-                if (invalidFixtureId)
-                    _logger.Warn("SetStreamListenerState has fixtureId=null");
+            if (!IsValidStreamListenerData(sport, fixtureId))
                 return;
-            }
 
             if (!_streamListeners.ContainsKey(sport))
                 _streamListeners.Add(sport, new Dictionary<string, StreamListenerState>());
@@ -426,6 +419,34 @@ namespace SS.Integration.Adapter.Actors
 
             _streamListeners[sport][fixtureId] = state;
         }
+
+        private void RemoveStreamListenerState(string sport, string fixtureId)
+        {
+            if (!IsValidStreamListenerData(sport, fixtureId))
+                return;
+
+            if (!_streamListeners.ContainsKey(sport))
+                _streamListeners.Add(sport, new Dictionary<string, StreamListenerState>());
+
+            if (!_streamListeners[sport].ContainsKey(fixtureId))
+                _streamListeners[sport].Remove(fixtureId);
+        }
+
+        private bool IsValidStreamListenerData(string sport, string fixtureId)
+        {
+            var invalidSport = string.IsNullOrWhiteSpace(sport);
+            var invalidFixtureId = string.IsNullOrWhiteSpace(fixtureId);
+            if (invalidSport || invalidFixtureId)
+            {
+                if (invalidSport)
+                    _logger.Warn("StreamListenerState has sport=null");
+                if (invalidFixtureId)
+                    _logger.Warn("StreamListenerState has fixtureId=null");
+                return false;
+            }
+            return true;
+        }
+            
 
         #endregion
 

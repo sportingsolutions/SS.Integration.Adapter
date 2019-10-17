@@ -373,7 +373,8 @@ namespace SS.Integration.Adapter.Actors
 			Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
 
 			//tell Stream listener Manager Actor that we stopped so it can kill this child actor
-			Context.Parent.Tell(new StreamListenerStoppedMsg {FixtureId = _fixtureId});
+            
+			Context.Parent.Tell(new StreamListenerStoppedMsg {FixtureId = _fixtureId, Sport = _resource.Sport});
 		}
 
 		private void Initializing()
