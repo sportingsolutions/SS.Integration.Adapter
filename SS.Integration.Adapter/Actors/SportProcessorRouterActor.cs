@@ -94,7 +94,8 @@ namespace SS.Integration.Adapter.Actors
             foreach (var sport in sports)
             {
                 var _res = _serviceFacade.GetResources(sport.Name);
-                _logger.Info($"ProcessSportMsgHandler {GetListOfFixtures(_res, sport)}");
+                if(_res != null && _res.Any())
+                    _logger.Info($"ProcessSportMsgHandler {GetListOfFixtures(_res, sport)}");
                 if (ValidateResources(_res, sport.Name))
                 {
                     resources.AddRange(_res);
@@ -124,9 +125,18 @@ namespace SS.Integration.Adapter.Actors
 
         private string GetListOfFixtures(List<IResourceFacade> _res, IFeature sport = null)
         {
-            var list = _res.Select(_ => $"fixtureId={_?.Id} sport={_?.Sport} name=\"{_?.Name}\" matchStatus={_?.MatchStatus} startTime={_?.Content?.StartTime}");
+            string result = string.Empty;
             var sportName = sport != null ? sport.Name : "Any";
-            return $"sport ={sportName} count ={ list.Count()} resources =\"{string.Join(" , ", list)} \"";
+            try
+            {
+                var list = _res.Select(_ => $"fixtureId={_?.Id} sport={_?.Sport} name=\"{_?.Name}\" matchStatus={_?.MatchStatus} startTime={_?.Content?.StartTime}");
+                result = $"sport ={sportName} count ={ list.Count()} resources =\"{string.Join(" , ", list)} \"";
+            }
+            catch(Exception)
+            {
+                _logger.Warn("ProcessSportsMsgHandler can't read fixtures info");
+            }
+            return result;
         }
 
         private bool ValidateResources(IList<IResourceFacade> resources, string sport)
