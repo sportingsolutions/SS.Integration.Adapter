@@ -49,6 +49,7 @@ namespace SS.Integration.Adapter.Actors
         private ICancelable _startStreamingNotResponding;
         private int _startStreamingNotRespondingWarnCount;
         private bool _streamInvalidDetected;
+        private int _erroredStateCount = 0;
 
         private int lastProcessedSequence = 0;
         private DateTime lastExecute = DateTime.MinValue;
@@ -98,7 +99,7 @@ namespace SS.Integration.Adapter.Actors
 
         #region Message Handlers
 
-       
+
         private void StreamHealthCheckMsgHandler(StreamHealthCheckMsg msg)
         {
             if (_resource == null || msg.Resource == null || msg.Resource.Id != _resource.Id)
@@ -109,27 +110,27 @@ namespace SS.Integration.Adapter.Actors
 
             LogState(msg);
 
-			//return;
+            //return;
 
-	        if (StopStreamingDueToMatchOver(msg))
-		        return;
+            if (StopStreamingDueToMatchOver(msg))
+                return;
 
 
             if (!ValidateTime())
                 return;
-            
 
             try
             {
-                
-
                 var isSequenceValid = _streamHealthCheckValidation.IsSequenceValid(msg.Resource, msg.StreamingState, msg.CurrentSequence);
 
                 var SequenceUpdated = msg.CurrentSequence > lastProcessedSequence && lastProcessedSequence > 0;
 
+                var isInErroredState = msg.StreamingState == StreamListenerState.Errored;
+                _erroredStateCount = isInErroredState ? _erroredStateCount + 1 : 0;
+                var isNeedStopErroredState = isInErroredState && _erroredStateCount >= _settings.MaxInErroredState - 1;
                 //var streamIsValid
-                
-                if (!isSequenceValid && !SequenceUpdated)
+
+                if ((!isSequenceValid || isNeedStopErroredState) && !SequenceUpdated)
                 {
                     _logger.Warn($"StreamHealthCheckMsgHandler: Detected {(_streamInvalidDetected ? "invalid" : "suspicious")} stream {msg.Resource}");
                     
@@ -189,7 +190,7 @@ namespace SS.Integration.Adapter.Actors
         {
             if ((DateTime.UtcNow - lastExecute).TotalSeconds < Configuration.Settings.MinimalHealthcheckInterval)
             {
-                _logger.Info($"StreamHealthCheckMsgHandler will be skipped as last validation accured less that {Configuration.Settings.MinimalHealthcheckInterval}s ago ");
+                _logger.Info($"StreamHealthCheckMsgHandler will be skipped for fixtureId={_resource?.Id} as last validation accured less that {Configuration.Settings.MinimalHealthcheckInterval}s ago ");
                 return false;
             }
             return true;

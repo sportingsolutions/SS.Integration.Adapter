@@ -173,6 +173,12 @@ namespace SS.Integration.Adapter.Interface
         /// </summary>
         int maxFixtureUpdateDelayInSeconds { get; }
 
+        /// <summary>
+        /// StreamHealthCheck disconnect streaming if fixture continoues staying in 
+        /// Errored state more than MaxInErroredState
+        /// </summary>
+        int MaxInErroredState { get; }
+
         bool AutoReconnect { get; }
 
         /// <summary>

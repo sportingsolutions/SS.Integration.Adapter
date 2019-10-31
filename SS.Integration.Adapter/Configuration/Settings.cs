@@ -47,6 +47,7 @@ namespace SS.Integration.Adapter.Configuration
         private const int DEFAULT_STREAM_THRESHOLD = int.MaxValue;
         private const int DEFAULT_FIXTURE_TIMESTAMP_DIFFERENCE_VALUE = 1440;
         private const int DEFAULT_FIXTURE_RECOVER_INTERVAL = 30;
+        private const int DEFAULT_MAX_IN_ERRORED_STATE = 10;
 
         public const int MinimalHealthcheckInterval = 30;
 
@@ -154,6 +155,11 @@ namespace SS.Integration.Adapter.Configuration
                 ? DEFAULT_FIXTURE_RECOVER_INTERVAL
                 : Convert.ToInt32(value);
 
+            value = ConfigurationManager.AppSettings["maxInErroredState"];
+            MaxInErroredState = string.IsNullOrEmpty(value)
+                ? DEFAULT_MAX_IN_ERRORED_STATE
+                : Convert.ToInt32(value);
+
             value = ConfigurationManager.AppSettings["autoReconnect"];
             AutoReconnect = !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
 
@@ -219,6 +225,8 @@ namespace SS.Integration.Adapter.Configuration
         public int StartStreamingTimeoutInSeconds { get; private set; }
 
         public int StartStreamingAttempts { get; private set; }
+
+        public int MaxInErroredState { get; private set; }
 
         public bool AllowFixtureStreamingInSetupMode { get; }
 
