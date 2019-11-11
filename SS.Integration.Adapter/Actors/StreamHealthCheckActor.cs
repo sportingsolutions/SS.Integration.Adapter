@@ -130,10 +130,11 @@ namespace SS.Integration.Adapter.Actors
                 var isNeedStopErroredState = isInErroredState && _erroredStateCount >= _settings.MaxInErroredState - 1;
                 //var streamIsValid
 
-                if ((!isSequenceValid || isNeedStopErroredState) && !SequenceUpdated)
+                if (!isSequenceValid && !SequenceUpdated || isNeedStopErroredState)
                 {
-                    _logger.Warn($"StreamHealthCheckMsgHandler: Detected {(_streamInvalidDetected ? "invalid" : "suspicious")} stream {msg.Resource}");
-                    
+                    _logger.Warn($"StreamHealthCheckMsgHandler: Detected {(_streamInvalidDetected ? "invalid" : "suspicious")} stream {msg.Resource}, isNeedStopErroredState={isNeedStopErroredState}, " +
+                        $"isSequenceValid={isSequenceValid}, SequenceUpdated={SequenceUpdated}");
+                  
                     if (_streamInvalidDetected)
                     {
                         Context.Parent.Tell(new StopStreamingMsg());
