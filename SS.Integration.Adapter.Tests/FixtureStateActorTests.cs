@@ -45,9 +45,13 @@ namespace SS.Integration.Adapter.Tests
         public void SetupTest()
         {
             SetupTestLogging();
-
+            
             SettingsMock = new Mock<ISettings>();
-            var fi = new  FileInfo("../../Data/fixtureStates.json");
+            var location = Assembly.GetExecutingAssembly().Location ;
+            var directory = Path.GetDirectoryName(location);
+            string fileName = @"Data\fixtureStates.json";
+            var fullName = Path.Combine(directory, fileName);
+            var fi = new  FileInfo(fullName);
             var fixtureStatesFilePath = fi.FullName;
             Assert.IsTrue(File.Exists(fixtureStatesFilePath));
             SettingsMock.SetupGet(a => a.StateProviderPath).Returns(GetType().Assembly.Location);
