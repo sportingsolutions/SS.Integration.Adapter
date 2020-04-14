@@ -28,9 +28,6 @@ namespace SS.Integration.Adapter.Helpers
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamStats));
         private int _snapshotsCount;
         private int _streamUpdatesCount;
-        private readonly Dictionary<string, int> _errorsCount;
-        private DateTime _lastDisconnectedDate;
-        private int _disconnectionsCount;
         private static readonly DateTime AdapterStartDate = DateTime.UtcNow;
 
         private Dictionary<int, UpdateProcessing> messages = new Dictionary<int, UpdateProcessing>();
