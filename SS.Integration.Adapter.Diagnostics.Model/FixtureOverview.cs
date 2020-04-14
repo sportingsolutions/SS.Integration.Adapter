@@ -31,12 +31,10 @@ namespace SS.Integration.Adapter.Diagnostics.Model
         private FeedUpdateOverview _feedUpdate;
         private string _competitionId;
         private string _competitionName;
-        private MatchStatus? _matchStatus;
         private DateTime _timeStamp;
         private FixtureOverviewDelta _delta;
         private List<ErrorOverview> _errors = new List<ErrorOverview>(MAX_AUDIT_SIZE);
         private List<FeedUpdateOverview> _feedUpdates = new List<FeedUpdateOverview>(MAX_AUDIT_SIZE);
-        private DateTime? _startTime;
         private IListenerOverview _listenerOverview;
         private string _id;
 
