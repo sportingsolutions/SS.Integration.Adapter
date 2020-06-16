@@ -1279,7 +1279,7 @@ namespace SS.Integration.Adapter.Actors
 
 				_fixtureIsUnsuspendedInRecover = RetrieveAndProcessSnapshot();
 
-				if (RetrieveAndProcessSnapshot())
+				if (_fixtureIsUnsuspendedInRecover)
 				{
 					switch (prevState)
 					{
