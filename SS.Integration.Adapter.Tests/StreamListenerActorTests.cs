@@ -664,109 +664,109 @@ namespace SS.Integration.Adapter.Tests
         ///// <summary>
         ///// If test is failed check maxFixtureUpdateDelayInSeconds and delayedFixtureRecoveryAttemptSchedule
         ///// </summary>
-        [Test]
-        [Category(STREAM_LISTENER_ACTOR_CATEGORY)]
-        public void OnValidationFixtureTimeStampFailedWhenProcessSnapshot()
-        {
-            //
-            //Arrange
-            //
-            Fixture snapshot;
-            Mock<IResourceFacade> resourceFacadeMock;
-            var now = DateTime.UtcNow;
-            int maxFixtureUpdateDelayInSeconds = 60;
-            int delayedFixtureRecoveryAttemptSchedule = 10;
-            SetupCommonMockObjects(
-                /*sport*/FootabllSportMock.Object.Name,
-                /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
-                /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
-                out snapshot,
-                out resourceFacadeMock);
+        //[Test]
+        //[Category(STREAM_LISTENER_ACTOR_CATEGORY)]
+        //public void OnValidationFixtureTimeStampFailedWhenProcessSnapshot()
+        //{
+        //    //
+        //    //Arrange
+        //    //
+        //    Fixture snapshot;
+        //    Mock<IResourceFacade> resourceFacadeMock;
+        //    var now = DateTime.UtcNow;
+        //    int maxFixtureUpdateDelayInSeconds = 60;
+        //    int delayedFixtureRecoveryAttemptSchedule = 10;
+        //    SetupCommonMockObjects(
+        //        /*sport*/FootabllSportMock.Object.Name,
+        //        /*fixtureData*/FixtureSamples.football_inplay_snapshot_2,
+        //        /*storedData*/new { Epoch = 7, Sequence = 2, MatchStatus = MatchStatus.InRunning },
+        //        out snapshot,
+        //        out resourceFacadeMock);
 
-            SettingsMock.SetupGet(a => a.maxFixtureUpdateDelayInSeconds).Returns(maxFixtureUpdateDelayInSeconds);
-            StreamHealthCheckValidationMock.Setup(a =>
-                    a.CanConnectToStreamServer(
-                        It.IsAny<IResourceFacade>(),
-                        It.IsAny<StreamListenerState>()))
-                .Returns(true);
-            FixtureValidationMock.Setup(a =>
-                    a.IsSequenceValid(
-                        It.IsAny<Fixture>(),
-                        It.IsAny<int>()))
-                .Returns(true);
-            FixtureValidationMock.Setup(a =>
-                    a.IsEpochValid(
-                        It.IsAny<Fixture>(),
-                        It.IsAny<int>()))
-                .Returns(true);
-
-
-            var update = new Fixture
-            {
-                Id = resourceFacadeMock.Object.Id,
-                Epoch = 7,
-                //invalid sequence
-                Sequence = resourceFacadeMock.Object.Content.Sequence + 1,
-                MatchStatus = ((int)resourceFacadeMock.Object.MatchStatus).ToString(),
-                TimeStamp = now.Subtract(TimeSpan.FromSeconds(SettingsMock.Object.maxFixtureUpdateDelayInSeconds + 1))
-            };
-            StreamMessage message = new StreamMessage { Content = update };
-
-            //
-            //Act
-            //
-            var actor = ActorOfAsTestActorRef(() =>
-                new StreamListenerActor(
-                    SettingsMock.Object,
-                    PluginMock.Object,
-                    resourceFacadeMock.Object,
-                    StateManagerMock.Object,
-                    SuspensionManagerMock.Object,
-                    StreamHealthCheckValidationMock.Object,
-                    FixtureValidationMock.Object));
-            actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
-
-            Task.Delay((delayedFixtureRecoveryAttemptSchedule + 2) * 1000).Wait();
-
-            AwaitAssert(() =>
-            {
-                SuspensionManagerMock.Verify(a =>
-                        a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                            SuspensionReason.UPDATE_DELAYED),
-                    Times.Once);  //handleupdatedelay
-                resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
-                PluginMock.Verify(a =>
-                        a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
-                    Times.Never);
-                SuspensionManagerMock.Verify(a =>
-                        a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                    Times.Once); //o
-                SuspensionManagerMock.Verify(a =>
-                        a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
-                            SuspensionReason.SUSPENSION),
-                    Times.Never);
-                StateManagerMock.Verify(a =>
-                        a.ClearState(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
-                    Times.Never);
-                MarketRulesManagerMock.Verify(a =>
-                        a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                    Times.Once);
-                MarketRulesManagerMock.Verify(a =>
-                        a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
-                    Times.Never);
-                MarketRulesManagerMock.Verify(a =>
-                        a.CommitChanges(),
-                    Times.Once);
-                MarketRulesManagerMock.Verify(a =>
-                        a.RollbackChanges(),
-                    Times.Never);
-                Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
-            },
-                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
-                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
-        }
+        //    SettingsMock.SetupGet(a => a.maxFixtureUpdateDelayInSeconds).Returns(maxFixtureUpdateDelayInSeconds);
+        //    StreamHealthCheckValidationMock.Setup(a =>
+        //            a.CanConnectToStreamServer(
+        //                It.IsAny<IResourceFacade>(),
+        //                It.IsAny<StreamListenerState>()))
+        //        .Returns(true);
+        //    FixtureValidationMock.Setup(a =>
+        //            a.IsSequenceValid(
+        //                It.IsAny<Fixture>(),
+        //                It.IsAny<int>()))
+        //        .Returns(true);
+        //    FixtureValidationMock.Setup(a =>
+        //            a.IsEpochValid(
+        //                It.IsAny<Fixture>(),
+        //                It.IsAny<int>()))
+        //        .Returns(true);
 
 
+        //    var update = new Fixture
+        //    {
+        //        Id = resourceFacadeMock.Object.Id,
+        //        Epoch = 7,
+        //        //invalid sequence
+        //        Sequence = resourceFacadeMock.Object.Content.Sequence + 1,
+        //        MatchStatus = ((int)resourceFacadeMock.Object.MatchStatus).ToString(),
+        //        TimeStamp = now.Subtract(TimeSpan.FromSeconds(SettingsMock.Object.maxFixtureUpdateDelayInSeconds + 1))
+        //    };
+        //    StreamMessage message = new StreamMessage { Content = update };
+
+        //    //
+        //    //Act
+        //    //
+        //    var actor = ActorOfAsTestActorRef(() =>
+        //        new StreamListenerActor(
+        //            SettingsMock.Object,
+        //            PluginMock.Object,
+        //            resourceFacadeMock.Object,
+        //            StateManagerMock.Object,
+        //            SuspensionManagerMock.Object,
+        //            StreamHealthCheckValidationMock.Object,
+        //            FixtureValidationMock.Object));
+        //    actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
+
+        //    Task.Delay((delayedFixtureRecoveryAttemptSchedule + 2) * 1000).Wait();
+
+        //    AwaitAssert(() =>
+        //    {
+        //        SuspensionManagerMock.Verify(a =>
+        //                a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
+        //                    SuspensionReason.UPDATE_DELAYED),
+        //            Times.Once);  //handleupdatedelay
+        //        resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Once);
+        //        PluginMock.Verify(a =>
+        //                a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
+        //            Times.Never);
+        //        SuspensionManagerMock.Verify(a =>
+        //                a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+        //            Times.Once); //o
+        //        SuspensionManagerMock.Verify(a =>
+        //                a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
+        //                    SuspensionReason.SUSPENSION),
+        //            Times.Never);
+        //        StateManagerMock.Verify(a =>
+        //                a.ClearState(It.Is<string>(id => id.Equals(resourceFacadeMock.Object.Id))),
+        //            Times.Never);
+        //        MarketRulesManagerMock.Verify(a =>
+        //                a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+        //            Times.Once);
+        //        MarketRulesManagerMock.Verify(a =>
+        //                a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), It.IsAny<bool>()),
+        //            Times.Never);
+        //        MarketRulesManagerMock.Verify(a =>
+        //                a.CommitChanges(),
+        //            Times.Once);
+        //        MarketRulesManagerMock.Verify(a =>
+        //                a.RollbackChanges(),
+        //            Times.Never);
+        //        Assert.AreEqual(StreamListenerState.Streaming, actor.UnderlyingActor.State);
+        //    },
+        //        TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+        //        TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        //}
+
+    
 
         /// <summary>
         /// This test ensures that after receiving update message and the fixture delta snapshot sequence is not valid (more than 1 greater than current sequence), 
