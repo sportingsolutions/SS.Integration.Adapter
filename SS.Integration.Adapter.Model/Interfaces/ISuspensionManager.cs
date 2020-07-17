@@ -28,7 +28,7 @@ namespace SS.Integration.Adapter.Model.Interfaces
         SDK_ERROR,
         HEALTH_CHECK_FALURE,
         MATCH_OVER,
-        UPDTATE_DELAYED,
+        UPDATE_DELAYED,
         PLUGIN_ERROR,
         STOP_STREAMING
     }

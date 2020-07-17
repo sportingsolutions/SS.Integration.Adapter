@@ -724,7 +724,7 @@ namespace SS.Integration.Adapter.Actors
 			_logger.Info(
 				$"{snapshot} is suspend{(_fixtureIsSuspended ? "ed" : "ing")}, due to delay unsuspend scheduled after timeInSeconds={_settings.delayedFixtureRecoveryAttemptSchedule}");
 			if (!_fixtureIsSuspended)
-				SuspendFixture(SuspensionReason.UPDTATE_DELAYED);
+				SuspendFixture(SuspensionReason.UPDATE_DELAYED);
 		}
 
 		private bool ValidateFixtureTimeStamp(Fixture fixture, bool isFullSnapshot)
