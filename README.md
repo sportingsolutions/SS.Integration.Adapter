@@ -27,7 +27,7 @@ Getting Started
 
 The adapter's main functionality is to retrieve data from Connect. As data manipulation and data integration are platform specific, the adapter can be extended using plug-ins.
 
-When loaded, the adapter searches for a plug-in in its installation directory. If no plug-in is found, the adapter stops its execution with an error message.
+When loaded, the adapter searches for a plug-in in its installation directory with assembly name from Adapter config parameter "pluginAssembly". If no plug-in is found, the adapter stops its execution with an error message.
 
 A plug-in is a custom object that implements the interface SS.Integration.Adapter.Model.Interface.IAdapterPlugin and it is encapsulated within its own dll.
 
@@ -138,6 +138,7 @@ The following is a list of available settings.
 - DisablePrematchSuspensionOnDisconnection - true/false to Disable/Enable fixture suspension on stream disconnection.
 - StartStreamingTimeoutInSeconds - number of seconds to wait before logging warn message when trying to connect to the streaming server.
 - AllowFixtureStreamingInSetupMode - true/false to Enable/Disable fixture streaming when is in Setup mode.
+- PluginAssembly - the name of plugin assembly which has implementation of SS.Integration.Adapter.Model.Interfaces.IAdapterPlugin
 
 Adapter Market Rules
 ----------------------
