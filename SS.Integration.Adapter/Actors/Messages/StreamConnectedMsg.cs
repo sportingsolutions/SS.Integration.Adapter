@@ -12,6 +12,8 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+using System;
+
 namespace SS.Integration.Adapter.Actors.Messages
 {
     internal class StreamConnectedMsg
@@ -19,5 +21,9 @@ namespace SS.Integration.Adapter.Actors.Messages
         public string FixtureId { get; set; }
 
         public string FixtureStatus { get; set; }
+
+        public DateTime TimeStamp { get; set; }
+
+        public bool IsStreamConnected { get; set; }
     }
 }

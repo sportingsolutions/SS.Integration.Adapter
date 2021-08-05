@@ -58,7 +58,7 @@ namespace SS.Integration.Adapter.Actors
             _serviceFacade = serviceFacade ?? throw new ArgumentNullException(nameof(serviceFacade));
             _sportProcessorRouterActor = sportProcessorRouterActor ?? throw new ArgumentNullException(nameof(sportProcessorRouterActor));
 
-            Receive<ProcessSportsMsg>(o => ProcessSportsMsgHandler());
+            Become(Processing);
 
             _processSportsMsgSchedule = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(
                 TimeSpan.FromSeconds(10),
@@ -74,9 +74,26 @@ namespace SS.Integration.Adapter.Actors
 
         private void ProcessSportsMsgHandler()
         {
-
             _sportProcessorRouterActor.Tell(new ProcessSportMsg());
+            Become(Lazy);
 
+        }
+
+        private void Lazy()
+        {
+            
+            Receive<StreamListenerManagerActor.ResetSendProcessSportsMsg>(o => Become(Processing));
+
+            Context.System.Scheduler.ScheduleTellOnce(
+                TimeSpan.FromSeconds(5),
+                Self,
+                new StreamListenerManagerActor.ResetSendProcessSportsMsg(),
+                Self);
+        }
+
+        private void Processing()
+        {
+            Receive<ProcessSportsMsg>(o => ProcessSportsMsgHandler());
         }
 
         #endregion

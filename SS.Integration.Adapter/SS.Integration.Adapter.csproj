@@ -101,6 +101,7 @@
     <Compile Include="Actors\Messages\StreamListenerCreationCompletedMsg.cs" />
     <Compile Include="Actors\Messages\SuspendRetryMessage.cs" />
     <Compile Include="Actors\Messages\UnSuspendRetryMessage.cs" />
+    <Compile Include="Actors\Messages\UnSuspendStreaming.cs" />
     <Compile Include="Actors\Messages\UpdateStatsErrorMsg.cs" />
     <Compile Include="Actors\Messages\PluginProcessingFinished.cs" />
     <Compile Include="Actors\Messages\AdapterProcessingFinished.cs" />

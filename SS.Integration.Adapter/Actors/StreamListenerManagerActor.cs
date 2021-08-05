@@ -452,7 +452,7 @@ namespace SS.Integration.Adapter.Actors
 
         #region Private messages
 
-        private class ResetSendProcessSportsMsg
+        public class ResetSendProcessSportsMsg
         {
         }
 

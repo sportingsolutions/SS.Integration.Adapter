@@ -40,6 +40,7 @@ namespace SS.Integration.Adapter.Actors
 
 		public const string ActorName = nameof(StreamListenerActor);
 		public const int CONNECT_TO_STREAM_DELAY = 5000; //milliseconds
+        public const string Path = "/user/" + ActorName;
 
 		#endregion
 
@@ -74,6 +75,7 @@ namespace SS.Integration.Adapter.Actors
 		//so it can notify the Stream listener Manager when actor creation failed
 		private bool _isInitializing;
 		private StreamStats streamStats;
+        private bool _isStreamConnected;
 
 		#endregion
 
@@ -178,8 +180,7 @@ namespace SS.Integration.Adapter.Actors
 			Receive<SuspendRetryMessage>(a => SuspendRetryHandler());
 			Receive<UnSuspendRetryMessage>(a => UnSuspendRetryHandler(a));
 
-
-			try
+            try
 			{
 				RetrieveAndProcessSnapshot();
 				Context.Parent.Tell(new StreamListenerInitializedMsg {Resource = _resource});
@@ -213,22 +214,22 @@ namespace SS.Integration.Adapter.Actors
 			Receive<GetStreamListenerActorStateMsg>(a => Sender.Tell(State));
 			Receive<SuspendRetryMessage>(a => SuspendRetryHandler());
 			Receive<UnSuspendRetryMessage>(a => UnSuspendRetryHandler(a));
-			Receive<SuspendMessage>(a => Suspend(a.Reason));
+            Receive<SuspendMessage>(a => Suspend(a.Reason));
 			Receive<RecoverDelayedFixtureMsg>(a => AttemptRecoverDelayedFixtureHandler(a));
 
 			try
-			{
-				var streamConnectedMsg =
+            {
+                _isStreamConnected = true;
+                var streamConnectedMsg =
 					new StreamConnectedMsg
 					{
 						FixtureId = _fixtureId,
-						FixtureStatus = _resource.MatchStatus.ToString()
+						FixtureStatus = _resource.MatchStatus.ToString(),
+						TimeStamp = _resource.TimeStamp
 					};
 				_streamHealthCheckActor.Tell(streamConnectedMsg);
 
-				UnsuspendOnStartStreaming();
-
-				Stash.UnstashAll();
+                Stash.UnstashAll();
 
 				Context.Parent.Tell(streamConnectedMsg);
 				_isInitializing = false;
@@ -241,7 +242,6 @@ namespace SS.Integration.Adapter.Actors
 				Become(Errored);
 			}
 		}
-
 		private void SuspendRetryHandler()
 		{
 			_logger.Info($"SuspendRetry message received  for {_resource} suspendErrorCounter={_suspendErrorCounter}");
@@ -399,8 +399,17 @@ namespace SS.Integration.Adapter.Actors
 
 		private void StreamHealthCheckMsgHandler(StreamHealthCheckMsg msg)
 		{
-			msg.StreamingState = State;
+			// Validation check for state with sequence check only if it is needed. Then Unsuspend in case the stream just connected. 
+            if (msg.StreamingState == StreamListenerState.Initializing 
+                && msg.Resource?.Content?.Sequence == _currentSequence
+                && _isStreamConnected)
+            {
+                UnsuspendOnStartStreaming();
+			}
+
+            msg.StreamingState = State;
 			msg.CurrentSequence = _currentSequence;
+            msg.TimeLastProcessed = _resource.TimeStamp;
 
 			_logger.Info(
 				$"{_resource} Stream health check message arrived - State={State}; CurrentSequence={_currentSequence}");
@@ -408,7 +417,7 @@ namespace SS.Integration.Adapter.Actors
 			_streamHealthCheckActor.Tell(msg);
 		}
 
-		private void StreamUpdateHandler(StreamUpdateMsg msg)
+        private void StreamUpdateHandler(StreamUpdateMsg msg)
 		{
 			var callTime = DateTime.UtcNow;
 			Fixture fixtureDelta = null;
@@ -484,8 +493,9 @@ namespace SS.Integration.Adapter.Actors
 			try
 			{
 				_logger.Warn($"Stream got disconnected for {_resource}");
+                _isStreamConnected = msg.IsStreamConnected;
 
-				var fixtureState = GetFixtureState();
+		        var fixtureState = GetFixtureState();
 
 				if (_streamHealthCheckValidation.ShouldSuspendOnDisconnection(fixtureState, _fixtureStartTime))
 				{

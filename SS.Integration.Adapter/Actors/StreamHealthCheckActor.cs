@@ -73,12 +73,10 @@ namespace SS.Integration.Adapter.Actors
             _resource = resource ?? throw new ArgumentNullException(nameof(resource));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _streamHealthCheckValidation = streamHealthCheckValidation ?? throw new ArgumentNullException(nameof(streamHealthCheckValidation));
-
             Receive<ConnectToStreamServerMsg>(a => ConnectToStreamServerMsgHandler(a));
             Receive<StreamConnectedMsg>(a => StreamConnectedMsgHandler(a));
             Receive<StartStreamingNotRespondingMsg>(a => StartStreamingNotRespondingMsgHandler(a));
             Receive<StreamHealthCheckMsg>(a => StreamHealthCheckMsgHandler(a));
-
         }
 
         #endregion
@@ -110,7 +108,6 @@ namespace SS.Integration.Adapter.Actors
 
             LogState(msg);
 
-            //return;
 
             if (StopStreamingDueToMatchOver(msg))
                 return;
@@ -166,7 +163,13 @@ namespace SS.Integration.Adapter.Actors
 
         }
 
-	    private bool StopStreamingDueToMatchOver(StreamHealthCheckMsg msg)
+        private void StreamCheckHandler()
+        {
+            var sportsProcessorActor = Context.System.ActorSelection(SportsProcessorActor.Path);
+            sportsProcessorActor.Tell(new ProcessSportsMsg());
+        }
+
+        private bool StopStreamingDueToMatchOver(StreamHealthCheckMsg msg)
 	    {
 		    if (msg.Resource.IsMatchOver)
 		    {
@@ -228,6 +231,12 @@ namespace SS.Integration.Adapter.Actors
 
         private void StreamConnectedMsgHandler(StreamConnectedMsg msg)
         {
+            TimeSpan ts = TimeSpan.FromMilliseconds(_settings.FixtureCheckerFrequency);
+            if ((DateTime.UtcNow - msg.TimeStamp).TotalSeconds < ts.TotalSeconds)
+            {
+                StreamCheckHandler();
+            }
+
             _startStreamingNotResponding?.Cancel();
             _startStreamingNotResponding = null;
         }
