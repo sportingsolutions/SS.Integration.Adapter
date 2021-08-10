@@ -73,11 +73,6 @@ namespace SS.Integration.Adapter.Interface
         Summary Content { get; }
 
         /// <summary>
-        /// Timestamp
-        /// </summary>
-        DateTime TimeStamp { get; }
-
-        /// <summary>
         /// Allows to retrieve a snapshot
         /// for this resource.
         /// </summary>

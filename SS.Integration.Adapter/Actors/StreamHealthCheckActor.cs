@@ -231,12 +231,7 @@ namespace SS.Integration.Adapter.Actors
 
         private void StreamConnectedMsgHandler(StreamConnectedMsg msg)
         {
-            TimeSpan ts = TimeSpan.FromMilliseconds(_settings.FixtureCheckerFrequency);
-            if ((DateTime.UtcNow - msg.TimeStamp).TotalSeconds < ts.TotalSeconds)
-            {
-                StreamCheckHandler();
-            }
-
+             StreamCheckHandler();
             _startStreamingNotResponding?.Cancel();
             _startStreamingNotResponding = null;
         }

@@ -69,14 +69,14 @@ namespace SS.Integration.Adapter.Actors
         {
             _isStreamConnected = true;
             _logger.Info($"{_resource} Stream Connected");
-            _streamListenerActor.Tell(new StreamConnectedMsg { FixtureId = _fixtureId, IsStreamConnected = _isStreamConnected });
+            _streamListenerActor.Tell(new StreamConnectedMsg { FixtureId = _fixtureId });
         }
 
         private void Resource_StreamDisconnected(object sender, EventArgs e)
         {
             _isStreamConnected = false;
             _logger.Info($"{_resource} Stream Disconnected");
-            _streamListenerActor.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId, IsStreamConnected = _isStreamConnected });
+            _streamListenerActor.Tell(new StreamDisconnectedMsg { FixtureId = _fixtureId });
         }
 
         protected override void PostStop()

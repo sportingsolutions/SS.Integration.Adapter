@@ -33,7 +33,6 @@ namespace SS.Integration.Adapter.UdapiClient
         private readonly IReconnectStrategy _reconnectStrategy;
         private readonly int _echoDelay;
         private readonly int _echoInterval;
-        private DateTime _timeStamp;
 
 
         public UdapiResourceFacade(IResource udapiResource, string featureName, IReconnectStrategy reconnectStrategy, int echoDelay, int echoInterval)
@@ -80,11 +79,6 @@ namespace SS.Integration.Adapter.UdapiClient
                         StartTime = _udapiResource.Content.StartTime
                     };
             }
-        }
-
-        public DateTime TimeStamp
-        {
-            get { return DateTime.UtcNow; }
         }
 
         public bool IsMatchOver 
