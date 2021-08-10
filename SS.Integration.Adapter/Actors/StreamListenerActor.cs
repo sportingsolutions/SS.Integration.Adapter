@@ -49,7 +49,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly ISettings _settings;
         private readonly IStreamHealthCheckValidation _streamHealthCheckValidation;
         private readonly IFixtureValidation _fixtureValidation;
-        private readonly IResourceFacade _resource;
+        private IResourceFacade _resource;
         private readonly IAdapterPlugin _platformConnector;
         private readonly IStateManager _stateManager;
         private readonly ISuspensionManager _suspensionManager;
@@ -411,10 +411,11 @@ namespace SS.Integration.Adapter.Actors
 
         private void VerifyStream(StreamHealthCheckMsg msg)
         {
+            _resource = msg.Resource;
             if (streamVerificationPending)
             {
                 _resource.Content.Sequence = msg.Resource.Content.Sequence;
-                UnsuspendOnStartStreaming(msg.Resource);
+                UnsuspendOnStartStreaming();
             }
 
             streamVerificationPending = false;
@@ -1252,21 +1253,21 @@ namespace SS.Integration.Adapter.Actors
             RetrieveAndProcessSnapshot();
         }
 
-        private void UnsuspendOnStartStreaming(IResourceFacade resourceFacade)
+        private void UnsuspendOnStartStreaming()
         {
             var fixtureState = GetFixtureState();
             //_resource.Content.Sequence = latestSequence;
 
             _logger.Info($"UnsuspendOnStartStreaming  fixtureId={_fixtureId}, sequence={_currentSequence}");
-            if (_fixtureValidation.IsSnapshotNeeded(resourceFacade, fixtureState))
+            if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
             {
-                _logger.Debug($"Unsuspension requires a snapshot for {resourceFacade}");
+                _logger.Debug($"Unsuspension requires a snapshot for {_resource}");
                 RetrieveAndProcessSnapshot();
             }
             else
             {
                 _logger.Warn(
-                    $" Processing snapshot for {resourceFacade} will be skipped on Start Streaming as processed sequence up to date");
+                    $" Processing snapshot for {_resource} will be skipped on Start Streaming as processed sequence up to date");
                 if (!_fixtureIsUnsuspendedInRecover)
                     UnsuspendFixtureState(fixtureState);
             }
