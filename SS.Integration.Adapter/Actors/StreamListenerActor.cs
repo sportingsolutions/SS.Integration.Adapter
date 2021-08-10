@@ -1256,8 +1256,6 @@ namespace SS.Integration.Adapter.Actors
         private void UnsuspendOnStartStreaming()
         {
             var fixtureState = GetFixtureState();
-            //_resource.Content.Sequence = latestSequence;
-
             _logger.Info($"UnsuspendOnStartStreaming  fixtureId={_fixtureId}, sequence={_currentSequence}");
             if (_fixtureValidation.IsSnapshotNeeded(_resource, fixtureState))
             {
