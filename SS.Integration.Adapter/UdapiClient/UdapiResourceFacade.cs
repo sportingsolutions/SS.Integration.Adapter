@@ -34,7 +34,7 @@ namespace SS.Integration.Adapter.UdapiClient
         private readonly int _echoDelay;
         private readonly int _echoInterval;
 
-       
+
         public UdapiResourceFacade(IResource udapiResource, string featureName, IReconnectStrategy reconnectStrategy, int echoDelay, int echoInterval)
         {
             _udapiResource = udapiResource;

@@ -21,5 +21,7 @@ namespace SS.Integration.Adapter.Actors.Messages
         public Enums.StreamListenerState StreamingState { get; set; }
         public int CurrentSequence { get; set; }
         public DateTime Time { get; set; }
+
+        public DateTime TimeLastProcessed { get; set; }
     }
 }
