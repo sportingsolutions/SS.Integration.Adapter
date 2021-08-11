@@ -21,9 +21,5 @@ namespace SS.Integration.Adapter.Actors.Messages
         public string FixtureId { get; set; }
 
         public string FixtureStatus { get; set; }
-
-        public DateTime TimeStamp { get; set; }
-
-        public bool IsStreamConnected { get; set; }
     }
 }
