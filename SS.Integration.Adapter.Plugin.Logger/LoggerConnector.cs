@@ -38,12 +38,12 @@ namespace SS.Integration.Adapter.Plugin.Logger
 
         public void ProcessSnapshot(Fixture fixture, bool hasEpochChanged = false)
         {
-            _Logger.InfoFormat("Received snapshot for {0} (hasEpochChanged={1})", fixture, hasEpochChanged);
+            _Logger.InfoFormat("Received snapshot for {0} (hasEpochChanged={1}) with sequence={2}", fixture, hasEpochChanged, fixture.Sequence);
         }
 
         public void ProcessStreamUpdate(Fixture fixture, bool hasEpochChanged = false)
         {
-            _Logger.InfoFormat("Received delta snapshot for {0} (hasEpochChanged={1}), written to queue at: {2}", fixture, hasEpochChanged,fixture.TimeStamp);
+            _Logger.InfoFormat("Received delta snapshot for {0} (hasEpochChanged={1}), written to queue at: {2} with sequence={3}", fixture, hasEpochChanged,fixture.TimeStamp);
         }
 
         public void ProcessMatchStatus(Fixture fixture)
