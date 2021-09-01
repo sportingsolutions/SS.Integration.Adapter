@@ -136,8 +136,9 @@ namespace SS.Integration.Adapter.Tests
                         sportProcessorRouterActor)),
                 SportsProcessorActor.ActorName);
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
+            Task.Delay(1000).Wait();
 
-            IActorRef streamListenerActorRef;
+            IActorRef streamListenerActorRef = null;
             StreamListenerActor streamListenerActor = null;
             IActorRef resourceActorRef;
             IActorRef healthCheckActorRef;
@@ -176,16 +177,17 @@ namespace SS.Integration.Adapter.Tests
                 .Returns(true);
             //This call will trigger health check message
             sportProcessorRouterActor.Tell(new ProcessSportMsg { Sport = FootabllSportMock.Object.Name });
+            Task.Delay(2000).Wait();
 
             //
             //Assert
             //
             AwaitAssert(() =>
                 {
-                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(2));
+                    resourceFacadeMock.Verify(a => a.GetSnapshot(), Times.Exactly(3));
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
-                        Times.Exactly(2));
+                        Times.Exactly(3));
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), true),
                         Times.Never);
