@@ -654,7 +654,7 @@ namespace SS.Integration.Adapter.Tests
             actor.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
             Task.Delay((Settings.MinimalHealthcheckInterval + 1) * 1000).Wait();
             actor.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
-            Task.Delay(1000).Wait();
+            //Task.Delay(1000).Wait();
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
             Task.Delay(10000).Wait();
@@ -676,6 +676,10 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Exactly(2));  //because first unsuspend when start streaming, second when processing snapshot for invalid sequence
+                    SuspensionManagerMock.Verify(a =>
+                            a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
+                                SuspensionReason.SNAPSHOT),
+                        Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
@@ -861,7 +865,7 @@ namespace SS.Integration.Adapter.Tests
             actor.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
             Task.Delay((Settings.MinimalHealthcheckInterval + 1) * 1000).Wait();
             actor.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
-            Task.Delay(1000).Wait();
+            //Task.Delay(1000).Wait();
 
             resourceFacadeMock.Object.Content.Sequence = update.Sequence;
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
@@ -884,6 +888,10 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);    //because process snapshot unsuspends fixture
+                    SuspensionManagerMock.Verify(a =>
+                            a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
+                                SuspensionReason.SNAPSHOT),
+                        Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Exactly(2));
@@ -963,7 +971,7 @@ namespace SS.Integration.Adapter.Tests
             actor.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
             Task.Delay((Settings.MinimalHealthcheckInterval + 1) * 1000).Wait();
             actor.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
-            Task.Delay(1000).Wait();
+            //Task.Delay(1000).Wait();
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
             Task.Delay(10000).Wait();
@@ -985,6 +993,10 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);   //because once calling of process snapshot calls unsuspend
+                    SuspensionManagerMock.Verify(a =>
+                            a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
+                                SuspensionReason.SNAPSHOT),
+                        Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Exactly(2));
@@ -1058,10 +1070,10 @@ namespace SS.Integration.Adapter.Tests
             actor.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
             Task.Delay((Settings.MinimalHealthcheckInterval + 1) * 1000).Wait();
             actor.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
-            Task.Delay(1000).Wait();
+            //Task.Delay(1000).Wait();
 
             actor.Tell(new StreamUpdateMsg { Data = JsonConvert.SerializeObject(message) });
-            Task.Delay(300).Wait();
+            Task.Delay(1000).Wait();
             //
             //Assert
             //
@@ -1080,6 +1092,10 @@ namespace SS.Integration.Adapter.Tests
                     SuspensionManagerMock.Verify(a =>
                             a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Exactly(2)); //because first unsuspend when start streaming, second when processing snapshot for invalid epoch
+                    SuspensionManagerMock.Verify(a =>
+                            a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
+                                SuspensionReason.SNAPSHOT),
+                        Times.Once);
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Once);
@@ -1262,7 +1278,7 @@ namespace SS.Integration.Adapter.Tests
                     StreamHealthCheckValidationMock.Object,
                     FixtureValidationMock.Object));
 
-                actor.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
+            actor.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
             Task.Delay((Settings.MinimalHealthcheckInterval + 1) * 1000).Wait();
             actor.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
             Task.Delay(1000).Wait();
@@ -1765,7 +1781,7 @@ namespace SS.Integration.Adapter.Tests
             actor.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
             Task.Delay((Settings.MinimalHealthcheckInterval + 1) * 1000).Wait();
             actor.Tell(new StreamHealthCheckMsg { Resource = resourceFacadeMock.Object });
-            Task.Delay(1000).Wait();
+            //Task.Delay(1000).Wait();
 
             //
             //Assert
@@ -1810,6 +1826,9 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.ProcessSnapshot(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)), false),
                         Times.Once);
+                    SuspensionManagerMock.Verify(a =>
+                            a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Exactly(2));
                     MarketRulesManagerMock.Verify(a =>
                             a.ApplyRules(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
@@ -2174,9 +2193,9 @@ namespace SS.Integration.Adapter.Tests
                     PluginMock.Verify(a =>
                             a.ProcessFixtureDeletion(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
                         Times.Never);
-                    //SuspensionManagerMock.Verify(a =>
-                    //        a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
-                    //    Times.Once);    
+                    SuspensionManagerMock.Verify(a =>
+                            a.Unsuspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id))),
+                        Times.Once);
                     SuspensionManagerMock.Verify(a =>
                             a.Suspend(It.Is<Fixture>(f => f.Id.Equals(resourceFacadeMock.Object.Id)),
                                 SuspensionReason.DISCONNECT_EVENT),
