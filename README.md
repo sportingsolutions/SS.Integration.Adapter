@@ -139,6 +139,10 @@ The following is a list of available settings.
 - StartStreamingTimeoutInSeconds - number of seconds to wait before logging warn message when trying to connect to the streaming server.
 - AllowFixtureStreamingInSetupMode - true/false to Enable/Disable fixture streaming when is in Setup mode.
 - PluginAssembly - the name of plugin assembly which has implementation of SS.Integration.Adapter.Model.Interfaces.IAdapterPlugin
+- MaxFixtureUpdateDelayInSeconds - setting indicates an acceptable latency between feed stream update and current time - please do not set to 0 as it will cause validdation to fail on every update. 
+- DelayedFixtureRecoveryAttemptSchedule - when the streaming starts Adapter runs a verification whether the snapshot is needed, the check requires a call to API which doesn't need to be repeated for the set delay in seconds. Setting it very low (below 10) can result in start streaming delays. 
+- AutoReconnect - this refers to RabbitMQ client autoreconnect capability - recommended setting is true for Adapters streaming below 500 fixtures and false on any value above 
+
 
 Adapter Market Rules
 ----------------------
