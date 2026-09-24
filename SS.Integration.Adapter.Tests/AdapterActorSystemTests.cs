@@ -291,7 +291,191 @@ namespace SS.Integration.Adapter.Tests
 
         #endregion
 
+        #region Test Methods - StreamListenerActor bulkhead dispatcher
+
+        /// <summary>
+        /// This test ensures the default configuration defines the StreamListenerActor bulkhead dispatcher as a
+        /// ForkJoinDispatcher with its own bounded set of threads and without deadlock detection (a listener legitimately
+        /// holds its thread for a whole snapshot, plug-in call or AMQP RPC).
+        /// </summary>
+        [Test]
+        [Category(ADAPTER_ACTOR_SYSTEM_CATEGORY)]
+        public void GivenDefaultConfigurationThenStreamListenerDispatcherIsBoundedForkJoin()
+        {
+            //
+            //Arrange
+            //
+            var config = AdapterActorSystem.BuildConfig();
+
+            //
+            //Act
+            //
+            var dispatcherConfig = config.GetConfig(StreamListenerActor.DispatcherId);
+            var dispatcher = Sys.Dispatchers.Lookup(StreamListenerActor.DispatcherId);
+
+            //
+            //Assert
+            //
+            Assert.IsNotNull(dispatcherConfig, $"{StreamListenerActor.DispatcherId} is not defined in the configuration");
+            Assert.AreEqual("ForkJoinDispatcher", dispatcherConfig.GetString("type"));
+            Assert.AreEqual(AdapterActorSystem.DefaultStreamListenerThreads, dispatcherConfig.GetInt("dedicated-thread-pool.thread-count"));
+            Assert.IsFalse(dispatcherConfig.HasPath("dedicated-thread-pool.deadlock-timeout"), "deadlock detection must stay off");
+            Assert.IsNotNull(dispatcher);
+            Assert.AreEqual(StreamListenerActor.DispatcherId, dispatcher.Id);
+        }
+
+        /// <summary>
+        /// This test ensures the deployment entries place exactly the right actors on the bulkhead: every child of the
+        /// StreamListenerManagerActor (the stream listeners) and each listener's ResourceActor, while the
+        /// StreamListenerBuilderActor (explicit entry, sibling of the listeners) and the per-fixture StreamHealthCheckActor
+        /// and StreamStatsActor (grandchildren, not matched by the wildcard) stay on the default dispatcher.
+        /// The actors are created by name only, with no dispatcher in their Props, as the adapter creates them.
+        /// </summary>
+        [Test]
+        [Category(ADAPTER_ACTOR_SYSTEM_CATEGORY)]
+        public void GivenStreamListenerActorTreeCreatedByNameThenOnlyListenersAndResourceActorsRunOnTheBulkhead()
+        {
+            //
+            //Arrange
+            //
+            var manager = Sys.ActorOf(Props.Create(() => new TreeActor()), StreamListenerManagerActor.ActorName);
+
+            //
+            //Act
+            //
+            var listener = CreateChild(manager, StreamListenerActor.GetName("fixture1"));
+            var builder = CreateChild(manager, StreamListenerBuilderActor.ActorName);
+            var resource = CreateChild(listener, ResourceActor.ActorName);
+            var healthCheck = CreateChild(listener, StreamHealthCheckActor.ActorName);
+            var stats = CreateChild(listener, StreamStatsActor.ActorName);
+
+            //
+            //Assert
+            //
+            Assert.AreEqual(StreamListenerActor.DispatcherId, DispatcherIdOf(listener), "stream listener");
+            Assert.AreEqual(StreamListenerActor.DispatcherId, DispatcherIdOf(resource), "listener's ResourceActor");
+            Assert.AreEqual(Dispatchers.DefaultDispatcherId, DispatcherIdOf(builder), "StreamListenerBuilderActor must stay on the default dispatcher");
+            Assert.AreEqual(Dispatchers.DefaultDispatcherId, DispatcherIdOf(healthCheck), "StreamHealthCheckActor must stay on the default dispatcher");
+            Assert.AreEqual(Dispatchers.DefaultDispatcherId, DispatcherIdOf(stats), "StreamStatsActor must stay on the default dispatcher");
+            Assert.AreEqual(Dispatchers.DefaultDispatcherId, DispatcherIdOf(manager), "StreamListenerManagerActor itself");
+        }
+
+        /// <summary>
+        /// This test reproduces the kick-off surge on the listeners' side: more stream listeners than the bulkhead has
+        /// threads all block at once inside their handlers. The .NET thread pool must stay free (an actor on the default
+        /// dispatcher still answers), the FixtureStateActor must still answer, and a listener that receives a burst of
+        /// messages while the bulkhead is saturated must process them in order once it gets a thread.
+        /// </summary>
+        [Test]
+        [Category(ADAPTER_ACTOR_SYSTEM_CATEGORY)]
+        public void GivenMoreBlockedListenersThanBulkheadThreadsThenDefaultDispatcherAndFixtureStateStillRespondAndOrderHolds()
+        {
+            //
+            //Arrange
+            //
+            var manager = Sys.ActorOf(Props.Create(() => new TreeActor()), StreamListenerManagerActor.ActorName);
+            var blockedListeners = Enumerable.Range(0, AdapterActorSystem.DefaultStreamListenerThreads + 8)
+                .Select(i => CreateChild(manager, StreamListenerActor.GetName($"blocked{i}")))
+                .ToList();
+            var orderedListener = CreateChild(manager, StreamListenerActor.GetName("ordered"));
+            var defaultDispatcherProbe = Sys.ActorOf(Props.Create(() => new TreeActor()), "defaultDispatcherProbe");
+            var fixtureStateActor = CreateFixtureStateActor();
+            var gate = new ManualResetEventSlim(false);
+
+            try
+            {
+                //
+                //Act
+                //
+                foreach (var blockedListener in blockedListeners)
+                {
+                    blockedListener.Tell(new TreeActor.Block(gate));
+                }
+                //the burst arrives while the bulkhead is saturated
+                for (var i = 1; i <= 200; i++)
+                {
+                    orderedListener.Tell(i);
+                }
+                Thread.Sleep(500);
+
+                var probeAnswered = defaultDispatcherProbe.Ask<string>("ping", AskTimeout).Wait(AskTimeout);
+                var fixtureStateAnswered = fixtureStateActor
+                    .Ask<FixtureState>(new GetFixtureStateMsg { FixtureId = "unknownFixtureId" }, AskTimeout)
+                    .Wait(AskTimeout);
+
+                //
+                //Assert
+                //
+                Assert.IsTrue(probeAnswered, "an actor on the default dispatcher did not answer while the listeners were blocked");
+                Assert.IsTrue(fixtureStateAnswered, "FixtureStateActor did not answer while the listeners were blocked");
+            }
+            finally
+            {
+                gate.Set();
+            }
+
+            //
+            //Assert - order
+            //
+            var received = orderedListener.Ask<int[]>(new TreeActor.Dump(), AskTimeout).Result;
+            Assert.AreEqual(Enumerable.Range(1, 200).ToArray(), received, "per-fixture message order");
+        }
+
+        #endregion
+
         #region Private methods
+
+        /// <summary>
+        /// Asks a TreeActor to create a child by name (no dispatcher in the child's Props) and waits until the child answers.
+        /// </summary>
+        private IActorRef CreateChild(IActorRef parent, string name)
+        {
+            var child = parent.Ask<IActorRef>(new TreeActor.CreateChild(name), AskTimeout).Result;
+            child.Ask<string>("ping", AskTimeout).Wait();
+            return child;
+        }
+
+        private static string DispatcherIdOf(IActorRef actorRef)
+        {
+            var cell = ((ActorRefWithCell)actorRef).Underlying as ActorCell;
+            Assert.IsNotNull(cell, $"{actorRef.Path} has no started cell");
+            return cell.Dispatcher.Id;
+        }
+
+        /// <summary>
+        /// Stand-in for the adapter's actor tree: creates named children on request (each one another TreeActor),
+        /// answers pings, blocks its thread on a gate when told to, and records integers it receives.
+        /// </summary>
+        public class TreeActor : ReceiveActor
+        {
+            public class CreateChild
+            {
+                public CreateChild(string name) { Name = name; }
+                public string Name { get; }
+            }
+
+            public class Block
+            {
+                public Block(ManualResetEventSlim gate) { Gate = gate; }
+                public ManualResetEventSlim Gate { get; }
+            }
+
+            public class Dump
+            {
+            }
+
+            private readonly List<int> _received = new List<int>();
+
+            public TreeActor()
+            {
+                Receive<CreateChild>(m => Sender.Tell(Context.ActorOf(Props.Create(() => new TreeActor()), m.Name), Self));
+                Receive<Block>(m => m.Gate.Wait());
+                Receive<int>(m => _received.Add(m));
+                Receive<Dump>(m => Sender.Tell(_received.ToArray(), Self));
+                Receive<string>(m => Sender.Tell(m, Self));
+            }
+        }
+
 
         /// <summary>
         /// Creates the FixtureStateActor the same way AdapterActorSystem does: by name, with no dispatcher set in code,

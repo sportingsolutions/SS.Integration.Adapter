@@ -47,6 +47,15 @@ namespace SS.Integration.Adapter.Actors
         private const int DefaultSportProcessorThreads = 20;
 
         /// <summary>
+        /// Default number of dedicated threads for the StreamListenerActor bulkhead dispatcher. A starting size for
+        /// roughly 1,800 fixtures: enough for the listeners that are actually inside a snapshot, plug-in call or AMQP
+        /// RPC at the same moment, small enough that the pool is not replaced by an equally unbounded set of threads.
+        /// Read it against the FixtureStateActor WriteStateToFile "late" warnings and thread-pool counters at kick-off,
+        /// and override it in the application configuration HOCON (stream-listener-dispatcher.dedicated-thread-pool.thread-count).
+        /// </summary>
+        public const int DefaultStreamListenerThreads = 32;
+
+        /// <summary>
         /// Default HOCON applied as a fallback to the akka section of the application configuration.
         /// 
         /// fixture-state-dispatcher: a PinnedDispatcher (one dedicated thread) assigned to the <see cref="FixtureStateActor"/>
@@ -65,11 +74,25 @@ namespace SS.Integration.Adapter.Actors
         /// can run at once; the threads idle otherwise. No deadlock-timeout on purpose: a routee legitimately holds its
         /// thread for the whole HTTP call, and the dedicated thread pool's deadlock detection would abort it.
         /// 
+        /// stream-listener-dispatcher: the bulkhead. A ForkJoinDispatcher with a bounded set of its own threads for every
+        /// StreamListenerActor and its ResourceActor child, assigned through akka.actor.deployment with a wildcard on the
+        /// StreamListenerManagerActor's children plus an explicit entry for */ResourceActor. The listeners' synchronous
+        /// work (GetSnapshot HTTP, plug-in calls, StartStreaming/StopStreaming AMQP) then consumes those threads and not
+        /// the shared pool; when they are all busy the listeners queue in their mailboxes instead of starving the SDK's
+        /// echo check, the RabbitMQ consumer callbacks and the FixtureStateActor. The StreamListenerBuilderActor is a
+        /// child of the same parent and is explicitly kept on the default dispatcher: it has no blocking work and it is
+        /// the gate for creating new listeners at kick-off, so it must not queue behind them. The per-fixture
+        /// StreamHealthCheckActor and StreamStatsActor are grandchildren, not matched by the wildcard, and stay on the
+        /// default dispatcher too, so the health check never queues behind the listener it monitors. No deadlock-timeout,
+        /// for the same reason as the sport processor. On modern .NET a synchronous wait on HttpClient still needs a pool
+        /// thread for the completion, so this frees the pool rather than making listener HTTP self-contained.
+        /// 
         /// Any of these blocks can be overridden by defining the same key in the application configuration.
         /// </summary>
         /// <param name="sportProcessorThreads">number of dedicated threads for the SportProcessorRouterActor dispatcher</param>
+        /// <param name="streamListenerThreads">number of dedicated threads for the StreamListenerActor bulkhead dispatcher</param>
         /// <returns></returns>
-        private static string DefaultHocon(int sportProcessorThreads)
+        private static string DefaultHocon(int sportProcessorThreads, int streamListenerThreads)
         {
             return @"
             " + FixtureStateActor.DispatcherId + @" {
@@ -85,9 +108,27 @@ namespace SS.Integration.Adapter.Actors
                     threadtype = background
                 }
             }
+            " + StreamListenerActor.DispatcherId + @" {
+                type = ForkJoinDispatcher
+                executor = fork-join-executor
+                throughput = 5
+                dedicated-thread-pool {
+                    thread-count = " + streamListenerThreads + @"
+                    threadtype = background
+                }
+            }
             akka.actor.deployment {
                 /" + FixtureStateActor.ActorName + @" {
                     dispatcher = " + FixtureStateActor.DispatcherId + @"
+                }
+                ""/" + StreamListenerManagerActor.ActorName + @"/*"" {
+                    dispatcher = " + StreamListenerActor.DispatcherId + @"
+                }
+                ""/" + StreamListenerManagerActor.ActorName + @"/*/" + ResourceActor.ActorName + @""" {
+                    dispatcher = " + StreamListenerActor.DispatcherId + @"
+                }
+                /" + StreamListenerManagerActor.ActorName + @"/" + StreamListenerBuilderActor.ActorName + @" {
+                    dispatcher = akka.actor.default-dispatcher
                 }
             }";
         }
@@ -118,7 +159,7 @@ namespace SS.Integration.Adapter.Actors
                 ? settings.FixtureCreationConcurrency
                 : DefaultSportProcessorThreads;
 
-            var defaults = ConfigurationFactory.ParseString(DefaultHocon(sportProcessorThreads));
+            var defaults = ConfigurationFactory.ParseString(DefaultHocon(sportProcessorThreads, DefaultStreamListenerThreads));
             var appConfig = ConfigurationFactory.Load();
 
             return appConfig == null || appConfig.IsEmpty
@@ -226,7 +267,9 @@ namespace SS.Integration.Adapter.Actors
         /// <summary>
         /// Props for the SportProcessorRouterActor pool: both the router and its routees run on
         /// <see cref="SportProcessorRouterActor.DispatcherId"/> so that neither the routing of ProcessSportMsg nor the
-        /// synchronous UDAPI calls in the routees need a .NET thread-pool thread.
+        /// blocking wait of the synchronous UDAPI calls in the routees holds a .NET thread-pool thread.
+        /// (On modern .NET a synchronous wait on HttpClient still needs a pool thread for the completion; the
+        /// dispatcher frees the pool for the rest of the process rather than making the sweep independent of it.)
         /// </summary>
         /// <param name="udApiService"></param>
         /// <param name="fixtureCreationConcurrency">number of routees</param>
