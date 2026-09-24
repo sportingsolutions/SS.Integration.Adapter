@@ -143,6 +143,64 @@ The following is a list of available settings.
 - DelayedFixtureRecoveryAttemptSchedule - when the streaming starts Adapter runs a verification whether the snapshot is needed, the check requires a call to API which doesn't need to be repeated for the set delay in seconds. Setting it very low (below 10) can result in start streaming delays. 
 - AutoReconnect - this refers to RabbitMQ client autoreconnect capability - recommended setting is true for Adapters streaming below 500 fixtures and false on any value above 
 
+Akka Configuration (HOCON)
+----------------------
+
+The adapter's actors run on Akka.NET. The akka HOCON section of the adapter's app.config is loaded and merged with the adapter's built-in defaults (see `AdapterActorSystem`), so the blocks below only need to be added to the app.config when a default has to be changed.
+
+- fixture-state-dispatcher - The Akka dispatcher the FixtureStateActor runs on, assigned through `akka.actor.deployment`. Every StreamListenerActor asks this actor for the fixture state (with a 10 second timeout) and the actor also writes the fixtures state file to disk every FixturesStateAutoStoreInterval. By default it is a PinnedDispatcher, i.e. the actor has its own dedicated thread and never has to compete with the stream listeners for a thread on the default dispatcher. Under a large surge of updates (for example a weekend kick-off) the default dispatcher's thread pool can be starved by blocking calls, which delays the state lookups until they time out and the affected streams are treated as disconnected; the dedicated dispatcher removes the FixtureStateActor from that contention. On adapter start the FixtureStateActor logs the dispatcher it runs on (`FixtureStateActor started on dispatcher=...`). Adapters built from an older version can apply the same isolation without a code change by adding the two blocks below to the akka HOCON section of their app.config. Default:
+
+```
+fixture-state-dispatcher {
+  type = PinnedDispatcher
+  throughput = 1
+}
+akka.actor.deployment {
+  /FixtureStateActor {
+    dispatcher = fixture-state-dispatcher
+  }
+}
+```
+
+- sport-processor-dispatcher - The Akka dispatcher the SportProcessorRouterActor router and its routees run on. Each routee calls the Connect API synchronously (GetSports, then GetResources for each sport, with the client's 60 second timeout) every NewFixtureCheckerFrequency. On the default dispatcher those calls hold up to FixtureCreationConcurrency thread pool threads at once and, when the pool is starved at a surge, turn into timeouts and actor restarts. By default it is a ForkJoinDispatcher with its own dedicated threads, one per routee (thread-count = FixtureCreationConcurrency), so the blocking wait for the HTTP reply is held on those threads and not on the thread pool; the threads idle between sweeps. This frees the pool for the rest of the adapter and the SDK; it does not make the sweep independent of the pool, because on modern .NET a synchronous wait on HttpClient still needs a pool thread for the completion. Deadlock detection (`deadlock-timeout`) is deliberately not set: a routee holds its thread for the whole HTTP call and the detection would abort it. On adapter start each routee logs the dispatcher it runs on. Default (with the default FixtureCreationConcurrency of 20):
+
+```
+sport-processor-dispatcher {
+  type = ForkJoinDispatcher
+  executor = fork-join-executor
+  throughput = 1
+  dedicated-thread-pool {
+    thread-count = 20
+    threadtype = background
+  }
+}
+```
+
+- stream-listener-dispatcher - The bulkhead: the Akka dispatcher every StreamListenerActor and its ResourceActor child run on, assigned through `akka.actor.deployment` with a wildcard on the StreamListenerManagerActor's children plus an explicit entry for `*/ResourceActor`. Each listener does synchronous work inside its handlers (the snapshot request over HTTP, the plug-in calls, and through its ResourceActor the StartStreaming/StopStreaming calls over RabbitMQ); hundreds of them doing that at a surge on the default dispatcher, i.e. the shared thread pool, is what starves the SDK's echo check, the RabbitMQ consumer callbacks and the FixtureStateActor. On a ForkJoinDispatcher with a bounded set of its own threads that work consumes those threads instead and, when they are all busy, the listeners queue in their mailboxes rather than emptying the pool for everyone else. Per-fixture ordering is unchanged because each actor keeps its own mailbox. The StreamListenerBuilderActor is a sibling of the listeners and is explicitly kept on the default dispatcher (it has no blocking work and it gates the creation of new listeners at kick-off); the per-fixture StreamHealthCheckActor and StreamStatsActor are grandchildren, not matched by the wildcard, and stay on the default dispatcher too, so the health check never queues behind the listener it monitors. `thread-count` defaults to 32, a starting size for about 1,800 fixtures: too small and prices queue visibly, too large and the load on the Connect API and RabbitMQ rises. Read it against the WriteStateToFile "late" warnings and thread pool counters at kick-off and override it in the app.config. Deadlock detection (`deadlock-timeout`) is deliberately not set. On modern .NET a synchronous wait on HttpClient still needs a thread pool thread for the completion, so this frees the pool for the rest of the process; it does not make listener HTTP independent of the pool. Default:
+
+```
+stream-listener-dispatcher {
+  type = ForkJoinDispatcher
+  executor = fork-join-executor
+  throughput = 5
+  dedicated-thread-pool {
+    thread-count = 32
+    threadtype = background
+  }
+}
+akka.actor.deployment {
+  "/StreamListenerManagerActor/*" {
+    dispatcher = stream-listener-dispatcher
+  }
+  "/StreamListenerManagerActor/*/ResourceActor" {
+    dispatcher = stream-listener-dispatcher
+  }
+  /StreamListenerManagerActor/StreamListenerBuilderActor {
+    dispatcher = akka.actor.default-dispatcher
+  }
+}
+```
+
 
 Adapter Market Rules
 ----------------------

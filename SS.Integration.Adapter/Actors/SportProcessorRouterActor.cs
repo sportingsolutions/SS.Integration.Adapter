@@ -36,6 +36,17 @@ namespace SS.Integration.Adapter.Actors
         public const string ActorName = nameof(SportProcessorRouterActor);
         public const string Path = "/user/" + ActorName;
 
+        /// <summary>
+        /// Id of the Akka dispatcher the router and its routees run on by default.
+        /// Each routee calls the UDAPI synchronously (GetSports, then GetResources per sport) inside its receive
+        /// handler, with the client's 60s timeout, every FixtureCheckerFrequency. On the default dispatcher those
+        /// calls park up to FixtureCreationConcurrency thread-pool threads at once, and at a kick-off surge a starved
+        /// pool turns them into timeouts and actor restarts. A dedicated dispatcher with its own threads keeps the
+        /// pool for everything else. Defined and sized (thread-count = FixtureCreationConcurrency) by default in
+        /// <see cref="AdapterActorSystem"/>; can be overridden in the akka HOCON section of the application configuration.
+        /// </summary>
+        public const string DispatcherId = "sport-processor-dispatcher";
+
         #endregion
 
         #region Fields
@@ -54,6 +65,8 @@ namespace SS.Integration.Adapter.Actors
 		public SportProcessorRouterActor(IServiceFacade serviceFacade)
         {
             _serviceFacade = serviceFacade ?? throw new ArgumentNullException(nameof(serviceFacade));
+
+            _logger.Info($"{ActorName} routee started on dispatcher={Context.Dispatcher.Id}");
 
             Receive<ProcessSportMsg>(o => ProcessSportsMsgHandler(o));
         }

@@ -39,6 +39,20 @@ namespace SS.Integration.Adapter.Actors
         #region Constants
 
         public const string ActorName = nameof(StreamListenerActor);
+
+        /// <summary>
+        /// Id of the Akka dispatcher every StreamListenerActor and its ResourceActor child run on by default (the bulkhead).
+        /// Each listener does synchronous work inside its receive handlers: GetSnapshot over HTTP, the plug-in calls
+        /// (ProcessSnapshot, ProcessStreamUpdate) and, through its ResourceActor, StartStreaming/StopStreaming over AMQP.
+        /// Hundreds of listeners doing that at a kick-off surge on the default dispatcher, i.e. the shared .NET thread
+        /// pool, is what starves the SDK's echo check, the RabbitMQ consumer callbacks and the FixtureStateActor lookups.
+        /// On a bounded dispatcher with its own threads the listeners' blocking work consumes those threads and, when
+        /// they are all busy, listener messages queue in their mailboxes instead of emptying the pool for everyone else.
+        /// Per-fixture ordering is unchanged: each actor keeps its own mailbox. Assigned through akka.actor.deployment
+        /// (see <see cref="AdapterActorSystem"/>); the StreamListenerBuilderActor (a sibling under the same parent) and the
+        /// per-fixture StreamHealthCheckActor and StreamStatsActor stay on the default dispatcher.
+        /// </summary>
+        public const string DispatcherId = "stream-listener-dispatcher";
         public const int CONNECT_TO_STREAM_DELAY = 5000; //milliseconds
 
         #endregion
