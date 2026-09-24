@@ -123,7 +123,7 @@ The following is a list of available settings.
 - SuspendAllOnShutdown - Suspend all fixtures when the Adapter is shutdown correctly e.g. Stop as a windows service
 - StateProviderPath - The path relative to Adapter Directory where all the state files are saved.
 - FixturesStateFilePath - The filename or file path relative to StateProviderPath or full rooted file path of the fixtures state file. This is used to store fixture sequence numbers so that the adapter can work out if it has missed updates.
-- FixturesStateAutoStoreInterval - The interval in milliseconds at which the fixtures state file is saved to disk from internal adapter's memory.
+- FixturesStateAutoStoreInterval - The interval in milliseconds at which the fixtures state file is saved to disk from internal adapter's memory. Each write logs its duration (`WriteStateToFile completed totalMs=... serializeMs=... writeMs=... fixturesCount=... sinceLastWriteMs=...`); a write over 1 second, or one starting more than twice the interval after the previous one, is logged as a warning, because the write runs inside the FixtureStateActor and delays every fixture state lookup while it runs.
 - marketFiltersDirectory - The path relative to StateProviderPath for the directory that holds the MarketFilterState. This is where the current state of each market is held.
 - CacheExpiryInMins - The number of minutes that a markets state will be held in memory after being read. The timer is set back to this value and restarts the coutdown on each read.
 - StatsEnabled - This should be set to false. It may be used in future for statistics generation.
