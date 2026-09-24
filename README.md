@@ -162,6 +162,20 @@ akka.actor.deployment {
 }
 ```
 
+- sport-processor-dispatcher - The Akka dispatcher the SportProcessorRouterActor router and its routees run on. Each routee calls the Connect API synchronously (GetSports, then GetResources for each sport, with the client's 60 second timeout) every NewFixtureCheckerFrequency. On the default dispatcher those calls hold up to FixtureCreationConcurrency thread pool threads at once and, when the pool is starved at a surge, turn into timeouts and actor restarts. By default it is a ForkJoinDispatcher with its own dedicated threads, one per routee (thread-count = FixtureCreationConcurrency), so the sweep never needs a thread pool thread; the threads idle between sweeps. Deadlock detection (`deadlock-timeout`) is deliberately not set: a routee holds its thread for the whole HTTP call and the detection would abort it. On adapter start each routee logs the dispatcher it runs on. Default (with the default FixtureCreationConcurrency of 20):
+
+```
+sport-processor-dispatcher {
+  type = ForkJoinDispatcher
+  executor = fork-join-executor
+  throughput = 1
+  dedicated-thread-pool {
+    thread-count = 20
+    threadtype = background
+  }
+}
+```
+
 
 Adapter Market Rules
 ----------------------

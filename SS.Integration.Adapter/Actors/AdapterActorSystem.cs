@@ -41,6 +41,12 @@ namespace SS.Integration.Adapter.Actors
         private static IActorRef _fixtureStateActor;
 
         /// <summary>
+        /// Default number of dedicated threads for <see cref="SportProcessorRouterActor"/> when no settings are given
+        /// (matches the default FixtureCreationConcurrency).
+        /// </summary>
+        private const int DefaultSportProcessorThreads = 20;
+
+        /// <summary>
         /// Default HOCON applied as a fallback to the akka section of the application configuration.
         /// 
         /// fixture-state-dispatcher: a PinnedDispatcher (one dedicated thread) assigned to the <see cref="FixtureStateActor"/>
@@ -51,32 +57,68 @@ namespace SS.Integration.Adapter.Actors
         /// lookups until they time out and the listeners treat the streams as disconnected. Isolating the actor on
         /// its own thread removes the FixtureStateActor from that contention.
         /// 
+        /// sport-processor-dispatcher: a ForkJoinDispatcher with its own dedicated threads (not the .NET thread pool)
+        /// for the <see cref="SportProcessorRouterActor"/> router and its routees. Each routee calls the UDAPI
+        /// synchronously (GetSports, GetResources per sport, 60s client timeout) every FixtureCheckerFrequency; on the
+        /// default dispatcher that parks up to FixtureCreationConcurrency pool threads and, when the pool is starved,
+        /// turns into timeouts and actor restarts. thread-count is sized to FixtureCreationConcurrency so every routee
+        /// can run at once; the threads idle otherwise. No deadlock-timeout on purpose: a routee legitimately holds its
+        /// thread for the whole HTTP call, and the dedicated thread pool's deadlock detection would abort it.
+        /// 
         /// Any of these blocks can be overridden by defining the same key in the application configuration.
         /// </summary>
-        private const string DefaultHocon = @"
+        /// <param name="sportProcessorThreads">number of dedicated threads for the SportProcessorRouterActor dispatcher</param>
+        /// <returns></returns>
+        private static string DefaultHocon(int sportProcessorThreads)
+        {
+            return @"
             " + FixtureStateActor.DispatcherId + @" {
                 type = PinnedDispatcher
                 throughput = 1
+            }
+            " + SportProcessorRouterActor.DispatcherId + @" {
+                type = ForkJoinDispatcher
+                executor = fork-join-executor
+                throughput = 1
+                dedicated-thread-pool {
+                    thread-count = " + sportProcessorThreads + @"
+                    threadtype = background
+                }
             }
             akka.actor.deployment {
                 /" + FixtureStateActor.ActorName + @" {
                     dispatcher = " + FixtureStateActor.DispatcherId + @"
                 }
             }";
+        }
 
         #endregion
 
         public static ActorSystem ActorSystem => _actorSystem;
 
         /// <summary>
-        /// Builds the actor system configuration: the akka HOCON section of the application configuration
-        /// (the same source ActorSystem.Create(name) uses) with <see cref="DefaultHocon"/> as fallback,
-        /// so the adapter's dedicated dispatchers exist even when the application configuration does not define them.
+        /// Builds the actor system configuration with the default sizing (see <see cref="BuildConfig(ISettings)"/>).
         /// </summary>
         /// <returns></returns>
         public static Config BuildConfig()
         {
-            var defaults = ConfigurationFactory.ParseString(DefaultHocon);
+            return BuildConfig(null);
+        }
+
+        /// <summary>
+        /// Builds the actor system configuration: the akka HOCON section of the application configuration
+        /// (the same source ActorSystem.Create(name) uses) with the adapter defaults as fallback,
+        /// so the adapter's dedicated dispatchers exist even when the application configuration does not define them.
+        /// </summary>
+        /// <param name="settings">adapter settings used to size the defaults; null for the built-in default sizing</param>
+        /// <returns></returns>
+        public static Config BuildConfig(ISettings settings)
+        {
+            var sportProcessorThreads = settings != null && settings.FixtureCreationConcurrency > 0
+                ? settings.FixtureCreationConcurrency
+                : DefaultSportProcessorThreads;
+
+            var defaults = ConfigurationFactory.ParseString(DefaultHocon(sportProcessorThreads));
             var appConfig = ConfigurationFactory.Load();
 
             return appConfig == null || appConfig.IsEmpty
@@ -103,7 +145,7 @@ namespace SS.Integration.Adapter.Actors
             IStreamHealthCheckValidation streamHealthCheckValidation,
             IFixtureValidation fixtureValidation)
         {
-            _actorSystem = ActorSystem.Create("AdapterSystem", BuildConfig());
+            _actorSystem = ActorSystem.Create("AdapterSystem", BuildConfig(settings));
 
             var fileStoreProvider = new FileStoreProvider(settings.StateProviderPath);
             CreateFixtureStateActor(settings, fileStoreProvider);
@@ -144,9 +186,8 @@ namespace SS.Integration.Adapter.Actors
             try
             {
                 _sportProcessorRouterActor = ActorSystem.ActorOf(
-                                Props.Create(() => new SportProcessorRouterActor(udApiService))
-                                    .WithRouter(new SmallestMailboxPool(settings.FixtureCreationConcurrency)),
-                                SportProcessorRouterActor.ActorName);
+                    SportProcessorRouterProps(udApiService, settings.FixtureCreationConcurrency),
+                    SportProcessorRouterActor.ActorName);
             }
             catch (Exception e)
             {
@@ -180,6 +221,22 @@ namespace SS.Integration.Adapter.Actors
             }
 
            
+        }
+
+        /// <summary>
+        /// Props for the SportProcessorRouterActor pool: both the router and its routees run on
+        /// <see cref="SportProcessorRouterActor.DispatcherId"/> so that neither the routing of ProcessSportMsg nor the
+        /// synchronous UDAPI calls in the routees need a .NET thread-pool thread.
+        /// </summary>
+        /// <param name="udApiService"></param>
+        /// <param name="fixtureCreationConcurrency">number of routees</param>
+        /// <returns></returns>
+        public static Props SportProcessorRouterProps(IServiceFacade udApiService, int fixtureCreationConcurrency)
+        {
+            return Props.Create(() => new SportProcessorRouterActor(udApiService))
+                .WithDispatcher(SportProcessorRouterActor.DispatcherId)
+                .WithRouter(new SmallestMailboxPool(fixtureCreationConcurrency)
+                    .WithDispatcher(SportProcessorRouterActor.DispatcherId));
         }
 
         private static void CreateFixtureStateActor(ISettings settings, FileStoreProvider fileStoreProvider)
