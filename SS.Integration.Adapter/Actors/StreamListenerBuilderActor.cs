@@ -117,6 +117,7 @@ namespace SS.Integration.Adapter.Actors
                 $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
 
             Receive<CheckStreamListenerBuilderActorStateMsg>(o => CheckStreamListenerBuilderActorStateMsgHandler(o));
+            Receive<StreamListenerState>(o => StreamListenerStateReplyHandler(o));
             Receive<CheckFixtureStateMsg>(o => CheckFixtureStateMsgHandler(o));
             Receive<CreateStreamListenerMsg>(o => CreateStreamListenerMsgHandler(o));
             Receive<StreamListenerCreationCompletedMsg>(o => StreamListenerCreationCompletedMsgHandler(o));
@@ -136,6 +137,7 @@ namespace SS.Integration.Adapter.Actors
                 $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
 
             Receive<CheckStreamListenerBuilderActorStateMsg>(o => CheckStreamListenerBuilderActorStateMsgHandler(o));
+            Receive<StreamListenerState>(o => StreamListenerStateReplyHandler(o));
             Receive<CheckFixtureStateMsg>(o => { Stash.Stash(); });
             Receive<CreateStreamListenerMsg>(o => { Stash.Stash(); });
             Receive<StreamListenerCreationCompletedMsg>(o => StreamListenerCreationCompletedMsgHandler(o));
@@ -149,6 +151,13 @@ namespace SS.Integration.Adapter.Actors
 
         //this is used to ensure we don't get blocked in Busy state
         //so we process self scheduled message at predefined interval to check/update the actor state and flags
+        //
+        //The state of each StreamListenerActor still being created is requested with a plain Tell and handled
+        //asynchronously in StreamListenerStateReplyHandler. This actor must never block its thread waiting for a
+        //reply: while blocked it cannot create any stream listener, and at a kick-off surge a starved thread pool
+        //made the previous Ask(...).Result (30s timeout, one fixture at a time) hold the builder for minutes.
+        //A listener that does not reply is simply asked again at the next check, which is the same outcome the
+        //timeout produced (state unknown, fixture kept in the set).
         private void CheckStreamListenerBuilderActorStateMsgHandler(CheckStreamListenerBuilderActorStateMsg msg)
         {
             List<string> fixtureIdList = _creationInProgressFixtureIdSet.ToList();
@@ -166,32 +175,12 @@ namespace SS.Integration.Adapter.Actors
                 }
                 else
                 {
-                    StreamListenerState? streamListenerActorState;
-                    try
-                    {
-                        streamListenerActorState = streamListenerActorRef
-                            .Ask<StreamListenerState>(
-                                new GetStreamListenerActorStateMsg(),
-                                TimeSpan.FromSeconds(30))
-                            .Result;
-                    }
-                    catch (Exception)
-                    {
-                        //if we haven't heard back from StreamListenerActor then we can't identify it's state
-                        streamListenerActorState = null;
-                    }
-
-                    if (streamListenerActorState.HasValue &&
-                        streamListenerActorState.Value != StreamListenerState.Initializing)
-                    {
-                        RemoveFixtureFromSet(fixtureId);
-                    }
+                    streamListenerActorRef.Tell(new GetStreamListenerActorStateMsg { FixtureId = fixtureId }, Self);
 
                     _logger.Debug(
                         $"CheckStreamListenerBuilderActorStateMsgHandler" +
                         $" - fixtureId={fixtureId}" +
-                        $" - streamListenerActorState={streamListenerActorState?.ToString() ?? "null"}" +
-                        $" - StreamListenerActor instance has already been created");
+                        $" - StreamListenerActor instance has already been created, state requested");
                 }
             }
 
@@ -199,6 +188,37 @@ namespace SS.Integration.Adapter.Actors
 
             _logger.Debug(
                 $"CheckStreamListenerBuilderActorStateMsgHandler completed" +
+                $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
+        }
+
+        //reply to GetStreamListenerActorStateMsg: the StreamListenerActor answers with its bare state,
+        //so the fixture is identified from the sender's actor name
+        private void StreamListenerStateReplyHandler(StreamListenerState streamListenerActorState)
+        {
+            var senderName = Sender?.Path?.Name;
+            var fixtureId = _creationInProgressFixtureIdSet
+                .FirstOrDefault(id => StreamListenerActor.GetName(id) == senderName);
+
+            if (fixtureId == null)
+            {
+                _logger.Debug(
+                    $"StreamListenerStateReplyHandler" +
+                    $" - streamListenerActorState={streamListenerActorState}" +
+                    $" - sender={senderName ?? "null"} is not a StreamListenerActor being created, ignoring");
+                return;
+            }
+
+            if (streamListenerActorState != StreamListenerState.Initializing)
+            {
+                RemoveFixtureFromSet(fixtureId);
+            }
+
+            CheckActiveState();
+
+            _logger.Debug(
+                $"StreamListenerStateReplyHandler" +
+                $" - fixtureId={fixtureId}" +
+                $" - streamListenerActorState={streamListenerActorState}" +
                 $" - _creationInProgressFixtureIdSetCount={_creationInProgressFixtureIdSet.Count} items");
         }
 
