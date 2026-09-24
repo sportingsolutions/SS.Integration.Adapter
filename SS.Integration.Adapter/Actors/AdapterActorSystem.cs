@@ -226,9 +226,7 @@ namespace SS.Integration.Adapter.Actors
         /// <summary>
         /// Props for the SportProcessorRouterActor pool: both the router and its routees run on
         /// <see cref="SportProcessorRouterActor.DispatcherId"/> so that neither the routing of ProcessSportMsg nor the
-        /// blocking wait of the synchronous UDAPI calls in the routees holds a .NET thread-pool thread.
-        /// (On modern .NET a synchronous wait on HttpClient still needs a pool thread for the completion; the
-        /// dispatcher frees the pool for the rest of the process rather than making the sweep independent of it.)
+        /// synchronous UDAPI calls in the routees need a .NET thread-pool thread.
         /// </summary>
         /// <param name="udApiService"></param>
         /// <param name="fixtureCreationConcurrency">number of routees</param>
