@@ -78,17 +78,23 @@ A basic log4net.config file could be:
   </appender>
 
   <logger name="SS" >
-    <level value="DEBUG" />
+    <level value="INFO" />
     <appender-ref ref="FA" />
     <appender-ref ref="CA" />
   </logger>
 
   <logger name="SportingSolutions">
-    <level value="DEBUG" />
+    <level value="INFO" />
     <appender-ref ref="FA" />
   </logger>
 </log4net>
 ```
+
+##### Production logging level
+
+Run production at `INFO` for both the adapter loggers (`SS`) and the SDK loggers (`SportingSolutions`). At `DEBUG` every `StreamListenerActor` writes several lines per fixture update; at a kick-off surge that means hundreds of threads formatting log messages and queuing on the same appender lock, which slows the processing of the updates themselves. When a component needs to be diagnosed, enable `DEBUG` for that logger only, for example `<logger name="SS.Integration.Adapter.Actors.FixtureStateActor"><level value="DEBUG" /></logger>`. The windows service loads `log4net.config` with `ConfigureAndWatch`, so a level change in the file is applied without restarting the adapter.
+
+The same applies to the Akka tracing flags in the `akka` HOCON section of the app.config: keep `loglevel = INFO` and `akka.actor.debug { receive, autoreceive, lifecycle, event-stream, unhandled }` all `off` in production. With a flag on, every actor start and stop (one `StreamListenerActor` per fixture), every auto-received and every unhandled message publishes a `DEBUG` event to the event stream even when `loglevel` filters it out afterwards. Turn a flag on only while diagnosing, and turn it off again.
 
 #### Configuration
 
