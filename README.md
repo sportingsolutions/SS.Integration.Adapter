@@ -143,6 +143,32 @@ The following is a list of available settings.
 - DelayedFixtureRecoveryAttemptSchedule - when the streaming starts Adapter runs a verification whether the snapshot is needed, the check requires a call to API which doesn't need to be repeated for the set delay in seconds. Setting it very low (below 10) can result in start streaming delays. 
 - AutoReconnect - this refers to RabbitMQ client autoreconnect capability - recommended setting is true for Adapters streaming below 500 fixtures and false on any value above 
 
+Akka Configuration (HOCON)
+----------------------
+
+The adapter's actors and the SDK's actors run on Akka.NET, in two actor systems (`AdapterSystem` and `SDKSystem`) that share one .NET thread pool. Both systems read the `akka` HOCON section of the adapter's app.config: the SDK creates `SDKSystem` with no explicit configuration, so that section is the only place its actors can be configured from the adapter. The blocks below are shipped in the app.config; they only need changing when a default has to be adjusted.
+
+- echo-controller-dispatcher and stream-controller-dispatcher - Dedicated threads for two of the SDK's actors, assigned through `akka.actor.deployment`. The SDK's `EchoControllerActor` runs the stream liveness check: it sends an echo every EchoInterval and, when three echoes in a row are not seen within EchoDelay, it stops the streams and raises "Stream got disconnected". On the default dispatcher, i.e. the shared thread pool, a starved pool at a surge delays the echo tick and the echo request until the check declares live streams dead while the RabbitMQ connection is still open. The SDK's `StreamControllerActor` owns the RabbitMQ connection and blocks on `BasicCancel` (20 second RPC timeout) when a stream is stopped; a single dedicated thread also serialises those cancels on the shared channel, which the RabbitMQ client requires. Each actor gets its own `PinnedDispatcher`. This moves the echo tick and the echo request off the pool; echo receipt still arrives through the RabbitMQ client's consumer callbacks on the pool, so it is protected only by keeping the pool free (see ThreadPoolMinThreads and the dispatchers above). The same text is held in `SdkActorSystemConfiguration.DispatchersHocon` for the tests. A host that supplies HOCON to `SDKSystem` by another route (for example a build on modern .NET) must add the same blocks there. Shipped default:
+
+```
+echo-controller-dispatcher {
+  type = PinnedDispatcher
+  throughput = 1
+}
+stream-controller-dispatcher {
+  type = PinnedDispatcher
+  throughput = 1
+}
+akka.actor.deployment {
+  /EchoControllerActor {
+    dispatcher = echo-controller-dispatcher
+  }
+  /StreamControllerActor {
+    dispatcher = stream-controller-dispatcher
+  }
+}
+```
+
 
 Adapter Market Rules
 ----------------------
