@@ -138,6 +138,7 @@
     <Compile Include="Adapter.cs" />
     <Compile Include="Actors\AdapterActorSystem.cs" />
     <Compile Include="Configuration\Settings.cs" />
+    <Compile Include="Configuration\ThreadPoolConfiguration.cs" />
     <Compile Include="Configuration\UdapiConfiguration.cs" />
     <Compile Include="Enums\StreamListenerBuilderState.cs" />
     <Compile Include="Enums\StreamListenerState.cs" />

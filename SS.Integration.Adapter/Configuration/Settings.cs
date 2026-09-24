@@ -48,6 +48,7 @@ namespace SS.Integration.Adapter.Configuration
         private const int DEFAULT_FIXTURE_TIMESTAMP_DIFFERENCE_VALUE = 1440;
         private const int DEFAULT_FIXTURE_RECOVER_INTERVAL = 30;
         private const int DEFAULT_MAX_IN_ERRORED_STATE = 10;
+        private const int DEFAULT_THREAD_POOL_MIN_THREADS = 0;
 
         public const int MinimalHealthcheckInterval = 30;
 
@@ -163,6 +164,11 @@ namespace SS.Integration.Adapter.Configuration
             value = ConfigurationManager.AppSettings["autoReconnect"];
             AutoReconnect = !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
 
+            value = ConfigurationManager.AppSettings["threadPoolMinThreads"];
+            ThreadPoolMinThreads = string.IsNullOrEmpty(value)
+                ? DEFAULT_THREAD_POOL_MIN_THREADS
+                : Convert.ToInt32(value);
+
             LogAll();
         }
 
@@ -241,6 +247,8 @@ namespace SS.Integration.Adapter.Configuration
         public int maxFixtureUpdateDelayInSeconds { get; private set; }
 
         public bool AutoReconnect { get; private set; }
+
+        public int ThreadPoolMinThreads { get; private set; }
 
         public bool LogDetailedMarketRules { get; private set; }
 
