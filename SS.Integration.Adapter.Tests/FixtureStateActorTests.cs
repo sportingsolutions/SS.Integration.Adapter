@@ -15,9 +15,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
+using log4net;
+using log4net.Appender;
+using log4net.Core;
+using log4net.Repository.Hierarchy;
 using Moq;
 using NUnit.Framework;
 using SS.Integration.Adapter.Interface;
@@ -59,11 +65,114 @@ namespace SS.Integration.Adapter.Tests
             SettingsMock.SetupGet(a => a.FixturesStateAutoStoreInterval).Returns(1000);
 
             StoreProviderMock = new Mock<IStoreProvider>();
+
+            _logEvents = new MemoryAppender();
+            var hierarchy = (Hierarchy)LogManager.GetRepository();
+            hierarchy.Root.AddAppender(_logEvents);
+            hierarchy.Configured = true;
+        }
+
+        [TearDown]
+        public void TearDownTest()
+        {
+            if (_logEvents != null)
+            {
+                ((Hierarchy)LogManager.GetRepository()).Root.RemoveAppender(_logEvents);
+                _logEvents = null;
+            }
         }
 
         #endregion
 
+        #region Fields
+
+        private MemoryAppender _logEvents;
+
+        #endregion
+
         #region Test Methods
+
+        /// <summary>
+        /// This test ensures every scheduled state file write logs its duration
+        /// (serialisation and disk write) so the cost of the write inside the actor's mailbox can be measured.
+        /// </summary>
+        [Test]
+        [Category(FIXTURE_STATE_ACTOR_CATEGORY)]
+        public void GivenScheduledWriteStateToFileThenItsDurationIsLogged()
+        {
+            //
+            //Arrange
+            //
+            SettingsMock.SetupGet(a => a.FixturesStateAutoStoreInterval).Returns(200);
+            var fixtureStateActor = ActorOfAsTestActorRef<FixtureStateActor>(
+                Props.Create(() =>
+                    new FixtureStateActor(
+                        SettingsMock.Object,
+                        StoreProviderMock.Object)),
+                FixtureStateActor.ActorName);
+
+            //
+            //Act
+            //
+            AwaitAssert(
+                () => Assert.IsTrue(
+                    WriteStateToFileLogEvents().Any(e => e.Level == Level.Info),
+                    "no WriteStateToFile duration log line"),
+                TimeSpan.FromSeconds(5),
+                TimeSpan.FromMilliseconds(100));
+
+            //
+            //Assert
+            //
+            var logLine = WriteStateToFileLogEvents().First(e => e.Level == Level.Info).RenderedMessage;
+            StringAssert.Contains("WriteStateToFile completed", logLine);
+            StringAssert.Contains("totalMs=", logLine);
+            StringAssert.Contains("serializeMs=", logLine);
+            StringAssert.Contains("writeMs=", logLine);
+            StringAssert.Contains("fixturesCount=", logLine);
+            StringAssert.Contains("intervalMs=200", logLine);
+            StoreProviderMock.Verify(o => o.Write(It.IsAny<string>(), It.IsAny<string>()), Times.AtLeastOnce);
+        }
+
+        /// <summary>
+        /// This test ensures a state file write that blocks the actor for longer than the slow threshold is logged
+        /// as a warning, so a slow disk can be identified from the logs of an incident.
+        /// </summary>
+        [Test]
+        [Category(FIXTURE_STATE_ACTOR_CATEGORY)]
+        public void GivenSlowWriteStateToFileThenAWarningIsLogged()
+        {
+            //
+            //Arrange
+            //
+            SettingsMock.SetupGet(a => a.FixturesStateAutoStoreInterval).Returns(200);
+            StoreProviderMock
+                .Setup(o => o.Write(It.IsAny<string>(), It.IsAny<string>()))
+                .Callback(() => Thread.Sleep(FixtureStateActor.SlowWriteStateToFileThresholdMs + 200));
+            var fixtureStateActor = ActorOfAsTestActorRef<FixtureStateActor>(
+                Props.Create(() =>
+                    new FixtureStateActor(
+                        SettingsMock.Object,
+                        StoreProviderMock.Object)),
+                FixtureStateActor.ActorName);
+
+            //
+            //Act
+            //
+            AwaitAssert(
+                () => Assert.IsTrue(
+                    WriteStateToFileLogEvents().Any(e => e.Level == Level.Warn),
+                    "no WriteStateToFile warning log line"),
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromMilliseconds(100));
+
+            //
+            //Assert
+            //
+            var logLine = WriteStateToFileLogEvents().First(e => e.Level == Level.Warn).RenderedMessage;
+            StringAssert.Contains("WriteStateToFile slow", logLine);
+            StringAssert.Contains("writeMs=", logLine);
+        }
 
         /// <summary>
         /// This test ensures the GetFixtureStateMsg returns the fixture state as expected
@@ -379,6 +488,21 @@ namespace SS.Integration.Adapter.Tests
             //Assert
             //
             Assert.IsFalse(checkFixtureStateMsg.ShouldProcessFixture);
+        }
+
+        #endregion
+
+        #region Private methods
+
+        private LoggingEvent[] WriteStateToFileLogEvents()
+        {
+            return _logEvents
+                .GetEvents()
+                .Where(e =>
+                    e.LoggerName == typeof(FixtureStateActor).FullName &&
+                    e.RenderedMessage != null &&
+                    e.RenderedMessage.StartsWith("WriteStateToFile"))
+                .ToArray();
         }
 
         #endregion

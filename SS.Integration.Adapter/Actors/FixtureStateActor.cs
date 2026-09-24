@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using Akka.Actor;
 using log4net;
@@ -37,6 +38,20 @@ namespace SS.Integration.Adapter.Actors
         public const string ActorName = nameof(FixtureStateActor);
         public const string Path = "/user/" + ActorName;
 
+        /// <summary>
+        /// A state file write (serialisation plus disk write) taking longer than this is logged as a warning.
+        /// The write runs inside this actor's mailbox, so for its whole duration no GetFixtureStateMsg can be answered
+        /// and the stream listeners asking for the state (10s timeout) are held up.
+        /// </summary>
+        internal const int SlowWriteStateToFileThresholdMs = 1000;
+
+        /// <summary>
+        /// The state file write is scheduled every FixturesStateAutoStoreInterval. If the time between two writes is
+        /// more than this many times the interval, the WriteStateToFileMsg has been queuing behind other messages in
+        /// the mailbox (or the previous write took longer than the interval), which is logged as a warning.
+        /// </summary>
+        internal const int LateWriteStateToFileIntervalFactor = 2;
+
         #endregion
 
         #region Fields
@@ -46,6 +61,7 @@ namespace SS.Integration.Adapter.Actors
         private readonly IStoreProvider _storeProvider;
         private string _pathFileName;
         private Dictionary<string, FixtureState> _fixturesState = new Dictionary<string, FixtureState>();
+        private DateTime? _lastWriteStateToFileStartedUtc;
 
         #endregion
 
@@ -135,14 +151,38 @@ namespace SS.Integration.Adapter.Actors
 
         private void WriteStateToFileMsgHandler(WriteStateToFileMsg msg)
         {
+            var startedUtc = DateTime.UtcNow;
+            var sinceLastWriteMs = _lastWriteStateToFileStartedUtc.HasValue
+                ? (long?)(startedUtc - _lastWriteStateToFileStartedUtc.Value).TotalMilliseconds
+                : null;
+            _lastWriteStateToFileStartedUtc = startedUtc;
+
+            var fixturesCount = _fixturesState.Count;
+            var stopwatch = Stopwatch.StartNew();
+            long serializeMs = 0;
+
             try
             {
                 var output = JsonConvert.SerializeObject(_fixturesState, Formatting.Indented);
+                serializeMs = stopwatch.ElapsedMilliseconds;
+
                 _storeProvider.Write(_pathFileName, output);
+                stopwatch.Stop();
+
+                LogWriteStateToFileDuration(
+                    stopwatch.ElapsedMilliseconds,
+                    serializeMs,
+                    stopwatch.ElapsedMilliseconds - serializeMs,
+                    fixturesCount,
+                    output.Length,
+                    sinceLastWriteMs);
             }
             catch (Exception ex)
             {
-                _logger.Error("Error when writting State to File", ex);
+                stopwatch.Stop();
+                _logger.Error(
+                    $"Error when writting State to File after totalMs={stopwatch.ElapsedMilliseconds} serializeMs={serializeMs} fixturesCount={fixturesCount}",
+                    ex);
             }
         }
 
@@ -189,6 +229,45 @@ namespace SS.Integration.Adapter.Actors
         #endregion
 
         #region Private methods
+
+        /// <summary>
+        /// Logs how long the state file write took and how long after the previous write it started.
+        /// The write runs on this actor's mailbox thread, so while it runs no fixture state lookup is answered:
+        /// this log line shows whether the disk write contributes to GetFixtureStateMsg delays and whether the
+        /// WriteStateToFileMsg itself is being delayed in the mailbox.
+        /// </summary>
+        private void LogWriteStateToFileDuration(
+            long totalMs,
+            long serializeMs,
+            long writeMs,
+            int fixturesCount,
+            int characters,
+            long? sinceLastWriteMs)
+        {
+            var intervalMs = _settings.FixturesStateAutoStoreInterval;
+            var details =
+                $"totalMs={totalMs} serializeMs={serializeMs} writeMs={writeMs} fixturesCount={fixturesCount} " +
+                $"characters={characters} sinceLastWriteMs={(sinceLastWriteMs.HasValue ? sinceLastWriteMs.Value.ToString() : "n/a")} " +
+                $"intervalMs={intervalMs} filePath={_pathFileName}";
+
+            var isSlow = totalMs > SlowWriteStateToFileThresholdMs;
+            var isLate = sinceLastWriteMs.HasValue && intervalMs > 0 &&
+                         sinceLastWriteMs.Value > (long)intervalMs * LateWriteStateToFileIntervalFactor;
+
+            if (isSlow || isLate)
+            {
+                var reason = isSlow && isLate
+                    ? $"slow (over {SlowWriteStateToFileThresholdMs}ms) and late (over {LateWriteStateToFileIntervalFactor}x the interval)"
+                    : isSlow
+                        ? $"slow (over {SlowWriteStateToFileThresholdMs}ms)"
+                        : $"late (over {LateWriteStateToFileIntervalFactor}x the interval)";
+                _logger.Warn($"WriteStateToFile {reason} {details}");
+            }
+            else
+            {
+                _logger.Info($"WriteStateToFile completed {details}");
+            }
+        }
 
         private void SetFilePath()
         {
