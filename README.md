@@ -143,6 +143,39 @@ The following is a list of available settings.
 - DelayedFixtureRecoveryAttemptSchedule - when the streaming starts Adapter runs a verification whether the snapshot is needed, the check requires a call to API which doesn't need to be repeated for the set delay in seconds. Setting it very low (below 10) can result in start streaming delays. 
 - AutoReconnect - this refers to RabbitMQ client autoreconnect capability - recommended setting is true for Adapters streaming below 500 fixtures and false on any value above 
 
+Akka Configuration (HOCON)
+----------------------
+
+The adapter's actors run on Akka.NET. The akka HOCON section of the adapter's app.config is loaded and merged with the adapter's built-in defaults (see `AdapterActorSystem`), so the blocks below only need to be added to the app.config when a default has to be changed.
+
+- fixture-state-dispatcher - The Akka dispatcher the FixtureStateActor runs on, assigned through `akka.actor.deployment`. Every StreamListenerActor asks this actor for the fixture state (with a 10 second timeout) and the actor also writes the fixtures state file to disk every FixturesStateAutoStoreInterval. By default it is a PinnedDispatcher, i.e. the actor has its own dedicated thread and never has to compete with the stream listeners for a thread on the default dispatcher. Under a large surge of updates (for example a weekend kick-off) the default dispatcher's thread pool can be starved by blocking calls, which delays the state lookups until they time out and the affected streams are treated as disconnected; the dedicated dispatcher removes the FixtureStateActor from that contention. On adapter start the FixtureStateActor logs the dispatcher it runs on (`FixtureStateActor started on dispatcher=...`). Adapters built from an older version can apply the same isolation without a code change by adding the two blocks below to the akka HOCON section of their app.config. Default:
+
+```
+fixture-state-dispatcher {
+  type = PinnedDispatcher
+  throughput = 1
+}
+akka.actor.deployment {
+  /FixtureStateActor {
+    dispatcher = fixture-state-dispatcher
+  }
+}
+```
+
+- sport-processor-dispatcher - The Akka dispatcher the SportProcessorRouterActor router and its routees run on. Each routee calls the Connect API synchronously (GetSports, then GetResources for each sport, with the client's 60 second timeout) every NewFixtureCheckerFrequency. On the default dispatcher those calls hold up to FixtureCreationConcurrency thread pool threads at once and, when the pool is starved at a surge, turn into timeouts and actor restarts. By default it is a ForkJoinDispatcher with its own dedicated threads, one per routee (thread-count = FixtureCreationConcurrency), so the sweep never needs a thread pool thread; the threads idle between sweeps. Deadlock detection (`deadlock-timeout`) is deliberately not set: a routee holds its thread for the whole HTTP call and the detection would abort it. On adapter start each routee logs the dispatcher it runs on. Default (with the default FixtureCreationConcurrency of 20):
+
+```
+sport-processor-dispatcher {
+  type = ForkJoinDispatcher
+  executor = fork-join-executor
+  throughput = 1
+  dedicated-thread-pool {
+    thread-count = 20
+    threadtype = background
+  }
+}
+```
+
 
 Adapter Market Rules
 ----------------------
