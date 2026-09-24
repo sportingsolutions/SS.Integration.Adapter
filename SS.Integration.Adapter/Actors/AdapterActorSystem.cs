@@ -14,6 +14,7 @@
 
 using System;
 using Akka.Actor;
+using Akka.Configuration;
 using Akka.Event;
 using Akka.Routing;
 using log4net;
@@ -39,9 +40,49 @@ namespace SS.Integration.Adapter.Actors
         private static IActorRef _streamListenerManagerActor;
         private static IActorRef _fixtureStateActor;
 
+        /// <summary>
+        /// Default HOCON applied as a fallback to the akka section of the application configuration.
+        /// 
+        /// fixture-state-dispatcher: a PinnedDispatcher (one dedicated thread) assigned to the <see cref="FixtureStateActor"/>
+        /// through akka.actor.deployment, so no code change is needed to move the actor to another dispatcher.
+        /// Every StreamListenerActor asks the FixtureStateActor for the fixture state (10s timeout) and the actor also
+        /// writes the state file to disk every few seconds. If it shares the default dispatcher with the stream
+        /// listeners, a thread-pool starvation at a kick-off surge (blocking calls holding pool threads) delays those
+        /// lookups until they time out and the listeners treat the streams as disconnected. Isolating the actor on
+        /// its own thread removes the FixtureStateActor from that contention.
+        /// 
+        /// Any of these blocks can be overridden by defining the same key in the application configuration.
+        /// </summary>
+        private const string DefaultHocon = @"
+            " + FixtureStateActor.DispatcherId + @" {
+                type = PinnedDispatcher
+                throughput = 1
+            }
+            akka.actor.deployment {
+                /" + FixtureStateActor.ActorName + @" {
+                    dispatcher = " + FixtureStateActor.DispatcherId + @"
+                }
+            }";
+
         #endregion
 
         public static ActorSystem ActorSystem => _actorSystem;
+
+        /// <summary>
+        /// Builds the actor system configuration: the akka HOCON section of the application configuration
+        /// (the same source ActorSystem.Create(name) uses) with <see cref="DefaultHocon"/> as fallback,
+        /// so the adapter's dedicated dispatchers exist even when the application configuration does not define them.
+        /// </summary>
+        /// <returns></returns>
+        public static Config BuildConfig()
+        {
+            var defaults = ConfigurationFactory.ParseString(DefaultHocon);
+            var appConfig = ConfigurationFactory.Load();
+
+            return appConfig == null || appConfig.IsEmpty
+                ? defaults
+                : appConfig.WithFallback(defaults);
+        }
 
         /// <summary>
         /// 
@@ -62,7 +103,7 @@ namespace SS.Integration.Adapter.Actors
             IStreamHealthCheckValidation streamHealthCheckValidation,
             IFixtureValidation fixtureValidation)
         {
-            _actorSystem = ActorSystem.Create("AdapterSystem");
+            _actorSystem = ActorSystem.Create("AdapterSystem", BuildConfig());
 
             var fileStoreProvider = new FileStoreProvider(settings.StateProviderPath);
             CreateFixtureStateActor(settings, fileStoreProvider);

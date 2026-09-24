@@ -37,6 +37,18 @@ namespace SS.Integration.Adapter.Actors
         public const string ActorName = nameof(FixtureStateActor);
         public const string Path = "/user/" + ActorName;
 
+        /// <summary>
+        /// Id of the Akka dispatcher this actor runs on by default.
+        /// This actor answers every GetFixtureStateMsg lookup (asked with a 10s timeout from the stream listeners)
+        /// and periodically serialises the whole state to disk, so it must never have to compete with hundreds of
+        /// StreamListenerActor instances for a thread on the shared default dispatcher. At kick-off surges the
+        /// default dispatcher's thread pool can be starved by blocking calls, which delays these trivial lookups by
+        /// minutes and cascades into stream disconnections. A PinnedDispatcher gives this actor its own dedicated thread.
+        /// The dispatcher is defined and assigned to this actor (akka.actor.deployment) by default in
+        /// <see cref="AdapterActorSystem"/>; both can be overridden in the akka HOCON section of the application configuration.
+        /// </summary>
+        public const string DispatcherId = "fixture-state-dispatcher";
+
         #endregion
 
         #region Fields
@@ -60,6 +72,8 @@ namespace SS.Integration.Adapter.Actors
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _storeProvider = storeProvider ?? throw new ArgumentNullException(nameof(storeProvider));
+
+            _logger.Info($"{ActorName} started on dispatcher={Context.Dispatcher.Id}");
 
             SetFilePath();
             LoadStateFile();
