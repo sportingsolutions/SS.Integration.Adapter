@@ -252,6 +252,152 @@ namespace SS.Integration.Adapter.Tests
                 TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
         }
 
+        /// <summary>
+        /// This test ensures the periodic state check never blocks the builder: a StreamListenerActor under
+        /// construction that does not answer the state request must not stop the builder from creating the next
+        /// stream listener (previously the builder waited on Ask(...).Result for up to 30 s per fixture).
+        /// </summary>
+        [Test]
+        [Category(STREAM_LISTENER_BUILDER_ACTOR_CATEGORY)]
+        public void GivenUnresponsiveStreamListenerWhenStateIsCheckedThenBuilderKeepsCreatingStreamListeners()
+        {
+            //
+            //Arrange
+            //
+            SettingsMock.SetupGet(a => a.FixtureCreationConcurrency).Returns(10);
+            var resource1FacadeMock = new Mock<IResourceFacade>();
+            resource1FacadeMock.Setup(o => o.Id).Returns("Fixture1Id");
+            var resource2FacadeMock = new Mock<IResourceFacade>();
+            resource2FacadeMock.Setup(o => o.Id).Returns("Fixture2Id");
+
+            //stands in for the StreamListenerActor of Fixture1: receives the state request and never answers
+            var silentStreamListener = CreateTestProbe(StreamListenerActor.GetName(resource1FacadeMock.Object.Id));
+            var streamListener1Created = false;
+            var managerContextMock = new Mock<IActorContext>();
+            managerContextMock
+                .Setup(c => c.Child(StreamListenerActor.GetName(resource1FacadeMock.Object.Id)))
+                .Returns(() => streamListener1Created ? silentStreamListener.Ref : null);
+
+            var streamListenerBuilderActorRef = CreateStreamListenerBuilderActor(managerContextMock.Object);
+
+            streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = resource1FacadeMock.Object });
+            AwaitAssert(() =>
+                    Assert.AreEqual(1, streamListenerBuilderActorRef.UnderlyingActor.CreationInProgressFixtureIdSetCount),
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+            streamListener1Created = true;
+
+            //
+            //Act
+            //
+            streamListenerBuilderActorRef.Tell(new CheckStreamListenerBuilderActorStateMsg());
+            silentStreamListener.ExpectMsg<GetStreamListenerActorStateMsg>(
+                m => m.FixtureId == resource1FacadeMock.Object.Id,
+                TimeSpan.FromSeconds(5));
+            //no reply from the stream listener; the builder must still process the next creation request promptly
+            streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = resource2FacadeMock.Object });
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                    Assert.AreEqual(2, streamListenerBuilderActorRef.UnderlyingActor.CreationInProgressFixtureIdSetCount),
+                TimeSpan.FromSeconds(2),
+                TimeSpan.FromMilliseconds(100));
+            Assert.AreEqual(StreamListenerBuilderState.Active, streamListenerBuilderActorRef.UnderlyingActor.State);
+        }
+
+        /// <summary>
+        /// This test ensures the asynchronous state reply is applied: a fixture stays in the creation set while its
+        /// StreamListenerActor reports Initializing and is removed once it reports any other state.
+        /// </summary>
+        [Test]
+        [Category(STREAM_LISTENER_BUILDER_ACTOR_CATEGORY)]
+        public void GivenStreamListenerStateReplyThenFixtureIsRemovedFromCreationSetOnceInitialized()
+        {
+            //
+            //Arrange
+            //
+            SettingsMock.SetupGet(a => a.FixtureCreationConcurrency).Returns(10);
+            var resource1FacadeMock = new Mock<IResourceFacade>();
+            resource1FacadeMock.Setup(o => o.Id).Returns("Fixture1Id");
+
+            var streamListener = CreateTestProbe(StreamListenerActor.GetName(resource1FacadeMock.Object.Id));
+            var streamListener1Created = false;
+            var managerContextMock = new Mock<IActorContext>();
+            managerContextMock
+                .Setup(c => c.Child(StreamListenerActor.GetName(resource1FacadeMock.Object.Id)))
+                .Returns(() => streamListener1Created ? streamListener.Ref : null);
+
+            var streamListenerBuilderActorRef = CreateStreamListenerBuilderActor(managerContextMock.Object);
+
+            streamListenerBuilderActorRef.Tell(new CreateStreamListenerMsg { Resource = resource1FacadeMock.Object });
+            AwaitAssert(() =>
+                    Assert.AreEqual(1, streamListenerBuilderActorRef.UnderlyingActor.CreationInProgressFixtureIdSetCount),
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+            streamListener1Created = true;
+
+            //
+            //Act - still initializing
+            //
+            streamListenerBuilderActorRef.Tell(new CheckStreamListenerBuilderActorStateMsg());
+            streamListener.ExpectMsg<GetStreamListenerActorStateMsg>(
+                m => m.FixtureId == resource1FacadeMock.Object.Id,
+                TimeSpan.FromSeconds(5));
+            streamListener.Reply(StreamListenerState.Initializing);
+
+            //
+            //Assert
+            //
+            Task.Delay(TimeSpan.FromMilliseconds(200)).Wait();
+            Assert.AreEqual(1, streamListenerBuilderActorRef.UnderlyingActor.CreationInProgressFixtureIdSetCount);
+
+            //
+            //Act - initialized
+            //
+            streamListenerBuilderActorRef.Tell(new CheckStreamListenerBuilderActorStateMsg());
+            streamListener.ExpectMsg<GetStreamListenerActorStateMsg>(
+                m => m.FixtureId == resource1FacadeMock.Object.Id,
+                TimeSpan.FromSeconds(5));
+            streamListener.Reply(StreamListenerState.Streaming);
+
+            //
+            //Assert
+            //
+            AwaitAssert(() =>
+                    Assert.AreEqual(0, streamListenerBuilderActorRef.UnderlyingActor.CreationInProgressFixtureIdSetCount),
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+        }
+
+        #endregion
+
+        #region Private methods
+
+        private Akka.TestKit.TestActorRef<StreamListenerBuilderActor> CreateStreamListenerBuilderActor(IActorContext streamListenerManagerActorContext)
+        {
+            var streamListenerBuilderActorRef =
+                ActorOfAsTestActorRef<StreamListenerBuilderActor>(
+                    Props.Create(() =>
+                        new StreamListenerBuilderActor(
+                            SettingsMock.Object,
+                            streamListenerManagerActorContext,
+                            PluginMock.Object,
+                            StateManagerMock.Object,
+                            SuspensionManagerMock.Object,
+                            StreamHealthCheckValidationMock.Object,
+                            FixtureValidationMock.Object)),
+                    StreamListenerBuilderActor.ActorName);
+
+            AwaitAssert(() =>
+                    Assert.AreEqual(StreamListenerBuilderState.Active, streamListenerBuilderActorRef.UnderlyingActor.State),
+                TimeSpan.FromMilliseconds(ASSERT_WAIT_TIMEOUT),
+                TimeSpan.FromMilliseconds(ASSERT_EXEC_INTERVAL));
+
+            return streamListenerBuilderActorRef;
+        }
+
         #endregion
     }
 }
