@@ -98,6 +98,7 @@ namespace SS.Integration.Adapter
             try
             {
                 LogVersions();
+                ThreadPoolConfiguration.Apply(_settings);
 
                 if (SdkActorSystem.InitializeActors)
                 {

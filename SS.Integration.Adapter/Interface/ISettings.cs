@@ -185,5 +185,16 @@ namespace SS.Integration.Adapter.Interface
         /// This flag defines interval to recover fixture
         /// </summary>
         int delayedFixtureRecoveryAttemptSchedule { get; }
+
+        /// <summary>
+        /// Minimum number of worker and I/O completion threads the .NET thread pool keeps available
+        /// (ThreadPool.SetMinThreads), applied when the adapter starts. 0 leaves the runtime default
+        /// (the processor count). The actors, the SDK's echo and stream handling and the HTTP client
+        /// all run on the thread pool; when many of them block at once (for example at a kick-off
+        /// surge) the pool only injects new threads slowly above the minimum, so trivial work queues
+        /// for seconds or minutes. A higher minimum removes that injection delay at the cost of a few
+        /// more idle threads.
+        /// </summary>
+        int ThreadPoolMinThreads { get; }
     }
 }
